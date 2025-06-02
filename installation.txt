@@ -1,4 +1,0 @@
-## Installation
-1. Clone le repo
-2. Backend : `cd backend && npm install`
-3. Frontend : `cd frontend && npm install`
