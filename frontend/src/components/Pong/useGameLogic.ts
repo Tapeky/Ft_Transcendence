@@ -8,8 +8,9 @@ const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 10;
 const BALL_SIZE = 10;
 const PADDLE_SPEED = 0.1;
-const INITIAL_BALL_SPEED = 0.05;
+const INITIAL_BALL_SPEED = 0.02;
 const WINNING_SCORE = 3;
+const SPEED_MULTIPLIER = 1.1;
 
 const useGameLogic = () => {
   const initialGameState: GameState = {
@@ -153,11 +154,13 @@ const useGameLogic = () => {
       // Collision avec les raquettes
       // Raquette gauche (joueur 1)
       if (
-        newState.ballX - BALL_SIZE <= PADDLE_WIDTH &&
-        newState.ballY >= newState.player1Y &&
-        newState.ballY <= newState.player1Y + PADDLE_HEIGHT
+		newState.ballX - BALL_SIZE <= PADDLE_WIDTH && // L’extrémité gauche de la balle touche la raquette
+		newState.ballX >= 0 &&                        // Le centre est encore à l'écran
+		newState.ballY + BALL_SIZE >= newState.player1Y && // Bas de la balle >= haut de la raquette
+		newState.ballY - BALL_SIZE <= newState.player1Y + PADDLE_HEIGHT 
       ) {
-        newState.ballSpeedX = -newState.ballSpeedX;
+        newState.ballSpeedX = -Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER;
+		newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
         // Ajuster légèrement la position pour éviter de rester "collé" à la raquette
         newState.ballX = PADDLE_WIDTH + BALL_SIZE;
       }
@@ -168,7 +171,8 @@ const useGameLogic = () => {
         newState.ballY >= newState.player2Y &&
         newState.ballY <= newState.player2Y + PADDLE_HEIGHT
       ) {
-        newState.ballSpeedX = -newState.ballSpeedX;
+        newState.ballSpeedX = Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER * -1;
+		newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
         // Ajuster légèrement la position pour éviter de rester "collé" à la raquette
         newState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE;
       }

@@ -1,0 +1,35 @@
+Jour 1:
+	Configuration initiale du projet
+
+	Création de la structure de dossiers (frontend, backend, db)
+	Création des fichiers de configuration Docker (docker-compose.yml, Dockerfiles)
+	Configuration des environnements de développement
+
+
+	Configuration du backend
+
+	Mise en place de Fastify avec Node.js (conformément au module majeur choisi)
+	Installation des dépendances nécessaires (fastify, @fastify/cors, @fastify/websocket, @fastify/jwt, bcrypt, sqlite3)
+	Configuration de TypeScript pour le backend
+	Création de la structure de base pour le serveur
+
+
+	Configuration du frontend
+
+	Mise en place de React avec TypeScript
+	Configuration de Tailwind CSS (conformément au module mineur choisi)
+	Préparation de la structure de base pour une single-page application
+
+
+	Mise en place de Docker
+
+	Configuration des conteneurs pour isoler le frontend et le backend
+	Mise en place des volumes pour le développement
+	Configuration des ports exposés
+
+
+NEED to fix :
+- Hitbox du joueur de gauche.
+
+IDEE:
+- Faire un LethalLeague like
