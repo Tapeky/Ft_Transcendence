@@ -154,27 +154,28 @@ const useGameLogic = () => {
       // Collision avec les raquettes
       // Raquette gauche (joueur 1)
       if (
-		newState.ballX - BALL_SIZE <= PADDLE_WIDTH && // L’extrémité gauche de la balle touche la raquette
-		newState.ballX >= 0 &&                        // Le centre est encore à l'écran
-		newState.ballY + BALL_SIZE >= newState.player1Y && // Bas de la balle >= haut de la raquette
-		newState.ballY - BALL_SIZE <= newState.player1Y + PADDLE_HEIGHT 
+        newState.ballX - BALL_SIZE <= PADDLE_WIDTH && // Balle touche la raquette
+        newState.ballX > 0 && // Balle pas encore sortie à gauche
+        newState.ballSpeedX < 0 && // Balle va vers la gauche (évite collisions multiples)
+        newState.ballY + BALL_SIZE >= newState.player1Y && // Détection verticale cohérente
+        newState.ballY - BALL_SIZE <= newState.player1Y + PADDLE_HEIGHT 
       ) {
-        newState.ballSpeedX = -Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER;
-		newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
-        // Ajuster légèrement la position pour éviter de rester "collé" à la raquette
-        newState.ballX = PADDLE_WIDTH + BALL_SIZE;
+        newState.ballSpeedX = Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER; // Force direction positive
+        newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
+        newState.ballX = PADDLE_WIDTH + BALL_SIZE; // Reset position propre
       }
 
-      // Raquette droite (joueur 2)
+      // Raquette droite (joueur 2) - Harmonisée avec la gauche
       if (
         newState.ballX + BALL_SIZE >= CANVAS_WIDTH - PADDLE_WIDTH &&
-        newState.ballY >= newState.player2Y &&
-        newState.ballY <= newState.player2Y + PADDLE_HEIGHT
+        newState.ballX < CANVAS_WIDTH && // Balle pas encore sortie à droite
+        newState.ballSpeedX > 0 && // Balle va vers la droite (évite collisions multiples)
+        newState.ballY + BALL_SIZE >= newState.player2Y && // Même logique que gauche
+        newState.ballY - BALL_SIZE <= newState.player2Y + PADDLE_HEIGHT
       ) {
-        newState.ballSpeedX = Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER * -1;
-		newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
-        // Ajuster légèrement la position pour éviter de rester "collé" à la raquette
-        newState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE;
+        newState.ballSpeedX = -Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER; // Force direction négative
+        newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
+        newState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE; // Reset position propre
       }
 
       // Marquer des points et réinitialiser la balle
