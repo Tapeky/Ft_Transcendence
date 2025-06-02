@@ -12,26 +12,16 @@ const INITIAL_BALL_SPEED = 0.02;
 const WINNING_SCORE = 3;
 const SPEED_MULTIPLIER = 1.1;
 
-const getRandomBallState = () => {
-  const randomY = CANVAS_HEIGHT * (0.2 + Math.random() * 0.6);
-  const randomDirectionX = Math.random() > 0.5 ? INITIAL_BALL_SPEED : -INITIAL_BALL_SPEED;
-  const randomDirectionY = (Math.random() - 0.5) * INITIAL_BALL_SPEED;
-  
-  return {
-    ballX: CANVAS_WIDTH / 2,
-    ballY: randomY,
-    ballSpeedX: randomDirectionX,
-    ballSpeedY: randomDirectionY
-  };
-};
-
 const useGameLogic = () => {
   const initialGameState: GameState = {
     player1Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     player2Y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
     player1Score: 0,
     player2Score: 0,
-    ...getRandomBallState(),
+    ballX: CANVAS_WIDTH / 2,
+    ballY: CANVAS_HEIGHT / 2,
+    ballSpeedX: INITIAL_BALL_SPEED,
+    ballSpeedY: INITIAL_BALL_SPEED / 2,
     paddleHeight: PADDLE_HEIGHT,
     paddleWidth: PADDLE_WIDTH,
     ballSize: BALL_SIZE,
@@ -47,13 +37,12 @@ const useGameLogic = () => {
     ArrowDown: false
   });
 
+  // Fonction pour réinitialiser le jeu
   const resetGame = () => {
-    setGameState({
-      ...initialGameState,
-      ...getRandomBallState()
-    });
+    setGameState(initialGameState);
   };
 
+  // Gestionnaire d'événements pour les touches
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
@@ -77,6 +66,7 @@ const useGameLogic = () => {
     };
   }, []);
 
+  // Fonction pour dessiner le jeu
   const drawGame = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -100,24 +90,28 @@ const useGameLogic = () => {
     ctx.arc(gameState.ballX, gameState.ballY, BALL_SIZE, 0, Math.PI * 2);
     ctx.fill();
 
-    // Scores
-    ctx.font = '80px Arial';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    // Scores avec font pixel
+    ctx.font = '60px "Press Start 2P", monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.textAlign = 'center';
+    
     ctx.fillText(
       gameState.player1Score.toString(), 
       CANVAS_WIDTH / 4, 
-      CANVAS_HEIGHT / 2 + 30
+      CANVAS_HEIGHT / 2 + 20
     );
+    
     ctx.fillText(
       gameState.player2Score.toString(), 
       CANVAS_WIDTH * 3 / 4, 
-      CANVAS_HEIGHT / 2 + 30
+      CANVAS_HEIGHT / 2 + 20
     );
   }, [gameState]);
 
+  // Fonction pour mettre à jour l'état du jeu
   const updateGameState = useCallback(() => {
     setGameState(prevState => {
+      // Si le jeu est terminé, ne pas mettre à jour
       if (prevState.gameOver || prevState.player1Score >= WINNING_SCORE || prevState.player2Score >= WINNING_SCORE) {
         return {
           ...prevState,
@@ -125,9 +119,10 @@ const useGameLogic = () => {
         };
       }
 
+      // Copie de l'état précédent
       const newState = { ...prevState };
 
-      // Mouvement des raquettes
+      // Mouvement des raquettes basé sur les touches pressées
       if (keyState.w && newState.player1Y > 0) {
         newState.player1Y -= PADDLE_SPEED;
       }
@@ -145,58 +140,60 @@ const useGameLogic = () => {
       newState.ballX += newState.ballSpeedX;
       newState.ballY += newState.ballSpeedY;
 
-      // Rebond haut/bas
+      // Rebond sur les bords supérieur et inférieur
       if (newState.ballY <= BALL_SIZE || newState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
         newState.ballSpeedY = -newState.ballSpeedY;
       }
 
-      // Collision raquette gauche
+      // Collision avec les raquettes
+      // Raquette gauche (joueur 1)
       if (
-        newState.ballX - BALL_SIZE <= PADDLE_WIDTH &&
-        newState.ballX > 0 &&
-        newState.ballSpeedX < 0 &&
-        newState.ballY + BALL_SIZE >= newState.player1Y &&
+        newState.ballX - BALL_SIZE <= PADDLE_WIDTH && // Balle touche la raquette
+        newState.ballX > 0 && // Balle pas encore sortie à gauche
+        newState.ballSpeedX < 0 && // Balle va vers la gauche (évite collisions multiples)
+        newState.ballY + BALL_SIZE >= newState.player1Y && // Détection verticale cohérente
         newState.ballY - BALL_SIZE <= newState.player1Y + PADDLE_HEIGHT 
       ) {
-        newState.ballSpeedX = Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER;
+        newState.ballSpeedX = Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER; // Force direction positive
         newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
-        newState.ballX = PADDLE_WIDTH + BALL_SIZE;
+        newState.ballX = PADDLE_WIDTH + BALL_SIZE; // Reset position propre
       }
 
-      // Collision raquette droite
+      // Raquette droite (joueur 2) - Harmonisée avec la gauche
       if (
         newState.ballX + BALL_SIZE >= CANVAS_WIDTH - PADDLE_WIDTH &&
-        newState.ballX < CANVAS_WIDTH &&
-        newState.ballSpeedX > 0 &&
-        newState.ballY + BALL_SIZE >= newState.player2Y &&
+        newState.ballX < CANVAS_WIDTH && // Balle pas encore sortie à droite
+        newState.ballSpeedX > 0 && // Balle va vers la droite (évite collisions multiples)
+        newState.ballY + BALL_SIZE >= newState.player2Y && // Même logique que gauche
         newState.ballY - BALL_SIZE <= newState.player2Y + PADDLE_HEIGHT
       ) {
-        newState.ballSpeedX = -Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER;
+        newState.ballSpeedX = -Math.abs(newState.ballSpeedX) * SPEED_MULTIPLIER; // Force direction négative
         newState.ballSpeedY = newState.ballSpeedY * SPEED_MULTIPLIER;
-        newState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE;
+        newState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE; // Reset position propre
       }
 
-      // Points et reset balle
+      // Marquer des points et réinitialiser la balle
       if (newState.ballX < 0) {
+        // Point pour le joueur 2
         newState.player2Score += 1;
-        const randomBall = getRandomBallState();
-        newState.ballX = randomBall.ballX;
-        newState.ballY = randomBall.ballY;
-        newState.ballSpeedX = randomBall.ballSpeedX;
-        newState.ballSpeedY = randomBall.ballSpeedY;
+        newState.ballX = CANVAS_WIDTH / 2;
+        newState.ballY = CANVAS_HEIGHT / 2;
+        newState.ballSpeedX = INITIAL_BALL_SPEED;
+        newState.ballSpeedY = INITIAL_BALL_SPEED / 2 * (Math.random() > 0.5 ? 1 : -1);
       } else if (newState.ballX > CANVAS_WIDTH) {
+        // Point pour le joueur 1
         newState.player1Score += 1;
-        const randomBall = getRandomBallState();
-        newState.ballX = randomBall.ballX;
-        newState.ballY = randomBall.ballY;
-        newState.ballSpeedX = randomBall.ballSpeedX;
-        newState.ballSpeedY = randomBall.ballSpeedY;
+        newState.ballX = CANVAS_WIDTH / 2;
+        newState.ballY = CANVAS_HEIGHT / 2;
+        newState.ballSpeedX = -INITIAL_BALL_SPEED;
+        newState.ballSpeedY = INITIAL_BALL_SPEED / 2 * (Math.random() > 0.5 ? 1 : -1);
       }
 
       return newState;
     });
   }, [keyState]);
 
+  // Fonction pour démarrer la boucle de jeu
   const startGameLoop = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     let animationFrameId: number;
     
@@ -208,6 +205,7 @@ const useGameLogic = () => {
     
     render();
     
+    // Retourne une fonction pour arrêter la boucle de jeu
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };

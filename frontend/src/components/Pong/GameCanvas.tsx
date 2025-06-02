@@ -34,24 +34,26 @@ const GameCanvas: React.FC = () => {
         <div className="player-score">Joueur 1: {gameState.player1Score}</div>
         <div className="player-score">Joueur 2: {gameState.player2Score}</div>
       </div>
-      <canvas 
-        ref={canvasRef} 
-        className="border-2 border-gray-800 bg-black"
-        style={{ width: '800px', height: '400px' }}
-      />
-      {winner && (
-        <div className="winner-overlay absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-black bg-opacity-70">
-          <div className="text-white text-3xl font-bold mb-4">
-            Joueur {winner} a gagné!
+      <div className="game-canvas">
+        <canvas 
+          ref={canvasRef} 
+          className="border-2 border-gray-800 bg-black"
+          style={{ width: '800px', height: '400px' }}
+        />
+        {winner && (
+          <div className="winner-overlay absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-black bg-opacity-70">
+            <div className="winner-text text-3xl font-bold mb-4">
+              Joueur {winner} a gagné!
+            </div>
+            <button 
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              onClick={resetGame}
+            >
+              Nouvelle partie
+            </button>
           </div>
-          <button 
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={resetGame}
-          >
-            Nouvelle partie
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
