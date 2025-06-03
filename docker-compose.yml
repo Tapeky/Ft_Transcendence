@@ -1,32 +1,54 @@
-version: '3.8'
-
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - VITE_API_URL=${VITE_API_URL}
     depends_on:
       - backend
-    environment:
-      - NODE_ENV=development
+    networks:
+      - ft_transcendence
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:8000"
     volumes:
       - ./backend:/app
       - /app/node_modules
       - ./db:/app/db
+      - ./ssl:/app/ssl:ro
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV}
+      - DB_NAME=${DB_NAME}
+      - DB_PATH=${DB_PATH}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+    networks:
+      - ft_transcendence
+
+# Ajoutez vos services supplémentaires ici
+# 
+# 
+# 
 
 volumes:
-  db:
+  db_data:
+  ssl_certs:
+
+networks:
+  ft_transcendence:
+    driver: bridge

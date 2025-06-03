@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GameState, KeyState } from './types';
 
-// Constantes du jeu
+// Constantes
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 400;
 const PADDLE_HEIGHT = 80;
@@ -37,12 +37,12 @@ const useGameLogic = () => {
     ArrowDown: false
   });
 
-  // Fonction pour réinitialiser le jeu
+  // Game reset function
   const resetGame = () => {
     setGameState(initialGameState);
   };
 
-  // Gestionnaire d'événements pour les touches
+  // Key event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['w', 's', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
@@ -66,7 +66,7 @@ const useGameLogic = () => {
     };
   }, []);
 
-  // Fonction pour dessiner le jeu
+  // Drawing function
   const drawGame = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -90,7 +90,7 @@ const useGameLogic = () => {
     ctx.arc(gameState.ballX, gameState.ballY, BALL_SIZE, 0, Math.PI * 2);
     ctx.fill();
 
-    // Scores avec font pixel
+    // Scores
     ctx.font = '60px "Press Start 2P", monospace';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.textAlign = 'center';
