@@ -1,0 +1,171 @@
+-- Table des utilisateurs
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100),
+    avatar_url VARCHAR(500),
+    is_online BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME,
+    
+    -- Stats utilisateur
+    total_wins INTEGER DEFAULT 0,
+    total_losses INTEGER DEFAULT 0,
+    total_games INTEGER DEFAULT 0,
+    
+    -- Auth externe (Google, etc.)
+    google_id VARCHAR(255) UNIQUE,
+    
+    -- GDPR compliance
+    data_consent BOOLEAN DEFAULT FALSE,
+    data_consent_date DATETIME
+);
+
+-- Index pour les performances
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+
+-- Table des amitiés
+CREATE TABLE IF NOT EXISTS friendships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    friend_id INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, accepted, blocked
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, friend_id)
+);
+
+-- Table des tournois
+CREATE TABLE IF NOT EXISTS tournaments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    max_players INTEGER NOT NULL DEFAULT 8,
+    current_players INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'open', -- open, running, completed, cancelled
+    bracket_data TEXT, -- JSON pour stocker la structure du bracket
+    winner_id INTEGER,
+    created_by INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    started_at DATETIME,
+    completed_at DATETIME,
+    
+    FOREIGN KEY (winner_id) REFERENCES users(id),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Table des participants aux tournois
+CREATE TABLE IF NOT EXISTS tournament_participants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    position INTEGER, -- position finale dans le tournoi
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(tournament_id, user_id)
+);
+
+-- Table des matches
+CREATE TABLE IF NOT EXISTS matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER, -- NULL si match hors tournoi
+    player1_id INTEGER NOT NULL,
+    player2_id INTEGER NOT NULL,
+    player1_score INTEGER DEFAULT 0,
+    player2_score INTEGER DEFAULT 0,
+    winner_id INTEGER,
+    status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, playing, completed, cancelled
+    game_type VARCHAR(50) DEFAULT 'pong', -- pong, autre_jeu
+    match_data TEXT, -- JSON pour données spécifiques au match
+    started_at DATETIME,
+    completed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Métadonnées pour l'historique
+    duration_seconds INTEGER,
+    max_score INTEGER DEFAULT 3,
+    
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Index pour les performances des matches
+CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_matches_players ON matches(player1_id, player2_id);
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
+
+-- Table des sessions JWT (pour la sécurité)
+CREATE TABLE IF NOT EXISTS jwt_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    revoked BOOLEAN DEFAULT FALSE,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index pour nettoyer les tokens expirés
+CREATE INDEX IF NOT EXISTS idx_jwt_expires ON jwt_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_jwt_user ON jwt_tokens(user_id);
+
+-- Table des logs de sécurité (pour Brice)
+CREATE TABLE IF NOT EXISTS security_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    success BOOLEAN NOT NULL,
+    details TEXT, -- JSON avec détails supplémentaires
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Index pour les logs de sécurité
+CREATE INDEX IF NOT EXISTS idx_security_logs_user ON security_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_logs_action ON security_logs(action);
+CREATE INDEX IF NOT EXISTS idx_security_logs_date ON security_logs(created_at);
+
+-- Triggers pour maintenir les stats utilisateur
+CREATE TRIGGER IF NOT EXISTS update_user_stats_on_match_complete
+AFTER UPDATE OF status ON matches
+WHEN NEW.status = 'completed' AND OLD.status != 'completed'
+BEGIN
+    -- Mise à jour pour le gagnant
+    UPDATE users 
+    SET total_wins = total_wins + 1,
+        total_games = total_games + 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.winner_id;
+    
+    -- Mise à jour pour le perdant
+    UPDATE users 
+    SET total_losses = total_losses + 1,
+        total_games = total_games + 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = (CASE 
+                    WHEN NEW.winner_id = NEW.player1_id THEN NEW.player2_id 
+                    ELSE NEW.player1_id 
+                END);
+END;
+
+-- Trigger pour update timestamp
+CREATE TRIGGER IF NOT EXISTS update_users_timestamp
+AFTER UPDATE ON users
+BEGIN
+    UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
