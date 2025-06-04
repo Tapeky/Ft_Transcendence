@@ -203,17 +203,20 @@ export async function authRoutes(server: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Cast correct du user
+      const user = request.user as { id: number; username: string; email: string };
+      
       // Mettre à jour le statut hors ligne
-      await userRepo.updateOnlineStatus(request.user!.id, false);
+      await userRepo.updateOnlineStatus(user.id, false);
 
       // Logger la déconnexion
       await userRepo.logSecurityAction({
-        user_id: request.user!.id,
+        user_id: user.id,
         action: 'LOGOUT',
         ip_address: request.ip,
         user_agent: request.headers['user-agent'],
         success: true,
-        details: JSON.stringify({ username: request.user!.username })
+        details: JSON.stringify({ username: user.username })
       });
 
       reply.send({
@@ -235,7 +238,9 @@ export async function authRoutes(server: FastifyInstance) {
     preHandler: authenticateToken
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user = await userRepo.findById(request.user!.id);
+      const currentUser = request.user as { id: number; username: string; email: string };
+      
+      const user = await userRepo.findById(currentUser.id);
       if (!user) {
         return reply.status(404).send({
           success: false,
@@ -281,12 +286,13 @@ export async function authRoutes(server: FastifyInstance) {
     ]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const currentUser = request.user as { id: number; username: string; email: string };
       const updates = request.body as { display_name?: string; avatar_url?: string };
       
-      const updatedUser = await userRepo.updateProfile(request.user!.id, updates);
+      const updatedUser = await userRepo.updateProfile(currentUser.id, updates);
 
       await userRepo.logSecurityAction({
-        user_id: request.user!.id,
+        user_id: currentUser.id,
         action: 'PROFILE_UPDATE',
         ip_address: request.ip,
         user_agent: request.headers['user-agent'],
@@ -328,13 +334,14 @@ export async function authRoutes(server: FastifyInstance) {
     ]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const currentUser = request.user as { id: number; username: string; email: string };
       const body = request.body as {
         current_password: string;
         new_password: string;
       };
 
       // Vérifier l'utilisateur actuel
-      const user = await userRepo.findById(request.user!.id);
+      const user = await userRepo.findById(currentUser.id);
       if (!user) {
         return reply.status(404).send({
           success: false,
@@ -399,6 +406,7 @@ export async function authRoutes(server: FastifyInstance) {
     ]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const currentUser = request.user as { id: number; username: string; email: string };
       const body = request.body as {
         password: string;
         confirm_deletion: boolean;
@@ -412,7 +420,7 @@ export async function authRoutes(server: FastifyInstance) {
       }
 
       // Vérifier l'utilisateur et le mot de passe
-      const user = await userRepo.findById(request.user!.id);
+      const user = await userRepo.findById(currentUser.id);
       if (!user) {
         return reply.status(404).send({
           success: false,

@@ -1,7 +1,6 @@
 // backend/src/index.ts
 
-import fastify from 'fastify';
-import { Server, IncomingMessage, ServerResponse } from 'http';
+import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import websocket from '@fastify/websocket';
@@ -18,23 +17,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Création de l'instance Fastify
-const server: fastify.FastifyInstance<Server, IncomingMessage, ServerResponse> = fastify({
+const server = Fastify({
   logger: {
-    level: NODE_ENV === 'development' ? 'info' : 'warn',
-    prettyPrint: NODE_ENV === 'development'
+    level: NODE_ENV === 'development' ? 'info' : 'warn'
   }
 });
-
-// Plugin pour déclarer les types
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: {
-      id: number;
-      username: string;
-      email: string;
-    };
-  }
-}
 
 async function start() {
   try {
@@ -117,14 +104,14 @@ async function start() {
       server.log.error(error);
       
       // Erreurs JWT
-      if (error.code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
+      if ((error as any).code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
           success: false,
           error: 'Token d\'authentification requis'
         });
       }
       
-      if (error.code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
+      if ((error as any).code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
         return reply.status(401).send({
           success: false,
           error: 'Token d\'authentification invalide'
@@ -132,16 +119,16 @@ async function start() {
       }
       
       // Erreurs de validation
-      if (error.validation) {
+      if ((error as any).validation) {
         return reply.status(400).send({
           success: false,
           error: 'Données invalides',
-          details: error.validation
+          details: (error as any).validation
         });
       }
       
       // Erreurs SQLite
-      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if ((error as any).code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return reply.status(409).send({
           success: false,
           error: 'Cette ressource existe déjà'
