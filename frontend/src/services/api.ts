@@ -20,7 +20,7 @@ export interface ApiResponses <T = any> {
 	error?: string;
 }
 
-export interface LoginCreadentials {
+export interface LoginCredentials {
 	username: string;
 	password: string;
 }
@@ -32,3 +32,36 @@ export interface RegisterCredentials {
 	display_name?: string;
 	data_consent: boolean;
 }
+
+class ApiService {
+	private token: string | null = null;
+
+	constructor () {
+		this.token = localStorage.getItem('auth_token'); 
+	}
+
+	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+		// TODO: Implémenter la logique de requête API
+	}
+
+	async login(credentials: LoginCredentials): Promise<AuthResponse> {
+		// TODO: Implémenter la logique de connexion
+	}
+
+	async register(credentials: RegisterCredentials): Promise<AuthResponse> {
+		// TODO: Implémenter la logique d'inscription
+	}
+
+	setToken(token: string): void {
+	}
+
+	clearToken(): void {
+	}
+
+	isAuthenticated(): boolean {
+		return this.token !== null;
+	}
+
+}
+
+export const apiService = new ApiService();
