@@ -1,3 +1,245 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Animations Pong avec balle ralentie */
+
+/* Animation de la balle - plus lente et fluide */
+@keyframes ball-realistic {
+  /* Service depuis le centre */
+  0% { 
+    left: 50%;
+    top: 50%;
+  }
+  
+  /* Vers la droite-haut */
+  8% {
+    left: 94%;
+    top: 25%;
+  }
+  
+  /* Rebond sur raquette droite, repart vers gauche-bas */
+  16% {
+    left: 6%;
+    top: 75%;
+  }
+  
+  /* Rebond sur raquette gauche, repart vers droite-centre */
+  24% {
+    left: 94%;
+    top: 50%;
+  }
+  
+  /* Rebond raquette droite, angle serré vers gauche-haut */
+  32% {
+    left: 6%;
+    top: 20%;
+  }
+  
+  /* Rebond mur haut */
+  36% {
+    left: 30%;
+    top: 5%;
+  }
+  
+  /* Continue vers droite après rebond mur */
+  40% {
+    left: 94%;
+    top: 35%;
+  }
+  
+  /* Rebond rapide, retour centre-gauche */
+  48% {
+    left: 6%;
+    top: 60%;
+  }
+  
+  /* Vers droite-bas */
+  56% {
+    left: 94%;
+    top: 80%;
+  }
+  
+  /* Rebond mur bas */
+  60% {
+    left: 70%;
+    top: 95%;
+  }
+  
+  /* Continue après rebond mur */
+  64% {
+    left: 6%;
+    top: 70%;
+  }
+  
+  /* Point marqué - balle sort */
+  72% {
+    left: -5%;
+    top: 40%;
+    opacity: 1;
+  }
+  
+  /* Reset au centre */
+  73% {
+    left: 50%;
+    top: 50%;
+    opacity: 0;
+  }
+  
+  74% {
+    left: 50%;
+    top: 50%;
+    opacity: 1;
+  }
+  
+  /* Nouveau service */
+  82% {
+    left: 6%;
+    top: 30%;
+  }
+  
+  /* Continue le jeu */
+  90% {
+    left: 94%;
+    top: 65%;
+  }
+  
+  100% {
+    left: 50%;
+    top: 50%;
+  }
+}
+
+/* Raquette gauche suit la balle - mouvements plus lents */
+@keyframes paddle-realistic-left {
+  0% { top: 50%; transform: translateY(-50%); }
+  8% { top: 50%; transform: translateY(-50%); }
+  12% { top: 75%; transform: translateY(-50%); }
+  20% { top: 75%; transform: translateY(-50%); }
+  24% { top: 20%; transform: translateY(-50%); }
+  32% { top: 20%; transform: translateY(-50%); }
+  40% { top: 60%; transform: translateY(-50%); }
+  48% { top: 60%; transform: translateY(-50%); }
+  56% { top: 70%; transform: translateY(-50%); }
+  64% { top: 70%; transform: translateY(-50%); }
+  72% { top: 40%; transform: translateY(-50%); }
+  82% { top: 30%; transform: translateY(-50%); }
+  90% { top: 50%; transform: translateY(-50%); }
+  100% { top: 50%; transform: translateY(-50%); }
+}
+
+/* Raquette droite suit la balle avec léger délai - mouvements plus lents */
+@keyframes paddle-realistic-right {
+  0% { top: 50%; transform: translateY(-50%); }
+  4% { top: 25%; transform: translateY(-50%); }
+  12% { top: 25%; transform: translateY(-50%); }
+  20% { top: 50%; transform: translateY(-50%); }
+  28% { top: 50%; transform: translateY(-50%); }
+  36% { top: 35%; transform: translateY(-50%); }
+  44% { top: 35%; transform: translateY(-50%); }
+  52% { top: 80%; transform: translateY(-50%); }
+  60% { top: 80%; transform: translateY(-50%); }
+  68% { top: 50%; transform: translateY(-50%); }
+  76% { top: 50%; transform: translateY(-50%); }
+  86% { top: 65%; transform: translateY(-50%); }
+  94% { top: 65%; transform: translateY(-50%); }
+  100% { top: 50%; transform: translateY(-50%); }
+}
+
+/* Flash de collision */
+@keyframes collision-left {
+  0%, 15%, 17%, 100% { opacity: 0; }
+  16% { opacity: 1; }
+  32% { opacity: 1; }
+  33% { opacity: 0; }
+  48% { opacity: 1; }
+  49% { opacity: 0; }
+  64% { opacity: 1; }
+  65% { opacity: 0; }
+  82% { opacity: 1; }
+  83% { opacity: 0; }
+}
+
+@keyframes collision-right {
+  0%, 7%, 9%, 100% { opacity: 0; }
+  8% { opacity: 1; }
+  24% { opacity: 1; }
+  25% { opacity: 0; }
+  40% { opacity: 1; }
+  41% { opacity: 0; }
+  56% { opacity: 1; }
+  57% { opacity: 0; }
+  90% { opacity: 1; }
+  91% { opacity: 0; }
+}
+
+@keyframes score-flash {
+  0%, 70%, 75%, 100% { opacity: 0.4; transform: scale(1); }
+  72% { opacity: 1; transform: scale(2); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-20px) translateX(10px); }
+  66% { transform: translateY(10px) translateX(-5px); }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(15px) translateX(-10px); }
+  66% { transform: translateY(-10px) translateX(15px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.1); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Classes d'animation avec durées plus longues pour ralentir */
+@layer utilities {
+  .animate-paddle-realistic-left {
+    animation: paddle-realistic-left 20s ease-in-out infinite;
+  }
+  
+  .animate-paddle-realistic-right {
+    animation: paddle-realistic-right 20s ease-in-out infinite;
+  }
+  
+  .animate-ball-realistic {
+    animation: ball-realistic 20s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-collision-left {
+    animation: collision-left 20s ease-out infinite;
+  }
+  
+  .animate-collision-right {
+    animation: collision-right 20s ease-out infinite;
+  }
+  
+  .animate-score-flash {
+    animation: score-flash 20s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float-delayed 10s ease-in-out infinite;
+    animation-delay: 1s;
+  }
+  
+  .animate-float-slow {
+    animation: float-slow 12s ease-in-out infinite;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards;
+  }
+}
