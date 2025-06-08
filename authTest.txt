@@ -1,0 +1,324 @@
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// 🧪 Composant de test pour l'authentification
+function AuthTester() {
+  const { user, isAuthenticated, loading, login, register, logout } = useAuth();
+  
+  // États pour les formulaires de test
+  const [loginEmail, setLoginEmail] = useState('player1@test.com');
+  const [loginPassword, setLoginPassword] = useState('alice123');
+  const [registerData, setRegisterData] = useState({
+    username: 'testuser',
+    email: 'test@example.com',
+    password: 'test123',
+    display_name: 'Test User',
+    data_consent: true
+  });
+  
+  // États pour les messages de test
+  const [testMessage, setTestMessage] = useState('');
+  const [testError, setTestError] = useState('');
+
+  // Helper pour afficher les messages
+  const showMessage = (msg: string, isError = false) => {
+    if (isError) {
+      setTestError(msg);
+      setTestMessage('');
+    } else {
+      setTestMessage(msg);
+      setTestError('');
+    }
+    setTimeout(() => {
+      setTestMessage('');
+      setTestError('');
+    }, 5000);
+  };
+
+  // 🔍 Test 1: Login avec credentials existants
+  const testLogin = async () => {
+    try {
+      showMessage('🔄 Test de connexion en cours...');
+      await login({ email: loginEmail, password: loginPassword });
+      showMessage('✅ Connexion réussie !');
+    } catch (error: any) {
+      showMessage(`❌ Erreur login: ${error.message}`, true);
+    }
+  };
+
+  // 🔍 Test 2: Register avec nouveaux credentials
+  const testRegister = async () => {
+    try {
+      showMessage('🔄 Test d\'inscription en cours...');
+      await register(registerData);
+      showMessage('✅ Inscription réussie !');
+    } catch (error: any) {
+      showMessage(`❌ Erreur register: ${error.message}`, true);
+    }
+  };
+
+  // 🔍 Test 3: Logout
+  const testLogout = async () => {
+    try {
+      showMessage('🔄 Test de déconnexion en cours...');
+      await logout();
+      showMessage('✅ Déconnexion réussie !');
+    } catch (error: any) {
+      showMessage(`❌ Erreur logout: ${error.message}`, true);
+    }
+  };
+
+  // 🔍 Test 4: Login avec mauvais credentials
+  const testBadLogin = async () => {
+    try {
+      showMessage('🔄 Test avec mauvais credentials...');
+      await login({ email: 'wrong@email.com', password: 'wrongpassword' });
+      showMessage('❌ Ce test aurait dû échouer !', true);
+    } catch (error: any) {
+      showMessage('✅ Erreur attendue reçue correctement !');
+    }
+  };
+
+  // 🔍 Test 5: Register avec email déjà existant
+  const testDuplicateRegister = async () => {
+    try {
+      showMessage('🔄 Test avec email déjà existant...');
+      await register({
+        username: 'duplicate',
+        email: 'player1@test.com', // Email qui existe déjà
+        password: 'test123',
+        display_name: 'Duplicate User',
+        data_consent: true
+      });
+      showMessage('❌ Ce test aurait dû échouer !', true);
+    } catch (error: any) {
+      showMessage('✅ Erreur de duplication détectée correctement !');
+    }
+  };
+
+  // 📊 Affichage de l'état actuel
+  const renderCurrentState = () => (
+    <div className="bg-gray-100 p-4 rounded mb-6">
+      <h3 className="font-bold text-lg mb-2">📊 État actuel du système</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p><strong>Loading:</strong> {loading ? '🔄 Oui' : '✅ Non'}</p>
+          <p><strong>Authenticated:</strong> {isAuthenticated ? '✅ Oui' : '❌ Non'}</p>
+        </div>
+        <div>
+          <p><strong>User ID:</strong> {user?.id || 'N/A'}</p>
+          <p><strong>Username:</strong> {user?.username || 'N/A'}</p>
+          <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
+        </div>
+      </div>
+      {user && (
+        <div className="mt-2 text-sm">
+          <p><strong>Stats:</strong> {user.total_wins}W - {user.total_losses}L - {user.total_games}G</p>
+          <p><strong>Display Name:</strong> {user.display_name || 'N/A'}</p>
+          <p><strong>Online:</strong> {user.is_online ? '🟢' : '🔴'}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // 🎛️ Interface de test
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-center mb-8">
+        🧪 Test Complet - Système d'Authentification
+      </h1>
+
+      {/* Messages de test */}
+      {testMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {testMessage}
+        </div>
+      )}
+      {testError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {testError}
+        </div>
+      )}
+
+      {/* État actuel */}
+      {renderCurrentState()}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* 🔑 Section Login */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">🔑 Tests de Connexion</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Email:</label>
+            <input
+              type="email"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+              placeholder="email@example.com"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Password:</label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+              placeholder="password"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <button
+              onClick={testLogin}
+              disabled={loading}
+              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            >
+              🔍 Test Login Normal
+            </button>
+            
+            <button
+              onClick={testBadLogin}
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            >
+              🔍 Test Login Invalide
+            </button>
+          </div>
+        </div>
+
+        {/* 📝 Section Register */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">📝 Tests d'Inscription</h2>
+          
+          <div className="mb-2">
+            <label className="block text-sm font-medium mb-1">Username:</label>
+            <input
+              type="text"
+              value={registerData.username}
+              onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm font-medium mb-1">Email:</label>
+            <input
+              type="email"
+              value={registerData.email}
+              onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          
+          <div className="mb-2">
+            <label className="block text-sm font-medium mb-1">Password:</label>
+            <input
+              type="password"
+              value={registerData.password}
+              onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Display Name:</label>
+            <input
+              type="text"
+              value={registerData.display_name}
+              onChange={(e) => setRegisterData({...registerData, display_name: e.target.value})}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <button
+              onClick={testRegister}
+              disabled={loading}
+              className="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            >
+              🔍 Test Register Normal
+            </button>
+            
+            <button
+              onClick={testDuplicateRegister}
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            >
+              🔍 Test Register Duplicate
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 🚪 Section Logout et Actions */}
+      <div className="mt-6 bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">🚪 Actions Générales</h2>
+        
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={testLogout}
+            disabled={loading || !isAuthenticated}
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+          >
+            🔍 Test Logout
+          </button>
+          
+          <button
+            onClick={() => {
+              setLoginEmail('player1@test.com');
+              setLoginPassword('alice123');
+              showMessage('🔄 Credentials reset pour Alice');
+            }}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          >
+            🔄 Reset Login (Alice)
+          </button>
+          
+          <button
+            onClick={() => {
+              setRegisterData({
+                username: `user_${Date.now()}`,
+                email: `test_${Date.now()}@example.com`,
+                password: 'test123',
+                display_name: 'Test User',
+                data_consent: true
+              });
+              showMessage('🔄 Nouvelles données générées');
+            }}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          >
+            🎲 Générer Nouveaux Credentials
+          </button>
+        </div>
+      </div>
+
+      {/* 📋 Instructions */}
+      <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <h3 className="font-bold mb-2">📋 Instructions de Test</h3>
+        <ol className="list-decimal list-inside text-sm space-y-1">
+          <li><strong>Teste Login Normal</strong> - Devrait marcher avec player1@test.com/alice123</li>
+          <li><strong>Teste Login Invalide</strong> - Devrait échouer proprement</li>
+          <li><strong>Teste Register Normal</strong> - Crée un nouvel utilisateur</li>
+          <li><strong>Teste Register Duplicate</strong> - Devrait échouer (email existant)</li>
+          <li><strong>Teste Logout</strong> - Devrait déconnecter proprement</li>
+          <li><strong>Observe l'état</strong> - Vérifie que loading/user/isAuthenticated changent correctement</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+// 🚀 App principal avec AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AuthTester />
+    </AuthProvider>
+  );
+}
+
+export default App;
