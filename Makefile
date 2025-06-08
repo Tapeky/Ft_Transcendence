@@ -1,5 +1,3 @@
-# Makefile pour ft_transcendence
-
 .PHONY: help dev prod build clean logs shell-backend shell-frontend setup
 
 # Variables

@@ -125,6 +125,11 @@ class ApiService {
 		}
 	}
 
+	async getCurrentUser(): Promise<User> {
+		const response = await this.request<User>('/api/auth/me');
+		return response.data!;
+	}
+
 }
 
 export const apiService = new ApiService();

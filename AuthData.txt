@@ -1,0 +1,42 @@
+AUTH vs AUTORISATION :
+
+AUTH = 
+	- Verifier l identite (email + mdp).
+	- Reponse : "Tu es alice" ou "Je ne te connais pas"
+
+AUTORISATION =
+	- Verifier les permissions (admin, user, ..)
+	- Reponse : Tu as le droit d acceder a cette page OU acces denied
+
+
+Probleme actuelle : Le serveur est stateless, il oublie qui je suis apres chaque requete
+
+Solution : Les tokens JWT
+Ce sont des jetons d Identification signe par le serveur et impossible a falsifier.
+Ils expirent apres X temps + contiennet mon ID utilisateur = parfait.
+
+
+Frontend                Backend               Database
+   │                       │                     │
+   │ 1. POST /login        │                     │
+   │ {email, password} ───►│                     │
+   │                       │ 2. Vérifier user ──►│
+   │                       │◄── 3. User trouvé ──│
+   │                       │ 4. Vérifier mdp     │
+   │◄── 5. Token JWT ──────│                     │
+   │                       │                     │
+   │ 6. Stocker token      │                     │
+   │                       │                     │
+   │ 7. Requêtes suivantes │                     │
+   │ Header: Bearer token ─►│ 8. Vérifier token  │
+   │◄── 9. Données ────────│                     │
+
+
+Pour l'instant dans le projet, les jetons contiennent "id, username, email".
+Backend crée le token ──► Frontend reçoit le token ──► Frontend stocke le token.
+Où ? Dans le navigateur :
+	- localStorage (persistant)
+	- sessionStorage (session)
+	- Cookies (avec httpOnly)
+
+Backend reçoit token ──► Vérifie signature cryptographique ──► Si valide = utilisateur authentifié

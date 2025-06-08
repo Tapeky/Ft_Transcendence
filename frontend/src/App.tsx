@@ -1,16 +1,49 @@
 import React from 'react';
-import PongGame from './components/Pong/PongGame';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
+// Composant de test qui utilise useAuth
+function TestAuth() {
+  const { user, isAuthenticated, loading, login, logout } = useAuth();
+
+  if (loading) {
+    return <div>🔄 Chargement...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: '20px' }}>
+        <h2>❌ Pas connecté</h2>
+        <button 
+          onClick={() => login({ 
+            email: 'alice@test.com', 
+            password: 'alice123' 
+          })}
+        >
+          🔐 Test Login Alice
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h2>✅ Connecté !</h2>
+      <p>👤 Utilisateur: {user?.username}</p>
+      <p>📧 Email: {user?.email}</p>
+      <p>🏆 Victoires: {user?.total_wins}</p>
+      <button onClick={logout}>
+        🚪 Déconnexion
+      </button>
+    </div>
+  );
+}
+
+// App avec le Provider
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold text-blue-600 mb-4">ft_transcendence</h1>
-      <p className="text-xl text-gray-700 mb-8">Bienvenue sur notre plateforme de jeu Pong!</p>
-      
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
-        <PongGame />
-      </div>
-    </div>
+    <AuthProvider>
+      <TestAuth />
+    </AuthProvider>
   );
 }
 
