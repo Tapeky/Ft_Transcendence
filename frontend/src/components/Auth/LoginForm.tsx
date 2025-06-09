@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import PremiumButton from './PremiumButton';
+import FloatingInput from './FloatingInput';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -9,14 +9,12 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, loading } = useAuth();
   
-  // États du formulaire
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
 
-  // Gestion des changements dans les inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -24,16 +22,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       [name]: value
     }));
     
-    // Effacer l'erreur quand l'utilisateur tape
     if (error) setError('');
   };
 
-  // Soumission du formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validation simple
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
       return;
@@ -44,7 +39,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         email: formData.email,
         password: formData.password
       });
-      // Redirection gérée par AuthContext
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }
@@ -53,67 +47,64 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       
-      {/* 🚨 Message d'erreur */}
+      {/* Message d'erreur */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {/* 📧 Champ Email */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email*
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="your@email.com"
-          disabled={loading}
-        />
+      {/* Email avec Floating Label */}
+      <FloatingInput
+        id="email"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        label="Email"
+        required
+        disabled={loading}
+        autoComplete="email"
+      />
+
+      {/* Password avec Floating Label */}
+      <FloatingInput
+        id="password"
+        name="password"
+        type="password"
+        value={formData.password}
+        onChange={handleChange}
+        label="Password"
+        required
+        disabled={loading}
+        autoComplete="current-password"
+      />
+
+      {/* Bouton de connexion */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0"
+      >
+        {loading ? (
+          <div className="flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            Signing in...
+          </div>
+        ) : (
+          'Sign In'
+        )}
+      </button>
+
+      {/* Séparateur */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or sign in with</span>
+        </div>
       </div>
-
-      {/* 🔒 Champ Password */}
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password*
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="Enter your password"
-          disabled={loading}
-        />
-      </div>
-
-      {/* 🔐 Bouton de connexion principal */}
-		<PremiumButton
-		  type="submit"
-		  disabled={loading}
-		  loading={loading}
-		  variant="primary"
-		>
-		  Sign In
-		</PremiumButton>
-
-<div className="relative">
-  <div className="absolute inset-0 flex items-center">
-    <div className="w-full border-t border-gray-300"></div>
-  </div>
-  <div className="relative flex justify-center text-sm">
-    <span className="px-2 bg-white text-gray-500">Or continue with</span>
-  </div>
-</div>
 
 {/* 🌐 Boutons sociaux améliorés */}
 <div className="grid grid-cols-3 gap-3">
@@ -186,19 +177,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
 </div>
 
-      {/* 🔄 Lien vers Register */}
+      {/* Lien vers Register */}
       <div className="text-center">
         <p className="text-sm text-gray-600">
           Don't have an account?{' '}
-		<PremiumButton
-			type="button"
-			onClick={onSwitchToRegister}
-			disabled={loading}
-			variant="ghost"
-			className="!w-auto !py-0 !px-1 text-sm"
-		>
-		Sign up
-		</PremiumButton>
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            className="font-medium text-gray-900 hover:text-gray-700 transition duration-200"
+            disabled={loading}
+          >
+            Sign up
+          </button>
         </p>
       </div>
 

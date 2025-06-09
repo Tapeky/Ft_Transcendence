@@ -1,4 +1,3 @@
-// Créer un nouveau composant FloatingInput.tsx
 import React, { useState } from 'react';
 
 interface FloatingInputProps {
@@ -10,7 +9,8 @@ interface FloatingInputProps {
   label: string;
   required?: boolean;
   disabled?: boolean;
-  error?: string;
+  autoComplete?: string;
+  minLength?: number;
 }
 
 const FloatingInput: React.FC<FloatingInputProps> = ({
@@ -22,11 +22,11 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
   label,
   required = false,
   disabled = false,
-  error
+  autoComplete,
+  minLength
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const hasValue = value.length > 0;
-  const shouldFloat = isFocused || hasValue;
 
   return (
     <div className="relative">
@@ -40,45 +40,33 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
         onBlur={() => setIsFocused(false)}
         required={required}
         disabled={disabled}
-        className={`
-          peer w-full px-3 pt-6 pb-2 
-          border rounded-lg transition-all duration-200
-          ${error 
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
-            : 'border-gray-300 focus:border-gray-900 focus:ring-gray-900'
-          }
-          focus:outline-none focus:ring-2 focus:ring-offset-0
-          disabled:bg-gray-50 disabled:cursor-not-allowed
-        `}
+        autoComplete={autoComplete}
+        minLength={minLength}
         placeholder=" "
+        className={`
+          peer w-full px-3 pt-5 pb-2 
+          border border-gray-300 rounded-lg
+          transition-all duration-200
+          focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+          disabled:bg-gray-50 disabled:cursor-not-allowed
+          ${hasValue ? 'bg-white' : 'bg-transparent'}
+        `}
       />
       
-      {/* Label flottant */}
       <label
         htmlFor={id}
         className={`
-          absolute left-3 transition-all duration-200 pointer-events-none
-          ${shouldFloat 
-            ? 'top-2 text-xs' 
-            : 'top-4 text-base'
+          absolute left-3 
+          transition-all duration-200 pointer-events-none
+          ${isFocused || hasValue 
+            ? 'top-2 text-xs text-gray-600' 
+            : 'top-4 text-base text-gray-500'
           }
-          ${isFocused 
-            ? 'text-gray-900' 
-            : error 
-              ? 'text-red-500' 
-              : 'text-gray-500'
-          }
+          ${isFocused ? 'text-gray-900' : ''}
         `}
       >
         {label}{required && '*'}
       </label>
-      
-      {/* Message d'erreur */}
-      {error && (
-        <p className="mt-1 text-xs text-red-500 animate-fade-in">
-          {error}
-        </p>
-      )}
     </div>
   );
 };

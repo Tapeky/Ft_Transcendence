@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import FloatingInput from './FloatingInput';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -8,7 +9,6 @@ interface RegisterFormProps {
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
   
-  // États du formulaire (plus de champs que Login)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -18,7 +18,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   });
   const [error, setError] = useState('');
 
-  // Même logique que LoginForm
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -29,12 +28,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     if (error) setError('');
   };
 
-  // Validation plus complète
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validation des champs requis
     if (!formData.username || !formData.email || !formData.password) {
       setError('Please fill in all required fields');
       return;
@@ -58,7 +55,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         display_name: formData.display_name || formData.username,
         data_consent: formData.data_consent
       });
-      // Redirection gérée par AuthContext
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     }
@@ -67,87 +63,68 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       
-      {/* 🚨 Message d'erreur */}
+      {/* Message d'erreur */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {/* 👤 Champ Username */}
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          Username*
-        </label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          value={formData.username}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="Choose a username"
-          disabled={loading}
-        />
-      </div>
+      {/* Username avec Floating Label */}
+      <FloatingInput
+        id="username"
+        name="username"
+        type="text"
+        value={formData.username}
+        onChange={handleChange}
+        label="Username"
+        required
+        disabled={loading}
+        autoComplete="username"
+      />
 
-      {/* 📧 Champ Email */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email*
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="your@email.com"
-          disabled={loading}
-        />
-      </div>
+      {/* Email avec Floating Label */}
+      <FloatingInput
+        id="email"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        label="Email"
+        required
+        disabled={loading}
+        autoComplete="email"
+      />
 
-      {/* 🔒 Champ Password */}
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password*
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          minLength={6}
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="At least 6 characters"
-          disabled={loading}
-        />
-      </div>
+      {/* Password avec Floating Label */}
+      <FloatingInput
+        id="password"
+        name="password"
+        type="password"
+        value={formData.password}
+        onChange={handleChange}
+        label="Password (min. 6 characters)"
+        required
+        disabled={loading}
+        autoComplete="new-password"
+        minLength={6}
+      />
 
-      {/* 🏷️ Champ Display Name (optionnel) */}
+      {/* Display Name avec Floating Label */}
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">
-          Display Name
-        </label>
-        <input
+        <FloatingInput
           id="display_name"
           name="display_name"
           type="text"
           value={formData.display_name}
           onChange={handleChange}
-          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition duration-200"
-          placeholder="How you'll appear to others"
+          label="Display Name (optional)"
           disabled={loading}
         />
-        <p className="text-xs text-gray-500 mt-1">Optional - defaults to username if empty</p>
+        <p className="text-xs text-gray-500 mt-1">How you'll appear to others</p>
       </div>
 
-      {/* ✅ Checkbox GDPR */}
+      {/* Checkbox GDPR */}
       <div className="flex items-start">
         <input
           id="data_consent"
@@ -164,7 +141,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         </label>
       </div>
 
-      {/* 🔐 Bouton d'inscription principal */}
+      {/* Bouton d'inscription */}
       <button
         type="submit"
         disabled={loading}
@@ -180,7 +157,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         )}
       </button>
 
-      {/* 🔗 Séparateur */}
+      {/* Séparateur */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300"></div>
@@ -261,7 +238,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
 
       </div>
 
-      {/* 🔄 Lien vers Login */}
+      {/* Lien vers Login */}
       <div className="text-center">
         <p className="text-sm text-gray-600">
           Already have an account?{' '}
