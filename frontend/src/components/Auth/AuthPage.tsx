@@ -1,3 +1,4 @@
+// Dans AuthPage.tsx, ajoute cette amélioration :
 import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import LoginForm from './LoginForm';
@@ -7,6 +8,7 @@ type AuthMode = 'login' | 'register';
 
 const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Configuration dynamique selon le mode
   const authConfig = {
@@ -20,17 +22,25 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // Fonctions pour switcher entre les modes
-  const switchToRegister = () => setMode('register');
-  const switchToLogin = () => setMode('login');
+  // Transition améliorée avec délai
+  const switchMode = (newMode: AuthMode) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setMode(newMode);
+      setIsTransitioning(false);
+    }, 150);
+  };
+
+  const switchToRegister = () => switchMode('register');
+  const switchToLogin = () => switchMode('login');
 
   return (
     <AuthLayout
       title={authConfig[mode].title}
       subtitle={authConfig[mode].subtitle}
     >
-      {/* 🔄 Transition entre Login et Register */}
-      <div className="transition-all duration-300 ease-in-out">
+      {/* 🔄 Transition entre Login et Register avec fade */}
+      <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
         {mode === 'login' ? (
           <LoginForm onSwitchToRegister={switchToRegister} />
         ) : (
