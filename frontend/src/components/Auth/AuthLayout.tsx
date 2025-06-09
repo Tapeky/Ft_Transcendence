@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -7,6 +7,17 @@ interface AuthLayoutProps {
 }
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
+  const [currentAnimation, setCurrentAnimation] = useState(0);
+  const animations = ['pong', 'tournament'];
+
+  // Carrousel automatique
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentAnimation((prev) => (prev + 1) % animations.length);
+    }, 15000); // Change toutes les 15 secondes
+
+    return () => clearInterval(interval);
+  }, []);
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-100">
       
@@ -32,73 +43,186 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
           </div>
         </div>
 
-        {/* CÔTÉ DROIT - Animation Pong réaliste */}
+        {/* CÔTÉ DROIT - Carrousel d'animations */}
         <div className="hidden lg:flex lg:w-3/5 pl-6 pr-3 py-3 items-center justify-center">
           <div className="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl flex items-center justify-center relative overflow-hidden">
             
-            {/* Terrain de Pong avec gameplay réaliste */}
-            <div className="relative z-10 text-center text-white px-12">
-              
-              <div className="mb-8">
-                <div className="w-80 h-48 mx-auto relative">
-                  
-                  {/* Terrain avec effet de lueur */}
-                  <div className="w-full h-full border-2 border-white/20 rounded-lg relative backdrop-blur-sm bg-white/5 shadow-2xl overflow-hidden">
+            {/* Animation Pong */}
+            {currentAnimation === 0 && (
+              <div className="relative z-10 text-center text-white px-12 animate-fade-in">
+                
+                <div className="mb-8">
+                  <div className="w-80 h-48 mx-auto relative">
                     
-                    {/* Ligne centrale animée */}
-                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/30 transform -translate-x-1/2">
-                      <div className="w-full h-full bg-gradient-to-b from-transparent via-white/50 to-transparent animate-pulse"></div>
-                    </div>
-                    
-                    {/* Raquette gauche avec mouvement réaliste */}
-                    <div className="absolute left-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-left">
-                      <div className="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
-                    </div>
-                    
-                    {/* Raquette droite avec mouvement réaliste */}
-                    <div className="absolute right-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-right">
-                      <div className="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
-                    </div>
-                    
-                    {/* Balle avec trajectoire réaliste */}
-                    <div className="absolute w-2 h-2 animate-ball-realistic">
-                      <div className="relative">
-                        {/* Traînée de la balle */}
-                        <div className="absolute inset-0 bg-white rounded-full blur-md scale-150 opacity-50"></div>
-                        {/* Balle principale */}
-                        <div className="relative w-2 h-2 bg-white rounded-full shadow-lg">
-                          <div className="absolute inset-0 bg-white rounded-full animate-ping"></div>
+                    {/* Terrain avec effet de lueur */}
+                    <div className="w-full h-full border-2 border-white/20 rounded-lg relative backdrop-blur-sm bg-white/5 shadow-2xl overflow-hidden">
+                      
+                      {/* Ligne centrale animée */}
+                      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/30 transform -translate-x-1/2">
+                        <div className="w-full h-full bg-gradient-to-b from-transparent via-white/50 to-transparent animate-pulse"></div>
+                      </div>
+                      
+                      {/* Raquette gauche avec mouvement réaliste */}
+                      <div className="absolute left-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-left">
+                        <div className="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
+                      </div>
+                      
+                      {/* Raquette droite avec mouvement réaliste */}
+                      <div className="absolute right-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-right">
+                        <div className="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
+                      </div>
+                      
+                      {/* Balle avec trajectoire réaliste */}
+                      <div className="absolute w-2 h-2 animate-ball-realistic">
+                        <div className="relative">
+                          {/* Traînée de la balle */}
+                          <div className="absolute inset-0 bg-white rounded-full blur-md scale-150 opacity-50"></div>
+                          {/* Balle principale */}
+                          <div className="relative w-2 h-2 bg-white rounded-full shadow-lg">
+                            <div className="absolute inset-0 bg-white rounded-full animate-ping"></div>
+                          </div>
                         </div>
                       </div>
+                      
+                      {/* Effet de collision (flash) */}
+                      <div className="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-left">
+                        <div className="w-full h-full bg-white/60 rounded-full blur-md"></div>
+                      </div>
+                      <div className="absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-right">
+                        <div className="w-full h-full bg-white/60 rounded-full blur-md"></div>
+                      </div>
+                      
+                      {/* Points de score subtils */}
+                      <div className="absolute top-4 left-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash"></div>
+                      <div className="absolute top-4 right-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash" style={{ animationDelay: '3s' }}></div>
+                      
                     </div>
-                    
-                    {/* Effet de collision (flash) */}
-                    <div className="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-left">
-                      <div className="w-full h-full bg-white/60 rounded-full blur-md"></div>
-                    </div>
-                    <div className="absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-right">
-                      <div className="w-full h-full bg-white/60 rounded-full blur-md"></div>
-                    </div>
-                    
-                    {/* Points de score subtils */}
-                    <div className="absolute top-4 left-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash"></div>
-                    <div className="absolute top-4 right-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash" style={{ animationDelay: '3s' }}></div>
-                    
                   </div>
                 </div>
-              </div>
 
-              {/* Texte avec animation subtile */}
-              <div className="space-y-4 animate-fade-in">
-                <h3 className="text-2xl font-bold">
-                  Master the Classic
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
-                  Experience the legendary Pong game with modern multiplayer features, 
-                  tournaments, and real-time competitions.
-                </p>
-              </div>
+                {/* Texte avec animation subtile */}
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold">
+                    Master the Classic
+                  </h3>
+                  <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+                    Experience the legendary Pong game with modern multiplayer features, 
+                    tournaments, and real-time competitions.
+                  </p>
+                </div>
 
+              </div>
+            )}
+
+            {/* Animation Tournoi */}
+            {currentAnimation === 1 && (
+              <div className="relative z-10 text-center text-white px-12 animate-fade-in">
+                
+                <div className="mb-8">
+                  <div className="w-80 h-60 mx-auto relative">
+                    
+                    {/* Arbre de tournoi */}
+                    <div className="w-full h-full relative">
+                      
+                      {/* Trophée flottant au sommet */}
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
+                        <div className="w-8 h-8 animate-tournament-trophy">
+                          <div className="text-2xl animate-float-slow">🏆</div>
+                          {/* Confettis */}
+                          <div className="absolute inset-0 animate-tournament-confetti">
+                            <div className="absolute -top-2 -left-1 w-1 h-1 bg-yellow-400 rounded-full animate-confetti-1"></div>
+                            <div className="absolute -top-1 left-2 w-1 h-1 bg-blue-400 rounded-full animate-confetti-2"></div>
+                            <div className="absolute -top-3 right-0 w-1 h-1 bg-red-400 rounded-full animate-confetti-3"></div>
+                            <div className="absolute -top-2 right-3 w-1 h-1 bg-green-400 rounded-full animate-confetti-4"></div>
+                            <div className="absolute -top-1 -right-1 w-1 h-1 bg-purple-400 rounded-full animate-confetti-5"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Structure du bracket */}
+                      <svg className="w-full h-full" viewBox="0 0 320 240" fill="none">
+                        
+                        {/* Finale */}
+                        <line x1="160" y1="20" x2="160" y2="40" className="stroke-white/30 stroke-1 animate-tournament-final" strokeDasharray="2,2" />
+                        
+                        {/* Demi-finales */}
+                        <line x1="120" y1="40" x2="160" y2="40" className="stroke-white/40 animate-tournament-semi-1" strokeDasharray="2,2" />
+                        <line x1="200" y1="40" x2="160" y2="40" className="stroke-white/40 animate-tournament-semi-2" strokeDasharray="2,2" />
+                        <line x1="120" y1="40" x2="120" y2="70" className="stroke-white/40 animate-tournament-semi-1" strokeDasharray="2,2" />
+                        <line x1="200" y1="40" x2="200" y2="70" className="stroke-white/40 animate-tournament-semi-2" strokeDasharray="2,2" />
+                        
+                        {/* Quarts de finale */}
+                        <line x1="80" y1="70" x2="120" y2="70" className="stroke-white/50 animate-tournament-quarter-1" strokeDasharray="2,2" />
+                        <line x1="160" y1="70" x2="120" y2="70" className="stroke-white/50 animate-tournament-quarter-2" strokeDasharray="2,2" />
+                        <line x1="160" y1="70" x2="200" y2="70" className="stroke-white/50 animate-tournament-quarter-3" strokeDasharray="2,2" />
+                        <line x1="240" y1="70" x2="200" y2="70" className="stroke-white/50 animate-tournament-quarter-4" strokeDasharray="2,2" />
+                        
+                        <line x1="80" y1="70" x2="80" y2="100" className="stroke-white/50 animate-tournament-quarter-1" strokeDasharray="2,2" />
+                        <line x1="160" y1="70" x2="160" y2="100" className="stroke-white/50 animate-tournament-quarter-2" strokeDasharray="2,2" />
+                        <line x1="240" y1="70" x2="240" y2="100" className="stroke-white/50 animate-tournament-quarter-4" strokeDasharray="2,2" />
+                        
+                        {/* Premier tour */}
+                        <line x1="40" y1="100" x2="80" y2="100" className="stroke-white/60 animate-tournament-first-1" strokeDasharray="2,2" />
+                        <line x1="120" y1="100" x2="80" y2="100" className="stroke-white/60 animate-tournament-first-2" strokeDasharray="2,2" />
+                        <line x1="120" y1="100" x2="160" y2="100" className="stroke-white/60 animate-tournament-first-3" strokeDasharray="2,2" />
+                        <line x1="200" y1="100" x2="160" y2="100" className="stroke-white/60 animate-tournament-first-4" strokeDasharray="2,2" />
+                        <line x1="200" y1="100" x2="240" y2="100" className="stroke-white/60 animate-tournament-first-5" strokeDasharray="2,2" />
+                        <line x1="280" y1="100" x2="240" y2="100" className="stroke-white/60 animate-tournament-first-6" strokeDasharray="2,2" />
+                        
+                        {/* Joueurs (cercles) */}
+                        <circle cx="40" cy="120" r="3" className="fill-white/60 animate-tournament-player-1" />
+                        <circle cx="80" cy="120" r="3" className="fill-white/60 animate-tournament-player-2" />
+                        <circle cx="120" cy="120" r="3" className="fill-white/60 animate-tournament-player-3" />
+                        <circle cx="160" cy="120" r="3" className="fill-white/60 animate-tournament-player-4" />
+                        <circle cx="200" cy="120" r="3" className="fill-white/60 animate-tournament-player-5" />
+                        <circle cx="240" cy="120" r="3" className="fill-white/60 animate-tournament-player-6" />
+                        <circle cx="280" cy="120" r="3" className="fill-white/60 animate-tournament-player-7" />
+                        
+                        {/* Chemin du vainqueur qui s'illumine */}
+                        <line x1="120" y1="120" x2="120" y2="100" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-1" />
+                        <line x1="120" y1="100" x2="160" y2="100" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-2" />
+                        <line x1="160" y1="100" x2="160" y2="70" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-3" />
+                        <line x1="160" y1="70" x2="120" y2="70" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-4" />
+                        <line x1="120" y1="70" x2="120" y2="40" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-5" />
+                        <line x1="120" y1="40" x2="160" y2="40" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-6" />
+                        <line x1="160" y1="40" x2="160" y2="20" className="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-7" />
+                        
+                        {/* Joueur vainqueur */}
+                        <circle cx="120" cy="120" r="4" className="fill-yellow-400 animate-tournament-winner-glow" />
+                        
+                      </svg>
+                      
+                    </div>
+                  </div>
+                </div>
+
+                {/* Texte avec animation subtile */}
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold">
+                    Tournament Glory
+                  </h3>
+                  <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+                    Compete in thrilling tournaments, climb the brackets, 
+                    and claim your victory with style and strategy.
+                  </p>
+                </div>
+
+              </div>
+            )}
+
+            {/* Indicateurs de carrousel */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+              {animations.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentAnimation(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    currentAnimation === index 
+                      ? 'bg-white scale-125' 
+                      : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              ))}
             </div>
 
             {/* Effets visuels améliorés */}

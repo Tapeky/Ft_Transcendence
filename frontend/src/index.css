@@ -179,6 +179,196 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes tournament-trophy {
+  0%, 100% { opacity: 0; transform: scale(0.5) translateY(20px); }
+  10% { opacity: 1; transform: scale(1.2) translateY(-5px); }
+  20%, 80% { opacity: 1; transform: scale(1) translateY(0); }
+  90% { opacity: 1; transform: scale(1.1) translateY(-2px); }
+}
+
+@keyframes tournament-confetti {
+  0%, 85% { opacity: 0; }
+  90%, 100% { opacity: 1; }
+}
+
+@keyframes confetti-1 {
+  0%, 85% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  90% { opacity: 1; transform: translateY(-10px) translateX(-5px) rotate(45deg); }
+  100% { opacity: 0; transform: translateY(-25px) translateX(-15px) rotate(180deg); }
+}
+
+@keyframes confetti-2 {
+  0%, 85% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  92% { opacity: 1; transform: translateY(-8px) translateX(3px) rotate(-30deg); }
+  100% { opacity: 0; transform: translateY(-20px) translateX(10px) rotate(-90deg); }
+}
+
+@keyframes confetti-3 {
+  0%, 85% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  88% { opacity: 1; transform: translateY(-12px) translateX(2px) rotate(60deg); }
+  100% { opacity: 0; transform: translateY(-30px) translateX(8px) rotate(240deg); }
+}
+
+@keyframes confetti-4 {
+  0%, 85% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  91% { opacity: 1; transform: translateY(-9px) translateX(-3px) rotate(-45deg); }
+  100% { opacity: 0; transform: translateY(-22px) translateX(-12px) rotate(-135deg); }
+}
+
+@keyframes confetti-5 {
+  0%, 85% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  89% { opacity: 1; transform: translateY(-11px) translateX(4px) rotate(75deg); }
+  100% { opacity: 0; transform: translateY(-28px) translateX(15px) rotate(300deg); }
+}
+
+@keyframes tournament-final {
+  0%, 70% { opacity: 0.3; stroke-dashoffset: 10; }
+  75%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-semi-1 {
+  0%, 60% { opacity: 0.4; stroke-dashoffset: 10; }
+  65%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-semi-2 {
+  0%, 62% { opacity: 0.4; stroke-dashoffset: 10; }
+  67%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-quarter-1 {
+  0%, 40% { opacity: 0.5; stroke-dashoffset: 10; }
+  45%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-quarter-2 {
+  0%, 42% { opacity: 0.5; stroke-dashoffset: 10; }
+  47%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-quarter-3 {
+  0%, 44% { opacity: 0.5; stroke-dashoffset: 10; }
+  49%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-quarter-4 {
+  0%, 46% { opacity: 0.5; stroke-dashoffset: 10; }
+  51%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-1 {
+  0%, 10% { opacity: 0.6; stroke-dashoffset: 10; }
+  15%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-2 {
+  0%, 12% { opacity: 0.6; stroke-dashoffset: 10; }
+  17%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-3 {
+  0%, 14% { opacity: 0.6; stroke-dashoffset: 10; }
+  19%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-4 {
+  0%, 16% { opacity: 0.6; stroke-dashoffset: 10; }
+  21%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-5 {
+  0%, 18% { opacity: 0.6; stroke-dashoffset: 10; }
+  23%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-first-6 {
+  0%, 20% { opacity: 0.6; stroke-dashoffset: 10; }
+  25%, 100% { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes tournament-player-1 {
+  0%, 5% { opacity: 0.6; transform: scale(1); }
+  10%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-2 {
+  0%, 7% { opacity: 0.6; transform: scale(1); }
+  12%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-3 {
+  0%, 9% { opacity: 0.6; transform: scale(1); }
+  14%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-4 {
+  0%, 11% { opacity: 0.6; transform: scale(1); }
+  16%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-5 {
+  0%, 13% { opacity: 0.6; transform: scale(1); }
+  18%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-6 {
+  0%, 15% { opacity: 0.6; transform: scale(1); }
+  20%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-player-7 {
+  0%, 17% { opacity: 0.6; transform: scale(1); }
+  22%, 100% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes tournament-winner-path-1 {
+  0%, 25% { opacity: 0; stroke-width: 2; }
+  30% { opacity: 1; stroke-width: 3; }
+  35%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-2 {
+  0%, 30% { opacity: 0; stroke-width: 2; }
+  35% { opacity: 1; stroke-width: 3; }
+  40%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-3 {
+  0%, 35% { opacity: 0; stroke-width: 2; }
+  40% { opacity: 1; stroke-width: 3; }
+  45%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-4 {
+  0%, 40% { opacity: 0; stroke-width: 2; }
+  45% { opacity: 1; stroke-width: 3; }
+  50%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-5 {
+  0%, 45% { opacity: 0; stroke-width: 2; }
+  50% { opacity: 1; stroke-width: 3; }
+  55%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-6 {
+  0%, 50% { opacity: 0; stroke-width: 2; }
+  55% { opacity: 1; stroke-width: 3; }
+  60%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-path-7 {
+  0%, 55% { opacity: 0; stroke-width: 2; }
+  60% { opacity: 1; stroke-width: 3; }
+  65%, 100% { opacity: 0.8; stroke-width: 2; }
+}
+
+@keyframes tournament-winner-glow {
+  0%, 20% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+  25% { opacity: 1; transform: scale(1.5); filter: drop-shadow(0 0 8px #fbbf24); }
+  30%, 100% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 4px #fbbf24); }
+}
+
 @layer utilities {
   .animate-paddle-realistic-left {
     animation: paddle-realistic-left 20s ease-in-out infinite;
@@ -219,6 +409,146 @@
   
   .animate-fade-in {
     animation: fade-in 0.8s ease-out forwards;
+  }
+  
+  .animate-tournament-trophy {
+    animation: tournament-trophy 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-confetti {
+    animation: tournament-confetti 15s ease-in-out infinite;
+  }
+  
+  .animate-confetti-1 {
+    animation: confetti-1 15s ease-out infinite;
+  }
+  
+  .animate-confetti-2 {
+    animation: confetti-2 15s ease-out infinite;
+  }
+  
+  .animate-confetti-3 {
+    animation: confetti-3 15s ease-out infinite;
+  }
+  
+  .animate-confetti-4 {
+    animation: confetti-4 15s ease-out infinite;
+  }
+  
+  .animate-confetti-5 {
+    animation: confetti-5 15s ease-out infinite;
+  }
+  
+  .animate-tournament-final {
+    animation: tournament-final 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-semi-1 {
+    animation: tournament-semi-1 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-semi-2 {
+    animation: tournament-semi-2 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-quarter-1 {
+    animation: tournament-quarter-1 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-quarter-2 {
+    animation: tournament-quarter-2 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-quarter-3 {
+    animation: tournament-quarter-3 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-quarter-4 {
+    animation: tournament-quarter-4 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-1 {
+    animation: tournament-first-1 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-2 {
+    animation: tournament-first-2 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-3 {
+    animation: tournament-first-3 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-4 {
+    animation: tournament-first-4 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-5 {
+    animation: tournament-first-5 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-first-6 {
+    animation: tournament-first-6 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-1 {
+    animation: tournament-player-1 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-2 {
+    animation: tournament-player-2 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-3 {
+    animation: tournament-player-3 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-4 {
+    animation: tournament-player-4 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-5 {
+    animation: tournament-player-5 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-6 {
+    animation: tournament-player-6 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-player-7 {
+    animation: tournament-player-7 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-1 {
+    animation: tournament-winner-path-1 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-2 {
+    animation: tournament-winner-path-2 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-3 {
+    animation: tournament-winner-path-3 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-4 {
+    animation: tournament-winner-path-4 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-5 {
+    animation: tournament-winner-path-5 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-6 {
+    animation: tournament-winner-path-6 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-path-7 {
+    animation: tournament-winner-path-7 15s ease-in-out infinite;
+  }
+  
+  .animate-tournament-winner-glow {
+    animation: tournament-winner-glow 15s ease-in-out infinite;
   }
 }
 
