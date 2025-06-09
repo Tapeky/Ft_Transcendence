@@ -200,5 +200,4 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Démarrer le serveur
 start();

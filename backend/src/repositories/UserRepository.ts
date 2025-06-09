@@ -31,36 +31,30 @@ export class UserRepository {
     return user;
   }
   
-  // Trouver par ID
   async findById(id: number): Promise<User | null> {
     const result = await this.db.get('SELECT * FROM users WHERE id = ?', [id]);
     return result || null;
   }
   
-  // Trouver par email
   async findByEmail(email: string): Promise<User | null> {
 	const result = await this.db.get('SELECT * FROM users WHERE email = ?', [email]);
     return result || null;
   }
   
-  // Trouver par username
   async findByUsername(username: string): Promise<User | null> {
 	const result = await this.db.get('SELECT * FROM users WHERE username = ?', [username]);
     return result || null;
   }
   
-  // Trouver par Google ID
   async findByGoogleId(googleId: string): Promise<User | null> {
 	const result = await this.db.get('SELECT * FROM users WHERE google_id = ?', [googleId]);
     return result || null;
   }
   
-  // Vérifier le mot de passe
   async verifyPassword(user: User, password: string): Promise<boolean> {
     return await bcrypt.compare(password, user.password_hash);
   }
   
-  // Mettre à jour le statut en ligne
   async updateOnlineStatus(userId: number, isOnline: boolean): Promise<void> {
     await this.db.run(`
       UPDATE users 
@@ -69,7 +63,6 @@ export class UserRepository {
     `, [isOnline, isOnline, userId]);
   }
   
-  // Mettre à jour le profil
   async updateProfile(userId: number, updates: Partial<Pick<User, 'display_name' | 'avatar_url'>>): Promise<User> {
     const setClauses = [];
     const values = [];
@@ -103,7 +96,6 @@ export class UserRepository {
     return user;
   }
   
-  // Changer le mot de passe
   async changePassword(userId: number, newPassword: string): Promise<void> {
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
     const password_hash = await bcrypt.hash(newPassword, saltRounds);
@@ -111,7 +103,6 @@ export class UserRepository {
     await this.db.run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId]);
   }
   
-  // Obtenir les stats d'un utilisateur
   async getUserStats(userId: number): Promise<any> {
     const stats = await this.db.get(`
       SELECT 
@@ -127,7 +118,6 @@ export class UserRepository {
       WHERE id = ?
     `, [userId]);
     
-    // Récupérer les derniers matches
     const recentMatches = await this.db.all(`
       SELECT 
         m.*,
@@ -149,7 +139,6 @@ export class UserRepository {
     };
   }
   
-  // Obtenir la version publique d'un utilisateur
   async getPublicProfile(userId: number): Promise<UserPublic | null> {
     const user = await this.db.get(`
       SELECT 
@@ -162,7 +151,6 @@ export class UserRepository {
     return user;
   }
   
-  // Rechercher des utilisateurs
   async search(query: string, limit: number = 10): Promise<UserPublic[]> {
     return await this.db.all(`
       SELECT 
@@ -175,7 +163,6 @@ export class UserRepository {
     `, [`%${query}%`, `%${query}%`, limit]);
   }
   
-  // Obtenir le classement
   async getLeaderboard(limit: number = 10): Promise<UserPublic[]> {
     return await this.db.all(`
       SELECT 
@@ -193,7 +180,6 @@ export class UserRepository {
     `, [limit]);
   }
   
-  // Obtenir les utilisateurs en ligne
   async getOnlineUsers(): Promise<UserPublic[]> {
     return await this.db.all(`
       SELECT 
@@ -205,12 +191,10 @@ export class UserRepository {
     `);
   }
   
-  // Supprimer un utilisateur (GDPR)
   async deleteUser(userId: number): Promise<void> {
     await this.db.run('DELETE FROM users WHERE id = ?', [userId]);
   }
   
-  // Anonymiser un utilisateur (GDPR)
   async anonymizeUser(userId: number): Promise<void> {
     const anonymousData = {
       email: `deleted_user_${userId}@deleted.com`,
@@ -236,7 +220,6 @@ export class UserRepository {
     ]);
   }
   
-  // Logger une action de sécurité
   async logSecurityAction(log: Omit<SecurityLog, 'id' | 'created_at'>): Promise<void> {
     await this.db.run(`
       INSERT INTO security_logs (user_id, action, ip_address, user_agent, success, details)

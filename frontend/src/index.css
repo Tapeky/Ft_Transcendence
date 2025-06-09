@@ -2,84 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Animations Pong avec balle ralentie */
-
-/* Animation de la balle - plus lente et fluide */
 @keyframes ball-realistic {
-  /* Service depuis le centre */
   0% { 
     left: 50%;
     top: 50%;
   }
   
-  /* Vers la droite-haut */
   8% {
     left: 94%;
     top: 25%;
   }
   
-  /* Rebond sur raquette droite, repart vers gauche-bas */
   16% {
     left: 6%;
     top: 75%;
   }
   
-  /* Rebond sur raquette gauche, repart vers droite-centre */
   24% {
     left: 94%;
     top: 50%;
   }
   
-  /* Rebond raquette droite, angle serré vers gauche-haut */
   32% {
     left: 6%;
     top: 20%;
   }
   
-  /* Rebond mur haut */
   36% {
     left: 30%;
     top: 5%;
   }
   
-  /* Continue vers droite après rebond mur */
   40% {
     left: 94%;
     top: 35%;
   }
   
-  /* Rebond rapide, retour centre-gauche */
   48% {
     left: 6%;
     top: 60%;
   }
   
-  /* Vers droite-bas */
   56% {
     left: 94%;
     top: 80%;
   }
   
-  /* Rebond mur bas */
   60% {
     left: 70%;
     top: 95%;
   }
   
-  /* Continue après rebond mur */
   64% {
     left: 6%;
     top: 70%;
   }
   
-  /* Point marqué - balle sort */
   72% {
     left: -5%;
     top: 40%;
     opacity: 1;
   }
   
-  /* Reset au centre */
   73% {
     left: 50%;
     top: 50%;
@@ -92,13 +76,11 @@
     opacity: 1;
   }
   
-  /* Nouveau service */
   82% {
     left: 6%;
     top: 30%;
   }
   
-  /* Continue le jeu */
   90% {
     left: 94%;
     top: 65%;
@@ -110,7 +92,6 @@
   }
 }
 
-/* Raquette gauche suit la balle - mouvements plus lents */
 @keyframes paddle-realistic-left {
   0% { top: 50%; transform: translateY(-50%); }
   8% { top: 50%; transform: translateY(-50%); }
@@ -128,7 +109,6 @@
   100% { top: 50%; transform: translateY(-50%); }
 }
 
-/* Raquette droite suit la balle avec léger délai - mouvements plus lents */
 @keyframes paddle-realistic-right {
   0% { top: 50%; transform: translateY(-50%); }
   4% { top: 25%; transform: translateY(-50%); }
@@ -146,7 +126,6 @@
   100% { top: 50%; transform: translateY(-50%); }
 }
 
-/* Flash de collision */
 @keyframes collision-left {
   0%, 15%, 17%, 100% { opacity: 0; }
   16% { opacity: 1; }
@@ -200,7 +179,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Classes d'animation avec durées plus longues pour ralentir */
 @layer utilities {
   .animate-paddle-realistic-left {
     animation: paddle-realistic-left 20s ease-in-out infinite;
@@ -289,7 +267,6 @@
     animation: shake 0.5s ease-in-out;
   }
   
-  /* Pour les inputs en erreur */
   .error-shake {
     animation: shake 0.5s ease-in-out;
   }
