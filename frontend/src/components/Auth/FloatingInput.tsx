@@ -46,7 +46,7 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
         className={`
           peer w-full px-3 pt-5 pb-2 
           border border-gray-300 rounded-lg
-          transition-all duration-200
+          transition-all duration-900
           focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
           disabled:bg-gray-50 disabled:cursor-not-allowed
           ${hasValue ? 'bg-white' : 'bg-transparent'}
