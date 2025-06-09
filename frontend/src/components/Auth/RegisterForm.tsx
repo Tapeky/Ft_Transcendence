@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import FloatingInput from './FloatingInput';
+import PremiumButton from './PremiumButton';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -140,21 +141,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         </label>
       </div>
 
-      {/* Bouton d'inscription */}
-      <button
+      {/* Bouton d'inscription avec PremiumButton */}
+      <PremiumButton
         type="submit"
         disabled={loading}
-        className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0"
+        loading={loading}
+        variant="primary"
       >
-        {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            Creating account...
-          </div>
-        ) : (
-          'Sign Up'
-        )}
-      </button>
+        {loading ? 'Creating account...' : 'Sign Up'}
+      </PremiumButton>
 
       {/* Séparateur */}
       <div className="relative">
