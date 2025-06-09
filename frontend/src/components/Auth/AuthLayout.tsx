@@ -8,7 +8,7 @@ interface AuthLayoutProps {
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   const [currentAnimation, setCurrentAnimation] = useState(0);
-  const animations = ['pong', 'tournament'];
+  const animations = ['pong', 'tournament', 'chat'];
 
   // Carrousel automatique
   useEffect(() => {
@@ -108,6 +108,103 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
                   <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
                     Experience the legendary Pong game with modern multiplayer features, 
                     tournaments, and real-time competitions.
+                  </p>
+                </div>
+
+              </div>
+            )}
+
+            {/* Animation Live Chat */}
+            {currentAnimation === 2 && (
+              <div className="relative z-10 text-center text-white px-12 animate-fade-in">
+                
+                <div className="mb-8">
+                  <div className="w-80 h-60 mx-auto relative">
+                    
+                    {/* Interface de chat minimaliste */}
+                    <div className="w-full h-full relative">
+                      
+                      {/* Messages flottants */}
+                      <div className="absolute inset-0">
+                        
+                        {/* Message 1 - Gauche */}
+                        <div className="absolute top-8 left-4 animate-chat-message-1">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-2 h-2 bg-white/60 rounded-full"></div>
+                            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                              <div className="text-sm opacity-90">Ready to play?</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Message 2 - Droite */}
+                        <div className="absolute top-20 right-6 animate-chat-message-2">
+                          <div className="flex items-center space-x-3 justify-end">
+                            <div className="bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/30">
+                              <div className="text-sm opacity-90">Let's go!</div>
+                            </div>
+                            <div className="w-2 h-2 bg-white/80 rounded-full"></div>
+                          </div>
+                        </div>
+
+                        {/* Message 3 - Centre */}
+                        <div className="absolute top-32 left-1/2 transform -translate-x-1/2 animate-chat-message-3">
+                          <div className="bg-white/8 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/15 text-center">
+                            <div className="text-xs opacity-70 mb-1">Game Invitation</div>
+                            <div className="text-sm opacity-90">Join Tournament</div>
+                          </div>
+                        </div>
+
+                        {/* Typing indicator minimaliste */}
+                        <div className="absolute top-44 left-8 animate-chat-typing">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-2 h-2 bg-white/40 rounded-full"></div>
+                            <div className="bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
+                              <div className="flex space-x-1 items-center">
+                                <div className="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-1"></div>
+                                <div className="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-2"></div>
+                                <div className="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-3"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                      </div>
+
+                      {/* Lignes de connexion élégantes */}
+                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 320 240" fill="none">
+                        
+                        {/* Connexions entre utilisateurs */}
+                        <line x1="20" y1="40" x2="160" y2="120" className="stroke-white/20 stroke-1 animate-chat-connection-1" strokeDasharray="3,3" />
+                        <line x1="300" y1="80" x2="160" y2="120" className="stroke-white/20 stroke-1 animate-chat-connection-2" strokeDasharray="3,3" />
+                        <line x1="160" y1="120" x2="160" y2="160" className="stroke-white/20 stroke-1 animate-chat-connection-3" strokeDasharray="3,3" />
+                        <line x1="40" y1="180" x2="160" y2="160" className="stroke-white/20 stroke-1 animate-chat-connection-4" strokeDasharray="3,3" />
+                        
+                        {/* Point central - hub de communication */}
+                        <circle cx="160" cy="120" r="4" className="fill-white/30 animate-chat-hub" />
+                        <circle cx="160" cy="120" r="8" className="fill-none stroke-white/20 stroke-1 animate-chat-hub-ring" />
+                        
+                      </svg>
+
+                      {/* Particules minimalistes */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-16 right-12 w-1 h-1 bg-white/40 rounded-full animate-chat-particle-1"></div>
+                        <div className="absolute top-36 left-12 w-1 h-1 bg-white/30 rounded-full animate-chat-particle-2"></div>
+                        <div className="absolute bottom-20 right-16 w-1 h-1 bg-white/35 rounded-full animate-chat-particle-3"></div>
+                      </div>
+                      
+                    </div>
+                  </div>
+                </div>
+
+                {/* Texte avec animation subtile */}
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold">
+                    Connect & Communicate
+                  </h3>
+                  <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+                    Seamless real-time communication with players worldwide. 
+                    Chat, invite, and build your gaming network.
                   </p>
                 </div>
 
