@@ -17,11 +17,31 @@ async function migrateGitHub() {
     
     if (!hasGitHubId) {
       console.log('➕ Ajout de la colonne github_id...');
-      await db.exec('ALTER TABLE users ADD COLUMN github_id VARCHAR(255) UNIQUE;');
+      
+      // Étape 1: Ajouter la colonne sans contrainte UNIQUE (SQLite limitation)
+      await db.exec('ALTER TABLE users ADD COLUMN github_id VARCHAR(255);');
+      console.log('✅ Colonne github_id ajoutée');
+      
+      // Étape 2: Créer un index unique (équivalent à UNIQUE constraint)
+      await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id_unique ON users(github_id) WHERE github_id IS NOT NULL;');
+      console.log('✅ Index unique créé pour github_id');
+      
+      // Étape 3: Créer un index normal pour les performances
       await db.exec('CREATE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id);');
-      console.log('✅ Colonne github_id ajoutée avec succès');
+      console.log('✅ Index de performance créé pour github_id');
+      
     } else {
       console.log('ℹ️ La colonne github_id existe déjà');
+      
+      // Vérifier si l'index unique existe
+      const indexes = await db.all("PRAGMA index_list(users)");
+      const hasUniqueIndex = indexes.some((index: any) => index.name === 'idx_users_github_id_unique');
+      
+      if (!hasUniqueIndex) {
+        console.log('➕ Ajout de l\'index unique manquant...');
+        await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id_unique ON users(github_id) WHERE github_id IS NOT NULL;');
+        console.log('✅ Index unique ajouté');
+      }
     }
     
     // Afficher les stats

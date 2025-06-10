@@ -1,4 +1,3 @@
-// Créer un composant Alert.tsx
 import React, { useEffect } from 'react';
 
 interface AlertProps {
