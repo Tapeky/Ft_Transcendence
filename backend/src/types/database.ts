@@ -17,6 +17,7 @@ export interface User {
   
   // Auth externe
   google_id?: string;
+  github_id?: string;
   
   // GDPR
   data_consent: boolean;
@@ -29,6 +30,7 @@ export interface UserCreateInput {
   password: string;
   display_name?: string;
   google_id?: string;
+  github_id?: string;
   data_consent?: boolean;
 }
 

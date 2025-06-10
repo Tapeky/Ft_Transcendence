@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS users (
     total_losses INTEGER DEFAULT 0,
     total_games INTEGER DEFAULT 0,
     
-    -- Auth externe (Google, etc.)
+    -- Auth externe (Google, GitHub, etc.)
     google_id VARCHAR(255) UNIQUE,
+    github_id VARCHAR(255) UNIQUE,
     
     -- GDPR compliance
     data_consent BOOLEAN DEFAULT FALSE,
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id);
 
 -- Table des amitiés
 CREATE TABLE IF NOT EXISTS friendships (

@@ -1,5 +1,3 @@
-// backend/src/index.ts
-
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
@@ -10,13 +8,11 @@ import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
 import path from 'path';
 
-// Configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Création de l'instance Fastify
 const server = Fastify({
   logger: {
     level: NODE_ENV === 'development' ? 'info' : 'warn'
@@ -31,8 +27,6 @@ async function start() {
     const dbPath = path.join(process.env.DB_PATH || './db', process.env.DB_NAME || 'ft_transcendence.db');
     await dbManager.connect(dbPath);
     await dbManager.initialize();
-    
-    // Nettoyage des tokens expirés au démarrage
     await dbManager.cleanupExpiredTokens();
     
     // 2. Plugins Fastify
@@ -81,7 +75,6 @@ async function start() {
       };
     });
     
-    // Route racine
     server.get('/', async (request, reply) => {
       return {
         name: 'ft_transcendence API',
@@ -99,11 +92,10 @@ async function start() {
       };
     });
     
-    // 7. Gestion d'erreurs globale
+    // Error Handler
     server.setErrorHandler(async (error, request, reply) => {
       server.log.error(error);
       
-      // Erreurs JWT
       if ((error as any).code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
           success: false,
@@ -118,7 +110,6 @@ async function start() {
         });
       }
       
-      // Erreurs de validation
       if ((error as any).validation) {
         return reply.status(400).send({
           success: false,
@@ -127,7 +118,6 @@ async function start() {
         });
       }
       
-      // Erreurs SQLite
       if ((error as any).code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return reply.status(409).send({
           success: false,
@@ -135,7 +125,6 @@ async function start() {
         });
       }
       
-      // Erreur générique
       return reply.status(500).send({
         success: false,
         error: NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
@@ -152,16 +141,14 @@ async function start() {
 📡 WebSocket: ws://localhost:${PORT}/ws
     `);
     
-    // 9. Tâches de maintenance
     if (NODE_ENV === 'production') {
-      // Nettoyage des tokens expirés toutes les heures
       setInterval(async () => {
         try {
           await dbManager.cleanupExpiredTokens();
         } catch (error) {
           server.log.error('Erreur lors du nettoyage des tokens:', error);
         }
-      }, 60 * 60 * 1000); // 1 heure
+      }, 60 * 60 * 1000);
     }
     
   } catch (err) {
@@ -170,7 +157,6 @@ async function start() {
   }
 }
 
-// Gestion de l'arrêt propre
 async function gracefulShutdown(signal: string) {
   console.log(`\n🛑 Signal ${signal} reçu, arrêt du serveur...`);
   
@@ -185,11 +171,9 @@ async function gracefulShutdown(signal: string) {
   }
 }
 
-// Écouter les signaux d'arrêt
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Gestion des erreurs non capturées
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
@@ -200,5 +184,4 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Démarrer le serveur
 start();
