@@ -1,4 +1,3 @@
-// Dans AuthPage.tsx, ajoute cette amélioration :
 import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import LoginForm from './LoginForm';

@@ -1,5 +1,3 @@
-// backend/src/routes/auth.ts
-
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
