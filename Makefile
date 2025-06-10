@@ -61,5 +61,9 @@ db-migrate-github: ## Lance la migration GitHub
 	@echo "🔄 Migration GitHub..."
 	docker-compose exec backend npm run db:migrate:github
 
+db-migrate-github-fixed: ## Lance la migration GitHub corrigée
+	@echo "🔄 Migration GitHub (version corrigée)..."
+	docker-compose exec backend npm run db:migrate:github:fixed
+
 db-seed: ## Lance le seeding de la DB
 	docker-compose exec backend npm run db:seed
