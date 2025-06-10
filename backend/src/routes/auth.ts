@@ -393,7 +393,7 @@ export async function authRoutes(server: FastifyInstance) {
     }
   });
 
-  // DELETE /api/auth/account - Suppression de compte (GDPR)
+  // PUT /api/auth/account - Suppression de compte (GDPR)
   server.delete('/account', {
     preHandler: [
       authenticateToken,
@@ -469,6 +469,163 @@ export async function authRoutes(server: FastifyInstance) {
         success: false,
         error: 'Erreur lors de la suppression du compte'
       });
+    }
+  });
+
+  // GET /api/auth/github - Redirection vers GitHub OAuth
+  server.get('/github', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const githubClientId = process.env.GITHUB_CLIENT_ID;
+      
+      if (!githubClientId) {
+        return reply.status(500).send({
+          success: false,
+          error: 'GitHub OAuth non configuré'
+        });
+      }
+
+      // URL de redirection GitHub
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(process.env.GITHUB_REDIRECT_URI || 'http://localhost:8000/api/auth/github/callback')}`;
+      
+      reply.redirect(githubAuthUrl);
+
+    } catch (error: any) {
+      request.log.error('Erreur lors de la redirection GitHub:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de la connexion GitHub'
+      });
+    }
+  });
+
+  // GET /api/auth/github/callback - Callback GitHub OAuth
+  server.get('/github/callback', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { code } = request.query as { code?: string };
+      
+      if (!code) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Code d\'autorisation manquant'
+        });
+      }
+
+      // Échanger le code contre un token d'accès
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code
+        })
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Erreur lors de l\'authentification GitHub'
+        });
+      }
+
+      // Récupérer les infos utilisateur GitHub
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      const githubUser = await userResponse.json();
+      
+      // Récupérer l'email principal
+      const emailResponse = await fetch('https://api.github.com/user/emails', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      const emails = await emailResponse.json();
+      const primaryEmail = emails.find((email: any) => email.primary)?.email || githubUser.email;
+
+      if (!primaryEmail) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Impossible de récupérer l\'email GitHub'
+        });
+      }
+
+      // Vérifier si l'utilisateur existe déjà
+      let user = await userRepo.findByEmail(primaryEmail);
+      
+      if (!user) {
+        // Créer un nouvel utilisateur
+        user = await userRepo.create({
+          username: githubUser.login,
+          email: primaryEmail,
+          password: Math.random().toString(36), // Mot de passe temporaire
+          display_name: githubUser.name || githubUser.login,
+          data_consent: true
+        });
+        
+        // Mettre à jour avec l'ID GitHub
+        await userRepo.updateGitHubId(user.id, githubUser.id.toString());
+      } else {
+        // Lier le compte GitHub si pas déjà fait
+        if (!user.github_id) {
+          await userRepo.updateGitHubId(user.id, githubUser.id.toString());
+        }
+      }
+
+      // Mettre à jour le statut en ligne
+      await userRepo.updateOnlineStatus(user.id, true);
+
+      // Générer le token JWT
+      const token = server.jwt.sign({
+        id: user.id,
+        username: user.username,
+        email: user.email
+      });
+
+      // Logger la connexion réussie
+      await userRepo.logSecurityAction({
+        user_id: user.id,
+        action: 'GITHUB_LOGIN_SUCCESS',
+        ip_address: request.ip,
+        user_agent: request.headers['user-agent'],
+        success: true,
+        details: JSON.stringify({ github_username: githubUser.login })
+      });
+
+      // Rediriger vers le frontend avec le token
+      const frontendUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL 
+        : 'http://localhost:3000';
+      
+      reply.redirect(`${frontendUrl}?token=${token}`);
+
+    } catch (error: any) {
+      request.log.error('Erreur lors du callback GitHub:', error);
+      
+      await userRepo.logSecurityAction({
+        action: 'GITHUB_LOGIN_ERROR',
+        ip_address: request.ip,
+        user_agent: request.headers['user-agent'],
+        success: false,
+        details: JSON.stringify({ error: error.message })
+      });
+
+      const frontendUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL 
+        : 'http://localhost:3000';
+      
+      reply.redirect(`${frontendUrl}?error=github_auth_failed`);
     }
   });
 }

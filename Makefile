@@ -57,5 +57,9 @@ db-reset: ## Remet à zéro la base de données
 db-migrate: ## Lance les migrations
 	docker-compose exec backend npm run db:migrate
 
+db-migrate-github: ## Lance la migration GitHub
+	@echo "🔄 Migration GitHub..."
+	docker-compose exec backend npm run db:migrate:github
+
 db-seed: ## Lance le seeding de la DB
 	docker-compose exec backend npm run db:seed

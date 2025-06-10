@@ -130,6 +130,34 @@ class ApiService {
 		return response.data!;
 	}
 
+	// GitHub OAuth
+	getGitHubAuthUrl(): string {
+		return `${API_BASE_URL}/api/auth/github`;
+	}
+
+	// Gestion du token depuis l'URL (callback GitHub)
+	handleAuthCallback(): string | null {
+		const urlParams = new URLSearchParams(window.location.search);
+		const token = urlParams.get('token');
+		const error = urlParams.get('error');
+
+		if (token) {
+			this.setToken(token);
+			// Nettoyer l'URL
+			window.history.replaceState({}, document.title, window.location.pathname);
+			return token;
+		}
+
+		if (error) {
+			console.error('Erreur auth callback:', error);
+			// Nettoyer l'URL
+			window.history.replaceState({}, document.title, window.location.pathname);
+			throw new Error('Erreur lors de l\'authentification GitHub');
+		}
+
+		return null;
+	}
+
 }
 
 export const apiService = new ApiService();

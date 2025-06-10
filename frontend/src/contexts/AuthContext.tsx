@@ -23,11 +23,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	useEffect(() => {
 		const initAuth = async () => {
+			// Vérifier si on a un token dans l'URL (callback GitHub)
+			try {
+				const callbackToken = apiService.handleAuthCallback();
+				if (callbackToken) {
+					console.log('Token reçu depuis callback GitHub');
+				}
+			} catch (error) {
+				console.error('Erreur callback GitHub:', error);
+			}
+
+			// Vérifier si on a un token stocké
 			if (apiService.isAuthenticated()) {
 				try {
 					const currentUser = await apiService.getCurrentUser();
 					setUser(currentUser);
-					console.log('Token trouve, recuperation des infos utilisateur...');
+					console.log('Token trouvé, récupération des infos utilisateur...');
 				} catch (error) {
 					console.error('Erreur lors de la récupération des infos utilisateur:', error);
 					apiService.clearToken();

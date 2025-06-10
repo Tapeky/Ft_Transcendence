@@ -14,14 +14,15 @@ export class UserRepository {
     const password_hash = await bcrypt.hash(password, saltRounds);
     
     const result = await this.db.run(`
-      INSERT INTO users (username, email, password_hash, display_name, google_id, data_consent)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO users (username, email, password_hash, display_name, google_id, github_id, data_consent)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
       otherData.username,
       otherData.email,
       password_hash,
       otherData.display_name || otherData.username,
       otherData.google_id,
+      otherData.github_id,
       otherData.data_consent || false
     ]);
     
@@ -48,6 +49,11 @@ export class UserRepository {
   
   async findByGoogleId(googleId: string): Promise<User | null> {
 	const result = await this.db.get('SELECT * FROM users WHERE google_id = ?', [googleId]);
+    return result || null;
+  }
+  
+  async findByGitHubId(githubId: string): Promise<User | null> {
+	const result = await this.db.get('SELECT * FROM users WHERE github_id = ?', [githubId]);
     return result || null;
   }
   
@@ -207,7 +213,7 @@ export class UserRepository {
     
     await this.db.run(`
       UPDATE users 
-      SET email = ?, username = ?, display_name = ?, avatar_url = ?, password_hash = ?, google_id = ?
+      SET email = ?, username = ?, display_name = ?, avatar_url = ?, password_hash = ?, google_id = ?, github_id = ?
       WHERE id = ?
     `, [
       anonymousData.email,
@@ -216,6 +222,7 @@ export class UserRepository {
       anonymousData.avatar_url,
       anonymousData.password_hash,
       anonymousData.google_id,
+      null, // github_id
       userId
     ]);
   }
@@ -225,5 +232,9 @@ export class UserRepository {
       INSERT INTO security_logs (user_id, action, ip_address, user_agent, success, details)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [log.user_id, log.action, log.ip_address, log.user_agent, log.success, log.details]);
+  }
+  
+  async updateGitHubId(userId: number, githubId: string): Promise<void> {
+    await this.db.run('UPDATE users SET github_id = ? WHERE id = ?', [githubId, userId]);
   }
 }
