@@ -132,3 +132,35 @@ function validateObject(obj: any, schema: any): void {
     }
   }
 }
+
+// Middleware pour valider le nouveau pseudo
+export async function validateDisplayname(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const data = request.body;
+  if (!data || typeof data !== 'object')
+    return reply.status(400).send({error: "Invalid request body"});
+
+  const dataObj = data as any;
+  if (!dataObj.display_name || typeof dataObj.display_name !== 'string')
+    return reply.status(400).send({error: "display_name is required and must be a string"});
+  
+  const displayname = dataObj.display_name;
+
+  if (displayname.length > 12) {
+    return reply.status(400).send({
+      success: false,
+      error: 'Le pseudo ne peut pas dépasser 12 caractères'
+    });
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(displayname)) {
+    return reply.status(400).send({
+      success: false,
+      error: 'Le pseudo ne peut contenir que des lettres, chiffres et underscores'
+    });
+  }
+  
+  return;
+}
