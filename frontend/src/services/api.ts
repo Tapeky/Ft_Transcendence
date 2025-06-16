@@ -135,7 +135,12 @@ class ApiService {
 		return `${API_BASE_URL}/api/auth/github`;
 	}
 
-	// Gestion du token depuis l'URL (callback GitHub)
+	// Google OAuth
+	getGoogleAuthUrl(): string {
+		return `${API_BASE_URL}/api/auth/google`;
+	}
+
+	// Gestion du token depuis l'URL (callback OAuth)
 	handleAuthCallback(): string | null {
 		const urlParams = new URLSearchParams(window.location.search);
 		const token = urlParams.get('token');
@@ -152,7 +157,13 @@ class ApiService {
 			console.error('Erreur auth callback:', error);
 			// Nettoyer l'URL
 			window.history.replaceState({}, document.title, window.location.pathname);
-			throw new Error('Erreur lors de l\'authentification GitHub');
+			if (error === 'google_auth_failed') {
+				throw new Error('Erreur lors de l\'authentification Google');
+			} else if (error === 'github_auth_failed') {
+				throw new Error('Erreur lors de l\'authentification GitHub');
+			} else {
+				throw new Error('Erreur lors de l\'authentification');
+			}
 		}
 
 		return null;

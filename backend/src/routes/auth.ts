@@ -626,4 +626,157 @@ export async function authRoutes(server: FastifyInstance) {
       reply.redirect(`${frontendUrl}?error=github_auth_failed`);
     }
   });
+
+  // GET /api/auth/google - Redirection vers Google OAuth
+  server.get('/google', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const googleClientId = process.env.GOOGLE_CLIENT_ID;
+      
+      if (!googleClientId) {
+        return reply.status(500).send({
+          success: false,
+          error: 'Google OAuth non configuré'
+        });
+      }
+
+      // URL de redirection Google OAuth
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      googleAuthUrl.searchParams.append('client_id', googleClientId);
+      googleAuthUrl.searchParams.append('redirect_uri', process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8000/api/auth/google/callback');
+      googleAuthUrl.searchParams.append('response_type', 'code');
+      googleAuthUrl.searchParams.append('scope', 'openid profile email');
+      googleAuthUrl.searchParams.append('access_type', 'offline');
+      googleAuthUrl.searchParams.append('prompt', 'consent');
+      
+      reply.redirect(googleAuthUrl.toString());
+
+    } catch (error: any) {
+      request.log.error('Erreur lors de la redirection Google:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de la connexion Google'
+      });
+    }
+  });
+
+  // GET /api/auth/google/callback - Callback Google OAuth
+  server.get('/google/callback', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { code } = request.query as { code?: string };
+      
+      if (!code) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Code d\'autorisation manquant'
+        });
+      }
+
+      // Échanger le code contre un token d'accès
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8000/api/auth/google/callback'
+        })
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Erreur lors de l\'authentification Google'
+        });
+      }
+
+      // Récupérer les infos utilisateur Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
+        }
+      });
+
+      const googleUser = await userResponse.json();
+
+      if (!googleUser.email) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Impossible de récupérer l\'email Google'
+        });
+      }
+
+      // Vérifier si l'utilisateur existe déjà
+      let user = await userRepo.findByGoogleId(googleUser.id);
+      
+      if (!user) {
+        // Vérifier si un utilisateur avec cet email existe déjà
+        user = await userRepo.findByEmail(googleUser.email);
+        
+        if (user) {
+          // Lier le compte Google à l'utilisateur existant
+          await userRepo.updateGoogleId(user.id, googleUser.id);
+        } else {
+          // Créer un nouvel utilisateur
+          user = await userRepo.create({
+            username: googleUser.email.split('@')[0], // Utiliser la partie avant @ comme username
+            email: googleUser.email,
+            password: Math.random().toString(36), // Mot de passe temporaire
+            display_name: googleUser.name || googleUser.email.split('@')[0],
+            google_id: googleUser.id,
+            data_consent: true
+          });
+        }
+      }
+
+      // Mettre à jour le statut en ligne
+      await userRepo.updateOnlineStatus(user.id, true);
+
+      // Générer le token JWT
+      const token = server.jwt.sign({
+        id: user.id,
+        username: user.username,
+        email: user.email
+      });
+
+      // Logger la connexion réussie
+      await userRepo.logSecurityAction({
+        user_id: user.id,
+        action: 'GOOGLE_LOGIN_SUCCESS',
+        ip_address: request.ip,
+        user_agent: request.headers['user-agent'],
+        success: true,
+        details: JSON.stringify({ google_email: googleUser.email })
+      });
+
+      // Rediriger vers le frontend avec le token
+      const frontendUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL 
+        : 'http://localhost:3000';
+      
+      reply.redirect(`${frontendUrl}?token=${token}`);
+
+    } catch (error: any) {
+      request.log.error('Erreur lors du callback Google:', error);
+      
+      await userRepo.logSecurityAction({
+        action: 'GOOGLE_LOGIN_ERROR',
+        ip_address: request.ip,
+        user_agent: request.headers['user-agent'],
+        success: false,
+        details: JSON.stringify({ error: error.message })
+      });
+
+      const frontendUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL 
+        : 'http://localhost:3000';
+      
+      reply.redirect(`${frontendUrl}?error=google_auth_failed`);
+    }
+  });
 }

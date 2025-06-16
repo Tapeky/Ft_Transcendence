@@ -167,11 +167,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         {/* Google */}
         <button
           type="button"
+          onClick={() => window.location.href = apiService.getGoogleAuthUrl()}
+          disabled={loading}
           className="relative flex items-center justify-center px-4 py-2.5 
             border border-gray-300 rounded-lg bg-white
             transition-all duration-300 overflow-hidden group
             hover:border-gray-400 hover:shadow-lg hover:-translate-y-0.5
-            active:translate-y-0 active:shadow-md"
+            active:translate-y-0 active:shadow-md
+            disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {/* Fond coloré au hover */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
