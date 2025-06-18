@@ -1,8 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App'
 import Dashboard from './views/Dashboard'
-import Game from './views/Game'
 import NotFound from './views/NotFound'
 import AuthPage from './components/Auth/AuthPage';
 import './index.css'

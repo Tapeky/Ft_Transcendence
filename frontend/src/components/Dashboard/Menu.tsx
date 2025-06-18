@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const Menu = () => {
     return (
-        <main className='flex w-full flex-grow bg-gradient-to-r from-blue-400 to-pink-400'>
+        <main className='flex w-full flex-grow bg-gradient-to-r from-blue-500 to-red-500'>
             <div className='flex-1 flex items-center justify-end'>
                 <Link to={"/game"}>
                     <div className='text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
