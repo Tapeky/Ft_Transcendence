@@ -1,6 +1,5 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import AuthPage from './components/Auth/AuthPage';
 import { Navigate } from 'react-router-dom';
 
 

@@ -4,15 +4,16 @@ import App from './App'
 import Dashboard from './views/Dashboard'
 import Game from './views/Game'
 import NotFound from './views/NotFound'
+import AuthPage from './components/Auth/AuthPage';
 import './index.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext'
+import PongGame from './components/Pong/PongGame'
 
 const router = createBrowserRouter([
-  {path: "/", element: <App/>},
-  {path: "/dashboard", element: <Dashboard />},
-  {path: "/game", element: <Game/>},
-  {path: "/game", element: <Game/>},
+  {path: "/", element: <AuthPage/>},
+  {path: "/dashboard", element: <Dashboard/>},
+  {path: "/game", element: <PongGame/>},
   {path: "*", element: <NotFound/>},
 
 ]);

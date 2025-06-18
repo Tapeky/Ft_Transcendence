@@ -2,17 +2,21 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import Header from '../components/Common/Header';
-import UserBox from '../components/Common/UserBox';
+import Menu from '../components/Dashboard/Menu';
 
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
+
+//   if (!(isAuthenticated && user)) {
+//       return <Navigate to="/" />;
+//   }
 
   return (
-    <div className="min-h-screen box-border flex flex-col m-0 font-iceland">
+    <div className="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland">
 
-        <Header />
-        <UserBox />
+        <Header userVisible={true}/>
+  
 
         <div className='text-[30px] p-2'>
             <ul className='flex justify-evenly'>
@@ -31,22 +35,8 @@ const Dashboard = () => {
 
             </ul>
         </div>
-        
-        <main className='flex w-full flex-grow bg-gradient-to-r from-blue-400 to-red-400'>
 
-            <div className='flex-1 w-1/2 flex items-center justify-center'>
-                <Link to={"/game"}>
-                    <div className='border-solid border-[5px] p-[50px] text-[4rem]'>PONG</div>
-                </Link>
-            </div>
-
-            <div className='flex-1 w-1/2 flex items-center justify-center h-auto'>
-                <Link to={"/tournament"}>
-                    <div className='border-solid border-[5px] p-[50px] text-[4rem]'>TOURNAMENT</div>
-                </Link>
-            </div>
-
-        </main>
+        <Menu />
 
     </div>
   );
