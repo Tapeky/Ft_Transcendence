@@ -1,5 +1,3 @@
-// backend/src/middleware/index.ts
-
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
@@ -10,13 +8,11 @@ export async function authenticateToken(
   reply: FastifyReply
 ) {
   try {
-    // Vérifier le token JWT
     await request.jwtVerify();
     
     // Le token JWT contient déjà les infos utilisateur
     const payload = request.user as { id: number; username: string; email: string };
     
-    // Récupérer l'utilisateur depuis la base de données pour vérification
     const db = DatabaseManager.getInstance().getDb();
     const userRepo = new UserRepository(db);
     
@@ -28,7 +24,6 @@ export async function authenticateToken(
       });
     }
     
-    // Ajouter les infos utilisateur à la request
     request.user = {
       id: user.id,
       username: user.username,
@@ -63,5 +58,4 @@ export function setupMiddleware(server: FastifyInstance) {
   });
 }
 
-// Exports des middlewares de validation
 export { validateInput, validateDisplayname } from './validation';

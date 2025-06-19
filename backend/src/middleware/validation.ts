@@ -1,5 +1,3 @@
-// backend/src/middleware/validation.ts
-
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 // Middleware de validation des entrées
