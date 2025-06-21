@@ -7,6 +7,7 @@ import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
 import path from 'path';
+import { GameManager } from './websocket/game_manager';
 
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
@@ -150,7 +151,8 @@ async function start() {
         }
       }, 60 * 60 * 1000);
     }
-    
+
+    GameManager.instance.registerLoop();
   } catch (err) {
     server.log.error('❌ Erreur de démarrage du serveur:', err);
     process.exit(1);

@@ -3,6 +3,8 @@ import { FastifyInstance } from 'fastify';
 import { SocketStream } from '@fastify/websocket';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
+import { GameManager } from './game_manager';
+import { Input } from '../game/Input';
 
 interface ConnectedUser {
   id: number;
@@ -49,15 +51,25 @@ class WebSocketManager {
   getConnectedUsers(): ConnectedUser[] {
     return Array.from(this.connectedUsers.values());
   }
+
+  getUser(userId: number) {
+    return this.connectedUsers.get(userId);
+  }
+
+  hasUser(userId: number) {
+    return userId in this.connectedUsers;
+  }
 }
 
 export function setupWebSocket(server: FastifyInstance) {
   const wsManager = WebSocketManager.getInstance();
+  const gameManager = GameManager.instance;
 
   server.register(async function (server) {
     server.get('/ws', { websocket: true }, async (connection: SocketStream, req) => {
       let userId: number | null = null;
       let username: string | null = null;
+      let userInput = new Input();
 
       // Gestion de la connexion
       connection.socket.on('message', async (data: any) => {
@@ -118,6 +130,83 @@ export function setupWebSocket(server: FastifyInstance) {
                     timestamp: new Date().toISOString()
                   }
                 });
+              }
+              break;
+            
+            case 'start_game':
+              console.log(userId);
+              console.log(wsManager.getConnectedUsers())
+              if (userId && typeof message.opponentId === 'number') {
+                if (message.opponentId == userId) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_self',
+                    message: 'Vous ne pouvez pas vous combattre vous-même !!'
+                  }));
+                  break;
+                }
+                if (GameManager.instance.getFromPlayerId(userId)) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_game_started',
+                    message: 'Vous êtes déjà en partie !!'
+                  }));
+                  break;
+                }
+                const opponent = wsManager.getUser(message.opponentId);
+                if (!opponent) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_unknown_id',
+                    message: 'Cet identifiant n\'existe pas !!'
+                  }));
+                  break;
+                }
+                if (GameManager.instance.getFromPlayerId(message.opponentId)) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_game_started',
+                    message: 'Une partie est déjà en cours pour ce joueur'
+                  }));
+                  break;
+                }
+
+                userInput.reset();
+                const id = gameManager.startGame(userId, message.opponentId);
+                connection.socket.send(JSON.stringify({
+                  type: 'success',
+                  data: { gameId: id }
+                }));
+              }
+              break;
+            
+            case 'update_input':
+              if (userId && message.input
+                  && typeof message.input.up === 'boolean' && typeof message.input.down === 'boolean') {
+                const game = gameManager.getFromPlayerId(userId);
+                if (!game) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_not_in_game',
+                    message: 'Ce joueur n\'est pas en partie !'
+                  }));
+                }
+                else {
+                  userInput.up = message.input.up;
+                  userInput.down = message.input.down;
+                  game.updateInput(userId, userInput);
+                  // is it necessary to send a success message ?
+                }
+              }
+              break;
+            
+            case 'get_game_state':
+              if (userId) {
+                const game = gameManager.getFromPlayerId(userId);
+                if (!game) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_not_in_game',
+                    message: 'Ce joueur n\'est pas en partie !'
+                  }));
+                }
+                else {
+                  connection.socket.send(game.json(userId));
+                }
               }
               break;
 
