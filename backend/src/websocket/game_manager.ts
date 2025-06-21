@@ -70,7 +70,7 @@ export class GameManager {
     // generate a unique game id
     do
       gameId = Math.round(Math.random() * maxGameId);
-    while (gameId in this._games.keys());
+    while (this._games.has(gameId));
 
     const game = new PongGame(gameId, leftPlayerId, rightPlayerId);
     this._games.set(gameId, game);
