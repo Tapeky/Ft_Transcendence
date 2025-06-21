@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 
 const Menu = () => {
+
     return (
-        <main className='flex w-full flex-grow bg-gradient-to-r from-blue-500 to-red-500'>
+            <main id="bg" className='flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700'>
             <div className='flex-1 flex items-center justify-end'>
                 <Link to={"/game"}>
                     <div className='text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
@@ -10,9 +11,9 @@ const Menu = () => {
                         flex justify-center items-center hover:scale-125 transition duration-500'>
                     PONG
                     </div>
-                </Link>                                                                                                                                                                  
+                </Link>
             </div>
-            <div className='flex-1 flex items-center justify-center text-[5rem] text-center'>CHOOSE YOUR MODE</div>
+            <div className='flex-1 flex items-center justify-center text-[5rem] text-center text-white'>CHOOSE YOUR MODE</div>
             <div className='flex-1 flex items-center justify-start'>
                 <Link to={"/tournament"}>
                     <div className='text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
