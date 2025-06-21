@@ -147,8 +147,8 @@ export class Pong {
 		return this._state;
 	}
 
-	public json(): string {
-		return JSON.stringify({
+	public repr(): {[k: string]: any} {
+		return {
 			leftPaddle: {
 				pos: this.leftPaddle.pos,
 				size: this.leftPaddle.size,
@@ -165,6 +165,6 @@ export class Pong {
 				direction: this.ball.direction
 			},
 			state: this._state
-		});
+		};
 	}
 }
