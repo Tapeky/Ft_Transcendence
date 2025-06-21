@@ -24,7 +24,7 @@ export class Paddle {
 	public rect: Rectangle;
 	private _hitCount: number = 0;
 
-	public constructor(centerPos: Point2, private readonly parent: Pong) {
+	public constructor(centerPos: Point2, private readonly _parent: Pong) {
 		this.rect = new Rectangle(centerPos, new Vector2(paddleSize.width, paddleSize.height));
 	}
 	
@@ -52,7 +52,7 @@ export class Ball {
 	public circle: Circle;
 	private _direction: Vector2;
 
-	public constructor(pos: Point2, initialDirection: Vector2, private readonly parent: Pong) {
+	public constructor(pos: Point2, initialDirection: Vector2, private readonly _parent: Pong) {
 		this.circle = new Circle(pos, ballRadius);
 		this._direction = initialDirection;
 	}
@@ -60,10 +60,10 @@ export class Ball {
 	public move(deltaTime: number) {
 		this.circle.pos = this.circle.pos.add(this._direction.scale(deltaTime * ballSpeed));
 
-		if (this.applyPaddleCollision(this.parent.leftPaddle, Vector2.one))
-			this.parent.leftPaddle.increaseHitCount();
-		else if (this.applyPaddleCollision(this.parent.rightPaddle, new Vector2(-1, 1)))
-			this.parent.rightPaddle.increaseHitCount();
+		if (this.applyPaddleCollision(this._parent.leftPaddle, Vector2.one))
+			this._parent.leftPaddle.increaseHitCount();
+		else if (this.applyPaddleCollision(this._parent.rightPaddle, new Vector2(-1, 1)))
+			this._parent.rightPaddle.increaseHitCount();
 
 		if (this.circle.top < 0) {
 			this.circle.pos.y = -this.circle.top + this.circle.radius;
@@ -76,11 +76,12 @@ export class Ball {
 
 		// the entire ball needs to pass the border to lose
 		if (this.circle.right < 0) {
-			console.log("left loses");
+			return 1; // left wins
 		}
 		else if (this.circle.left > arenaSize.width) {
-			console.log("right loses");
+			return 2; // right wins
 		}
+		return 0;
 	}
 
 	private applyPaddleCollision(paddle: Paddle, directionMuliplier: Vector2) {
@@ -105,10 +106,18 @@ export class Ball {
 	public get direction() { return this._direction; }
 }
 
+export enum PongState {
+	Running,
+	Aborted,
+	LeftWins,
+	RightWins
+};
+
 export class Pong {
 	public readonly leftPaddle: Paddle;
 	public readonly rightPaddle: Paddle;
 	public readonly ball: Ball;
+	private _state: PongState = PongState.Running;
 
 	public constructor() {
 		this.leftPaddle = new Paddle(new Point2(0, arenaSize.height / 2), this);
@@ -119,9 +128,23 @@ export class Pong {
 	}
 
 	public update(deltaTime: number, leftInput: Input, rightInput: Input) {
-		this.leftPaddle.move(deltaTime, leftInput);
-		this.rightPaddle.move(deltaTime, rightInput);
-		this.ball.move(deltaTime);
+		if (this._state == PongState.Running) {
+			this.leftPaddle.move(deltaTime, leftInput);
+			this.rightPaddle.move(deltaTime, rightInput);
+			const ballResult = this.ball.move(deltaTime);
+			if (ballResult == 1)
+				this._state = PongState.LeftWins;
+			else if (ballResult == 2)
+				this._state = PongState.RightWins;
+		}
+	}
+
+	public abort() {
+		this._state = PongState.Aborted;
+	}
+
+	public get state() {
+		return this._state;
 	}
 
 	public json(): string {
@@ -140,7 +163,8 @@ export class Pong {
 				pos: this.ball.pos,
 				radius: this.ball.radius,
 				direction: this.ball.direction
-			}
+			},
+			state: this._state
 		});
 	}
 }
