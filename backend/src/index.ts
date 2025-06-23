@@ -17,8 +17,8 @@ const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
 
 const httpsOptions = ENABLE_HTTPS ? {
   https: {
-    key: fs.readFileSync(path.join(__dirname, '../../ssl/key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, '../../ssl/cert.pem'))
+    key: fs.readFileSync('/app/ssl/key.pem'),
+    cert: fs.readFileSync('/app/ssl/cert.pem')
   }
 } : {};
 
@@ -143,12 +143,16 @@ async function start() {
     
     // 8. Démarrage du serveur
     await server.listen({ port: PORT, host: HOST });
+    const protocol = ENABLE_HTTPS ? 'https' : 'http';
+    const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
+    
     console.log(`
 🚀 Serveur ft_transcendence démarré !
-📍 URL: http://localhost:${PORT}
+📍 URL: ${protocol}://localhost:${PORT}
 🌍 Environnement: ${NODE_ENV}
-📊 Health check: http://localhost:${PORT}/health
-📡 WebSocket: ws://localhost:${PORT}/ws
+🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
+📊 Health check: ${protocol}://localhost:${PORT}/health
+📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
     `);
     
     if (NODE_ENV === 'production') {

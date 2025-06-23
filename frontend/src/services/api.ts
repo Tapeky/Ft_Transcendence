@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
 
 export interface User {
 	id: number;
@@ -167,6 +167,19 @@ class ApiService {
 		}
 
 		return null;
+	}
+
+	private getWebSocketUrl(): string {
+		const isHttps = window.location.protocol === 'https:';
+		const protocol = isHttps ? 'wss:' : 'ws:';
+		const host = window.location.hostname;
+		const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
+		
+		return `${protocol}//${host}${port}/ws`;
+	}
+	
+	connectWebSocket(): WebSocket {
+		return new WebSocket(this.getWebSocketUrl());
 	}
 
 }
