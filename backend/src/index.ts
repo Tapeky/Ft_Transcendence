@@ -47,10 +47,11 @@ async function start() {
     console.log('🔧 Configuration des plugins...');
     
     // CORS
+    const protocol = ENABLE_HTTPS ? 'https' : 'http';
     await server.register(cors, {
       origin: process.env.NODE_ENV === 'production' 
         ? ['https://your-domain.com'] 
-        : ['http://localhost:3000'],
+        : [`${protocol}://localhost:3000`],
       credentials: true
     });
     
