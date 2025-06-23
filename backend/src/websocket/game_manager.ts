@@ -110,6 +110,10 @@ export class GameManager {
           type: 'game_update',
           data: game.repr(game.rightPlayer.id)
         }));
+        if (game.pong.state) {
+          console.log(`game ${game.id} finished with state ${game.pong.state} !`);
+          this._games.delete(game.id);
+        }
       }
     }, 1000 / serverFps);
   }
