@@ -2,18 +2,22 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import websocket from '@fastify/websocket';
+import fs from 'fs';
+import path from 'path';
+
 import { DatabaseManager } from './database/DatabaseManager';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
-import path from 'path';
-import fs from 'fs';
 
+// Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+
+// HTTPS configuration
 
 const httpsOptions = ENABLE_HTTPS ? {
   https: {

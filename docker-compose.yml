@@ -1,4 +1,6 @@
+# Ft_Transcendence Docker Compose Configuration
 services:
+  # Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
@@ -18,6 +20,7 @@ services:
     networks:
       - ft_transcendence
 
+  # Backend Service (Node.js + Fastify)
   backend:
     build:
       context: ./backend
@@ -46,15 +49,14 @@ services:
     networks:
       - ft_transcendence
 
-# Ajoutez vos services supplémentaires ici
-# 
-# 
-# 
+# Additional services can be added here
 
+# Docker volumes
 volumes:
   db_data:
   ssl_certs:
 
+# Docker networks
 networks:
   ft_transcendence:
     driver: bridge
