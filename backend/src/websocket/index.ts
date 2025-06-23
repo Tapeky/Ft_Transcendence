@@ -176,7 +176,7 @@ export function setupWebSocket(server: FastifyInstance) {
                 }
 
                 userInput.reset();
-                const id = gameManager.startGame(userId, message.opponentId);
+                const id = gameManager.startGame(userId, message.opponentId, connection.socket, opponent.socket.socket);
                 connection.socket.send(JSON.stringify({
                   type: 'success',
                   data: { gameId: id }
@@ -199,21 +199,6 @@ export function setupWebSocket(server: FastifyInstance) {
                   userInput.down = message.input.down;
                   game.updateInput(userId, userInput);
                   // is it necessary to send a success message ?
-                }
-              }
-              break;
-            
-            case 'get_game_state':
-              if (userId) {
-                const game = gameManager.getFromPlayerId(userId);
-                if (!game) {
-                  connection.socket.send(JSON.stringify({
-                    type: 'err_not_in_game',
-                    message: 'Ce joueur n\'est pas en partie !'
-                  }));
-                }
-                else {
-                  connection.socket.send(game.json(userId));
                 }
               }
               break;

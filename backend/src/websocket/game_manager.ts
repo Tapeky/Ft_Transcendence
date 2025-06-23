@@ -4,7 +4,7 @@ import { Input } from "../game/Input";
 export class PongPlayer {
   public readonly input: Input = new Input();
 
-	public constructor(public readonly id: number, public readonly socket: object) { }
+	public constructor(public readonly id: number, public readonly socket: any) { }
 }
 
 export class PongGame {
@@ -40,7 +40,7 @@ export class PongGame {
     this.pong.update(deltaTime, this.leftPlayer.input, this.rightPlayer.input);
   }
 
-  public json(playerId: number) {
+  public repr(playerId: number) {
     let opponentInput: Input;
     if (this.leftPlayer.id == playerId)
       opponentInput = this.rightPlayer.input;
@@ -49,14 +49,15 @@ export class PongGame {
     else
       throw Error(`unknown player id ${playerId} in game ${this.id}`);
 
+    console.log(opponentInput)
     let repr = this.pong.repr();
     repr["opponentInput"] = opponentInput;
     
-    return JSON.stringify(repr);
+    return repr;
   }
 }
 
-const serverFps = 60;
+const serverFps = 3;
 const maxGameId = 10000000000;
 
 export class GameManager {
@@ -75,7 +76,7 @@ export class GameManager {
     return undefined;
   }
 
-  public startGame(leftPlayerId: number, rightPlayerId: number, leftPlayerSocket: object, rightPlayerSocket: object) {
+  public startGame(leftPlayerId: number, rightPlayerId: number, leftPlayerSocket: any, rightPlayerSocket: any) {
     let gameId: number;
 
     // generate a unique game id
@@ -100,6 +101,15 @@ export class GameManager {
     this._intervalId = setInterval(() => {
       for (const game of this._games.values()) {
         game.update(deltaTime);
+        // TODO: handle errors lmao
+        game.leftPlayer.socket.send(JSON.stringify({
+          type: 'game_update',
+          data: game.repr(game.leftPlayer.id)
+        }));
+        game.rightPlayer.socket.send(JSON.stringify({
+          type: 'game_update',
+          data: game.repr(game.rightPlayer.id)
+        }));
       }
     }, 1000 / serverFps);
   }

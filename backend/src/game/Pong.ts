@@ -151,17 +151,17 @@ export class Pong {
 		return {
 			leftPaddle: {
 				pos: this.leftPaddle.pos,
-				size: this.leftPaddle.size,
+				//size: this.leftPaddle.size,
 				hitCount: this.leftPaddle.hitCount
 			},
 			rightPaddle: {
 				pos: this.rightPaddle.pos,
-				size: this.rightPaddle.size,
+				//size: this.rightPaddle.size,
 				hitCount: this.rightPaddle.hitCount
 			},
 			ball: {
 				pos: this.ball.pos,
-				radius: this.ball.radius,
+				//radius: this.ball.radius,
 				direction: this.ball.direction
 			},
 			state: this._state
