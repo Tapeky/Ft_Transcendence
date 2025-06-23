@@ -57,7 +57,7 @@ export class PongGame {
   }
 }
 
-const serverFps = 3;
+const serverFps = 60;
 const maxGameId = 10000000000;
 
 export class GameManager {
