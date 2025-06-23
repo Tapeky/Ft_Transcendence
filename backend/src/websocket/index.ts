@@ -134,8 +134,6 @@ export function setupWebSocket(server: FastifyInstance) {
               break;
             
             case 'start_game':
-              console.log(userId);
-              console.log(wsManager.getConnectedUsers())
               if (userId && typeof message.opponentId === 'number') {
                 if (message.opponentId == userId) {
                   connection.socket.send(JSON.stringify({
@@ -151,11 +149,21 @@ export function setupWebSocket(server: FastifyInstance) {
                   }));
                   break;
                 }
+                const db = DatabaseManager.getInstance().getDb();
+                const userRepo = new UserRepository(db);
+                const user = await userRepo.findById(message.opponentId);
+                if (!user) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_unknown_id',
+                    message: 'Cet identifiant n\'est pas associé à un utilisateur !!'
+                  }));
+                  break;
+                }
                 const opponent = wsManager.getUser(message.opponentId);
                 if (!opponent) {
                   connection.socket.send(JSON.stringify({
-                    type: 'err_unknown_id',
-                    message: 'Cet identifiant n\'existe pas !!'
+                    type: 'err_user_offline',
+                    message: 'Cet utilisateur n\'est pas en ligne !!'
                   }));
                   break;
                 }
