@@ -8,9 +8,11 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - ./ssl:/app/ssl:ro
     environment:
       - NODE_ENV=${NODE_ENV}
       - VITE_API_URL=${VITE_API_URL}
+      - ENABLE_HTTPS=${ENABLE_HTTPS}
     depends_on:
       - backend
     networks:
