@@ -6,4 +6,9 @@ export class Input {
         this.up = false;
         this.down = false;
     }
+
+	public copy(input: Input) {
+		this.up = input.up;
+		this.down = input.down;
+	}
 }

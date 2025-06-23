@@ -1,40 +1,51 @@
 import { Pong } from "../game/Pong";
 import { Input } from "../game/Input";
 
+export class PongPlayer {
+  public readonly input: Input = new Input();
+
+	public constructor(public readonly id: number, public readonly socket: object) { }
+}
+
 export class PongGame {
   public readonly pong: Pong = new Pong();
-  public leftInput = new Input();
-  public rightInput = new Input();
 
-  public constructor(public readonly id: number, public readonly leftPlayerId: number, public readonly rightPlayerId: number) { }
+  public constructor(public readonly id: number, public readonly leftPlayer: PongPlayer, public readonly rightPlayer: PongPlayer) { }
 
   public hasPlayer(id: number) {
-    return id == this.leftPlayerId || id == this.rightPlayerId;
+    return id == this.leftPlayer.id || id == this.rightPlayer.id;
+  }
+
+  public getPlayerThrow(playerId: number) {
+    if (playerId == this.leftPlayer.id)
+      return this.leftPlayer;
+    else if (playerId == this.rightPlayer.id)
+      return this.rightPlayer;
+    throw Error(`unknown player id ${playerId} in game ${this.id}`);
+  }
+
+  public getPlayer(playerId: number) {
+    if (playerId == this.leftPlayer.id)
+      return this.leftPlayer;
+    else if (playerId == this.rightPlayer.id)
+      return this.rightPlayer;
+    return undefined;
   }
 
   public updateInput(playerId: number, input: Input) {
-    if (playerId == this.leftPlayerId) {
-      this.leftInput.down = input.down;
-      this.leftInput.up = input.up;
-    }
-    else if (playerId == this.rightPlayerId) {
-      this.rightInput.down = input.down;
-      this.rightInput.up = input.up;
-    }
-    else
-      throw Error(`unknown player id ${playerId} in game ${this.id}`);
+    this.getPlayerThrow(playerId).input.copy(input);
   }
 
   public update(deltaTime: number) {
-    this.pong.update(deltaTime, this.leftInput, this.rightInput);
+    this.pong.update(deltaTime, this.leftPlayer.input, this.rightPlayer.input);
   }
 
   public json(playerId: number) {
     let opponentInput: Input;
-    if (this.leftPlayerId == playerId)
-      opponentInput = this.rightInput;
-    else if (this.rightPlayerId == playerId)
-      opponentInput = this.leftInput;
+    if (this.leftPlayer.id == playerId)
+      opponentInput = this.rightPlayer.input;
+    else if (this.rightPlayer.id == playerId)
+      opponentInput = this.leftPlayer.input;
     else
       throw Error(`unknown player id ${playerId} in game ${this.id}`);
 
@@ -64,7 +75,7 @@ export class GameManager {
     return undefined;
   }
 
-  public startGame(leftPlayerId: number, rightPlayerId: number) {
+  public startGame(leftPlayerId: number, rightPlayerId: number, leftPlayerSocket: object, rightPlayerSocket: object) {
     let gameId: number;
 
     // generate a unique game id
@@ -72,7 +83,7 @@ export class GameManager {
       gameId = Math.round(Math.random() * maxGameId);
     while (this._games.has(gameId));
 
-    const game = new PongGame(gameId, leftPlayerId, rightPlayerId);
+    const game = new PongGame(gameId, new PongPlayer(leftPlayerId, leftPlayerSocket), new PongPlayer(rightPlayerId, rightPlayerSocket));
     this._games.set(gameId, game);
     return gameId;
   }
