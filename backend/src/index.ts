@@ -7,16 +7,26 @@ import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
 import path from 'path';
+import fs from 'fs';
 
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+
+const httpsOptions = ENABLE_HTTPS ? {
+  https: {
+    key: fs.readFileSync(path.join(__dirname, '../../ssl/key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, '../../ssl/cert.pem'))
+  }
+} : {};
 
 const server = Fastify({
   logger: {
     level: NODE_ENV === 'development' ? 'info' : 'warn'
-  }
+  },
+  ...httpsOptions
 });
 
 async function start() {
