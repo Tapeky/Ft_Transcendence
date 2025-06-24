@@ -221,4 +221,54 @@ export async function friendRoute(server : FastifyInstance) {
 			});
 		}
 	});
+
+	// DELETE /api/friends/remove/:id - Supprimer un ami
+	server.delete('/:id', {
+		preHandler: [
+			authenticateToken,
+			validateInput({
+				params: {
+					id: { required: true, type: 'number' }
+				}
+			})
+		]
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const { id } = request.params as { id: number };
+
+			// Supprimer les deux relations d'amitié
+			const result = await db.run(`
+				DELETE FROM friendships
+				WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)
+				`, [currentUser.id, id, id, currentUser.id]);
+			if (result.changes === 0) {
+				return reply.status(404).send({
+					success: false,
+					error: 'Amitié non trouvée'
+				});
+			}
+
+			// Log
+			await userRepo.logSecurityAction({
+				user_id: currentUser.id,
+				action: 'FRIEND_REMOVED',
+				ip_address: request.ip,
+				user_agent: request.headers['user-agent'],
+				success: true,
+				details: JSON.stringify({ removed_friend_id: id })
+			});
+
+			reply.send({
+				success: true,
+				message: 'Ami supprimé avec succès'
+			});
+		
+		} catch (error: any) {
+			request.log.error('Erreur lors de la suppression de l ami:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de la suppression de l ami'
+			});
+		}
 }
