@@ -27,14 +27,14 @@ export async function friendRoute(server : FastifyInstance) {
 			if (currentUser.id === friend_id) {
 				return reply.status(400).send ({
 					success: false,
-					error: 'Vous ne pouvez pas vous ajouter vous-meme en ami';
+					error: 'Vous ne pouvez pas vous ajouter vous-meme en ami'
 				});
 			}
 
 			// Check if the target exist
 			const targetUser = await userRepo.findById(friend_id);
 			if (!targetUser) {
-				return reply.status(400).send ({
+				return reply.status(404).send ({
 					success:false,
 					error: 'Utilisateur non trouve'
 				});
@@ -45,7 +45,59 @@ export async function friendRoute(server : FastifyInstance) {
 				SELECT * FROM friendships
 				WHERE	(user_id = ? AND friend_id = ?)
 					OR	(user_id = ? AND friend_id = ?)
-				`, [currentUser.id, friend_id, friend_id, currentUser.id])
+				`, [currentUser.id, friend_id, friend_id, currentUser.id]);
+			
+			if (existingFriendship) {
+				if (existingFriendship.status === 'pending') {
+					return reply.status(409).send ({
+						success:false,
+						error: 'Une demande d ami est deja en attente'
+					});
+				} else if (existingFriendship.status === 'accepted') {
+					return reply.status(409).send ({
+						success:false,
+						error: 'Vous etes deja amis'
+					});
+				} else if (existingFriendship.status === 'blocked') {
+					return reply.status(409).send ({
+						success:false,
+						error: 'Impossible d envoyer une demande d ami'
+					});
+				}
+			}
 		
+
+			// Cree une demande d ami
+			const result = await db.run(`
+				INSERT INTO friendships (user_id, friend_id, status)
+				VALUES (?, ?, 'pending')
+				`, [currentUser.id, friend_id]);
+			
+			// Log
+			await userRepo.logSecurityAction({
+				user_id: currentUser.id,
+				action: 'FRIEND_REQUEST_SENT',
+				ip_address: request.ip,
+				user_agent: request.headers['user-agent'],
+				success:true,
+				details: JSON.stringify({ target_user_id: friend_id, target_username: targetUser.username})
+			});
+
+			reply.send({
+				success:true,
+				message: 'Demande d amis envoye avec succes',
+				data: {
+					id: result.lastID,
+					friend_id,
+					status: 'pending'
+				}
+			});
+		} catch (error: any) {
+			request.log.error('Erreur inatendue lors de l envoi de la demande d ami:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de l envoi de la demande d ami'
+			});
 		}
+	});
 }
