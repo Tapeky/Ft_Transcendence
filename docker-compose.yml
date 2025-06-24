@@ -1,4 +1,6 @@
+# Ft_Transcendence Docker Compose Configuration
 services:
+  # Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
@@ -8,14 +10,17 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - ./ssl:/app/ssl:ro
     environment:
       - NODE_ENV=${NODE_ENV}
       - VITE_API_URL=${VITE_API_URL}
+      - ENABLE_HTTPS=${ENABLE_HTTPS}
     depends_on:
       - backend
     networks:
       - ft_transcendence
 
+  # Backend Service (Node.js + Fastify)
   backend:
     build:
       context: ./backend
@@ -29,6 +34,7 @@ services:
       - ./ssl:/app/ssl:ro
     environment:
       - NODE_ENV=${NODE_ENV}
+      - ENABLE_HTTPS=${ENABLE_HTTPS}
       - DB_NAME=${DB_NAME}
       - DB_PATH=${DB_PATH}
       - JWT_SECRET=${JWT_SECRET}
@@ -43,15 +49,14 @@ services:
     networks:
       - ft_transcendence
 
-# Ajoutez vos services supplémentaires ici
-# 
-# 
-# 
+# Additional services can be added here
 
+# Docker volumes
 volumes:
   db_data:
   ssl_certs:
 
+# Docker networks
 networks:
   ft_transcendence:
     driver: bridge

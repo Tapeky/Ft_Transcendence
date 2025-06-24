@@ -1,4 +1,3 @@
-// backend/src/websocket/index.ts
 
 import { FastifyInstance } from 'fastify';
 import { SocketStream } from '@fastify/websocket';
