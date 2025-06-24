@@ -4,13 +4,13 @@ const FriendList = () => {
         const window = document.getElementById("friendWindow");
 
         window?.classList.replace('flex', 'hidden');
-    }
+    };
 
     return (
         <div id="friendWindow" className='fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen justify-center items-center hidden'>
-            <div className='flex flex-col bg-violet-400 w-[500px] h-[600px] border-double border-[10px] border-black text-[2rem]'>
+            <div className='flex flex-col bg-gradient-to-t from-red-500 to-blue-500 w-[500px] h-[600px] border-[5px] border-black text-[2rem]'>
                 <div className="flex flex-col h-[50px]">
-                    <button className='bg-inherit self-end mr-3 mb-5' onClick={closeWindow}>X</button>
+                    <button className='bg-inherit self-end mr-3 mb-5 whitespace-pre' onClick={closeWindow}>Close   X</button>
                 </div>
                 <div className="mx-3 border-b-2">
                     <h2 className="">Add friend</h2>
