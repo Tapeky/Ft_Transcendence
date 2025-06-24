@@ -1,11 +1,10 @@
-import { FastifyInstance, FastifyRequest, FastifyReply, FastifyBaseLogger } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { DatabaseManager } from "../database/DatabaseManager";
 import { UserRepository } from "../repositories/UserRepository";
 import { authenticateToken, validateInput } from "../middleware";
-import { request } from "http";
 
 
-export async function friendRoute(server : FastifyInstance) {
+export async function friendRoutes(server : FastifyInstance) {
 	const db = DatabaseManager.getInstance().getDb();
 	const userRepo = new UserRepository(db);
 
@@ -155,8 +154,8 @@ export async function friendRoute(server : FastifyInstance) {
 
 			reply.send({
 				success: true,
-				message: 'Demande d ami accepte avec succes';
-			})
+				message: 'Demande d ami accepte avec succes'
+			});
 		
 		} catch (error: any) {
 			request.log.error('Erreur lors de l\'acceptation de la demande d\'ami:', error);
@@ -271,4 +270,252 @@ export async function friendRoute(server : FastifyInstance) {
 				error: 'Erreur lors de la suppression de l ami'
 			});
 		}
+	});
+
+	// GET /api/friends/list - Liste d'amis
+	server.get('/', {
+		preHandler: authenticateToken
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const friends = await db.all(`
+				SELECT u.id, u.username, u.display_name, u.avatar_url, u.is_online,
+					u.total_wins, u.total_losses, u.created_at
+				FROM friendships f
+				JOIN users u ON f.friend_id = u.id
+				WHERE f.user_id = ? AND f.status = 'accepted'
+				`, [currentUser.id]);
+				
+			reply.send({
+				success: true,
+				data: friends,
+				message: 'Liste d amis recuperer avec succes'
+			});
+			
+		} catch (error: any) {
+			request.log.error('Erreur lors de la recuperation de la liste d amis:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de la recuperation de la liste d amis'
+			});
+		}
+	});
+
+	// GET /api/friends/requests - Liste des demandes d'amis recues
+	server.get('/requests', {
+		preHandler: authenticateToken
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const requests = await db.all(`
+				SELECT f.id, f.created_at,
+					u.id as user_id, u.username, u.display_name, u.avatar_url, u.is_online
+				FROM friendships f
+				JOIN users u ON f.user_id = u.id
+				WHERE f.friend_id = ? AND f.status = 'pending'
+				ORDER BY f.created_at DESC
+				`, [currentUser.id]);
+
+			reply.send({
+				success: true,
+				data: requests,
+				message: 'Demandes d amis recues recuperer avec succes'
+			});
+
+		} catch (error: any) {
+			request.log.error('Erreur lors de la recuperation des demandes d amis recues:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de la recuperation des demandes d amis recues'
+			});
+		}
+	});
+
+	// GET /api/friends/sent - Liste des demandes d'amis envoyees
+	server.get('/sent', {
+		preHandler: authenticateToken
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const sentRequests = await db.all(`
+				SELECT f.id, f.created_at,
+					u.id as friend_id, u.username, u.display_name, u.avatar_url, u.is_online
+				FROM friendships f
+				JOIN users u ON f.friend_id = u.id
+				WHERE f.user_id = ? AND f.status = 'pending'
+				ORDER BY f.created_at DESC
+				`, [currentUser.id]);
+
+			reply.send({
+				success: true,
+				data: sentRequests,
+				message: 'Demandes d amis envoye recuperer avec succes'
+			});
+
+		} catch (error: any) {
+			request.log.error('Erreur lors de la recuperation des demandes d amis envoyees:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de la recuperation des demandes d amis envoyees'
+			});
+		}
+	});
+
+	// GET /api/friends/blocked - Liste des utilisateurs bloqués
+	server.get('/blocked', {
+		preHandler: authenticateToken
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const blockedUsers = await db.all(`
+				SELECT u.id, u.username, u.display_name, u.avatar_url, f.created_at
+				FROM friendships f
+				JOIN users u ON f.friend_id = u.id
+				WHERE f.user_id = ? AND f.status = 'blocked'
+				ORDER BY f.created_at DESC
+				`, [currentUser.id]);
+
+			reply.send({
+				success: true,
+				data: blockedUsers,
+				message: 'Liste des utilisateurs bloqués récupérée avec succès'
+			});
+
+		} catch (error: any) {
+			request.log.error('Erreur lors de la récupération des utilisateurs bloqués:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de la récupération des utilisateurs bloqués'
+			});
+		}
+	});
+
+	// PUT /api/friends/block/:id - Bloquer un utilisateur
+	server.put('/block/:id', {
+		preHandler: [
+			authenticateToken,
+			validateInput({
+				params: {
+					id: { required: true, type: 'number' }
+				}
+			})
+		]
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const { id } = request.params as { id: number };
+
+			// ne pas bloquer soi-meme
+			if (currentUser.id === id) {
+				return reply.status(400).send({
+					success: false,
+					error: 'Vous ne pouvez pas vous bloquer vous-meme'
+				});
+			}
+
+			// Vérifier que l'utilisateur cible existe
+			const targetUser = await userRepo.findById(id);
+			if (!targetUser) {
+				return reply.status(404).send({
+					success: false,
+					error: 'Utilisateur non trouvé'
+				});
+			}
+
+			// Supprimer toutes les relations d'amitié existantes
+			await db.run(`
+				DELETE FROM friendships
+				WHERE (user_id = ? AND friend_id = ?)
+					OR (user_id = ? AND friend_id = ?)
+				`, [currentUser.id, id, id, currentUser.id]);
+
+			// Bloquer l'utilisateur
+			await db.run(`
+				INSERT INTO friendships (user_id, friend_id, status)
+				VALUES (?, ?, 'blocked')
+				ON CONFLICT(user_id, friend_id) DO UPDATE SET status = 'blocked'
+				`, [currentUser.id, id]);
+
+			// Log
+			await userRepo.logSecurityAction({
+				user_id: currentUser.id,
+				action: 'USER_BLOCKED',
+				ip_address: request.ip,
+				user_agent: request.headers['user-agent'],
+				success: true,
+				details: JSON.stringify({ blocked_user_id: id })
+			});
+
+			reply.send({
+				success: true,
+				message: 'Utilisateur bloque avec succes',
+			});
+
+		} catch (error: any) {
+			request.log.error('Erreur lors du blocage de l utilisateur:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors du blocage de l utilisateur'
+			});
+		}
+	});
+
+	// PUT /api/friends/unblock/:id - Debloquer un utilisateur
+	server.put('/unblock/:id', {
+		preHandler: [
+			authenticateToken,
+			validateInput({
+				params: {
+					id: { required: true, type: 'number' }
+				}
+			})
+		]
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const { id } = request.params as { id: number };
+
+			// ne pas debloquer soi-meme
+			if (currentUser.id === id) {
+				return reply.status(400).send({
+					success: false,
+					error: 'Vous ne pouvez pas vous debloquer vous-meme'
+				});
+			}
+
+			// Debloquer l'utilisateur
+			const result = await db.run(`
+				DELETE FROM friendships
+				WHERE user_id = ? AND friend_id = ? AND status = 'blocked'
+				`, [currentUser.id, id]);
+
+			if (result.changes === 0) {
+				return reply.status(404).send({
+					success: false,
+					error: 'Utilisateur non bloque'
+				});
+			}
+
+			// Log
+			await userRepo.logSecurityAction({
+				user_id: currentUser.id,
+				action: 'USER_UNBLOCKED',
+				ip_address: request.ip,
+				user_agent: request.headers['user-agent'],
+				success: true,
+				details: JSON.stringify({ unblocked_user_id: id })
+			});
+
+			reply.send({
+				success: true,
+				message: 'Utilisateur debloque avec succes',
+			});
+		} catch (error: any) {
+			request.log.error('Erreur lors du debloquage de l utilisateur:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors du debloquage de l utilisateur'
+			});
+		}
+	});
 }

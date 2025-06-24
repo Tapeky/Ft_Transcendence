@@ -5,6 +5,7 @@ import { userRoutes } from './users';
 import { tournamentRoutes } from './tournaments';
 import { matchRoutes } from './matches';
 import { profileRoutes } from './profile';
+import { friendRoutes } from './friends';
 
 export async function setupRoutes(server: FastifyInstance) {
   // Préfixe API
@@ -23,6 +24,9 @@ export async function setupRoutes(server: FastifyInstance) {
 
     // Routes pour edit le profil utilisateur
     await server.register(profileRoutes, { prefix: '/profile' });
+
+    // Routes amis
+    await server.register(friendRoutes, { prefix: '/friends' });
     
   }, { prefix: '/api' });
 }
