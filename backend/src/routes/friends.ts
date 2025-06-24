@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply, FastifyBaseLogger } from "fastify";
 import { DatabaseManager } from "../database/DatabaseManager";
 import { UserRepository } from "../repositories/UserRepository";
 import { authenticateToken, validateInput } from "../middleware";
@@ -163,6 +163,61 @@ export async function friendRoute(server : FastifyInstance) {
 			reply.status(500).send({
 				success: false,
 				error: 'Erreur lors de l\'acceptation de la demande d\'ami'
+			});
+		}
+	});
+
+	// PUT /api/friends/decline/:id - Refueser une demande d'ami
+	server.put('/decline/:id', {
+		preHandler: [
+			authenticateToken,
+			validateInput({
+				params: {
+					id: { required: true, type: 'number'}
+				}
+			})
+		]
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as {id: number; username: string, email: string};
+			const { id } = request.params as {id : number};
+
+			// Trouver la demande d'ami
+			const friendship = await db.get (`
+				SELECT * FROM friendships
+				WHERE id = ? AND friend_id = ? AND status = 'pending'
+				`, [id, currentUser.id]);
+
+			if (!friendship) {
+				return reply.status(404).send ({
+					success: false,
+					error: 'La demande d ami n existe pas OU est deja traiteee'
+				});
+			}
+
+			// Supprimer la demande
+			await db.run (`DELETE FROM friendships WHERE id = ?`, [id]);
+
+			// Log
+			await userRepo.logSecurityAction({
+				user_id: currentUser.id,
+				action: 'FRIEND_REQUEST_DECLINED',
+				ip_address: request.ip,
+				user_agent: request.headers['user-agent'],
+				success: true,
+				details: JSON.stringify({ friendship_id: id, requester_id: friendship.user_id })
+			});
+
+			reply.send({
+				success: true,
+				message: 'Demande d ami refusee avec succes'
+			});
+
+		} catch (error: any) {
+			request.log.error('Erreur lors du refus de la demande d\'ami:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors du refus de la demande d\'ami'
 			});
 		}
 	});
