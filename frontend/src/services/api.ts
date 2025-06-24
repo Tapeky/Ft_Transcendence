@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8000';
+// API Configuration
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+
+// Type Definitions
 
 export interface User {
 	id: number;
@@ -13,7 +16,7 @@ export interface User {
 	created_at: string;
 }
 
-export interface ApiResponse <T = any> {
+export interface ApiResponse<T = any> {
 	success: boolean;
 	data?: T;
 	message?: string;
@@ -39,10 +42,11 @@ export interface AuthResponse {
 	expires_in: string;
 }
 
+// API Service Class
 class ApiService {
 	private token: string | null = null;
 
-	constructor () {
+	constructor() {
 		this.token = localStorage.getItem('auth_token'); 
 	}
 
@@ -135,7 +139,12 @@ class ApiService {
 		return `${API_BASE_URL}/api/auth/github`;
 	}
 
-	// Gestion du token depuis l'URL (callback GitHub)
+	// Google OAuth
+	getGoogleAuthUrl(): string {
+		return `${API_BASE_URL}/api/auth/google`;
+	}
+
+	// Gestion du token depuis l'URL (callback OAuth)
 	handleAuthCallback(): string | null {
 		const urlParams = new URLSearchParams(window.location.search);
 		const token = urlParams.get('token');
@@ -152,10 +161,29 @@ class ApiService {
 			console.error('Erreur auth callback:', error);
 			// Nettoyer l'URL
 			window.history.replaceState({}, document.title, window.location.pathname);
-			throw new Error('Erreur lors de l\'authentification GitHub');
+			if (error === 'google_auth_failed') {
+				throw new Error('Erreur lors de l\'authentification Google');
+			} else if (error === 'github_auth_failed') {
+				throw new Error('Erreur lors de l\'authentification GitHub');
+			} else {
+				throw new Error('Erreur lors de l\'authentification');
+			}
 		}
 
 		return null;
+	}
+
+	private getWebSocketUrl(): string {
+		const isHttps = window.location.protocol === 'https:';
+		const protocol = isHttps ? 'wss:' : 'ws:';
+		const host = window.location.hostname;
+		const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
+		
+		return `${protocol}//${host}${port}/ws`;
+	}
+	
+	connectWebSocket(): WebSocket {
+		return new WebSocket(this.getWebSocketUrl());
 	}
 
 }

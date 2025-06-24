@@ -237,4 +237,8 @@ export class UserRepository {
   async updateGitHubId(userId: number, githubId: string): Promise<void> {
     await this.db.run('UPDATE users SET github_id = ? WHERE id = ?', [githubId, userId]);
   }
+  
+  async updateGoogleId(userId: number, googleId: string): Promise<void> {
+    await this.db.run('UPDATE users SET google_id = ? WHERE id = ?', [googleId, userId]);
+  }
 }

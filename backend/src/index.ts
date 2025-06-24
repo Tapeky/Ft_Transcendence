@@ -2,21 +2,35 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import websocket from '@fastify/websocket';
+import fs from 'fs';
+import path from 'path';
+
 import { DatabaseManager } from './database/DatabaseManager';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
-import path from 'path';
 
+// Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+
+// HTTPS configuration
+
+const httpsOptions = ENABLE_HTTPS ? {
+  https: {
+    key: fs.readFileSync('/app/ssl/key.pem'),
+    cert: fs.readFileSync('/app/ssl/cert.pem')
+  }
+} : {};
 
 const server = Fastify({
   logger: {
     level: NODE_ENV === 'development' ? 'info' : 'warn'
-  }
+  },
+  ...httpsOptions
 });
 
 async function start() {
@@ -33,10 +47,11 @@ async function start() {
     console.log('🔧 Configuration des plugins...');
     
     // CORS
+    const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
     await server.register(cors, {
       origin: process.env.NODE_ENV === 'production' 
         ? ['https://your-domain.com'] 
-        : ['http://localhost:3000'],
+        : [`${corsProtocol}://localhost:3000`],
       credentials: true
     });
     
@@ -133,12 +148,16 @@ async function start() {
     
     // 8. Démarrage du serveur
     await server.listen({ port: PORT, host: HOST });
+    const protocol = ENABLE_HTTPS ? 'https' : 'http';
+    const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
+    
     console.log(`
 🚀 Serveur ft_transcendence démarré !
-📍 URL: http://localhost:${PORT}
+📍 URL: ${protocol}://localhost:${PORT}
 🌍 Environnement: ${NODE_ENV}
-📊 Health check: http://localhost:${PORT}/health
-📡 WebSocket: ws://localhost:${PORT}/ws
+🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
+📊 Health check: ${protocol}://localhost:${PORT}/health
+📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
     `);
     
     if (NODE_ENV === 'production') {
