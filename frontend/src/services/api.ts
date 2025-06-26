@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8000';
+// API Configuration
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+
+// Type Definitions
 
 export interface User {
 	id: number;
@@ -13,7 +16,7 @@ export interface User {
 	created_at: string;
 }
 
-export interface ApiResponse <T = any> {
+export interface ApiResponse<T = any> {
 	success: boolean;
 	data?: T;
 	message?: string;
@@ -39,10 +42,11 @@ export interface AuthResponse {
 	expires_in: string;
 }
 
+// API Service Class
 class ApiService {
 	private token: string | null = null;
 
-	constructor () {
+	constructor() {
 		this.token = localStorage.getItem('auth_token'); 
 	}
 
@@ -167,6 +171,19 @@ class ApiService {
 		}
 
 		return null;
+	}
+
+	private getWebSocketUrl(): string {
+		const isHttps = window.location.protocol === 'https:';
+		const protocol = isHttps ? 'wss:' : 'ws:';
+		const host = window.location.hostname;
+		const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
+		
+		return `${protocol}//${host}${port}/ws`;
+	}
+	
+	connectWebSocket(): WebSocket {
+		return new WebSocket(this.getWebSocketUrl());
 	}
 
 }

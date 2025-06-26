@@ -40,8 +40,11 @@ export async function authRoutes(server: FastifyInstance) {
         });
       }
 
-      // Créer l'utilisateur
-      const user = await userRepo.create(body);
+      // Créer l'utilisateur avec avatar par défaut
+      const user = await userRepo.create({
+        ...body,
+        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'
+      });
 
       // Générer le token JWT
       const token = server.jwt.sign({
@@ -569,6 +572,7 @@ export async function authRoutes(server: FastifyInstance) {
           email: primaryEmail,
           password: Math.random().toString(36), // Mot de passe temporaire
           display_name: githubUser.name || githubUser.login,
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4',
           data_consent: true
         });
         
@@ -602,9 +606,10 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       // Rediriger vers le frontend avec le token
+      const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
       const frontendUrl = process.env.NODE_ENV === 'production' 
         ? process.env.FRONTEND_URL 
-        : 'http://localhost:3000';
+        : `${protocol}://localhost:3000`;
       
       reply.redirect(`${frontendUrl}?token=${token}`);
 
@@ -619,9 +624,10 @@ export async function authRoutes(server: FastifyInstance) {
         details: JSON.stringify({ error: error.message })
       });
 
+      const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
       const frontendUrl = process.env.NODE_ENV === 'production' 
         ? process.env.FRONTEND_URL 
-        : 'http://localhost:3000';
+        : `${protocol}://localhost:3000`;
       
       reply.redirect(`${frontendUrl}?error=github_auth_failed`);
     }
@@ -728,6 +734,7 @@ export async function authRoutes(server: FastifyInstance) {
             email: googleUser.email,
             password: Math.random().toString(36), // Mot de passe temporaire
             display_name: googleUser.name || googleUser.email.split('@')[0],
+            avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4',
             google_id: googleUser.id,
             data_consent: true
           });
@@ -755,9 +762,10 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       // Rediriger vers le frontend avec le token
+      const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
       const frontendUrl = process.env.NODE_ENV === 'production' 
         ? process.env.FRONTEND_URL 
-        : 'http://localhost:3000';
+        : `${protocol}://localhost:3000`;
       
       reply.redirect(`${frontendUrl}?token=${token}`);
 
@@ -772,9 +780,10 @@ export async function authRoutes(server: FastifyInstance) {
         details: JSON.stringify({ error: error.message })
       });
 
+      const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
       const frontendUrl = process.env.NODE_ENV === 'production' 
         ? process.env.FRONTEND_URL 
-        : 'http://localhost:3000';
+        : `${protocol}://localhost:3000`;
       
       reply.redirect(`${frontendUrl}?error=google_auth_failed`);
     }

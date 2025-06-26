@@ -21,11 +21,21 @@ function Dashboard() {
               </h1>
             </div>
 
-            {/* Info utilisateur + Logout */}
+            {/* Info utilisateur + Avatar + Logout */}
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                Welcome, <span className="font-medium">{user?.display_name || user?.username}</span>!
+              
+              {/* Avatar simple pour test */}
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'} 
+                  alt="Avatar"
+                  className="w-8 h-8 rounded-full border-2 border-gray-200"
+                />
+                <div className="text-sm text-gray-700">
+                  Welcome, <span className="font-medium">{user?.display_name || user?.username}</span>!
+                </div>
               </div>
+
               <button
                 onClick={logout}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition duration-200"
