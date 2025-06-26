@@ -1,7 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticateToken, validateInput } from '../middleware';
+import { validateImageUpload } from '../middleware/uploadValidation';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
+import sharp from 'sharp';
+import fs from 'fs/promises';
+import path from 'path';
 
 export async function avatarsRoutes(fastify: FastifyInstance) {
 	const db = DatabaseManager.getInstance().getDb();
@@ -98,6 +102,74 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
 			reply.status(500).send({
 				success: false,
 				error: 'Internal Server Error'
+			});
+		}
+	});
+
+	// POST /api/avatars/upload - Upload d'un avatar personnalisé
+	fastify.post('/upload', {
+		preHandler: [authenticateToken, validateImageUpload]
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const { buffer, mimetype } = (request as any).fileData;
+
+			// create a unique filename
+			const timestamp = Date.now();
+			const extension =	mimetype === 'image/jpeg' ? 'jpg' : 
+						   		mimetype === 'image/png' ? 'png' : 'webp';
+			const filename = `avatar_${currentUser.id}_${timestamp}.${extension}`;
+			
+			// re cree le dossier si il a été supprimé
+			const uploadsDir = path.join(__dirname, '../../uploads/avatars');
+			await fs.mkdir(uploadsDir, { recursive: true });
+			
+			// Sharp permet de redimensionner et compresser l'image
+			const processedBuffer = await sharp(buffer)
+				.resize(200, 200, { 
+					fit: 'cover',
+					position: 'center'
+				})
+				.jpeg({ 
+					quality: 85,
+					progressive: true 
+				})
+				.toBuffer();
+
+			// Sauvegarder le fichier dans upoads/avatars
+			const filePath = path.join(uploadsDir, filename);
+			await fs.writeFile(filePath, processedBuffer);
+
+			// URL publique de l'avatar
+			const avatarUrl = `/uploads/avatars/${filename}`;
+
+			try {
+				const currentUserData = await userRepo.findById(currentUser.id);
+				if (currentUserData?.avatar_url && currentUserData.avatar_url.startsWith('/uploads/')) {
+					const oldFilePath = path.join(__dirname, '../../', currentUserData.avatar_url);
+					await fs.unlink(oldFilePath);
+				}
+			} catch (error) {
+				request.log.warn('Impossible de supprimer l\'ancien avatar:', error);
+			}
+
+			// update bdd
+			await userRepo.updateProfile(currentUser.id, { avatar_url: avatarUrl });
+
+			reply.send({
+				success: true,
+				message: 'Avatar uploadé avec succès',
+				data: {
+					avatar_url: avatarUrl,
+					filename: filename
+				}
+			});
+
+		} catch (error: any) {
+			request.log.error('Error uploading avatar:', error);
+			reply.status(500).send({
+				success: false,
+				error: 'Erreur lors de l\'upload de l\'avatar'
 			});
 		}
 	});
