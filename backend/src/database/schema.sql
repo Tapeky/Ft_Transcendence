@@ -63,25 +63,29 @@ CREATE TABLE IF NOT EXISTS tournaments (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Table des participants aux tournois
+-- Table des participants aux tournois avec alias
 CREATE TABLE IF NOT EXISTS tournament_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
+    alias VARCHAR(50) NOT NULL, -- Alias obligatoire pour le tournoi
     position INTEGER, -- position finale dans le tournoi
     joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(tournament_id, user_id)
+    UNIQUE(tournament_id, user_id), -- Un seul alias par joueur par tournoi
+    UNIQUE(tournament_id, alias) -- Pas de doublons d'alias dans un tournoi
 );
 
 -- Table des matches
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id INTEGER, -- NULL si match hors tournoi
-    player1_id INTEGER NOT NULL,
-    player2_id INTEGER NOT NULL,
+    player1_id INTEGER, -- NULL si joueur invité
+    player2_id INTEGER, -- NULL si joueur invité
+    player1_guest_name VARCHAR(100), -- Nom du joueur invité
+    player2_guest_name VARCHAR(100), -- Nom du joueur invité
     player1_score INTEGER DEFAULT 0,
     player2_score INTEGER DEFAULT 0,
     winner_id INTEGER,
@@ -96,10 +100,26 @@ CREATE TABLE IF NOT EXISTS matches (
     duration_seconds INTEGER,
     max_score INTEGER DEFAULT 3,
     
+    -- Statistiques détaillées du gameplay
+    player1_touched_ball INTEGER DEFAULT 0,
+    player1_missed_ball INTEGER DEFAULT 0,
+    player1_touched_ball_in_row INTEGER DEFAULT 0,
+    player1_missed_ball_in_row INTEGER DEFAULT 0,
+    player2_touched_ball INTEGER DEFAULT 0,
+    player2_missed_ball INTEGER DEFAULT 0,
+    player2_touched_ball_in_row INTEGER DEFAULT 0,
+    player2_missed_ball_in_row INTEGER DEFAULT 0,
+    
     FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
     FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Contrainte : au moins un joueur doit être défini pour chaque côté
+    CHECK (
+        (player1_id IS NOT NULL OR player1_guest_name IS NOT NULL) AND
+        (player2_id IS NOT NULL OR player2_guest_name IS NOT NULL)
+    )
 );
 
 -- Index pour les performances des matches
