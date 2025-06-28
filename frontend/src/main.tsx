@@ -7,10 +7,12 @@ import './index.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext'
 import PongGame from './components/Pong/PongGame'
+import Profile from './views/Profile';
 
 const router = createBrowserRouter([
   {path: "/", element: <AuthPage/>},
   {path: "/dashboard", element: <Dashboard/>},
+  {path: "/profile", element: <Profile/>},
   {path: "/game", element: <PongGame/>},
   {path: "*", element: <NotFound/>},
 
