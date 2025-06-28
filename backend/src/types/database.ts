@@ -29,6 +29,7 @@ export interface UserCreateInput {
   email: string;
   password: string;
   display_name?: string;
+  avatar_url?: string;
   google_id?: string;
   github_id?: string;
   data_consent?: boolean;

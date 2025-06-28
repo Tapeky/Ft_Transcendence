@@ -76,8 +76,13 @@ function validateObject(obj: any, schema: any): void {
         throw new Error(`Le champ '${key}' doit être une chaîne de caractères`);
       }
       
-      if (ruleSet.type === 'number' && typeof value !== 'number') {
-        throw new Error(`Le champ '${key}' doit être un nombre`);
+      if (ruleSet.type === 'number') {
+        // Pour les paramètres URL, convertir string vers number
+        if (typeof value === 'string' && !isNaN(Number(value))) {
+          obj[key] = Number(value);
+        } else if (typeof value !== 'number') {
+          throw new Error(`Le champ '${key}' doit être un nombre`);
+        }
       }
       
       if (ruleSet.type === 'email' && typeof value === 'string') {
