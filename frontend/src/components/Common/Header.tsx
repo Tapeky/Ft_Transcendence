@@ -1,7 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import Options from "./Options";
 import FriendList from "./FriendList";
-import Profile from "./Profile";
 
 const Header = ({userVisible = true}) => {
     const { user } = useAuth();
@@ -39,7 +38,6 @@ const Header = ({userVisible = true}) => {
                 <Options />
             </div>
 
-            <Profile />
             <FriendList />
         </header>
     );
