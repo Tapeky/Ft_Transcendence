@@ -8,8 +8,8 @@
 - [👥 Users](#-users)
 - [👨‍👩‍👧‍👦 Friends](#-friends)
 - [🎭 Avatars](#-avatars)
-- [🏆 Tournaments](#-tournaments-todo)
-- [⚔️ Matches](#️-matches-todo)
+- [🏆 Tournaments](#-tournaments)
+- [⚔️ Matches](#️-matches)
 - [👤 Profile](#-profile)
 - [🔧 System](#-system)
 - [🧪 Quick Examples](#-quick-examples)
@@ -140,31 +140,76 @@
 -> `{"avatar_id": <string>}`  
 <- `{"success": true, "message": "Avatar mis à jour avec succès", "data": {"avatar_id": <string>, "avatar_url": <string>}}` || `{"error": "Avatar invalide"}`
 
+### POST /api/avatars/upload [AUTH]
+*Upload d'un avatar personnalisé*  
+-> `multipart/form-data` with `file` field  
+<- `{"success": true, "message": "Avatar uploadé avec succès", "data": {"avatar_url": <string>, "filename": <string>}}` || `{"error": "Aucun fichier fourni"}`
+
 ---
 
-## 🏆 Tournaments (TODO)
+## 🏆 Tournaments
 
 ### GET /api/tournaments
-*Liste des tournois (pas encore implémenté)*  
-<- `{"success": true, "data": [], "message": "Fonctionnalité des tournois en cours de développement"}`
+*Liste de tous les tournois avec nombre de participants*  
+<- `{"success": true, "data": [{"id": <number>, "name": <string>, "description": <string>, "max_players": <number>, "current_players": <number>, "status": <string>, "created_by": <number>, "creator_username": <string>, "created_at": <string>}]}`
 
 ### POST /api/tournaments [AUTH]
-*Créer un nouveau tournoi (pas encore implémenté)*  
+*Créer un nouveau tournoi*  
 -> `{"name": <string>, "description": <string?>, "max_players": <number?>}`  
-<- `{"success": true, "message": "Création de tournois en cours de développement"}`
+<- `{"success": true, "data": {"id": <number>, "name": <string>, "description": <string>, "max_players": <number>, "creator_username": <string>}, "message": "Tournoi créé avec succès"}` || `{"error": "Le nom du tournoi est requis"}`
+
+### POST /api/tournaments/:id/join [AUTH]
+*Rejoindre un tournoi avec un alias obligatoire*  
+-> `{"alias": <string>}`  
+<- `{"success": true, "message": "Vous avez rejoint le tournoi en tant que \"<alias>\""}` || `{"error": "Cet alias est déjà pris pour ce tournoi"}`
+
+### GET /api/tournaments/:id/bracket
+*Afficher le bracket d'un tournoi avec les alias des participants*  
+<- `{"success": true, "data": {"tournament": {...}, "participants": [{"id": <number>, "alias": <string>, "username": <string>, "display_name": <string>, "joined_at": <string>}], "matches": [...], "bracket_data": {...}}}` || `{"error": "Tournoi non trouvé"}`
+
+### PUT /api/tournaments/:id/start [AUTH]
+*Démarrer un tournoi (créateur uniquement)*  
+<- `{"success": true, "message": "Tournoi démarré avec succès", "data": {"bracket_data": {...}}}` || `{"error": "Il faut au moins 2 participants pour démarrer"}`
+
+### GET /api/tournaments/:id/matches
+*Voir tous les matches d'un tournoi avec les alias des joueurs*  
+<- `{"success": true, "data": {"tournament": {...}, "matches": [{"id": <number>, "player1_alias": <string>, "player2_alias": <string>, "player1_score": <number>, "player2_score": <number>, "status": <string>}]}}`
 
 ---
 
-## ⚔️ Matches (TODO)
+## ⚔️ Matches
+
+### POST /api/matches/record
+*Enregistrer un match complet avec support joueurs invités et statistiques détaillées*  
+-> `{"player1_id": <number?>, "player2_id": <number?>, "player1_guest_name": <string?>, "player2_guest_name": <string?>, "player1_score": <number>, "player2_score": <number>, "winner_id": <number?>, "game_type": <string?>, "max_score": <number?>, "tournament_id": <number?>, "duration_seconds": <number?>, "player1_touched_ball": <number?>, "player1_missed_ball": <number?>, "player2_touched_ball": <number?>, "player2_missed_ball": <number?>, "match_data": <string?>}`  
+<- `{"success": true, "message": "Match enregistré avec succès", "data": {"id": <number>, "player1_username": <string>, "player2_username": <string>, "player1_score": <number>, "player2_score": <number>, "status": "completed"}}` || `{"error": "Chaque joueur doit avoir soit un ID soit un nom d'invité"}`
 
 ### GET /api/matches [AUTH]
-*Historique des matches (pas encore implémenté)*  
-<- `{"success": true, "data": [], "message": "Historique des matches en cours de développement"}`
+*Historique des matches d'un utilisateur avec filtres avancés*  
+-> `?player_id=<number>&tournament_id=<number>&game_type=<string>&limit=<number>&offset=<number>&include_guests=<boolean>&include_stats=<boolean>`  
+<- `{"success": true, "data": [{"id": <number>, "player1_username": <string>, "player2_username": <string>, "player1_guest_name": <string>, "player2_guest_name": <string>, "player1_score": <number>, "player2_score": <number>, "winner_id": <number>, "game_type": <string>, "tournament_name": <string>, "created_at": <string>}], "pagination": {"limit": <number>, "offset": <number>, "total": <number>}}`
 
 ### POST /api/matches [AUTH]
-*Créer un nouveau match (pas encore implémenté)*  
+*Créer un match direct entre deux utilisateurs*  
 -> `{"player2_id": <number>, "game_type": <string?>, "max_score": <number?>}`  
-<- `{"success": true, "message": "Création de matches en cours de développement"}`
+<- `{"success": true, "data": {"id": <number>, "player1_id": <number>, "player2_id": <number>, "player1_username": <string>, "player2_username": <string>, "status": "scheduled"}, "message": "Match créé avec succès"}` || `{"error": "Vous ne pouvez pas jouer contre vous-même"}`
+
+### GET /api/matches/live
+*Liste des matches actuellement en cours*  
+<- `{"success": true, "data": [{"id": <number>, "player1_username": <string>, "player2_username": <string>, "tournament_name": <string>, "started_at": <string>, "status": "playing"}], "count": <number>}`
+
+### GET /api/matches/:id
+*Détails complets d'un match spécifique*  
+<- `{"success": true, "data": {"id": <number>, "player1_username": <string>, "player2_username": <string>, "player1_score": <number>, "player2_score": <number>, "winner_id": <number>, "status": <string>, "game_type": <string>, "duration_seconds": <number>, "tournament_name": <string>, "created_at": <string>}}` || `{"error": "Match non trouvé"}`
+
+### PUT /api/matches/:id/result [AUTH]
+*Enregistrer le résultat d'un match (joueurs participants uniquement)*  
+-> `{"player1_score": <number>, "player2_score": <number>, "winner_id": <number>}`  
+<- `{"success": true, "data": {"id": <number>, "player1_score": <number>, "player2_score": <number>, "winner_id": <number>, "status": "completed"}, "message": "Résultat enregistré avec succès"}` || `{"error": "Vous n'êtes pas autorisé à enregistrer ce résultat"}`
+
+### POST /api/matches/:id/start [AUTH]
+*Démarrer un match programmé (joueurs participants uniquement)*  
+<- `{"success": true, "message": "Match démarré"}` || `{"error": "Le match ne peut pas être démarré"}`
 
 ---
 
@@ -218,6 +263,11 @@ curl -k -X PUT https://localhost:8000/api/avatars/set \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{"avatar_id":"avatar-2"}'
 
+# Upload custom avatar
+curl -k -X POST https://localhost:8000/api/avatars/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@/path/to/your/image.jpg"
+
 # Search users
 curl -k "https://localhost:8000/api/users/search?q=john" \
   -H "Authorization: Bearer YOUR_TOKEN"
@@ -227,6 +277,27 @@ curl -k -X POST https://localhost:8000/api/friends/request \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{"friend_id":2}'
+
+# Create tournament
+curl -k -X POST https://localhost:8000/api/tournaments \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"name":"My Tournament","description":"Test tournament","max_players":8}'
+
+# Join tournament with alias
+curl -k -X POST https://localhost:8000/api/tournaments/1/join \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"alias":"Shadow_Player"}'
+
+# Record match with guest players
+curl -k -X POST https://localhost:8000/api/matches/record \
+  -H "Content-Type: application/json" \
+  -d '{"player1_guest_name":"Guest1","player2_guest_name":"Guest2","player1_score":3,"player2_score":1,"game_type":"pong"}'
+
+# Get match history
+curl -k "https://localhost:8000/api/matches?limit=10&include_guests=true" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ---
@@ -236,3 +307,6 @@ curl -k -X POST https://localhost:8000/api/friends/request \
 - **Avatars:** 4 DiceBear styles, auto-assigned to new users
 - **Auth:** JWT tokens, 24h expiration
 - **CORS:** Configured for `localhost:3000` in development
+- **Tournaments:** Alias system obligatoire, brackets automatiques
+- **Matches:** Support joueurs invités + statistiques détaillées Pong
+- **Database:** SQLite avec triggers automatiques pour stats utilisateur
