@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import websocket from '@fastify/websocket';
+import multipart from '@fastify/multipart';
+import staticFiles from '@fastify/static';
 import fs from 'fs';
 import path from 'path';
 
@@ -65,6 +67,20 @@ async function start() {
     
     // WebSocket
     await server.register(websocket);
+    
+    // Multipart (pour les uploads)
+    await server.register(multipart, {
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+        files: 1
+      }
+    });
+    
+    // Static files (pour servir les uploads)
+    await server.register(staticFiles, {
+      root: path.join(__dirname, '../uploads'),
+      prefix: '/uploads/'
+    });
     
     // 3. Middleware global
     console.log('🔒 Configuration des middlewares...');
