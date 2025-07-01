@@ -42,6 +42,12 @@ export interface AuthResponse {
 	expires_in: string;
 }
 
+ export interface Avatar {
+    id: string;
+    name: string;
+    url: string;
+}
+
 // API Service Class
 class ApiService {
 	private token: string | null = null;
@@ -184,6 +190,18 @@ class ApiService {
 	
 	connectWebSocket(): WebSocket {
 		return new WebSocket(this.getWebSocketUrl());
+	}
+
+	async getAvatars(): Promise<Avatar[]> {
+    	const response = await this.request<Avatar[]>('/api/avatars');
+    	return response.data!;
+  	}
+
+	async setAvatar(avatarId: string): Promise<void> {
+		await this.request('/api/avatars/set', {
+		method: 'PUT',
+		body: JSON.stringify({ avatar_id: avatarId }),
+		});
 	}
 
 }
