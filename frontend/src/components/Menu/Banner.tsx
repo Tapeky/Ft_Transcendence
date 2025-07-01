@@ -16,8 +16,8 @@ const Banner = () => {
                 <li>
                     Losses : {user?.total_losses || 0}
                 </li>
-                <li>
-                    Total : {user?.total_games || 0}
+                <li className="border-x-2 border-black px-6">
+                    <button className="hover:text-blue-400">► Dashboard ◄</button>
                 </li>
             </ul>
         </div>

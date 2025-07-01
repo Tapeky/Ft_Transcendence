@@ -1,14 +1,14 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Common/Header';
-import Menu from '../components/Dashboard/Menu';
-import Banner from '../components/Dashboard/Banner';
+import Choice from '../components/Menu/Choice';
+import Banner from '../components/Menu/Banner';
 import { Navigate } from 'react-router-dom';
 import FriendList from '../components/Common/FriendList';
 
 
 
-const Dashboard = () => {
+const Menu = () => {
   const { loading, user, isAuthenticated } = useAuth();
 
   if (loading)
@@ -28,10 +28,10 @@ const Dashboard = () => {
 
         <Banner />
 
-        <Menu />
+        <Choice />
 
     </div>
   );
 }
 
-export default Dashboard;
+export default Menu;

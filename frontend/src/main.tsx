@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Dashboard from './views/Dashboard'
+import Menu from './views/Menu'
 import NotFound from './views/NotFound'
 import AuthPage from './components/Auth/AuthPage';
 import './index.css'
@@ -11,7 +11,7 @@ import Profile from './views/Profile';
 
 const router = createBrowserRouter([
   {path: "/", element: <AuthPage/>},
-  {path: "/dashboard", element: <Dashboard/>},
+  {path: "/menu", element: <Menu/>},
   {path: "/profile", element: <Profile/>},
   {path: "/game", element: <PongGame/>},
   {path: "*", element: <NotFound/>},

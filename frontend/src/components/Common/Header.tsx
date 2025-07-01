@@ -22,16 +22,23 @@ const Header = ({userVisible = true}) => {
 
             <div className="flex-1 relative">
                 <div onClick={toggleOptions} className={`${userVisible ? 'block' : 'hidden'} translate-y-1/2 flex absolute
-                    h-[90px] right-[10px] bottom-[20px] w-[220px] border-white border-[5px] cursor-pointer overflow-hidden text-white bg-purple-900`}>
-                    <img src={`${user?.avatar_url}`} alt="icon" className="h-[60px] w-[60px] border-2 border-solid m-2"/>
+                    h-[100px] right-[20px] bottom-[5px] w-[260px] border-white border-[5px] cursor-pointer overflow-hidden
+                    text-white bg-gradient-to-t from-purple-900 to-blue-800`}>
+                    
+                    <div className='flex justify-center items-center'>
+                    <img src={user?.avatar_url?.startsWith('/uploads/') 
+                      ? `https://localhost:8000${user.avatar_url}` 
+                      : user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'
+                    }  alt="icon" className="h-[70px] w-[70px] border-2 border-solid m-2"/>
+                    </div>
+
                     <div className="flex flex-col">
                         <h3 className="text-[1.5rem]">
-                            {user?.username.toUpperCase()}
+                            {user?.username}
                         </h3>
-                        <div className="text-[1.3rem] flex gap-2 items-center">
-                            <div id='statusLight' className='bg-green-500 w-3 h-3 rounded-full'></div>
-                            <div id="status">Online</div>
-                        </div>
+                        <h3 className="text-[1.2rem]">
+                            {user?.display_name}
+                        </h3>
                 </div>
                 
                 </div>
