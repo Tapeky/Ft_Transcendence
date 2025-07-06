@@ -1,16 +1,16 @@
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 
 const Options = () => {
 
     const { user, logout } = useAuth();
     const options = document.getElementById("options");
     
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
-        navigate('/');
+        // navigate('/');
     };
 
     const openFriends = () => {

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Common/Header';
 import Menu from '../components/Dashboard/Menu';
 import Banner from '../components/Dashboard/Banner';
-import { Navigate } from 'react-router-dom';
+// import { Navigate } from 'react-router-dom';
 import FriendList from '../components/Common/FriendList';
 
 
