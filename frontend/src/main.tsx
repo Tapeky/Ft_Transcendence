@@ -8,12 +8,14 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext'
 import PongGame from './components/Pong/PongGame'
 import Profile from './views/Profile';
+import Dashboard from './views/Dashboard';
 
 const router = createBrowserRouter([
   {path: "/", element: <AuthPage/>},
   {path: "/menu", element: <Menu/>},
   {path: "/profile", element: <Profile/>},
   {path: "/game", element: <PongGame/>},
+  {path: "/dashboard", element: <Dashboard/>},
   {path: "*", element: <NotFound/>},
 
 ]);

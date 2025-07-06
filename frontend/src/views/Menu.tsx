@@ -4,7 +4,7 @@ import Header from '../components/Common/Header';
 import Choice from '../components/Menu/Choice';
 import Banner from '../components/Menu/Banner';
 import { Navigate } from 'react-router-dom';
-import FriendList from '../components/Common/FriendList';
+import FriendList from '../components/Friends/FriendList';
 
 
 
