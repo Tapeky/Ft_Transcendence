@@ -200,7 +200,8 @@ class ApiService {
 	async logout(): Promise<void> {
 		try {
 			await this.request('/api/auth/logout', { 
-				method: 'POST' 
+				method: 'POST',
+				body: JSON.stringify({})
 			});
 		} catch (error) {
 			console.error('Logout backend error:', error);

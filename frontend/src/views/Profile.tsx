@@ -1,6 +1,6 @@
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Common/Header";
-import { Navigate, useNavigate } from "react-router-dom";
+// import { Navigate, useNavigate } from "react-router-dom";
 
 const Profile = () => {
 

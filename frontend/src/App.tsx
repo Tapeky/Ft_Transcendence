@@ -1,8 +1,10 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import AuthPage from './components/Auth/AuthPage';
 
-
+// 🏠 Composant Dashboard simple pour les utilisateurs connectés
+function Dashboard() {
+  const { user, logout } = useAuth();
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -229,7 +231,6 @@ import { Navigate } from 'react-router-dom';
   );
 }
 
-
 // 🔄 Composant principal avec logique d'authentification
 function MainApp() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -248,12 +249,11 @@ function MainApp() {
 
   // ✅ Utilisateur connecté → Dashboard
   if (isAuthenticated && user) {
-    return <Navigate to="/dashboard" />;
-    //return <Dashboard/>;
+    return <Dashboard />;
   }
 
   // ❌ Utilisateur non connecté → AuthPage
-  return <Navigate to="/" />;
+  return <AuthPage />;
 }
 
 // 🎯 App principal avec AuthProvider
