@@ -6,11 +6,11 @@ const Options = () => {
     const { user, logout } = useAuth();
     const options = document.getElementById("options");
     
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
-        navigate('/');
+        // navigate('/');
     };
 
     const openFriends = () => {

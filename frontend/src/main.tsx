@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import PongGame from './components/Pong/PongGame'
 import Profile from './views/Profile';
 import Dashboard from './views/Dashboard';
+import App from './App';
 
 const router = createBrowserRouter([
   {path: "/", element: <AuthPage/>},
@@ -22,8 +23,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <App />
   </React.StrictMode>,
 )
