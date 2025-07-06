@@ -18,8 +18,7 @@ function MainApp() {
 
  
   if (isAuthenticated && user) {
-    return <Navigate to="/dashboard" />;
-    //return <Dashboard/>;
+    return <Navigate to="/menu" />;
   }
 
 

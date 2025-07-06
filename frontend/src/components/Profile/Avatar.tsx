@@ -1,6 +1,7 @@
 import { useAuth } from "../../contexts/AuthContext";
 import AvatarSelect from "./AvatarSelect";
 import { useRef } from "react";
+import CloseBtn from "../Common/CloseBtn";
 
 const Avatar = () => {
     const { user, logout } = useAuth();
@@ -92,18 +93,16 @@ const Avatar = () => {
         ? `https://localhost:8000${user.avatar_url}` 
         : user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'
         } 
-        alt="Avatar" className="h-[300px] w-[300px] border-4 p-0 border-blue-700"/>
+        alt="Avatar" className="h-[295px] w-[300px] border-4 p-0 border-blue-800"/>
 
-        <button className="absolute top-[280px] border-2 p-2 px-6 bg-blue-600 hover:scale-90 text-white text-[1.3rem] rounded-md" 
+        <button className="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.3rem] rounded-md" 
         onClick={openAvatar}>
         EDIT
         </button>
 
         <div id="avatarWindow" className='fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen justify-center items-center hidden'>
             <div className='flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]'>
-                <div className="flex flex-col h-[50px] mb-4">
-                    <button className='bg-inherit self-end mr-3 mb-5 whitespace-pre' onClick={closeWindow}>Close   X</button>
-                </div>
+                <CloseBtn func={closeWindow}/>
                 <AvatarSelect />
 
                 <input
@@ -114,7 +113,7 @@ const Avatar = () => {
                 ref={ref}
                 />
                 <div className="flex-grow flex items-center justify-center">
-                  <button className="border-2 p-2 px-6 bg-pink-500 hover:scale-90 text-white text-[1.5rem] rounded-md" onClick={upload}>IMPORT FILE</button>
+                  <button className="border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.5rem] rounded-md" onClick={upload}>IMPORT FILE</button>
                 </div>
             </div>
         </div>

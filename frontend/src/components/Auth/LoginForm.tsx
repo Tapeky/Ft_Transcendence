@@ -43,7 +43,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         email: formData.email,
         password: formData.password
       });
-      navigate("/dashboard");
+      navigate("/menu");
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }
