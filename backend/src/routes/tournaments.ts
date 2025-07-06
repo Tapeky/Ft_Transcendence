@@ -140,7 +140,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
       const userId = (request as any).user.id;
       const { alias } = request.body;
 
-      // Vérifier que le tournoi existe et est ouvert
+      // -----------CHECKS DE VALIDATION-----------
       const tournament = await db.query(`
         SELECT * FROM tournaments WHERE id = ? AND status = 'open'
       `, [tournamentId]);
@@ -152,7 +152,6 @@ export async function tournamentRoutes(server: FastifyInstance) {
         });
       }
 
-      // Vérifier le nombre de participants
       const currentPlayers = await db.query(`
         SELECT COUNT(*) as count FROM tournament_participants WHERE tournament_id = ?
       `, [tournamentId]);
@@ -164,7 +163,6 @@ export async function tournamentRoutes(server: FastifyInstance) {
         });
       }
 
-      // Vérifier que l'utilisateur ne participe pas déjà
       const existing = await db.query(`
         SELECT * FROM tournament_participants WHERE tournament_id = ? AND user_id = ?
       `, [tournamentId, userId]);
@@ -175,6 +173,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
           error: 'Vous participez déjà à ce tournoi'
         });
       }
+      // -------------------------------------------
 
       // Vérifier que l'alias n'est pas déjà pris dans ce tournoi
       const aliasExists = await db.query(`
