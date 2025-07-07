@@ -41,6 +41,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         email: formData.email,
         password: formData.password
       });
+      // Le redirect sera géré automatiquement par App.tsx
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }

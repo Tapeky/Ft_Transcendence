@@ -503,12 +503,10 @@ async function validateMatchData(data: any, db: any): Promise<string | null> {
     player1_score, player2_score, winner_id, tournament_id
   } = data;
 
-  // Vérifier qu'on a au moins un joueur défini pour chaque côté
   if ((!player1_id && !player1_guest_name) || (!player2_id && !player2_guest_name)) {
     return 'Chaque joueur doit avoir soit un ID soit un nom d\'invité';
   }
 
-  // Vérifier que les IDs existent
   if (player1_id) {
     const user1 = await db.query('SELECT id FROM users WHERE id = ?', [player1_id]);
     if (!user1.length) return `Joueur 1 (ID: ${player1_id}) non trouvé`;
@@ -519,12 +517,10 @@ async function validateMatchData(data: any, db: any): Promise<string | null> {
     if (!user2.length) return `Joueur 2 (ID: ${player2_id}) non trouvé`;
   }
 
-  // Vérifier le gagnant
   if (winner_id && winner_id !== player1_id && winner_id !== player2_id) {
     return 'Le gagnant doit être l\'un des deux joueurs';
   }
 
-  // Vérifier le tournoi
   if (tournament_id) {
     const tournament = await db.query('SELECT id FROM tournaments WHERE id = ?', [tournament_id]);
     if (!tournament.length) return `Tournoi (ID: ${tournament_id}) non trouvé`;
@@ -549,7 +545,6 @@ async function getMatchById(matchId: number, db: any) {
 }
 
 async function advanceTournamentBracket(tournamentId: number, matchId: number, winnerId: number, db: any) {
-  // Logique d'avancement du bracket
   const remainingMatches = await db.query(`
     SELECT COUNT(*) as count FROM matches 
     WHERE tournament_id = ? AND status != 'completed'
