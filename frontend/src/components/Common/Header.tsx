@@ -42,7 +42,7 @@ const Header = ({userVisible = true}) => {
                         <h3 className="text-[1.5rem]">
                             {user?.username}
                         </h3>
-                        <h3 className="text-[1.2rem]">
+                        <h3 className="text-[1.2rem]" id='displayName'>
                             {user?.display_name}
                         </h3>
                     </div>

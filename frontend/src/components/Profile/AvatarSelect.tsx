@@ -8,20 +8,21 @@ const AvatarSelect = () => {
     const handleClick = async (id: string) => {
         console.log(id);
         await apiService.setAvatar(id);
-        window.location.reload(); //reload pas bien jpense
+        window.location.reload();
 
     } 
 
     useEffect(() => {
-    const fetchAvatars = async () => {
-        try {
-        const data = await apiService.getAvatars();
-        setAvatars(data);
-        } catch (error) {
-        console.error("Can't load avatars.", error);
-        }
-    };
-    fetchAvatars();
+        const fetchAvatars = async () => {
+            try {
+                const data = await apiService.getAvatars();
+                setAvatars(data);
+            } catch (error) {
+                console.error("Can't load avatars.", error);
+            }
+        };
+
+        fetchAvatars();
     }, []);
 
     return (

@@ -337,12 +337,14 @@ class ApiService {
 	async acceptFriendRequest(id: number): Promise<void> {
 		await this.request(`/api/friends/accept/${id}`, {
 			method: 'PUT',
+			body: JSON.stringify({}),
 		});
 	}
 
 	async declineFriendRequest(id: number): Promise<void> {
 		await this.request(`/api/friends/decline/${id}`, {
 			method: 'PUT',
+			body: JSON.stringify({}),
 		});
 	}
 

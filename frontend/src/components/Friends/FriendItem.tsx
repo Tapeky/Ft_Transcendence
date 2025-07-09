@@ -5,6 +5,7 @@ const FriendItem = () =>
     const username = "Jinx";
     const displayName = "Powder";
     const online = true;
+    const id = 222;
 
     return (
         <div className="border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800">
@@ -24,7 +25,7 @@ const FriendItem = () =>
                         <img src="./src/img/chat.svg" alt="chat" />
                     </button>
                     <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-                        <img src="./src/img/plus.svg" alt="profile" />
+                        <img src="./src/img/plus.svg" alt="more" />
                     </button>
                 </div>
             </div>
