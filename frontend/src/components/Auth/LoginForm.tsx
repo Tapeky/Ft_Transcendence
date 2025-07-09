@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import FloatingInput from './FloatingInput';
 import PremiumButton from './PremiumButton';
 import { apiService } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -10,6 +11,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, loading } = useAuth();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -41,11 +43,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         email: formData.email,
         password: formData.password
       });
-<<<<<<< HEAD
       navigate("/menu");
-=======
-      // Le redirect sera géré automatiquement par App.tsx
->>>>>>> main
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }

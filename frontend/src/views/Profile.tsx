@@ -3,6 +3,7 @@ import Header from "../components/Common/Header";
 import { Navigate } from "react-router-dom";
 import Avatar from "../components/Profile/Avatar";
 import BackBtn from "../components/Common/BackBtn";
+import ChangeDisplayName from "../components/Profile/ChangeDisplayName";
 
 const Profile = () => {
 
@@ -32,20 +33,11 @@ const Profile = () => {
 
                 <div className="flex m-10 flex-grow">
                     <div className="flex flex-col flex-[1.5] text-[2rem] gap-10">
-                        <div className="flex justify-between">
-                            <h4 className="flex-1">Username</h4>
-                            <input type="text" defaultValue={user.username} className="flex-1 rounded-md text-black indent-4" minLength={3} maxLength={10}/>
-                            <div className="flex-1">
-                                <button className="bg-green-500 w-[50px] rounded-md hover:scale-90 ml-3">&#x2713;</button>
-                            </div>
+                        <div className="flex gap-[9.5rem]">
+                            <h4 className="">Username</h4>
+                            <h2>{user.username}</h2>
                         </div>
-                        <div className="flex justify-between">
-                            <h4 className="flex-1">Display name</h4>
-                            <input type="text" defaultValue={user.display_name} className="flex-1 rounded-md text-black indent-4" minLength={3} maxLength={10}/>
-                            <div className="flex-1">
-                                <button className="bg-green-500 w-[50px] rounded-md hover:scale-90 ml-3">&#x2713;</button>
-                            </div>
-                        </div>
+                        <ChangeDisplayName />
                     </div>
 
 
