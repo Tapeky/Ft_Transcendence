@@ -12,14 +12,6 @@ const Requests = () => {
         setRequestWindow(!requestWindow);
     };
 
-
-	const handleClick = async (id: string) => {
-		console.log(id);
-		await apiService.setAvatar(id);
-		window.location.reload();
-
-	} 
-
 	useEffect(() => {
 		const fetchRequests = async () => {
 			try {
@@ -32,15 +24,15 @@ const Requests = () => {
 		
 		if (requestWindow === true)
 			fetchRequests();
-	}, [requestWindow]);
+		}, [requestWindow]);
 
     return (
         <div className="absolute ml-[4rem] mt-2 mb-0">
             <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" onClick={toggleRequest}>
-                <img src="./src/img/requests.svg" alt="block list" />
+                <img src="./src/img/requests.svg" alt="requests" />
             </button>
 
-            <div className={`${requestWindow ? 'block' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] relative right-[472px] bottom-[150px] flex flex-col items-center`}>
+            <div className={`${requestWindow ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] relative right-[472px] bottom-[150px] z-[45] flex-col items-center`}>
                 <h2 className="text-white border-b-2 border-white">Friend requests</h2>
                 <div className="flex flex-col overflow-auto">
 				{requests.length === 0 && 

@@ -23,7 +23,7 @@ const Dashboard = () => {
     return (
         <div className="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white  ">
             <Header />
-            <div className="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600  self-center border-x-4 border-t-4 flex flex-col p-4 overflow-auto">
+            <div className="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600  self-center border-x-4 border-t-4 flex flex-col p-4">
                 <div className="text-center text-[4rem] border-b-2 w-full flex">
 
                     <BackBtn />
@@ -40,10 +40,12 @@ const Dashboard = () => {
                             <li>Losses : {user?.total_losses || 0}</li>
                         </ul>
                     </div>
-                    <h3 className="self-center">Match history</h3>
-                    <div className="h-[300px] w-4/5 border-2 self-center my-4 bg-violet-700 cursor-pointer hover:scale-105 transition duration-300 hidden">
-                    bosser avec les props (ou pas)</div>
-                    <MatchRecap />
+                    <div className="flex flex-col gap-2">
+                        <h3 className="self-center">Match history</h3>
+                        <MatchRecap />
+                        <MatchRecap />
+                        <MatchRecap />
+                    </div>
 
                 </div>
 

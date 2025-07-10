@@ -33,17 +33,18 @@ const AddFriend = () => {
 			}
 			await apiService.sendFriendRequest(data[index].id);
 			console.log('Sent !');
-			// window.location.reload();
-		} catch (error) {
+			nameInput.value = '';
+		}
+		catch (error) {
 			console.error(error);
 		}
 	}
 
     return (
-		<div className="mx-3 mb-4 border-b-2">
+		<div className="mx-3 mb-4 border-b-2 z-50">
 			<h2 className="">Add friend</h2>
 			<input id="nameInput" type="text" className="rounded-md mr-3 mb-5 text-black indent-4" maxLength={12}/>
-			<button className="rounded-md border-[2px] px-3 hover:scale-90 ml-4" onClick={addFriend}>ADD</button>
+			<button className="rounded-md border-[2px] px-3 hover:scale-110 ml-4" onClick={addFriend}>ADD</button>
 		</div>
     );
 }

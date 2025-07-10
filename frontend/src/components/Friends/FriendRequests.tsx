@@ -42,6 +42,7 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
 	const block = async () =>
 	{
 		try {
+			console.log(id);
 			await apiService.blockUser(id);
 			console.log('Blocked !')
 			dismiss();
@@ -67,7 +68,6 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
 					<button onClick={accept} className="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
 						<img src="./src/img/accept.svg" alt="accept" />
 					</button>
-
 				</div>
             </div>
         </div>
