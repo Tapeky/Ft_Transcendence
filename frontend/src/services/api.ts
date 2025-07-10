@@ -377,12 +377,14 @@ class ApiService {
 	async blockUser(id: number): Promise<void> {
 		await this.request(`/api/friends/block/${id}`, {
 			method: 'PUT',
+			body: JSON.stringify({}),
 		});
 	}
 
 	async unblockUser(id: number): Promise<void> {
 		await this.request(`/api/friends/unblock/${id}`, {
 			method: 'PUT',
+			body: JSON.stringify({}),
 		});
 	}
 
