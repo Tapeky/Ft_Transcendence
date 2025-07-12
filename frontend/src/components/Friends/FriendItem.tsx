@@ -1,10 +1,11 @@
 import { useState } from "react";
 import FriendOptions from "./FriendOptions";
+import { getAvatarUrl } from "../../utils/avatar";
 
 type Props = {
   username: string;
   displayName: string;
-  avatar: string;
+  avatar: string | null;
   is_online: boolean;
   id: number;
 };
@@ -22,7 +23,7 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
     return (
         <div className={`${visible ? 'block' : 'hidden'} ${options ? 'z-[55]' : 'z-[50]'} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`}>
             <div className="flex items-center justify-center min-w-[120px]">
-                <img src={avatar} alt="icon" className="h-[90px] w-[90px] border-2"/>
+                <img src={getAvatarUrl(avatar)} alt="icon" className="h-[90px] w-[90px] border-2"/>
             </div>
             <div className="leading-none flex flex-col gap-1 flex-grow overflow-hidden">
                 <h2 className="mt-2">{username}</h2>
@@ -42,7 +43,7 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
                 </div>
             </div>
 
-        <FriendOptions username={username} displayName={displayName} avatar={avatar} id={id} isOpen={options} 
+        <FriendOptions username={username} displayName={displayName} avatar={getAvatarUrl(avatar)} id={id} isOpen={options} 
             setIsOpen={() => setOptions(false)}  setDismiss={() => setVisible(false)}/>
 
 

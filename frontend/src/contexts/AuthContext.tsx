@@ -8,6 +8,7 @@ interface AuthContextType {
 	login: (credentials: LoginCredentials) => Promise<void>;
 	register: (credentials: RegisterCredentials) => Promise<void>;
 	logout: () => Promise<void>;
+	refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +90,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setLoading(false);
 		}
 	};
+
+	const refreshUser = async () => {
+		try {
+			const currentUser = await apiService.getCurrentUser();
+			setUser(currentUser);
+			console.log('Informations utilisateur mises à jour');
+		} catch (error) {
+			console.error('Erreur lors de la mise à jour des infos utilisateur:', error);
+		}
+	};
 	
 	const value: AuthContextType = {
 		user,
@@ -97,6 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		login,
 		register,
 		logout,
+		refreshUser,
 	};
 
 	return (

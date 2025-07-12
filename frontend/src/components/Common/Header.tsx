@@ -2,6 +2,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Options from "./Options";
 import FriendList from "../Friends/FriendList";
 import { useState } from 'react';
+import { getAvatarUrl } from "../../utils/avatar";
 
 const Header = ({userVisible = true}) => {
     const { user } = useAuth();
@@ -30,10 +31,7 @@ const Header = ({userVisible = true}) => {
                     text-white bg-gradient-to-t from-purple-900 to-blue-800`}>
                     
                     <div className='flex justify-center items-center'>
-                    <img src={user?.avatar_url?.startsWith('/uploads/') 
-                      ? `https://localhost:8000${user.avatar_url}` 
-                      : user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'
-                    }  alt="icon" className="h-[70px] w-[70px] min-h-[70px] min-w-[70px] border-2 border-solid m-2"/>
+                    <img src={getAvatarUrl(user?.avatar_url)}  alt="icon" className="h-[70px] w-[70px] min-h-[70px] min-w-[70px] border-2 border-solid m-2"/>
                     </div>
 
                     <div className="flex flex-grow flex-col">

@@ -3,9 +3,10 @@ import AvatarSelect from "./AvatarSelect";
 import { useRef } from "react";
 import CloseBtn from "../Common/CloseBtn";
 import { apiService } from "../../services/api";
+import { getAvatarUrl } from "../../utils/avatar";
 
 const Avatar = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const ref = useRef<HTMLInputElement>(null);
   
 
@@ -28,7 +29,17 @@ const Avatar = () => {
 
         console.log('Starting upload for file:', file.name, file.size, file.type);
 
-        apiService.uploadAvatar(file);
+        try {
+            const result = await apiService.uploadAvatar(file);
+            console.log('Upload successful:', result);
+            
+            // Mettre à jour les infos utilisateur pour afficher le nouvel avatar
+            await refreshUser();
+            
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            alert(`Erreur lors de l'upload: ${error}`);
+        }
     };
 
 
@@ -40,10 +51,7 @@ const Avatar = () => {
   return (
     <div className="flex-[0.5] flex justify-center relative">
                         
-        <img src={user?.avatar_url?.startsWith('/uploads/') 
-        ? `https://localhost:8000${user.avatar_url}` 
-        : user?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4'
-        } 
+        <img src={getAvatarUrl(user?.avatar_url)} 
         alt="Avatar" className="h-[295px] w-[300px] border-4 p-0 border-blue-800"/>
 
         <button className="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.3rem] rounded-md" 

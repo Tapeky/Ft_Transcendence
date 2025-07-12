@@ -1,11 +1,12 @@
 import { apiService } from "../../services/api";
 import CloseBtn from "../Common/CloseBtn";
 import { Link } from "react-router-dom";
+import { getAvatarUrl } from "../../utils/avatar";
 
 type Props = {
   username: string;
   displayName: string;
-  avatar: string;
+  avatar: string | null;
   id: number;
   isOpen: boolean;
   setIsOpen: () => void;
@@ -32,12 +33,14 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 	const block = async () =>
 	{
 		try {
+			console.log('Attempting to block user with ID:', id);
 			await apiService.blockUser(id);
-			console.log('Blocked !')
+			console.log('User blocked successfully!')
 			setDismiss();
 			setIsOpen();
 		} catch (error) {
-			console.error(error);
+			console.error('Error blocking user:', error);
+			alert(`Erreur lors du blocage: ${error}`);
 		}
 	}
 
@@ -50,7 +53,7 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 					<CloseBtn func={setIsOpen}/>
 
 					<div className="flex justify-center items-start">
-						<img src={avatar} alt="icon" className="h-[150px] w-[150px] border-2 m-5" />
+						<img src={getAvatarUrl(avatar)} alt="icon" className="h-[150px] w-[150px] border-2 m-5" />
 						<div className="flex flex-col flex-grow items-start justify-start overflow-hidden">
 							<h1 className="text-[2.6rem] ">{username}</h1>
 							<h2>{displayName}</h2>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiService } from "../../services/api";
+import { getAvatarUrl } from "../../utils/avatar";
 
 type Props = {
   username: string;
@@ -30,7 +31,7 @@ const BlockedUser = ({username, avatar, id}: Props) =>
     return (
         <div className={`${visible ? 'block' : 'hidden'} border-white border-2 min-h-[120px] w-[260px] flex bg-pink-800 text-[1.2rem] mt-4 overflow-hidden mx-2`}>
             <div className="flex items-center justify-center min-w-[120px]">
-                <img src={avatar} alt="icon" className="h-[90px] w-[90px] border-2"/>
+                <img src={getAvatarUrl(avatar)} alt="icon" className="h-[90px] w-[90px] border-2"/>
             </div>
             <div className="flex flex-col">
                 <h2 className="mt-2 flex-grow">{username}</h2>

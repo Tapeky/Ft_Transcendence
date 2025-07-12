@@ -41,7 +41,7 @@ const Requests = () => {
 					</div>
 				}
 				{requests.map((request) => (
-					<FriendRequests key={request.id} username={request.username} avatar={request.avatar_url} id={request.id}/>
+					<FriendRequests key={request.id} username={request.username} avatar={request.avatar_url} requestId={request.id} userId={request.user_id}/>
 				))}
                 </div>
             </div>
