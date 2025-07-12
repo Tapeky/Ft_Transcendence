@@ -6,11 +6,11 @@ import multipart from '@fastify/multipart';
 import staticFiles from '@fastify/static';
 import fs from 'fs';
 import path from 'path';
-
 import { DatabaseManager } from './database/DatabaseManager';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
+import { GameManager } from './websocket/game_manager';
 
 // Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
@@ -185,7 +185,8 @@ async function start() {
         }
       }, 60 * 60 * 1000);
     }
-    
+
+    GameManager.instance.registerLoop();
   } catch (err) {
     server.log.error('❌ Erreur de démarrage du serveur:', err);
     process.exit(1);
