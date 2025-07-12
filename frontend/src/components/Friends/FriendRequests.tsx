@@ -60,13 +60,13 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
                 <h2 className="mt-2 flex-grow">{username}</h2>
 				<div className="flex gap-2 items-end ml-12">
 					<button onClick={block} className="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
-						<img src="./src/img/block.svg" alt="block" />
+						<img src="/src/img/block.svg" alt="block" />
 					</button>
 					<button onClick={reject} className="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
-						<img src="./src/img/reject.svg" alt="reject" />
+						<img src="/src/img/reject.svg" alt="reject" />
 					</button>
 					<button onClick={accept} className="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
-						<img src="./src/img/accept.svg" alt="accept" />
+						<img src="/src/img/accept.svg" alt="accept" />
 					</button>
 				</div>
             </div>

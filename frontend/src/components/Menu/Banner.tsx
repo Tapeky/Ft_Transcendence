@@ -18,7 +18,7 @@ const Banner = () => {
                     Losses : {user?.total_losses || 0}
                 </li>
                 <li className="border-x-2 border-black px-6">
-                    <Link to={'/dashboard'}><button className="hover:text-blue-400">► Dashboard ◄</button></Link>
+                    <Link to={`/dashboard/${user?.id}`}><button className="hover:text-blue-400">► Dashboard ◄</button></Link>
                 </li>
             </ul>
         </div>
