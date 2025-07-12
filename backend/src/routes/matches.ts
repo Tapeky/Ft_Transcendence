@@ -181,8 +181,8 @@ export async function matchRoutes(server: FastifyInstance) {
 
       let baseQuery = `
         SELECT m.*, t.name as tournament_name,
-               u1.username as player1_username, u1.display_name as player1_display_name,
-               u2.username as player2_username, u2.display_name as player2_display_name
+               u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+               u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
       `;
 
       if (include_stats) {
@@ -278,8 +278,8 @@ export async function matchRoutes(server: FastifyInstance) {
 
       const match = await db.query(`
         SELECT m.*, 
-               u1.username as player1_username,
-               u2.username as player2_username
+               u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+               u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
         FROM matches m
         LEFT JOIN users u1 ON m.player1_id = u1.id
         LEFT JOIN users u2 ON m.player2_id = u2.id
@@ -305,8 +305,8 @@ export async function matchRoutes(server: FastifyInstance) {
     try {
       const liveMatches = await db.query(`
         SELECT m.*, t.name as tournament_name,
-               u1.username as player1_username, u1.display_name as player1_display_name,
-               u2.username as player2_username, u2.display_name as player2_display_name
+               u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+               u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
         FROM matches m
         LEFT JOIN users u1 ON m.player1_id = u1.id
         LEFT JOIN users u2 ON m.player2_id = u2.id  
@@ -427,8 +427,8 @@ export async function matchRoutes(server: FastifyInstance) {
 
       const updatedMatch = await db.query(`
         SELECT m.*, 
-               u1.username as player1_username,
-               u2.username as player2_username
+               u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+               u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
         FROM matches m
         LEFT JOIN users u1 ON m.player1_id = u1.id
         LEFT JOIN users u2 ON m.player2_id = u2.id
@@ -532,8 +532,8 @@ async function validateMatchData(data: any, db: any): Promise<string | null> {
 async function getMatchById(matchId: number, db: any) {
   const matches = await db.query(`
     SELECT m.*, t.name as tournament_name,
-           u1.username as player1_username, u1.display_name as player1_display_name,
-           u2.username as player2_username, u2.display_name as player2_display_name
+           u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+           u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
     FROM matches m
     LEFT JOIN users u1 ON m.player1_id = u1.id
     LEFT JOIN users u2 ON m.player2_id = u2.id
