@@ -2,6 +2,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import AvatarSelect from "./AvatarSelect";
 import { useRef } from "react";
 import CloseBtn from "../Common/CloseBtn";
+import { apiService } from "../../services/api";
 
 const Avatar = () => {
     const { user, logout } = useAuth();
@@ -27,57 +28,7 @@ const Avatar = () => {
 
         console.log('Starting upload for file:', file.name, file.size, file.type);
 
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-        const token = localStorage.getItem('auth_token');
-        console.log('Token found:', !!token, token?.substring(0, 20) + '...');
-        
-        if (!token) {
-            alert('No authentication token found. Please log in again.');
-            return;
-        }
-
-        console.log('Making request to upload endpoint...');
-        const response = await fetch('https://localhost:8000/api/avatars/upload', {
-            method: 'POST',
-            headers: {
-            'Authorization': `Bearer ${token}`
-            },
-            body: formData
-        });
-
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-
-        if (!responseText) {
-            alert('Upload failed: Empty response from server');
-            return;
-        }
-
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            alert(`Upload failed: Invalid response format - ${responseText.substring(0, 100)}`);
-            return;
-        }
-        
-        if (response.ok) {
-            alert('Avatar uploaded successfully!');
-            window.location.reload();
-        } else {
-            alert(`Upload failed: ${result.error || result.message || 'Unknown error'}`);
-        }
-        } catch (error) {
-        console.error('Upload error:', error);
-        alert(`Upload failed: ${error instanceof Error ? error.message : 'Network error'}`);
-        }
+        apiService.uploadAvatar(file);
     };
 
 
