@@ -34,10 +34,10 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
                 </div>
                 <div className="flex-1 flex justify-evenly items-start mt-1">
                     <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-                        <img src="./src/img/chat.svg" alt="chat" />
+                        <img src="/src/img/chat.svg" alt="chat" />
                     </button>
                     <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" >
-                        <img src="./src/img/plus.svg" alt="more" onClick={openOptions}/>
+                        <img src="/src/img/plus.svg" alt="more" onClick={openOptions}/>
                     </button>
                 </div>
             </div>

@@ -29,7 +29,7 @@ const Requests = () => {
     return (
         <div className="absolute ml-[4rem] mt-2 mb-0">
             <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" onClick={toggleRequest}>
-                <img src="./src/img/requests.svg" alt="requests" />
+                <img src="/src/img/requests.svg" alt="requests" />
             </button>
 
             <div className={`${requestWindow ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] relative right-[472px] bottom-[150px] z-[45] flex-col items-center`}>

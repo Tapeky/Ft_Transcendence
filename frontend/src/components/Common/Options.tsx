@@ -34,18 +34,18 @@ const Options = ({setVisible, visible}: Props) => {
                 <Link to={"/profile"}>
                 <li className="py-2 pl-2 cursor-pointer hover:underline underline-offset-4 flex h-[52px]">
                     Profile 
-                    <span className="flex flex-grow justify-end items-center mr-6"><img src="./src/img/profile.svg" alt="logout" className="h-[25x] w-[25px]"/></span>
+                    <span className="flex flex-grow justify-end items-center mr-6"><img src="/src/img/profile.svg" alt="logout" className="h-[25px] w-[25px]"/></span>
                 </li>
                 </Link>
 
                 <li className="py-2 pl-2 cursor-pointer hover:underline underline-offset-4 flex h-[52px]" onClick={openFriends}>
                     Friends
-                    <span className="flex flex-grow justify-end items-center mr-6"><img src="./src/img/friends.svg" alt="logout" className="h-[25x] w-[25px]"/></span>
+                    <span className="flex flex-grow justify-end items-center mr-6"><img src="/src/img/friends.svg" alt="logout" className="h-[25px] w-[25px]"/></span>
                 </li>
 
                 <li className="py-2 pl-2 cursor-pointer hover:underline underline-offset-4 flex h-[52px]" onClick={handleLogout}>
                     Log Out
-                    <span className="flex flex-grow justify-end items-center mr-6"><img src="./src/img/logout.svg" alt="logout" className="h-[25x] w-[25px]"/></span>
+                    <span className="flex flex-grow justify-end items-center mr-6"><img src="/src/img/logout.svg" alt="logout" className="h-[25px] w-[25px]"/></span>
                 </li>
 
             </ul>

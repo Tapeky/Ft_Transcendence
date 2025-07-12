@@ -1,9 +1,26 @@
 import { apiService } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { useEffect, useState } from "react";
 
 const AddFriend = () => {
 
 	const {user} = useAuth();
+	const [status, setStatus] = useState('ok');
+	const [showStatus, setShowStatus] = useState(false);
+
+	useEffect(() =>
+	{
+		if (showStatus)
+		{
+			const timer = setTimeout(() => {
+				setShowStatus(false);
+			}, 5000);
+
+			return () => clearTimeout(timer);
+		}
+	}
+		, [status, showStatus]
+	);
 
 	const addFriend = async() =>
 	{
@@ -13,13 +30,15 @@ const AddFriend = () => {
 
 		if (nameInput.value.length < 3)
 		{
-			console.log("Not enough characters");
+			setStatus('len');
+			setShowStatus(true);
 			return;
 		}
 
 		if (nameInput.value === user?.username)
 		{
-			console.log("Can't add yourself");
+			setStatus('self');
+			setShowStatus(true);
 			return;
 		}
 
@@ -28,11 +47,13 @@ const AddFriend = () => {
 			const index = data.findIndex(user => user.username === nameInput.value);
 			if (index === -1)
 			{
-				console.log('User not found');
+				setStatus('ko');
+				setShowStatus(true);
 				return;
 			}
 			await apiService.sendFriendRequest(data[index].id);
-			console.log('Sent !');
+			setStatus('ok');
+			setShowStatus(true);
 			nameInput.value = '';
 		}
 		catch (error) {
@@ -42,7 +63,15 @@ const AddFriend = () => {
 
     return (
 		<div className="mx-3 mb-4 border-b-2 z-50">
-			<h2 className="">Add friend</h2>
+			<div className="flex items-start">
+				<h2 className="flex-1">Add friend</h2>
+				<h3 className={`flex-1 ${status === 'ok' ? 'text-green-500' : 'text-orange-500'} ${showStatus ? 'block' : 'hidden'}`}>
+					{status === 'ok' && 'Request sent !'}
+					{status === 'ko' && 'User not found'}
+					{status === 'len' && '3 characters min'}
+					{status === 'self' && "Can't add yourself"}
+				</h3>
+			</div>
 			<input id="nameInput" type="text" className="rounded-md mr-3 mb-5 text-black indent-4" maxLength={12}/>
 			<button className="rounded-md border-[2px] px-3 hover:scale-110 ml-4" onClick={addFriend}>ADD</button>
 		</div>

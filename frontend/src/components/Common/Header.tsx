@@ -45,7 +45,7 @@ const Header = ({userVisible = true}) => {
                         </h3>
                     </div>
                     <div className='absolute bottom-2 right-2'>
-                        <img src="./src/img/click.svg" alt="logout" className={`${click ? 'block' : 'hidden'} h-[25x] w-[25px]`}/>
+                        <img src="/src/img/click.svg" alt="logout" className={`${click ? 'block' : 'hidden'} h-[25x] w-[25px]`}/>
                     </div>
 
                 </div>

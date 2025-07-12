@@ -29,7 +29,7 @@ const BlockList = () => {
     return (
         <div className="absolute ml-3 mt-2 mb-0">
             <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" onClick={toggleList}>
-                <img src="./src/img/blocklist.svg" alt="block list" />
+                <img src="/src/img/blocklist.svg" alt="block list" />
             </button>
 
             <div className={`${list ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] relative right-[370px] top-[250px] flex-col items-center z-[45]`}>

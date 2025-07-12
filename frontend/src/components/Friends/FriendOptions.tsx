@@ -60,7 +60,7 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 					<div className="flex flex-col items-center justify-center gap-2 mt-2">
 						<h2 className="text-[2rem]">▼ See {username}'s stats ▼</h2>
 						<div className="h-[100px] w-3/4 text-center">
-							<Link to='/dashboard'>
+							<Link to={`/dashboard/${id}`}>
 							<button className="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200">
 								Dashboard
 							</button>
@@ -70,10 +70,10 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 
 					<div className="flex-grow flex justify-evenly items-center">
 						<button className="border-2 h-[60px] w-[60px] mr-2 bg-white border-black">
-							<img src="./src/img/block.svg" alt="block" onClick={block}/>
+							<img src="/src/img/block.svg" alt="block" onClick={block}/>
 						</button>
 						<button className="border-2 h-[60px] w-[60px] mr-2 bg-white border-black" >
-							<img src="./src/img/remove.svg" alt="remove" onClick={removeFriend}/>
+							<img src="/src/img/remove.svg" alt="remove" onClick={removeFriend}/>
 						</button>
 					</div>
 

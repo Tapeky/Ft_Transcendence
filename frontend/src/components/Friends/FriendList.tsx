@@ -30,6 +30,7 @@ const FriendList = ({setVisible, visible}: Props) => {
                     const data = await apiService.getFriends();
                     setFriends(data);
                 }
+
             } catch (error) {
                 console.error(error);
             }
@@ -46,13 +47,13 @@ const FriendList = ({setVisible, visible}: Props) => {
                 <BlockList />
                 <Requests />
                 <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black absolute ml-[7.2rem] mt-2 mb-0" onClick={refreshList}>
-                    <img src="./src/img/refresh.svg" alt="refresh" />
+                    <img src="/src/img/refresh.svg" alt="refresh" />
                 </button>
                 <AddFriend />
 
                 <div className='flex-grow overflow-auto flex flex-col items-center gap-4'>
                     {friends.length === 0 &&
-                        <div className="flex flex-col items-center">NO FRIEND<img src="./src/img/ouin.gif" alt="OUIN" className="w-[350px]"/></div>
+                        <div className="flex flex-col items-center">NO FRIEND<img src="/src/img/ouin.gif" alt="OUIN" className="w-[350px]"/></div>
                     }
                     {friends.map(friend => <FriendItem key={friend.id} username={friend.username} displayName={friend.display_name} avatar={friend.avatar_url}
                                     is_online={friend.is_online} id={friend.id} />)}

@@ -35,7 +35,7 @@ const BlockedUser = ({username, avatar, id}: Props) =>
             <div className="flex flex-col">
                 <h2 className="mt-2 flex-grow">{username}</h2>
                 <button className="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
-                    <img src="./src/img/unblock.svg" alt="unblock" onClick={unblock} />
+                    <img src="/src/img/unblock.svg" alt="unblock" onClick={unblock} />
                 </button>
             </div>
         </div>
