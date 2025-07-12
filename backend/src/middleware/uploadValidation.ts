@@ -27,13 +27,25 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
       });
     }
 
-    // TAILLE
-    if (data.file.bytesRead > MAX_FILE_SIZE) {
-      return reply.status(400).send({
-        success: false,
-        error: `Fichier trop volumineux. Taille maximale: ${MAX_FILE_SIZE / 1024 / 1024}MB`
-      });
+    // LECTURE SÉCURISÉE avec limite de taille
+    const chunks: Buffer[] = [];
+    let totalSize = 0;
+    
+    for await (const chunk of data.file) {
+      totalSize += chunk.length;
+      
+      // Vérification de taille en temps réel pour éviter les attaques DoS
+      if (totalSize > MAX_FILE_SIZE) {
+        return reply.status(400).send({
+          success: false,
+          error: `Fichier trop volumineux. Taille maximale: ${MAX_FILE_SIZE / 1024 / 1024}MB`
+        });
+      }
+      
+      chunks.push(chunk);
     }
+    
+    const buffer = Buffer.concat(chunks);
 
     // MIME TYPE
     if (!ALLOWED_MIME_TYPES.includes(data.mimetype)) {
@@ -52,13 +64,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
       });
     }
 
-    // MAGIC BYTES
-    const chunks: Buffer[] = [];
-    for await (const chunk of data.file) {
-      chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-
+    // MAGIC BYTES (validation)
     let isValidImage = false;
     
     if (data.mimetype.includes('jpeg')) {

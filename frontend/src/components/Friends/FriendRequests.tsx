@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { apiService } from "../../services/api";
+import { getAvatarUrl } from "../../utils/avatar";
 
 type Props = {
   username: string;
-  avatar: string;
-  id: number;
+  avatar: string | null;
+  requestId: number;  // ID de la demande d'ami (pour accept/decline)
+  userId: number;     // ID de l'utilisateur (pour bloquer)
 };
 
-const FriendRequests = ({ username, avatar, id }: Props) => 
+const FriendRequests = ({ username, avatar, requestId, userId }: Props) => 
 {
 
 	const [visible, setVisible] = useState(true);
@@ -20,7 +22,7 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
 	const accept = async () =>
 	{
 		try {
-			await apiService.acceptFriendRequest(id);
+			await apiService.acceptFriendRequest(requestId);  // Utiliser requestId pour accept/decline
 			console.log('Accepted !')
 			dismiss();
 		} catch (error) {
@@ -31,7 +33,7 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
 	const reject = async () =>
 	{
 		try {
-			await apiService.declineFriendRequest(id);
+			await apiService.declineFriendRequest(requestId);  // Utiliser requestId pour accept/decline
 			console.log('Rejected !')
 			dismiss();
 		} catch (error) {
@@ -42,19 +44,21 @@ const FriendRequests = ({ username, avatar, id }: Props) =>
 	const block = async () =>
 	{
 		try {
-			console.log(id);
-			await apiService.blockUser(id);
-			console.log('Blocked !')
+			console.log('Attempting to block user with ID:', userId);  // Utiliser userId pour bloquer
+			await apiService.blockUser(userId);  // Utiliser userId pour bloquer
+			console.log('User blocked successfully!')
 			dismiss();
 		} catch (error) {
-			console.error(error);
+			console.error('Error blocking user:', error);
+			// Afficher l'erreur à l'utilisateur
+			alert(`Erreur lors du blocage: ${error}`);
 		}
 	}
 
     return (
         <div className={`${visible ? 'block' : 'hidden'} border-white border-2 min-h-[120px] w-[320px] flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden mx-2`}>
             <div className="flex items-center justify-center min-w-[120px]">
-                <img src={avatar} alt="icon" className="h-[90px] w-[90px] border-2"/>
+                <img src={getAvatarUrl(avatar)} alt="icon" className="h-[90px] w-[90px] border-2"/>
             </div>
             <div className="flex flex-col">
                 <h2 className="mt-2 flex-grow">{username}</h2>

@@ -52,7 +52,7 @@ export interface Friend {
 	id: number;
 	username: string;
 	display_name: string;
-	avatar_url: string;
+	avatar_url: string | null;
 	is_online: boolean;
 	total_wins: number;
 	total_losses: number;
@@ -64,7 +64,7 @@ export interface FriendRequest {
 	user_id: number;
 	username: string;
 	display_name: string;
-	avatar_url: string;
+	avatar_url: string | null;
 	is_online: boolean;
 }
 
@@ -134,9 +134,13 @@ class ApiService {
 		const url = `${API_BASE_URL}${endpoint}`;
 		
 		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
 			...options.headers as Record<string, string>
 		};
+
+		// Définir Content-Type seulement si on a un body qui n'est pas FormData
+		if (options.body && !(options.body instanceof FormData)) {
+			headers['Content-Type'] = 'application/json';
+		}
 
 		if (this.token) {
 			headers['Authorization'] = `Bearer ${this.token}`;
@@ -376,15 +380,13 @@ class ApiService {
 
 	async blockUser(id: number): Promise<void> {
 		await this.request(`/api/friends/block/${id}`, {
-			method: 'PUT',
-			body: JSON.stringify({}),
+			method: 'PUT'
 		});
 	}
 
 	async unblockUser(id: number): Promise<void> {
 		await this.request(`/api/friends/unblock/${id}`, {
-			method: 'PUT',
-			body: JSON.stringify({}),
+			method: 'PUT'
 		});
 	}
 
@@ -408,8 +410,7 @@ class ApiService {
 
 		const response = await this.request<{ avatar_url: string; filename: string }>('/api/avatars/upload', {
 			method: 'POST',
-			body: formData,
-			headers: {},
+			body: formData
 		});
 		return response.data!;
 	}
