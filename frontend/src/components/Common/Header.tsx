@@ -36,10 +36,10 @@ const Header = ({userVisible = true}) => {
 
                     <div className="flex flex-grow flex-col">
                         <h3 className="text-[1.5rem]">
-                            {user?.username}
+                            {user?.display_name}
                         </h3>
                         <h3 className="text-[1.2rem]" id='displayName'>
-                            {user?.display_name}
+                            {user?.username}
                         </h3>
                     </div>
                     <div className='absolute bottom-2 right-2'>

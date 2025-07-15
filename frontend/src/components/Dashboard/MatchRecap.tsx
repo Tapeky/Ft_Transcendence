@@ -29,7 +29,7 @@ const MatchRecap = ({match}: Props) => {
                 <h1 className="flex-1 text-center text-[4rem]">{match.player1_score} - {match.player2_score}</h1>
                 
                 <div className="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
-                    <img src="" alt="icon" className="border-2 h-[100px] w-[100px]"/> 
+                    <img src={''} alt="icon" className="border-2 h-[100px] w-[100px]"/> 
                     <h1>{match.player2_username}</h1>
                 </div>
             </div>

@@ -1,27 +1,24 @@
 import { useAuth } from "../../contexts/AuthContext";
 import AvatarSelect from "./AvatarSelect";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import CloseBtn from "../Common/CloseBtn";
 import { apiService } from "../../services/api";
 import { getAvatarUrl } from "../../utils/avatar";
 
 const Avatar = () => {
-    const { user, logout, refreshUser } = useAuth();
+    const { user, refreshUser } = useAuth();
     const ref = useRef<HTMLInputElement>(null);
+    const [showWindow, setShowWindow] = useState(false);
   
 
     const closeWindow = () => {
-            const window = document.getElementById("avatarWindow");
-
-            window?.classList.replace('flex', 'hidden');
+            setShowWindow(false);
     };
 
     const openAvatar = () => {
-        const window = document.getElementById("avatarWindow");
-
-        window?.classList.replace('hidden', 'flex');
+        setShowWindow(true);
     };
-    
+
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         
@@ -33,15 +30,13 @@ const Avatar = () => {
             const result = await apiService.uploadAvatar(file);
             console.log('Upload successful:', result);
             
-            // Mettre à jour les infos utilisateur pour afficher le nouvel avatar
             await refreshUser();
             
         } catch (error) {
             console.error('Error uploading avatar:', error);
-            alert(`Erreur lors de l'upload: ${error}`);
+            alert(`Upload error: ${error}`);
         }
     };
-
 
     const upload = () => {
         if (ref.current)
@@ -59,14 +54,14 @@ const Avatar = () => {
         EDIT
         </button>
 
-        <div id="avatarWindow" className='fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen justify-center items-center hidden'>
+        <div className={`${showWindow ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen justify-center items-center`}>
             <div className='flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]'>
                 <CloseBtn func={closeWindow}/>
                 <AvatarSelect />
 
                 <input
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                 onChange={handleAvatarUpload}
                 className="hidden"
                 ref={ref}

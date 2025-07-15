@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import Avatar from "../components/Profile/Avatar";
 import BackBtn from "../components/Common/BackBtn";
 import ChangeDisplayName from "../components/Profile/ChangeDisplayName";
+import ChangePassword from "../components/Profile/ChangePassword";
 
 const Profile = () => {
 
@@ -38,6 +39,7 @@ const Profile = () => {
                             <h2>{user.username}</h2>
                         </div>
                         <ChangeDisplayName />
+                        <ChangePassword />
                     </div>
 
 

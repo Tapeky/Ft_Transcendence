@@ -26,8 +26,8 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
                 <img src={getAvatarUrl(avatar)} alt="icon" className="h-[90px] w-[90px] border-2"/>
             </div>
             <div className="leading-none flex flex-col gap-1 flex-grow overflow-hidden">
-                <h2 className="mt-2">{username}</h2>
-                <h2 className="text-[1.5rem]">{displayName}</h2>
+                <h2 className="mt-2">{displayName}</h2>
+                <h2 className="text-[1.5rem]">{username}</h2>
             </div>
             <div className="min-w-[110px] flex flex-col pl-2">
                 <div className="flex-1 flex justify-start items-center ml-1">
