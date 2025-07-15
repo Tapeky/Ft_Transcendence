@@ -1,6 +1,7 @@
 import { useState } from "react";
 import FriendOptions from "./FriendOptions";
 import { getAvatarUrl } from "../../utils/avatar";
+import { Link } from "react-router-dom";
 
 type Props = {
   username: string;
@@ -34,12 +35,17 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
                     <h2 className="text-[1.5rem]">{is_online ? 'Online' : 'Offline'}</h2>
                 </div>
                 <div className="flex-1 flex justify-evenly items-start mt-1">
-                    <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-                        <img src="/src/img/chat.svg" alt="chat" />
-                    </button>
+
+                    <Link to={`/chat/${id}`}>
+                        <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
+                            <img src="/src/img/chat.svg" alt="chat" />
+                        </button>
+                    </Link>
+
                     <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" >
                         <img src="/src/img/plus.svg" alt="more" onClick={openOptions}/>
                     </button>
+
                 </div>
             </div>
 

@@ -20,7 +20,6 @@ const Dashboard = () => {
             try {
                 const data = await apiService.getUserById(Number(id));
                 setPlayer(data);
-                console.log(data);
             } catch (error) {
                 console.error(error);
             }
@@ -38,7 +37,6 @@ const Dashboard = () => {
             try {
                 const { data } = await apiService.getMatches({player_id: Number(id)});
                 setMatch(data);
-                console.log(data);
             } catch (error) {
                 console.error(error);
             }

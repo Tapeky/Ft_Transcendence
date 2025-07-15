@@ -9,7 +9,7 @@ type Props = {
 const MatchRecap = ({match}: Props) => {
 
     const { user } = useAuth();
-    const victory = match.winner_id === user?.id ? true : false;
+    const victory = (match.winner_id === user?.id ? true : false);
 
     return (
         <div className={`${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-4/5 border-2 
@@ -22,14 +22,14 @@ const MatchRecap = ({match}: Props) => {
 
             <div className="flex-[2] flex items-center justify-center">
                 <div className="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
-                    <img src="" alt="icon" className="border-2 h-[100px] w-[100px]"/> 
+                    <img src={match.player1_avatar_url} alt="icon" className="border-2 h-[100px] w-[100px]"/> 
                     <h1>{match.player1_username}</h1>
                 </div>
 
                 <h1 className="flex-1 text-center text-[4rem]">{match.player1_score} - {match.player2_score}</h1>
                 
                 <div className="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
-                    <img src={''} alt="icon" className="border-2 h-[100px] w-[100px]"/> 
+                    <img src={match.player2_avatar_url} alt="icon" className="border-2 h-[100px] w-[100px]"/> 
                     <h1>{match.player2_username}</h1>
                 </div>
             </div>

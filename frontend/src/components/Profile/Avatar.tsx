@@ -61,7 +61,7 @@ const Avatar = () => {
 
                 <input
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
                 onChange={handleAvatarUpload}
                 className="hidden"
                 ref={ref}
