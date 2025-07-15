@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const ChangeDisplayName = () =>
 {
-    const {user} = useAuth();
+    const { user, refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
     const handleClick = async () => {
@@ -31,7 +31,9 @@ const ChangeDisplayName = () =>
 
         try {
             await apiService.updateProfileDisplayName(displayInput.value);
-            window.location.reload();
+            console.log('Display name updated !');
+            await refreshUser();
+            setLoading(false);
         } catch (error) {
             console.error(error);
             setLoading(false);
