@@ -90,6 +90,12 @@ export interface Match {
   tournament_id?: number;
   player1_id: number;
   player2_id: number;
+  player1_username?: string;
+  player2_username?: string;
+  player1_avatar_url?: string;
+  player2_avatar_url?: string;
+  player1_guest_name?: string;
+  player2_guest_name?: string;
   player1_score: number;
   player2_score: number;
   winner_id?: number;
