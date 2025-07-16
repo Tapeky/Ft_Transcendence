@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
 
 // Type Definitions
 
@@ -588,6 +588,13 @@ class ApiService {
 			endpoints: any;
 		}>('/');
 		return response.data!;
+	}
+
+	async heartbeat(): Promise<void> {
+		await this.request('/api/auth/heartbeat', {
+			method: 'POST',
+			body: JSON.stringify({})
+		});
 	}
 
 }

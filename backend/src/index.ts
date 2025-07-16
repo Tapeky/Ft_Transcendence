@@ -186,6 +186,24 @@ async function start() {
       }, 60 * 60 * 1000);
     }
 
+    setInterval(async () => {
+      try {
+        const db = DatabaseManager.getInstance().getDb();
+        const result = await db.run(`
+          UPDATE users 
+          SET is_online = false 
+          WHERE is_online = true 
+          AND last_login < datetime('now', '-5 minutes')
+        `);
+        
+        if (result.changes && result.changes > 0) {
+          server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
+        }
+      } catch (error) {
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error);
+      }
+    }, 5 * 60 * 1000);
+
     GameManager.instance.registerLoop();
   } catch (err) {
     server.log.error('❌ Erreur de démarrage du serveur:', err);

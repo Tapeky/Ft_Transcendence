@@ -241,4 +241,8 @@ export class UserRepository {
   async updateGoogleId(userId: number, googleId: string): Promise<void> {
     await this.db.run('UPDATE users SET google_id = ? WHERE id = ?', [googleId, userId]);
   }
+
+  async updateLastLogin(userId: number): Promise<void> {
+    await this.db.run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [userId]);
+  }
 }

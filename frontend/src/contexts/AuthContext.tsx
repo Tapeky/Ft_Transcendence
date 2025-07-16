@@ -24,7 +24,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	useEffect(() => {
 		const initAuth = async () => {
-			// Vérifier si on a un token dans l'URL (callback GitHub)
 			try {
 				const callbackToken = apiService.handleAuthCallback();
 				if (callbackToken) {
@@ -34,7 +33,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				console.error('Erreur callback GitHub:', error);
 			}
 
-			// Vérifier si on a un token stocké
 			if (apiService.isAuthenticated()) {
 				try {
 					const currentUser = await apiService.getCurrentUser();
@@ -47,8 +45,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			}
 			setLoading(false);
 		};
+
+		const handleBeforeUnload = async () => {
+			if (user) {
+				const data = JSON.stringify({});
+				const token = localStorage.getItem('auth_token');
+				
+				if (token) {
+					navigator.sendBeacon(`https://localhost:8000/api/auth/logout`, data);
+				}
+			}
+		};
+
+		const handleVisibilityChange = async () => {
+			if (document.hidden && user) {
+				setTimeout(async () => {
+					if (document.hidden) {
+						try {
+							await apiService.logout();
+							setUser(null);
+						} catch (error) {
+							console.error('Erreur auto-logout:', error);
+						}
+					}
+				}, 30000);
+			}
+		};
+
+		let heartbeatInterval: NodeJS.Timeout | null = null;
+		
+		if (user) {
+			heartbeatInterval = setInterval(async () => {
+				try {
+					await apiService.heartbeat();
+				} catch (error) {
+					console.error('Erreur heartbeat:', error);
+					if (error instanceof Error && error.message.includes('401')) {
+						apiService.clearToken();
+						setUser(null);
+					}
+				}
+			}, 60000);
+		}
+
 		initAuth();
-	}, []);
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			if (heartbeatInterval) {
+				clearInterval(heartbeatInterval);
+			}
+		};
+	}, [user]);
 
 	const login = async (credentials: LoginCredentials) => {
 		setLoading(true);
