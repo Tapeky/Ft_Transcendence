@@ -394,6 +394,29 @@ export async function authRoutes(server: FastifyInstance) {
     }
   });
 
+  server.post('/heartbeat', {
+    preHandler: authenticateToken
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const currentUser = request.user as { id: number; username: string; email: string };
+      
+      await userRepo.updateOnlineStatus(currentUser.id, true);
+      await userRepo.updateLastLogin(currentUser.id);
+
+      reply.send({
+        success: true,
+        message: 'Heartbeat reçu'
+      });
+
+    } catch (error: any) {
+      request.log.error('Erreur heartbeat:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors du heartbeat'
+      });
+    }
+  });
+
   // PUT /api/auth/account - Suppression de compte (GDPR)
   server.delete('/account', {
     preHandler: [
