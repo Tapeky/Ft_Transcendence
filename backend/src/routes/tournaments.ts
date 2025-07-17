@@ -30,7 +30,7 @@ async function createTournamentMatches(tournamentId: number, participants: any[]
   const matches = [];
   
   if (participants.length === 2) {
-    const result = await db.query(`
+    const result = await db.execute(`
       INSERT INTO matches (tournament_id, player1_id, player2_id, status, game_type)
       VALUES (?, ?, ?, 'scheduled', 'pong')
     `, [tournamentId, participants[0].user_id, participants[1].user_id]);
@@ -38,7 +38,7 @@ async function createTournamentMatches(tournamentId: number, participants: any[]
   } else {
     for (let i = 0; i < participants.length; i += 2) {
       if (i + 1 < participants.length) {
-        const result = await db.query(`
+        const result = await db.execute(`
           INSERT INTO matches (tournament_id, player1_id, player2_id, status, game_type)
           VALUES (?, ?, ?, 'scheduled', 'pong')
         `, [tournamentId, participants[i].user_id, participants[i + 1].user_id]);
@@ -96,12 +96,12 @@ export async function tournamentRoutes(server: FastifyInstance) {
       const { name, description, max_players = 8 } = request.body;
       const userId = (request as any).user.id;
 
-      const result = await db.query(`
+      const result = await db.execute(`
         INSERT INTO tournaments (name, description, max_players, created_by)
         VALUES (?, ?, ?, ?)
       `, [name, description, max_players, userId]);
 
-      const tournamentId = (result as any).lastInsertRowid;
+      const tournamentId = result.lastID;
 
       const tournament = await db.query(`
         SELECT t.*, u.username as creator_username
@@ -188,7 +188,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
       }
 
       // Ajouter le participant avec son alias
-      await db.query(`
+      await db.execute(`
         INSERT INTO tournament_participants (tournament_id, user_id, alias)
         VALUES (?, ?, ?)
       `, [tournamentId, userId, alias]);
@@ -307,7 +307,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
 
       try {
         const matches = await createTournamentMatches(tournamentId, participants);
-        bracketData.rounds = [{ matches: matches.map(m => ({ id: (m as any).lastInsertRowid })) }];
+        bracketData.rounds = [{ matches: matches.map(m => ({ id: (m as any).lastID })) }];
       } catch (matchError) {
         request.log.error('Erreur création matches:', matchError);
         return reply.status(500).send({
@@ -316,7 +316,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
         });
       }
 
-      await db.query(`
+      await db.execute(`
         UPDATE tournaments 
         SET status = 'running', started_at = CURRENT_TIMESTAMP, bracket_data = ?
         WHERE id = ?

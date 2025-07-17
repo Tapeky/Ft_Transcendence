@@ -99,7 +99,7 @@ export async function matchRoutes(server: FastifyInstance) {
       const finalP2GuestName = finalP2Id ? null : player2_guest_name;
 
       // Insérer le match avec toutes les données
-      const result = await db.query(`
+      const result = await db.execute(`
         INSERT INTO matches (
           player1_id, player2_id, player1_guest_name, player2_guest_name,
           player1_score, player2_score, winner_id, game_type, max_score,
@@ -121,7 +121,7 @@ export async function matchRoutes(server: FastifyInstance) {
         match_data ? JSON.stringify(match_data) : null
       ]);
 
-      const matchId = (result as any).lastInsertRowid;
+      const matchId = result.lastID;
 
       // Si c'est un match de tournoi, avancer le bracket
       if (tournament_id && winner_id) {
