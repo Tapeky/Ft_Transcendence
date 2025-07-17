@@ -36,15 +36,18 @@ const Dashboard = () => {
         {
             try {
                 const { data } = await apiService.getMatches({player_id: Number(id)});
-                setMatch(data);
+                setMatch(data || []);
             } catch (error) {
                 console.error(error);
+                setMatch([]);
             }
         };
         
-        fetchMatches();
+        if (id) {
+            fetchMatches();
         }
-        , [player]
+        }
+        , [id]
     );
 
     if (loading)
@@ -82,10 +85,10 @@ const Dashboard = () => {
                     </div>
                     <div className="flex flex-col gap-2 items-center">
                         <h3 className="border-b-2 border-white">Match history</h3>
-                        {match.length === 0 &&
+                        {(!match || match.length === 0) &&
                         <div>Nothing to see here</div>
                         }
-                        {match.map(match => <MatchRecap key={match.id} match={match}/>)}
+                        {match && match.map(match => <MatchRecap key={match.id} match={match}/>)}
                     </div>
 
                 </div>
