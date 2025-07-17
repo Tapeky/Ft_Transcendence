@@ -58,8 +58,6 @@ const Dashboard = () => {
     }
 
 
-
-
     return (
         <div className="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white  ">
             <Header />  
