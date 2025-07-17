@@ -1,15 +1,19 @@
 import { apiService, Avatar } from "../../services/api";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const AvatarSelect = () => {
-    
+    const { refreshUser } = useAuth();
     const [avatars, setAvatars] = useState<Avatar[]>([]);
 
     const handleClick = async (id: string) => {
-        console.log(id);
-        await apiService.setAvatar(id);
-        window.location.reload();
-
+        try {
+            await apiService.setAvatar(id);
+            await refreshUser();
+        } catch (error) {
+            console.error('Erreur lors du changement d\'avatar:', error);
+            alert('Erreur lors du changement d\'avatar');
+        }
     } 
 
     useEffect(() => {

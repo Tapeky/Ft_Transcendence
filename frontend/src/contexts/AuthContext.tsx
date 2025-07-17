@@ -46,6 +46,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setLoading(false);
 		};
 
+		initAuth();
+	}, []);
+
+	useEffect(() => {
 		const handleBeforeUnload = async () => {
 			if (user) {
 				const data = JSON.stringify({});
@@ -87,8 +91,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				}
 			}, 60000);
 		}
-
-		initAuth();
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
 		document.addEventListener('visibilitychange', handleVisibilityChange);
