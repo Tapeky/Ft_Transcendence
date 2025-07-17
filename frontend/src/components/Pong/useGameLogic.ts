@@ -7,8 +7,8 @@ const CANVAS_HEIGHT = 400;
 const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 10;
 const BALL_SIZE = 10;
-const PADDLE_SPEED = 0.1;
-const INITIAL_BALL_SPEED = 0.02;
+const PADDLE_SPEED = 300;
+const INITIAL_BALL_SPEED = 200;
 const WINNING_SCORE = 3;
 const SPEED_MULTIPLIER = 1.1;
 
@@ -37,7 +37,7 @@ const useGameLogic = () => {
     ArrowDown: false
   });
 
-  const updateGameStateRef = useRef<() => void>();
+  const updateGameStateRef = useRef<(deltaTime: number) => void>();
   const drawGameRef = useRef<(ctx: CanvasRenderingContext2D) => void>();
 
   // Game reset function
@@ -112,7 +112,7 @@ const useGameLogic = () => {
   }, [gameState]);
 
   // Fonction pour mettre à jour l'état du jeu
-  const updateGameState = useCallback(() => {
+  const updateGameState = useCallback((deltaTime: number) => {
     setGameState(prevState => {
       // Si le jeu est terminé, ne pas mettre à jour
       if (prevState.gameOver || prevState.player1Score >= WINNING_SCORE || prevState.player2Score >= WINNING_SCORE) {
@@ -125,23 +125,23 @@ const useGameLogic = () => {
       // Copie de l'état précédent
       const newState = { ...prevState };
 
-      // Mouvement des raquettes basé sur les touches pressées
+      // Mouvement des raquettes basé sur les touches pressées (avec deltaTime)
       if (keyState.w && newState.player1Y > 0) {
-        newState.player1Y -= PADDLE_SPEED;
+        newState.player1Y -= PADDLE_SPEED * deltaTime;
       }
       if (keyState.s && newState.player1Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-        newState.player1Y += PADDLE_SPEED;
+        newState.player1Y += PADDLE_SPEED * deltaTime;
       }
       if (keyState.ArrowUp && newState.player2Y > 0) {
-        newState.player2Y -= PADDLE_SPEED;
+        newState.player2Y -= PADDLE_SPEED * deltaTime;
       }
       if (keyState.ArrowDown && newState.player2Y < CANVAS_HEIGHT - PADDLE_HEIGHT) {
-        newState.player2Y += PADDLE_SPEED;
+        newState.player2Y += PADDLE_SPEED * deltaTime;
       }
 
-      // Mouvement de la balle
-      newState.ballX += newState.ballSpeedX;
-      newState.ballY += newState.ballSpeedY;
+      // Mouvement de la balle (avec deltaTime)
+      newState.ballX += newState.ballSpeedX * deltaTime;
+      newState.ballY += newState.ballSpeedY * deltaTime;
 
       // Rebond sur les bords supérieur et inférieur
       if (newState.ballY <= BALL_SIZE || newState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
@@ -202,14 +202,21 @@ const useGameLogic = () => {
   // Fonction pour démarrer la boucle de jeu
   const startGameLoop = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     let animationFrameId: number;
+    let lastTime = 0;
     
-    const render = () => {
-      updateGameStateRef.current?.();
-      drawGameRef.current?.(ctx);
+    const render = (currentTime: number) => {
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+      
+      if (deltaTime < 0.05) {
+        updateGameStateRef.current?.(deltaTime);
+        drawGameRef.current?.(ctx);
+      }
+      
       animationFrameId = window.requestAnimationFrame(render);
     };
     
-    render();
+    animationFrameId = window.requestAnimationFrame(render);
     
     // Retourne une fonction pour arrêter la boucle de jeu
     return () => {
