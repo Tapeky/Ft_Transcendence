@@ -23,7 +23,7 @@ const GameCanvas: React.FC = () => {
     return () => {
       stopGameLoop();
     };
-  }, [startGameLoop]);
+  }, []);
 
   // Vérifier si un joueur a gagné
   const winner = gameState.player1Score >= 3 ? 1 : gameState.player2Score >= 3 ? 2 : null;

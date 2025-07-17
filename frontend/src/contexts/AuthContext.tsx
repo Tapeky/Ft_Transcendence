@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 							console.error('Erreur auto-logout:', error);
 						}
 					}
-				}, 30000);
+				}, 5 * 60 * 1000);
 			}
 		};
 
