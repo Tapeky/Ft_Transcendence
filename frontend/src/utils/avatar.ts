@@ -17,7 +17,7 @@ export const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
   
   // Si c'est un avatar uploadé (commence par /uploads/), ajouter l'URL du backend
   if (avatarUrl.startsWith('/uploads/')) {
-    return `http://localhost:8000${avatarUrl}`;
+    return `https://localhost:8000${avatarUrl}`;
   }
   
   // Sinon, retourner l'URL telle quelle (Dicebear, etc.)
