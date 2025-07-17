@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, KeyState } from './types';
 
 // Constantes
@@ -36,6 +36,9 @@ const useGameLogic = () => {
     ArrowUp: false,
     ArrowDown: false
   });
+
+  const updateGameStateRef = useRef<() => void>();
+  const drawGameRef = useRef<(ctx: CanvasRenderingContext2D) => void>();
 
   // Game reset function
   const resetGame = () => {
@@ -193,13 +196,16 @@ const useGameLogic = () => {
     });
   }, [keyState]);
 
+  updateGameStateRef.current = updateGameState;
+  drawGameRef.current = drawGame;
+
   // Fonction pour démarrer la boucle de jeu
   const startGameLoop = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     let animationFrameId: number;
     
     const render = () => {
-      updateGameState();
-      drawGame(ctx);
+      updateGameStateRef.current?.();
+      drawGameRef.current?.(ctx);
       animationFrameId = window.requestAnimationFrame(render);
     };
     
@@ -209,7 +215,7 @@ const useGameLogic = () => {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, [drawGame, updateGameState]);
+  }, []);
 
   return { gameState, startGameLoop, resetGame };
 };
