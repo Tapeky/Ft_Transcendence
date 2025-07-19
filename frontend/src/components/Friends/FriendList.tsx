@@ -42,7 +42,7 @@ const FriendList = ({setVisible, visible}: Props) => {
 
     return createPortal(
         <div className={`${visible ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white`}>
-            <div className='flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 w-[500px] h-[600px] border-[5px] border-black text-[2rem] box-border font-iceland select-none'>
+            <div className='flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 min-w-[500px] h-[600px] border-[5px] border-black text-[2rem] box-border font-iceland select-none'>
                 <CloseBtn func={setVisible}/>
                 <BlockList />
                 <Requests />
