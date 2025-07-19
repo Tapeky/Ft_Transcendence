@@ -1,6 +1,8 @@
-import { apiService, Match } from "../../services/api";
+import { Match } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAvatarUrl } from "../../utils/avatar";
+import MatchStats from "./MatchStats";
+import { useState } from "react";
 
 type Props = {
   match: Match;
@@ -11,10 +13,16 @@ const MatchRecap = ({match}: Props) => {
 
     const { user } = useAuth();
     const victory = (match.winner_id === user?.id ? true : false);
+    const [stats, setStats] = useState(false);
+
+    const showStats = () =>
+    {
+        setStats(true);
+    };
 
     return (
         <div className={`${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-4/5 border-2 
-            self-center cursor-pointer hover:scale-105 transition duration-300 text-[2rem] p-4 flex`}>
+            self-center cursor-pointer hover:scale-105 transition duration-300 text-[2rem] p-4 flex`} onClick={showStats}>
 
             <div className="flex-1">
                 <h1 className="text-[3rem]">{victory ? "Victory" : "Defeat"}</h1>
@@ -35,7 +43,7 @@ const MatchRecap = ({match}: Props) => {
                 </div>
             </div>
 
-
+            <MatchStats visible={stats} setVisible={() => setStats(false)} id={match.id} />
         </div>
 
     );
