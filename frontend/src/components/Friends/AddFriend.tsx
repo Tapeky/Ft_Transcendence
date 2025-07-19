@@ -72,7 +72,7 @@ const AddFriend = () => {
 					{status === 'self' && "Can't add yourself"}
 				</h3>
 			</div>
-			<input id="nameInput" type="text" className="rounded-md mr-3 mb-5 text-black indent-4" maxLength={12}/>
+			<input id="nameInput" type="text" className="rounded-md mr-3 mb-5 text-black indent-4 w-[330px]" maxLength={12}/>
 			<button className="rounded-md border-[2px] px-3 hover:scale-110 ml-4" onClick={addFriend}>ADD</button>
 		</div>
     );
