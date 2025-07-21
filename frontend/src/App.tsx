@@ -8,7 +8,8 @@ import Chat from './views/Chat';
 import { useState, useEffect } from 'react';
 import { NavContext } from './contexts/NavContext';
 
-function App() {
+const App = () =>
+{
   const [path, setPath] = useState(window.location.pathname);
 
   const goTo = (to: string) => {
@@ -45,10 +46,10 @@ function App() {
 	}
 	};
 
-return (
-  <NavContext.Provider value={{ goTo }}>
-    {renderPage()}
-  </NavContext.Provider>
+	return (
+	<NavContext.Provider value={{ goTo }}>
+		{renderPage()}
+  	</NavContext.Provider>
 );
 }
 

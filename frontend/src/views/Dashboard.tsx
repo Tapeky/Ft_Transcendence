@@ -17,6 +17,12 @@ const Dashboard = ({ id }: Props) => {
     const [match, setMatch] = useState<Match[]>([]);
 	const { goTo } = useNav();
 
+	useEffect(() => {
+		if (!loading && !(isAuthenticated && user)) {
+			goTo('/');
+		}
+	}, [loading, isAuthenticated, user, goTo]);
+
     useEffect(() =>
     {
         const fetchPlayer = async() =>
@@ -54,16 +60,13 @@ const Dashboard = ({ id }: Props) => {
         , [id]
     );
 
-    if (loading)
-    {
-        return <div className='bg-purple-800 text-white text-3xl h-screen'>Loading...</div>;
-    }
+	if (loading) {
+		return <div className='bg-purple-800 text-white text-3xl'>Loading...</div>;
+	}
 
-    if (!(isAuthenticated && user))
-    {
-        goTo('/');
+	if (!(isAuthenticated && user)) {
 		return null;
-    }
+	}
 
 
     return (

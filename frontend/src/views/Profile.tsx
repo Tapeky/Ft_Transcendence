@@ -1,24 +1,31 @@
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Common/Header";
-import { Navigate } from "react-router-dom";
+import { useNav } from "../contexts/NavContext";
 import Avatar from "../components/Profile/Avatar";
 import BackBtn from "../components/Common/BackBtn";
 import ChangeDisplayName from "../components/Profile/ChangeDisplayName";
 import ChangePassword from "../components/Profile/ChangePassword";
+import { useEffect } from "react";
 
 const Profile = () => {
 
     const { user, loading, isAuthenticated } = useAuth();
+	const { goTo } = useNav();
 
-    if (loading)
-    {
-        return <div className='bg-purple-800 text-white text-3xl h-screen'>Loading...</div>;
-    }
+	useEffect(() => {
+		if (!loading && !(isAuthenticated && user))
+		{
+			goTo('/');
+		}
+	}, [loading, isAuthenticated, user, goTo]);
 
-    if (!(isAuthenticated && user))
-    {
-        return <Navigate to="/" />;
-    }
+	if (loading) {
+		return <div className='bg-purple-800 text-white text-3xl'>Loading...</div>;
+	}
+
+	if (!(isAuthenticated && user)) {
+		return null;
+	}
 
     return (
         <div className="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white  ">

@@ -14,6 +14,13 @@ const Chat = ({ id }: Props) => {
     const { user, loading, isAuthenticated } = useAuth();
 	const [friend, setFriend] = useState<User>();
 	const { goTo } = useNav();
+
+	useEffect(() =>
+	{
+		if (!loading && !(isAuthenticated && user)) {
+			goTo('/');
+		}
+	}, [loading, isAuthenticated, user, goTo]);
 	
 	useEffect(() =>
 	{
@@ -32,16 +39,13 @@ const Chat = ({ id }: Props) => {
 		, [id]
 	);
 
-    if (loading)
-    {
-        return <div className='bg-purple-800 text-white text-3xl h-screen'>Loading...</div>;
-    }
+	if (loading) {
+		return <div className='bg-purple-800 text-white text-3xl'>Loading...</div>;
+	}
 
-    if (!(isAuthenticated && user))
-    {
-		goTo
-        return null;
-    }
+	if (!(isAuthenticated && user)) {
+		return null;
+	}
 
 	// user = nous, friend = la personne a qui on parle actuellement
 	
