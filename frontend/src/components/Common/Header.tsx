@@ -20,7 +20,7 @@ const Header = ({userVisible = true}) => {
 
     return (
         <header className='flex bg-[url("./img/city.png")] bg-cover bg-center min-h-[150px] 
-            items-center justify-center border-black border-solid border-b-[5px] border-[5px] sticky top-0 z-50'>
+            items-center justify-center border-black border-solid border-b-[5px] border-[5px] sticky top-0 z-40'>
             <div className="flex-1"></div>
 
             <h1 className='text-[5rem] flex-1 text-center text-white backdrop-blur backdrop-brightness-90'>TRANSCENDENCE</h1>
