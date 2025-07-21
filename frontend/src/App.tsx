@@ -1,37 +1,55 @@
-import React from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
-
-function MainApp() {
-  const { isAuthenticated, loading, user } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
- 
-  if (isAuthenticated && user) {
-    return <Navigate to="/menu" />;
-  }
-
-
-  return <Navigate to="/" />;
-}
-
+import Menu from './views/Menu'
+import NotFound from './views/NotFound'
+import AuthPage from './components/Auth/AuthPage';
+import PongGame from './components/Pong/PongGame'
+import Profile from './views/Profile';
+import Dashboard from './views/Dashboard';
+import Chat from './views/Chat';
+import { useState, useEffect } from 'react';
+import { NavContext } from './contexts/NavContext';
 
 function App() {
-  return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
-  );
+  const [path, setPath] = useState(window.location.pathname);
+
+  const goTo = (to: string) => {
+    window.history.pushState(null, '', to);
+    setPath(to);
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const renderPage = () => {
+	switch (true) {
+		case path === '/':
+			return <AuthPage />;
+		case path === '/menu':
+			return <Menu />;
+		case path === '/profile':
+			return <Profile />;
+		case path === '/game':
+			return <PongGame />;
+		case path.startsWith('/dashboard/'):
+			const dashboardId = path.split('/')[2];
+			return <Dashboard id={dashboardId} />;
+		case path.startsWith('/chat/'):
+			const chatId = path.split('/')[2];
+			return <Chat id={chatId} />;
+		default:
+			return <NotFound />;
+	}
+	};
+
+return (
+  <NavContext.Provider value={{ goTo }}>
+    {renderPage()}
+  </NavContext.Provider>
+);
 }
 
 export default App;

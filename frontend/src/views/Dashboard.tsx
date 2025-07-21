@@ -1,17 +1,21 @@
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Common/Header";
-import { Navigate, useParams } from "react-router-dom";
 import BackBtn from "../components/Common/BackBtn";
 import MatchRecap from "../components/Dashboard/MatchRecap";
 import { apiService, User, Match } from "../services/api";
 import { useState, useEffect } from "react";
+import { useNav } from "../contexts/NavContext";
 
-const Dashboard = () => {
+type Props = {
+  id: string,
+};
+
+const Dashboard = ({ id }: Props) => {
 
     const { user, loading, isAuthenticated } = useAuth();
     const [player, setPlayer] = useState<User>();
     const [match, setMatch] = useState<Match[]>([]);
-    const { id } = useParams();
+	const { goTo } = useNav();
 
     useEffect(() =>
     {
@@ -57,7 +61,8 @@ const Dashboard = () => {
 
     if (!(isAuthenticated && user))
     {
-        return <Navigate to="/" />;
+        goTo('/');
+		return null;
     }
 
 

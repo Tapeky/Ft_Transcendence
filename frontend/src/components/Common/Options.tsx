@@ -1,5 +1,6 @@
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import NavLink from "./NavLink";
+import { useNav } from "../../contexts/NavContext";
 import { useState } from "react";
 import FriendList from "../Friends/FriendList";
 
@@ -12,12 +13,12 @@ const Options = ({setVisible, visible}: Props) => {
 
     const { logout } = useAuth();
     const [friends, setFriends] = useState(false);
-    
-    const navigate = useNavigate();
+	const { goTo } = useNav();
 
     const handleLogout = async () => {
         await logout();
-        navigate('/');
+        goTo('/');
+		return null;
     };
 
     const openFriends = () =>
@@ -31,12 +32,12 @@ const Options = ({setVisible, visible}: Props) => {
         <div className={`${visible ? 'block' : 'hidden'} border-2 border-black absolute right-[20px] bottom-[-60px] w-[260px] translate-y-1/2 bg-white text-black`}>
             <ul className="text-[1.5rem] divide-y-2 cursor-pointer divide-black indent-2">
 
-                <Link to={"/profile"}>
+                <NavLink to={"/profile"}>
                 <li className="py-2 pl-2 cursor-pointer hover:underline underline-offset-4 flex h-[52px]">
                     Profile 
                     <span className="flex flex-grow justify-end items-center mr-6"><img src="/src/img/profile.svg" alt="logout" className="h-[25px] w-[25px]"/></span>
                 </li>
-                </Link>
+                </NavLink>
 
                 <li className="py-2 pl-2 cursor-pointer hover:underline underline-offset-4 flex h-[52px]" onClick={openFriends}>
                     Friends

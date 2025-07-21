@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import FloatingInput from './FloatingInput';
 import PremiumButton from './PremiumButton';
 import { apiService } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNav } from '../../contexts/NavContext';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -11,7 +11,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, loading } = useAuth();
-  const navigate = useNavigate();
+  const { goTo } = useNav();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -43,7 +43,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         email: formData.email,
         password: formData.password
       });
-      navigate("/menu");
+      goTo('/menu');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }

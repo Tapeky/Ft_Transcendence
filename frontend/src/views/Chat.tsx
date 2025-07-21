@@ -1,16 +1,19 @@
 import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Common/Header";
-import { Navigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { apiService, User } from "../services/api";
 import BackBtn from "../components/Common/BackBtn";
+import { useNav } from "../contexts/NavContext";
 
+type Props = {
+  id: string,
+};
 
-const Chat = () => {
+const Chat = ({ id }: Props) => {
 
     const { user, loading, isAuthenticated } = useAuth();
-    const { id } = useParams();
 	const [friend, setFriend] = useState<User>();
+	const { goTo } = useNav();
 	
 	useEffect(() =>
 	{
@@ -36,7 +39,8 @@ const Chat = () => {
 
     if (!(isAuthenticated && user))
     {
-        return <Navigate to="/" />;
+		goTo
+        return null;
     }
 
 	// user = nous, friend = la personne a qui on parle actuellement
