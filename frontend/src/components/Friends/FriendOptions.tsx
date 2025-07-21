@@ -64,7 +64,7 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 						<h2 className="text-[2rem]">▼ See {username}'s stats ▼</h2>
 						<div className="h-[100px] w-3/4 text-center">
 							<NavLink to={`/dashboard/${id}`}>
-							<button className="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200">
+							<button className="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200" onClick={() => setIsOpen()}>
 								Dashboard
 							</button>
 							</NavLink>
