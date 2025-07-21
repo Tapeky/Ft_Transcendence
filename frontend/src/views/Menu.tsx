@@ -3,20 +3,24 @@ import Header from '../components/Common/Header';
 import Choice from '../components/Menu/Choice';
 import Banner from '../components/Menu/Banner';
 import { useNav } from '../contexts/NavContext';
+import { useEffect } from 'react';
 
 
 const Menu = () => {
 	const { goTo } = useNav();
 	const { loading, user, isAuthenticated } = useAuth();
 
-	if (loading)
-	{
+	useEffect(() => {
+		if (!loading && !(isAuthenticated && user)) {
+			goTo('/');
+		}
+	}, [loading, isAuthenticated, user, goTo]);
+
+	if (loading) {
 		return <div className='bg-purple-800 text-white text-3xl'>Loading...</div>;
 	}
 
-	if (!(isAuthenticated && user))
-	{
-		goTo('/');
+	if (!(isAuthenticated && user)) {
 		return null;
 	}
 
