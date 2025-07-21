@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import FloatingInput from './FloatingInput';
 import PremiumButton from './PremiumButton';
 import { apiService } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNav } from '../../contexts/NavContext';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -11,7 +11,7 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register, loading } = useAuth();
-  const navigate = useNavigate();
+  const { goTo } = useNav();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -59,7 +59,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         display_name: formData.display_name || formData.username,
         data_consent: formData.data_consent
       });
-      navigate("/menu");
+      goTo("/menu");
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     }

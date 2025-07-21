@@ -1,5 +1,5 @@
 import { useAuth } from "../../contexts/AuthContext";
-import { Link } from "react-router-dom";
+import NavLink from "../Common/NavLink";
 
 
 const Banner = () => {
@@ -18,7 +18,7 @@ const Banner = () => {
                     Losses : {user?.total_losses || 0}
                 </li>
                 <li className="border-x-2 border-black px-6">
-                    <Link to={`/dashboard/${user?.id}`}><button className="hover:text-blue-400">► Dashboard ◄</button></Link>
+                    <NavLink to={`/dashboard/${user?.id}`}><button className="hover:text-blue-400">► Dashboard ◄</button></NavLink>
                 </li>
             </ul>
         </div>

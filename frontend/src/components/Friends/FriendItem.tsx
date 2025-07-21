@@ -1,7 +1,7 @@
 import { useState } from "react";
 import FriendOptions from "./FriendOptions";
 import { getAvatarUrl } from "../../utils/avatar";
-import { Link } from "react-router-dom";
+import NavLink from "../Common/NavLink";
 
 type Props = {
   username: string;
@@ -36,11 +36,11 @@ const FriendItem = ({username, displayName, avatar, is_online, id}: Props) =>
                 </div>
                 <div className="flex-1 flex justify-evenly items-start mt-1">
 
-                    <Link to={`/chat/${id}`}>
+                    <NavLink to={`/chat/${id}`}>
                         <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
                             <img src="/src/img/chat.svg" alt="chat" />
                         </button>
-                    </Link>
+                    </NavLink>
 
                     <button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" >
                         <img src="/src/img/plus.svg" alt="more" onClick={openOptions}/>

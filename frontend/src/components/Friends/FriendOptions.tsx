@@ -1,6 +1,6 @@
 import { apiService } from "../../services/api";
 import CloseBtn from "../Common/CloseBtn";
-import { Link } from "react-router-dom";
+import NavLink from "../Common/NavLink";
 import { getAvatarUrl } from "../../utils/avatar";
 
 type Props = {
@@ -63,11 +63,11 @@ const FriendOptions = ({username, displayName, avatar, id, isOpen, setIsOpen, se
 					<div className="flex flex-col items-center justify-center gap-2 mt-2">
 						<h2 className="text-[2rem]">▼ See {username}'s stats ▼</h2>
 						<div className="h-[100px] w-3/4 text-center">
-							<Link to={`/dashboard/${id}`}>
+							<NavLink to={`/dashboard/${id}`}>
 							<button className="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200">
 								Dashboard
 							</button>
-							</Link>
+							</NavLink>
 						</div>
 					</div>
 
