@@ -1,9 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNav } from '../../contexts/NavContext';
 import Header from '../Common/Header';
 import BackBtn from '../Common/BackBtn';
 
 const PongGame: React.FC = () => {
+  const { user, loading, isAuthenticated } = useAuth();
+  const { goTo } = useNav();
   const [gameStarted, setGameStarted] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !(isAuthenticated && user)) {
+      goTo('/');
+    }
+  }, [loading, isAuthenticated, user, goTo]);
+
+  if (loading) {
+    return <div className='bg-purple-800 text-white text-3xl'>Loading...</div>;
+  }
+
+  if (!(isAuthenticated && user)) {
+    return null;
+  }
   
   return (
     <div className="relative min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none bg-gradient-to-r from-blue-600 to-red-600 text-white">

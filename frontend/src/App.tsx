@@ -3,6 +3,8 @@ import NotFound from './views/NotFound'
 import AuthPage from './components/Auth/AuthPage';
 import PongGame from './components/Pong/PongGame'
 import Profile from './views/Profile';
+import Friends from './views/Friends';
+import Tournament from './views/Tournament';
 import Dashboard from './views/Dashboard';
 import Chat from './views/Chat';
 import { useState, useEffect } from 'react';
@@ -33,6 +35,10 @@ const App = () =>
 			return <Menu />;
 		case path === '/profile':
 			return <Profile />;
+		case path === '/friends':
+			return <Friends />;
+		case path === '/tournament':
+			return <Tournament />;
 		case path === '/game':
 			return <PongGame />;
 		case path.startsWith('/dashboard/'):
