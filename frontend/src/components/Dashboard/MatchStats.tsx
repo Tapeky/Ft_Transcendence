@@ -21,7 +21,11 @@ const MatchStats = ({ visible, setVisible, id }: Props) => {
 				const data = await apiService.getMatchById(id);
 				setMatch(data);
 			} catch (error) {
-				console.error(error);
+				if (error instanceof Error) {
+					console.error('Error loading match:', error.message);
+				} else {
+					console.error('Error loading match:', String(error));
+				}
 				setMatch(undefined);
 			}
 		};

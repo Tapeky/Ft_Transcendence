@@ -30,7 +30,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 					console.log('Token reçu depuis callback GitHub');
 				}
 			} catch (error) {
-				console.error('Erreur callback GitHub:', error);
+				if (error instanceof Error) {
+					console.error('Erreur callback GitHub:', error.message);
+				} else {
+					console.error('Erreur callback GitHub:', String(error));
+				}
 			}
 
 			if (apiService.isAuthenticated()) {
@@ -39,7 +43,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 					setUser(currentUser);
 					console.log('Token trouvé, récupération des infos utilisateur...');
 				} catch (error) {
-					console.error('Erreur lors de la récupération des infos utilisateur:', error);
+					if (error instanceof Error) {
+						console.error('Erreur lors de la récupération des infos utilisateur:', error.message);
+					} else {
+						console.error('Erreur lors de la récupération des infos utilisateur:', String(error));
+					}
 					apiService.clearToken();
 				}
 			}
@@ -69,7 +77,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 							await apiService.logout();
 							setUser(null);
 						} catch (error) {
-							console.error('Erreur auto-logout:', error);
+							if (error instanceof Error) {
+								console.error('Erreur auto-logout:', error.message);
+							} else {
+								console.error('Erreur auto-logout:', String(error));
+							}
 						}
 					}
 				}, 5 * 60 * 1000);
@@ -83,7 +95,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				try {
 					await apiService.heartbeat();
 				} catch (error) {
-					console.error('Erreur heartbeat:', error);
+					if (error instanceof Error) {
+						console.error('Erreur heartbeat:', error.message);
+					} else {
+						console.error('Erreur heartbeat:', String(error));
+					}
 					if (error instanceof Error && error.message.includes('401')) {
 						apiService.clearToken();
 						setUser(null);
@@ -110,7 +126,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			const authResponse = await apiService.login(credentials);
 			setUser(authResponse.user);
 		} catch (error) {
-			console.error('Login failed:', error);
+			if (error instanceof Error) {
+				console.error('Login failed:', error.message);
+			} else {
+				console.error('Login failed:', String(error));
+			}
 			throw error;
 		} finally {
 			setLoading(false);
@@ -124,7 +144,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setUser(authResponse.user);
 			console.log('Inscription réussie, utilisateur:', authResponse.user);
 		} catch (error) {
-			console.error('Erreur lors de l\'inscription:', error);
+			// Don't log expected validation errors - they're handled by the UI
+			const isValidationError = error instanceof Error && (
+				error.message.includes('déjà pris') || 
+				error.message.includes('déjà utilisé') || 
+				error.message.includes('existe déjà') ||
+				error.message.includes('invalide') ||
+				error.message.includes('incorrect')
+			);
+			
+			if (!isValidationError) {
+				if (error instanceof Error) {
+					console.error('Erreur lors de l\'inscription:', error.message);
+				} else {
+					console.error('Erreur lors de l\'inscription:', String(error));
+				}
+			}
 			throw error;
 		} finally {
 			setLoading(false);
@@ -138,7 +173,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setUser(null);
 			console.log('Déconnexion réussie');
 		} catch (error) {
-			console.error('Erreur lors de la déconnexion:', error);
+			if (error instanceof Error) {
+				console.error('Erreur lors de la déconnexion:', error.message);
+			} else {
+				console.error('Erreur lors de la déconnexion:', String(error));
+			}
 			setUser(null);
 		} finally {
 			setLoading(false);
@@ -151,7 +190,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setUser(currentUser);
 			console.log('Informations utilisateur mises à jour');
 		} catch (error) {
-			console.error('Erreur lors de la mise à jour des infos utilisateur:', error);
+			if (error instanceof Error) {
+				console.error('Erreur lors de la mise à jour des infos utilisateur:', error.message);
+			} else {
+				console.error('Erreur lors de la mise à jour des infos utilisateur:', String(error));
+			}
 		}
 	};
 	
