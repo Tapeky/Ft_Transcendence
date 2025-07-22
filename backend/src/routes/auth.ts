@@ -8,17 +8,32 @@ export async function authRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
   const userRepo = new UserRepository(db);
 
+  const checkNotAuthenticated = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+      return reply.status(400).send({
+        success: false,
+        error: 'Vous êtes déjà connecté'
+      });
+    } catch (error) {
+      return;
+    }
+  };
+
   // POST /api/auth/register
   server.post('/register', {
-    preHandler: validateInput({
-      body: {
-        username: { required: true, type: 'string', minLength: 3, maxLength: 50 },
-        email: { required: true, type: 'email', maxLength: 255 },
-        password: { required: true, type: 'string', minLength: 6, maxLength: 100 },
-        display_name: { type: 'string', maxLength: 100 },
-        data_consent: { required: true, type: 'boolean' }
-      }
-    })
+    preHandler: [
+      checkNotAuthenticated,
+      validateInput({
+        body: {
+          username: { required: true, type: 'string', minLength: 3, maxLength: 50 },
+          email: { required: true, type: 'email', maxLength: 255 },
+          password: { required: true, type: 'string', minLength: 6, maxLength: 100 },
+          display_name: { type: 'string', maxLength: 100 },
+          data_consent: { required: true, type: 'boolean' }
+        }
+      })
+    ]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = request.body as RegisterCredentials;
@@ -99,12 +114,15 @@ export async function authRoutes(server: FastifyInstance) {
 
   // POST /api/auth/login
   server.post('/login', {
-    preHandler: validateInput({
-      body: {
-        email: { required: true, type: 'email' },
-        password: { required: true, type: 'string' }
-      }
-    })
+    preHandler: [
+      checkNotAuthenticated,
+      validateInput({
+        body: {
+          email: { required: true, type: 'email' },
+          password: { required: true, type: 'string' }
+        }
+      })
+    ]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = request.body as LoginCredentials;
