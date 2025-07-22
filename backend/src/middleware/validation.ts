@@ -1,24 +1,87 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 
-// Middleware de validation des entrées
+export const VALIDATION_LIMITS = {
+  EMAIL_MAX_LENGTH: 254,
+  USERNAME_MAX_LENGTH: 50,
+  PASSWORD_MAX_LENGTH: 128,
+  DISPLAY_NAME_MAX_LENGTH: 100,
+  TOURNAMENT_NAME_MAX_LENGTH: 100,
+  TOURNAMENT_DESCRIPTION_MAX_LENGTH: 500,
+  ALIAS_MAX_LENGTH: 50,
+  GUEST_NAME_MAX_LENGTH: 50,
+  MATCH_DATA_MAX_LENGTH: 10000,
+  GAME_TYPE_MAX_LENGTH: 20
+};
+
+export function validateInputLengths(data: any): void {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  const errors: string[] = [];
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      let maxLength: number;
+      
+      switch (key) {
+        case 'email':
+          maxLength = VALIDATION_LIMITS.EMAIL_MAX_LENGTH;
+          break;
+        case 'username':
+          maxLength = VALIDATION_LIMITS.USERNAME_MAX_LENGTH;
+          break;
+        case 'password':
+        case 'current_password':
+        case 'new_password':
+          maxLength = VALIDATION_LIMITS.PASSWORD_MAX_LENGTH;
+          break;
+        case 'display_name':
+          maxLength = VALIDATION_LIMITS.DISPLAY_NAME_MAX_LENGTH;
+          break;
+        case 'name':
+          maxLength = VALIDATION_LIMITS.TOURNAMENT_NAME_MAX_LENGTH;
+          break;
+        case 'description':
+          maxLength = VALIDATION_LIMITS.TOURNAMENT_DESCRIPTION_MAX_LENGTH;
+          break;
+        case 'alias':
+          maxLength = VALIDATION_LIMITS.ALIAS_MAX_LENGTH;
+          break;
+        case 'player1_guest_name':
+        case 'player2_guest_name':
+          maxLength = VALIDATION_LIMITS.GUEST_NAME_MAX_LENGTH;
+          break;
+        case 'match_data':
+          maxLength = VALIDATION_LIMITS.MATCH_DATA_MAX_LENGTH;
+          break;
+        case 'game_type':
+          maxLength = VALIDATION_LIMITS.GAME_TYPE_MAX_LENGTH;
+          break;
+        default:
+          return;
+      }
+
+      if (value.length > maxLength) {
+        errors.push(`Le champ '${key}' ne peut pas dépasser ${maxLength} caractères (actuellement: ${value.length})`);
+      }
+    }
+  });
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(', '));
+  }
+}
+
 export function validateInput(schema: any) {
   return async function validator(
     request: FastifyRequest,
     reply: FastifyReply
   ) {
     try {
-      if (schema.body) {
-        validateObject(request.body, schema.body);
-      }
-      
-      if (schema.params) {
-        validateObject(request.params, schema.params);
-      }
-      
-      if (schema.query) {
-        validateObject(request.query, schema.query);
-      }
-      
+      if (schema.body) { validateObject(request.body, schema.body); }
+      if (schema.params) { validateObject(request.params, schema.params); }
+      if (schema.query) { validateObject(request.query, schema.query); }
     } catch (error: any) {
       return reply.status(400).send({
         success: false,
@@ -29,7 +92,6 @@ export function validateInput(schema: any) {
   };
 }
 
-// Middleware pour valider le display_name
 export async function validateDisplayname(
   request: FastifyRequest,
   reply: FastifyReply
@@ -61,7 +123,6 @@ export async function validateDisplayname(
   return;
 }
 
-// Utilitaire de validation
 function validateObject(obj: any, schema: any): void {
   for (const [key, rules] of Object.entries(schema)) {
     const value = obj?.[key];
@@ -77,7 +138,6 @@ function validateObject(obj: any, schema: any): void {
       }
       
       if (ruleSet.type === 'number') {
-        // Pour les paramètres URL, convertir string vers number
         if (typeof value === 'string' && !isNaN(Number(value))) {
           obj[key] = Number(value);
         } else if (typeof value !== 'number') {
