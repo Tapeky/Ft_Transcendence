@@ -75,10 +75,10 @@ export class AuthPage {
                       type="email"
                       required
                       autocomplete="email"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="login-email" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="login-email" class="floating-label">
                       Email*
                     </label>
                   </div>
@@ -91,10 +91,10 @@ export class AuthPage {
                       type="password"
                       required
                       autocomplete="current-password"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="login-password" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="login-password" class="floating-label">
                       Password*
                     </label>
                   </div>
@@ -203,10 +203,10 @@ export class AuthPage {
                       required
                       minlength="3"
                       maxlength="20"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="register-username" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="register-username" class="floating-label">
                       Username*
                     </label>
                   </div>
@@ -219,10 +219,10 @@ export class AuthPage {
                       type="email"
                       required
                       autocomplete="email"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="register-email" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="register-email" class="floating-label">
                       Email*
                     </label>
                   </div>
@@ -236,10 +236,10 @@ export class AuthPage {
                       required
                       minlength="6"
                       autocomplete="new-password"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="register-password" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="register-password" class="floating-label">
                       Password*
                     </label>
                   </div>
@@ -251,10 +251,10 @@ export class AuthPage {
                       name="display_name"
                       type="text"
                       maxlength="30"
-                      placeholder=" "
-                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                      placeholder=""
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     />
-                    <label for="register-display-name" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                    <label for="register-display-name" class="floating-label">
                       Display Name
                     </label>
                   </div>
@@ -517,34 +517,17 @@ export class AuthPage {
   }
 
   private setupFloatingInputs(): void {
-    // Effet floating label pour tous les inputs
+    // Reproduction exacte du comportement React FloatingInput
     const floatingInputs = this.element.querySelectorAll('.floating-input');
     
     floatingInputs.forEach(input => {
       const inputElement = input as HTMLInputElement;
-      const label = this.element.querySelector(`label[for="${inputElement.id}"]`);
+      const label = this.element.querySelector(`label[for="${inputElement.id}"]`) as HTMLElement;
       
-      const updateLabel = () => {
+      const updateInput = () => {
         const hasValue = inputElement.value.length > 0;
-        const isFocused = document.activeElement === inputElement;
         
-        if (label) {
-          if (isFocused || hasValue) {
-            label.classList.add('top-2', 'text-xs', 'text-gray-600');
-            label.classList.remove('top-4', 'text-base', 'text-gray-500');
-          } else {
-            label.classList.remove('top-2', 'text-xs', 'text-gray-600');
-            label.classList.add('top-4', 'text-base', 'text-gray-500');
-          }
-          
-          if (isFocused) {
-            label.classList.add('text-gray-900');
-          } else {
-            label.classList.remove('text-gray-900');
-          }
-        }
-        
-        // Background change based on value
+        // Background change based on value (comme React)
         if (hasValue) {
           inputElement.classList.add('bg-white');
           inputElement.classList.remove('bg-transparent');
@@ -554,13 +537,16 @@ export class AuthPage {
         }
       };
       
-      inputElement.addEventListener('focus', updateLabel);
-      inputElement.addEventListener('blur', updateLabel);
-      inputElement.addEventListener('input', updateLabel);
+      inputElement.addEventListener('focus', updateInput);
+      inputElement.addEventListener('blur', updateInput);
+      inputElement.addEventListener('input', updateInput);
       
       // Initial state
-      updateLabel();
+      updateInput();
     });
+    
+    // Note: Le CSS gère automatiquement le floating label avec :focus et :not(:placeholder-shown)
+    // exactement comme dans le React avec les classes conditionnelles
   }
 
   private setupPremiumButtons(): void {
@@ -913,20 +899,65 @@ export class AuthPage {
   private createAnimationStyles(): string {
     return `
       <style>
-        /* Floating Input Styles */
+        /* Floating Input Styles - Reproduction exacte du React */
         .floating-input-container {
           position: relative;
         }
         
-        .floating-input:focus ~ .floating-label,
-        .floating-input:not(:placeholder-shown) ~ .floating-label {
-          top: 0.5rem;
-          font-size: 0.75rem;
-          color: #4b5563;
+        .floating-label {
+          position: absolute;
+          left: 0.75rem; /* left-3 = 12px = 0.75rem */
+          top: 50%; /* Centré verticalement dans l'input */
+          transform: translateY(-50%); /* Pour un centrage parfait */
+          font-size: 1rem; /* text-base */
+          color: #6b7280; /* text-gray-500 */
+          transition: all 0.2s ease-in-out; /* duration-200 */
+          pointer-events: none;
+          z-index: 10;
+          background: transparent;
         }
         
+        /* Quand focus OU quand il y a du contenu */
+        .floating-input:focus ~ .floating-label,
+        .floating-input:not(:placeholder-shown) ~ .floating-label,
+        .floating-input:valid ~ .floating-label {
+          top: 0.5rem; /* Remonte dans la zone de padding top */
+          transform: translateY(0); /* Annule le centrage */
+          font-size: 0.75rem; /* text-xs */
+          color: #4b5563; /* text-gray-600 */
+        }
+        
+        /* Couleur spéciale quand focus */
         .floating-input:focus ~ .floating-label {
-          color: #111827;
+          color: #111827; /* text-gray-900 */
+        }
+        
+        /* Style de base pour les inputs flottants */
+        .floating-input {
+          background: transparent !important;
+        }
+        
+        /* Laisser le style autofill natif du navigateur (fond jaune) */
+
+        /* Améliorer la couleur du label flottant */
+        .floating-label {
+          color: #9ca3af !important; /* text-gray-400 */
+        }
+        .floating-input:focus ~ .floating-label,
+        .floating-input:not(:placeholder-shown) ~ .floating-label,
+        .floating-input:valid ~ .floating-label {
+          color: #6b7280 !important; /* text-gray-500 */
+        }
+        .floating-input:focus ~ .floating-label {
+          color: #111827 !important; /* text-gray-900 */
+        }
+        
+        /* S'assurer que les labels sont bien positionnés */
+        .floating-input-container .floating-label {
+          position: absolute !important;
+          left: 0.75rem !important;
+          pointer-events: none !important;
+          z-index: 10 !important;
         }
         
         /* Auth Form Transitions */
