@@ -1,10 +1,17 @@
+import { appState, AppStateData } from '../state/AppState';
+import { StateMonitor } from '../components/StateMonitor';
+import { authManager } from '../auth/AuthManager';
+
 export class TestPage {
   private element: HTMLElement;
   private testResults: { [key: string]: boolean } = {};
+  private stateUnsubscribers: (() => void)[] = [];
+  private stateMonitors: StateMonitor[] = [];
 
   constructor() {
     this.element = this.createElement();
     this.bindEvents();
+    this.subscribeToState();
     this.runTests();
   }
 
@@ -46,7 +53,7 @@ export class TestPage {
             </div>
 
             <!-- Interactive Tests -->
-            <div class="grid md:grid-cols-2 gap-6">
+            <div class="grid md:grid-cols-3 gap-6">
               
               <!-- Router Tests -->
               <div class="bg-white/10 backdrop-blur-md rounded-xl p-6">
@@ -61,6 +68,39 @@ export class TestPage {
                   <button id="test-routes" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
                     Lister Routes Disponibles
                   </button>
+                </div>
+              </div>
+
+              <!-- State Management Tests -->
+              <div class="bg-white/10 backdrop-blur-md rounded-xl p-6">
+                <h3 class="text-xl font-bold text-white mb-4">🗄️ Tests State</h3>
+                <div class="space-y-3">
+                  <button id="test-login" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    Simuler Login
+                  </button>
+                  <button id="test-logout" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                    Simuler Logout
+                  </button>
+                  <button id="test-loading" class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                    Toggle Loading
+                  </button>
+                  <button id="test-state-debug" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+                    Debug State Info
+                  </button>
+                  <button id="test-monitors" class="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
+                    Test Multi-Monitors
+                  </button>
+                  <button id="test-auth-manager" class="w-full px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors">
+                    Test AuthManager
+                  </button>
+                </div>
+                
+                <!-- Current State Display -->
+                <div class="mt-4 p-3 bg-black/30 rounded-lg">
+                  <div class="text-sm text-gray-300 mb-2">État Actuel:</div>
+                  <div id="current-state" class="text-xs font-mono text-green-400">
+                    Chargement...
+                  </div>
                 </div>
               </div>
 
@@ -125,12 +165,53 @@ export class TestPage {
     const testTailwindBtn = this.element.querySelector('#test-tailwind');
     const testCleanupBtn = this.element.querySelector('#test-cleanup');
 
+    // State test buttons
+    const testLoginBtn = this.element.querySelector('#test-login');
+    const testLogoutBtn = this.element.querySelector('#test-logout');
+    const testLoadingBtn = this.element.querySelector('#test-loading');
+    const testStateDebugBtn = this.element.querySelector('#test-state-debug');
+    const testMonitorsBtn = this.element.querySelector('#test-monitors');
+    const testAuthManagerBtn = this.element.querySelector('#test-auth-manager');
+
     testNavigationBtn?.addEventListener('click', () => this.testNavigation());
     testHistoryBtn?.addEventListener('click', () => this.testHistory());
     testRoutesBtn?.addEventListener('click', () => this.testRoutes());
     testEventsBtn?.addEventListener('click', () => this.testEvents());
     testTailwindBtn?.addEventListener('click', () => this.testTailwind());
     testCleanupBtn?.addEventListener('click', () => this.testCleanup());
+
+    // State test event listeners
+    testLoginBtn?.addEventListener('click', () => this.testLogin());
+    testLogoutBtn?.addEventListener('click', () => this.testLogout());
+    testLoadingBtn?.addEventListener('click', () => this.testLoading());
+    testStateDebugBtn?.addEventListener('click', () => this.testStateDebug());
+    testMonitorsBtn?.addEventListener('click', () => this.testMultiMonitors());
+    testAuthManagerBtn?.addEventListener('click', () => this.testAuthManager());
+  }
+
+  private subscribeToState(): void {
+    // S'abonner aux changements d'état
+    const unsubscribe = appState.subscribe((state: AppStateData) => {
+      this.updateStateDisplay(state);
+      this.log(`🗄️ State updated: ${JSON.stringify(state, null, 2)}`);
+    });
+    
+    this.stateUnsubscribers.push(unsubscribe);
+    this.log('✅ Subscribed to AppState');
+  }
+
+  private updateStateDisplay(state: AppStateData): void {
+    const stateElement = this.element.querySelector('#current-state');
+    if (stateElement) {
+      stateElement.innerHTML = `
+        <div>Auth: ${state.isAuthenticated ? '✅' : '❌'}</div>
+        <div>User: ${state.user?.username || 'null'}</div>
+        <div>Loading: ${state.loading ? '⌛' : '✅'}</div>
+        <div>Path: ${state.currentPath}</div>
+        <div>Version: ${state.stateVersion}</div>
+        <div>Subscribers: ${appState.getSubscriberCount()}</div>
+      `;
+    }
   }
 
   private runTests(): void {
@@ -138,6 +219,7 @@ export class TestPage {
     setTimeout(() => {
       this.testBasicDOM();
       this.testRouterAvailability();
+      this.testStateSystem();
       this.updateTestResults();
     }, 100);
   }
@@ -162,6 +244,148 @@ export class TestPage {
     this.testResults['Current Path'] = currentPath === '/test';
 
     this.log(`🛣️ Router Tests: Available(${routerExists}) Path(${currentPath})`);
+  }
+
+  private testStateSystem(): void {
+    const stateExists = !!(window as any).appState;
+    const canGetState = !!appState.getState();
+    const hasSubscribers = appState.getSubscriberCount() > 0;
+    
+    this.testResults['AppState Available'] = stateExists;
+    this.testResults['State Gettable'] = canGetState;
+    this.testResults['Has Subscribers'] = hasSubscribers;
+
+    this.log(`🗄️ State Tests: Available(${stateExists}) Gettable(${canGetState}) Subscribers(${hasSubscribers})`);
+  }
+
+  // State test methods
+  private testLogin(): void {
+    this.log('🔑 Testing login simulation...');
+    
+    const mockUser = {
+      id: 42,
+      username: 'test_user',
+      email: 'test@example.com',
+      display_name: 'Test User',
+      avatar_url: undefined,
+      is_online: true,
+      total_wins: 10,
+      total_losses: 5,
+      total_games: 15,
+      created_at: new Date().toISOString()
+    };
+
+    appState.login(mockUser);
+    this.log('✅ Login simulation complete');
+  }
+
+  private testLogout(): void {
+    this.log('🚪 Testing logout simulation...');
+    appState.logout();
+    this.log('✅ Logout simulation complete');
+  }
+
+  private testLoading(): void {
+    const currentState = appState.getState();
+    const newLoadingState = !currentState.loading;
+    
+    this.log(`⌛ Toggling loading: ${currentState.loading} → ${newLoadingState}`);
+    appState.setLoading(newLoadingState);
+  }
+
+  private testStateDebug(): void {
+    this.log('🛠️ State debug info:');
+    appState.debugInfo();
+    
+    const history = appState.getStateHistory();
+    this.log(`📚 State history: ${history.length} entries`);
+    
+    if (history.length > 0) {
+      this.log(`📖 Last state: ${JSON.stringify(history[history.length - 1], null, 2)}`);
+    }
+  }
+
+  private testMultiMonitors(): void {
+    if (this.stateMonitors.length > 0) {
+      this.log('🧹 Clearing existing monitors...');
+      this.stateMonitors.forEach(monitor => monitor.destroy());
+      this.stateMonitors = [];
+    }
+
+    this.log('📺 Creating multiple state monitors...');
+    
+    // Créer 3 monitors à différentes positions
+    const positions = [
+      { x: 20, y: 100 },
+      { x: 20, y: 250 },
+      { x: 20, y: 400 }
+    ];
+
+    positions.forEach((pos, index) => {
+      const monitor = new StateMonitor(`${index + 1}`, pos);
+      document.body.appendChild(monitor.getElement());
+      this.stateMonitors.push(monitor);
+    });
+
+    this.log(`✅ Created ${this.stateMonitors.length} state monitors`);
+    this.log('💡 Tip: Change state using buttons to see all monitors update!');
+  }
+
+  private testAuthManager(): void {
+    this.log('🔐 Testing AuthManager integration...');
+    
+    // Test 1: Vérifier que AuthManager existe
+    const authManagerExists = !!(window as any).authManager || !!authManager;
+    this.log(`📋 AuthManager exists: ${authManagerExists}`);
+    
+    // Test 2: Tester les méthodes getter
+    try {
+      const isAuth = authManager.isAuthenticated();
+      const isLoading = authManager.isLoading();
+      const currentUser = authManager.getCurrentUser();
+      
+      this.log(`📊 Current auth state:`);
+      this.log(`  - Authenticated: ${isAuth}`);
+      this.log(`  - Loading: ${isLoading}`);
+      this.log(`  - User: ${currentUser?.username || 'null'}`);
+      
+    } catch (error) {
+      this.log(`❌ Error testing AuthManager getters: ${error}`);
+    }
+    
+    // Test 3: Tester subscription
+    try {
+      const unsubscribe = authManager.subscribeToAuth((authState) => {
+        this.log(`🔔 AuthManager subscription update: auth=${authState.isAuthenticated}, user=${authState.user?.username || 'null'}`);
+      });
+      
+      // Nettoyer après 5 secondes
+      setTimeout(() => {
+        unsubscribe();
+        this.log('🧹 AuthManager subscription cleaned up');
+      }, 5000);
+      
+      this.log('✅ AuthManager subscription test started (5s)');
+      
+    } catch (error) {
+      this.log(`❌ Error testing AuthManager subscription: ${error}`);
+    }
+    
+    // Test 4: OAuth URLs
+    try {
+      const githubUrl = authManager.getGitHubAuthUrl();
+      const googleUrl = authManager.getGoogleAuthUrl();
+      
+      this.log(`🔗 OAuth URLs available:`);
+      this.log(`  - GitHub: ${githubUrl ? '✅' : '❌'}`);
+      this.log(`  - Google: ${googleUrl ? '✅' : '❌'}`);
+      
+    } catch (error) {
+      this.log(`❌ Error testing OAuth URLs: ${error}`);
+    }
+    
+    this.log('✅ AuthManager integration test complete');
+    this.log('💡 Use login simulation to test auth flow through AuthManager');
   }
 
   private testNavigation(): void {
@@ -263,6 +487,17 @@ export class TestPage {
   }
 
   destroy(): void {
+    // Nettoyer les souscriptions d'état
+    this.stateUnsubscribers.forEach(unsubscribe => {
+      unsubscribe();
+    });
+    this.stateUnsubscribers = [];
+    
+    // Nettoyer les monitors
+    this.stateMonitors.forEach(monitor => monitor.destroy());
+    this.stateMonitors = [];
+    
+    this.log('🧹 TestPage: State subscriptions and monitors cleaned up');
     this.element.remove();
   }
 }

@@ -15,7 +15,7 @@
 	  "isolatedModules": true,
 	  "noEmit": true
 	},
-	"include": ["src/main.ts", "src/router.ts", "src/pages/**/*", "src/services/**/*", "src/utils/**/*"],
-	"exclude": ["src/App.tsx", "src/components/**/*", "src/contexts/**/*", "src/views/**/*"],
+	"include": ["src/main.ts", "src/router.ts", "src/pages/**/*", "src/state/**/*", "src/auth/**/*", "src/components/StateMonitor.ts", "src/services/**/*", "src/utils/**/*"],
+	"exclude": ["src/App.tsx", "src/components/Auth/**/*", "src/components/Common/**/*", "src/components/Dashboard/**/*", "src/components/Friends/**/*", "src/components/Menu/**/*", "src/components/Pong/**/*", "src/components/Profile/**/*", "src/contexts/**/*", "src/views/**/*"],
 	"references": [{ "path": "./tsconfig.node.json" }]
   }

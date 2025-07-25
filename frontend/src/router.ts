@@ -15,6 +15,11 @@ export class Router {
       return new HomePage().getElement();
     });
     
+    this.routes.set('/auth', async () => {
+      const { AuthPage } = await import('./pages/Auth');
+      return new AuthPage().getElement();
+    });
+    
     this.routes.set('/404', async () => {
       const { NotFoundPage } = await import('./pages/NotFound');
       return new NotFoundPage().getElement();

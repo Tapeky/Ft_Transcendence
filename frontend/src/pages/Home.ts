@@ -23,8 +23,20 @@ export class HomePage {
           </div>
 
           <!-- Navigation Cards -->
-          <div class="max-w-4xl mx-auto grid md:grid-cols-3 gap-6">
+          <div class="max-w-5xl mx-auto grid md:grid-cols-4 gap-6">
             
+            <!-- Auth Page Card -->
+            <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+              <div class="text-center">
+                <div class="text-4xl mb-4">🔐</div>
+                <h3 class="text-xl font-bold text-white mb-3">Auth Page</h3>
+                <p class="text-gray-300 mb-4">Authentification</p>
+                <button id="goto-auth" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                  Aller à /auth
+                </button>
+              </div>
+            </div>
+
             <!-- 404 Page Card -->
             <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
               <div class="text-center">
@@ -90,9 +102,17 @@ export class HomePage {
 
   private bindEvents(): void {
     // Import dynamique du router pour éviter la dépendance circulaire
+    const gotoAuthBtn = this.element.querySelector('#goto-auth');
     const goto404Btn = this.element.querySelector('#goto-404');
     const gotoTestBtn = this.element.querySelector('#goto-test');
     const showRoutesBtn = this.element.querySelector('#show-routes');
+
+    gotoAuthBtn?.addEventListener('click', () => {
+      console.log('🏠 HomePage: Navigation vers /auth');
+      import('../router').then(({ router }) => {
+        router.navigate('/auth');
+      });
+    });
 
     goto404Btn?.addEventListener('click', () => {
       console.log('🏠 HomePage: Navigation vers /404');
