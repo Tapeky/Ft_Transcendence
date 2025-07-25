@@ -1,5 +1,6 @@
 import './index.css';
-import { NotFoundPage } from './pages/NotFound';
+import { router } from './router';
+import './router';
 
 // Global error handler to prevent crashes from malformed error objects
 window.addEventListener('error', (event) => {
@@ -31,11 +32,11 @@ class App {
       throw new Error('Root element not found');
     }
 
-    // Pour Phase 1, on affiche juste la page NotFound
-    const notFoundPage = new NotFoundPage();
-    root.appendChild(notFoundPage.getElement());
-    
-    console.log('✅ Vanilla TS App initialized - Phase 1');
+    // Phase 2: Router initialization
+    // Le router se charge automatiquement de la route initiale
+    console.log('✅ Vanilla TS App initialized - Phase 2');
+    console.log('🛣️ Router system active');
+    console.log(`📍 Current route: ${window.location.pathname}`);
   }
 }
 

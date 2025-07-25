@@ -1,3 +1,5 @@
+import { router } from '../router';
+
 export class NotFoundPage {
   private element: HTMLElement;
 
@@ -45,12 +47,12 @@ export class NotFoundPage {
 
     homeButton?.addEventListener('click', () => {
       console.log('🏠 Navigation vers accueil - (Phase 2: Router)');
-      // Phase 2: sera remplacé par router.navigate('/')
+        router.navigate('/');
     });
 
     testButton?.addEventListener('click', () => {
       console.log('🧪 Navigation vers test - (Phase 2: Router)');
-      // Phase 2: sera remplacé par router.navigate('/test')
+        router.navigate('/test');
     });
   }
 
