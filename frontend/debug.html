@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+    .error { color: #ff4444; }
+    .success { color: #44ff44; }
+  </style>
+</head>
+<body>
+  <h1>Debug Router</h1>
+  <div id="status">Testing...</div>
+  <div id="root"></div>
+  
+  <script type="module">
+    console.log('🔍 Debug script loaded');
+    
+    try {
+      // Test 1: Root element exists
+      const root = document.getElementById('root');
+      if (!root) {
+        throw new Error('Root element not found');
+      }
+      document.getElementById('status').innerHTML = '<div class="success">✅ Root element found</div>';
+      
+      // Test 2: Simple content
+      root.innerHTML = '<div style="padding: 20px; background: #333; margin: 10px;">Simple test content loaded</div>';
+      
+      // Test 3: Try router import
+      import('./src/router.js').then(module => {
+        console.log('✅ Router module loaded', module);
+        document.getElementById('status').innerHTML += '<div class="success">✅ Router import successful</div>';
+      }).catch(error => {
+        console.error('❌ Router import failed', error);
+        document.getElementById('status').innerHTML += '<div class="error">❌ Router import failed: ' + error.message + '</div>';
+      });
+      
+    } catch (error) {
+      console.error('❌ Debug error:', error);
+      document.getElementById('status').innerHTML = '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+  </script>
+</body>
+</html>
