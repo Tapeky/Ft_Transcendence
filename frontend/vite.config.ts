@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import fs from 'fs';
 
-// Vite Configuration
+// Vite Configuration for Vanilla TypeScript
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [],
+  build: {
+    outDir: 'build'
+  },
   // Development server configuration
   server: {
     host: '0.0.0.0',
