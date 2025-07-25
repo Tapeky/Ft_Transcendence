@@ -1,313 +1,386 @@
 import { authManager } from '../auth/AuthManager';
 import { appState } from '../state/AppState';
 
-// AuthPage - Page d'authentification principale
-// Remplace AuthPage.tsx en gardant la même UX
+// AuthPage - Reproduction exacte de la version React
+// Layout 2 colonnes + Carrousel d'animations + FloatingInputs + PremiumButtons
 
 export class AuthPage {
   private element: HTMLElement;
-  private currentTab: 'login' | 'register' = 'login';
+  private currentMode: 'login' | 'register' = 'login';
+  private currentAnimation = 0;
+  private animations = ['pong', 'tournament', 'chat'];
+  private isTransitioning = false;
   private authUnsubscribe?: () => void;
+  private animationInterval?: number;
+  private ripples: { x: number; y: number; id: number }[] = [];
 
   constructor() {
     this.element = this.createElement();
     this.bindEvents();
     this.subscribeToAuth();
+    this.startAnimationCarousel();
     
-    console.log('🔐 AuthPage: Initialized');
+    console.log('🔐 AuthPage: Initialized with React-like design');
   }
 
   private createElement(): HTMLElement {
     const div = document.createElement('div');
     div.innerHTML = `
-      <div class="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center p-4">
+      <!-- Main Layout - Reproduction exacte du React -->
+      <div class="min-h-screen flex items-center justify-center p-6 bg-gray-100">
         
         <!-- Loading Overlay -->
         <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
           <div class="flex items-center justify-center min-h-screen">
-            <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 text-center">
-              <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p class="text-white font-medium">Authentification en cours...</p>
+            <div class="bg-white/90 backdrop-blur-md rounded-xl p-8 text-center shadow-2xl">
+              <div class="animate-spin w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p class="text-gray-900 font-medium">Authentification en cours...</p>
             </div>
           </div>
         </div>
 
-        <!-- Main Auth Container -->
-        <div class="w-full max-w-md">
+        <!-- Container Principal - 2 Colonnes comme React -->
+        <div class="flex w-full max-w-[1600px] h-[800px] bg-white rounded-3xl shadow-2xl overflow-hidden">
           
-          <!-- Header -->
-          <div class="text-center mb-8">
-            <h1 class="text-4xl font-iceland font-bold text-white mb-2">
-              ft_transcendence
-            </h1>
-            <p class="text-gray-300 text-lg">
-              Vanilla TypeScript - Phase 4
-            </p>
-          </div>
-
-          <!-- Auth Card -->
-          <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
-            
-            <!-- Tab Navigation -->
-            <div class="flex border-b border-white/20">
-              <button id="login-tab" class="flex-1 py-4 px-6 text-center font-medium transition-all duration-200 tab-button active">
-                <span class="text-white">Connexion</span>
-              </button>
-              <button id="register-tab" class="flex-1 py-4 px-6 text-center font-medium transition-all duration-200 tab-button">
-                <span class="text-gray-400">Inscription</span>
-              </button>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="p-6">
+          <!-- CÔTÉ GAUCHE - Formulaire (comme React) -->
+          <div class="w-full lg:w-2/5 bg-white flex items-center justify-center px-8 py-12">
+            <div class="max-w-md w-full space-y-1">
               
-              <!-- Error Display -->
-              <div id="error-display" class="hidden mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <div class="flex items-center">
-                  <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  <span id="error-message" class="text-red-400 text-sm"></span>
-                </div>
+              <!-- Header dynamique -->
+              <div class="text-center">
+                <h2 id="auth-title" class="text-3xl font-bold text-gray-900 mb-2">
+                  Welcome Back!
+                </h2>
+                <p id="auth-subtitle" class="text-gray-600 text-sm leading-relaxed">
+                  Sign in to access your Pong account and compete with players worldwide.
+                </p>
               </div>
 
-              <!-- Login Form -->
-              <div id="login-form" class="auth-form active">
-                <form id="login-form-element" class="space-y-4">
+              <!-- Transition Container -->
+              <div id="form-container" class="space-y-6 transition-all duration-300">
+                
+                <!-- Error Display -->
+                <div id="error-display" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  <span id="error-message"></span>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-6 auth-form active">
                   
-                  <div class="space-y-2">
-                    <label for="login-email" class="block text-sm font-medium text-gray-300">
-                      Adresse e-mail
-                    </label>
-                    <input 
-                      type="email" 
-                      id="login-email" 
+                  <!-- Email Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="login-email"
                       name="email"
+                      type="email"
                       required
-                      class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="votre@email.com"
+                      autocomplete="email"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
                     />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label for="login-password" class="block text-sm font-medium text-gray-300">
-                      Mot de passe
+                    <label for="login-email" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Email*
                     </label>
-                    <div class="relative">
-                      <input 
-                        type="password" 
-                        id="login-password" 
-                        name="password"
-                        required
-                        class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="••••••••"
-                      />
-                      <button type="button" id="login-toggle-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
-                        <svg id="login-eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        <svg id="login-eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-                        </svg>
-                      </button>
-                    </div>
                   </div>
 
+                  <!-- Password Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      required
+                      autocomplete="current-password"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                    />
+                    <label for="login-password" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Password*
+                    </label>
+                  </div>
+
+                  <!-- Premium Submit Button -->
                   <button 
                     type="submit" 
                     id="login-submit"
-                    class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center"
+                    class="premium-button relative w-full py-3 px-4 rounded-lg font-medium overflow-hidden transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-900 text-white hover:bg-gray-800 focus:ring-gray-900 hover:shadow-xl cursor-pointer"
                   >
-                    <span id="login-submit-text">Se connecter</span>
-                    <div id="login-submit-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span class="relative z-10 flex items-center justify-center">
+                      <span id="login-submit-text">Sign In</span>
+                      <div id="login-submit-spinner" class="hidden ml-2 w-5 h-5 animate-spin">
+                        <svg viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </div>
+                    </span>
+                    <div class="absolute inset-0 -z-10">
+                      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </div>
                   </button>
 
-                </form>
-              </div>
-
-              <!-- Register Form -->
-              <div id="register-form" class="auth-form hidden">
-                <form id="register-form-element" class="space-y-4">
-                  
-                  <div class="space-y-2">
-                    <label for="register-username" class="block text-sm font-medium text-gray-300">
-                      Nom d'utilisateur
-                    </label>
-                    <input 
-                      type="text" 
-                      id="register-username" 
-                      name="username"
-                      required
-                      minlength="3"
-                      maxlength="20"
-                      class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="username"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label for="register-email" class="block text-sm font-medium text-gray-300">
-                      Adresse e-mail
-                    </label>
-                    <input 
-                      type="email" 
-                      id="register-email" 
-                      name="email"
-                      required
-                      class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="votre@email.com"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <label for="register-password" class="block text-sm font-medium text-gray-300">
-                      Mot de passe
-                    </label>
-                    <div class="relative">
-                      <input 
-                        type="password" 
-                        id="register-password" 
-                        name="password"
-                        required
-                        minlength="6"
-                        class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="••••••••"
-                      />
-                      <button type="button" id="register-toggle-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
-                        <svg id="register-eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        <svg id="register-eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-                        </svg>
-                      </button>
+                  <!-- Séparateur OAuth -->
+                  <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                      <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                      <span class="px-2 bg-white text-gray-500">Or sign in with</span>
                     </div>
                   </div>
 
-                  <div class="space-y-2">
-                    <label for="register-display-name" class="block text-sm font-medium text-gray-300">
-                      Nom d'affichage <span class="text-gray-500">(optionnel)</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      id="register-display-name" 
-                      name="display_name"
-                      maxlength="30"
-                      class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Nom d'affichage"
-                    />
+                  <!-- OAuth Buttons (comme React) -->
+                  <div class="grid grid-cols-3 gap-3">
+                    
+                    <!-- Google -->
+                    <button
+                      type="button"
+                      id="google-auth"
+                      class="oauth-button relative flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all duration-300 overflow-hidden group hover:border-gray-400 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+                    >
+                      <div class="absolute inset-0 bg-gradient-to-br from-blue-500 via-red-500 to-yellow-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                      <svg class="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:scale-110" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC04" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      <div class="absolute inset-0 -top-20 -left-20 w-40 h-40 bg-white/20 rotate-45 translate-x-full group-hover:translate-x-[-250%] transition-transform duration-1000"></div>
+                    </button>
+
+                    <!-- Meta/Facebook -->
+                    <button
+                      type="button"
+                      class="oauth-button relative flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all duration-300 overflow-hidden group hover:border-gray-400 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+                    >
+                      <div class="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                      <svg class="w-5 h-5 relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      <div class="absolute inset-0 -top-20 -left-20 w-40 h-40 bg-white/20 rotate-45 translate-x-full group-hover:translate-x-[-250%] transition-transform duration-1000"></div>
+                    </button>
+
+                    <!-- GitHub -->
+                    <button
+                      type="button"
+                      id="github-auth"
+                      class="oauth-button relative flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all duration-300 overflow-hidden group hover:border-gray-400 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
+                    >
+                      <div class="absolute inset-0 bg-gray-900 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                      <svg class="w-5 h-5 relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                      </svg>
+                      <div class="absolute inset-0 -top-20 -left-20 w-40 h-40 bg-white/20 rotate-45 translate-x-full group-hover:translate-x-[-250%] transition-transform duration-1000"></div>
+                    </button>
+
                   </div>
 
+                  <!-- Lien Register -->
+                  <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                      Don't have an account?
+                      <button
+                        type="button"
+                        id="switch-to-register"
+                        class="font-medium text-gray-900 hover:text-gray-700 transition duration-200 ml-1"
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                  </div>
+
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="space-y-6 auth-form hidden">
+                  
+                  <!-- Username Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="register-username"
+                      name="username"
+                      type="text"
+                      required
+                      minlength="3"
+                      maxlength="20"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                    />
+                    <label for="register-username" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Username*
+                    </label>
+                  </div>
+
+                  <!-- Email Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="register-email"
+                      name="email"
+                      type="email"
+                      required
+                      autocomplete="email"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                    />
+                    <label for="register-email" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Email*
+                    </label>
+                  </div>
+
+                  <!-- Password Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="register-password"
+                      name="password"
+                      type="password"
+                      required
+                      minlength="6"
+                      autocomplete="new-password"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                    />
+                    <label for="register-password" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Password*
+                    </label>
+                  </div>
+
+                  <!-- Display Name Floating Input -->
+                  <div class="floating-input-container">
+                    <input
+                      id="register-display-name"
+                      name="display_name"
+                      type="text"
+                      maxlength="30"
+                      placeholder=" "
+                      class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-transparent"
+                    />
+                    <label for="register-display-name" class="floating-label absolute left-3 transition-all duration-200 pointer-events-none top-4 text-base text-gray-500">
+                      Display Name
+                    </label>
+                  </div>
+
+                  <!-- Consent Checkbox -->
                   <div class="flex items-start space-x-3">
                     <input 
                       type="checkbox" 
                       id="register-consent" 
                       name="data_consent"
                       required
-                      class="mt-1 w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                      class="mt-1 w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
                     />
-                    <label for="register-consent" class="text-sm text-gray-300 leading-relaxed">
-                      J'accepte le traitement de mes données personnelles selon la politique de confidentialité
+                    <label for="register-consent" class="text-sm text-gray-600 leading-relaxed">
+                      I accept the processing of my personal data according to the privacy policy*
                     </label>
                   </div>
 
+                  <!-- Premium Submit Button -->
                   <button 
                     type="submit" 
                     id="register-submit"
-                    class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center"
+                    class="premium-button relative w-full py-3 px-4 rounded-lg font-medium overflow-hidden transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-900 text-white hover:bg-gray-800 focus:ring-gray-900 hover:shadow-xl cursor-pointer"
                   >
-                    <span id="register-submit-text">S'inscrire</span>
-                    <div id="register-submit-spinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span class="relative z-10 flex items-center justify-center">
+                      <span id="register-submit-text">Sign Up</span>
+                      <div id="register-submit-spinner" class="hidden ml-2 w-5 h-5 animate-spin">
+                        <svg viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </div>
+                    </span>
+                    <div class="absolute inset-0 -z-10">
+                      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </div>
                   </button>
+
+                  <!-- Lien Login -->
+                  <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                      Already have an account?
+                      <button
+                        type="button"
+                        id="switch-to-login"
+                        class="font-medium text-gray-900 hover:text-gray-700 transition duration-200 ml-1"
+                      >
+                        Sign in
+                      </button>
+                    </p>
+                  </div>
 
                 </form>
-              </div>
 
-              <!-- OAuth Section -->
-              <div class="mt-6 pt-6 border-t border-white/20">
-                <p class="text-center text-gray-400 text-sm mb-4">Ou continuez avec</p>
-                
-                <div class="grid grid-cols-2 gap-3">
-                  <button 
-                    id="github-auth" 
-                    class="flex items-center justify-center px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200"
-                  >
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                    </svg>
-                    GitHub
-                  </button>
-                  
-                  <button 
-                    id="google-auth" 
-                    class="flex items-center justify-center px-4 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-lg transition-all duration-200"
-                  >
-                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                      <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Google
-                  </button>
-                </div>
               </div>
 
             </div>
           </div>
 
-          <!-- Footer -->
-          <div class="text-center mt-6">
-            <p class="text-gray-400 text-sm">
-              Phase 4: Authentication System with AuthManager
-            </p>
+          <!-- CÔTÉ DROIT - Carrousel d'animations (comme React) -->
+          <div class="hidden lg:flex lg:w-3/5 pl-6 pr-3 py-3 items-center justify-center">
+            <div class="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl flex items-center justify-center relative overflow-hidden">
+              
+              <!-- Animation Containers -->
+              <div id="animation-pong" class="animation-container active">
+                ${this.createPongAnimation()}
+              </div>
+
+              <div id="animation-tournament" class="animation-container hidden">
+                ${this.createTournamentAnimation()}
+              </div>
+
+              <div id="animation-chat" class="animation-container hidden">
+                ${this.createChatAnimation()}
+              </div>
+
+              <!-- Indicateurs de carrousel -->
+              <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+                <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white scale-125" data-index="0"></button>
+                <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white/30 hover:bg-white/50" data-index="1"></button>
+                <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white/30 hover:bg-white/50" data-index="2"></button>
+              </div>
+
+              <!-- Effets visuels d'arrière-plan -->
+              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
+              <div class="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-xl animate-float"></div>
+              <div class="absolute bottom-20 left-20 w-24 h-24 bg-white/3 rounded-full blur-lg animate-float-delayed"></div>
+              <div class="absolute top-1/2 left-1/3 w-20 h-20 bg-white/2 rounded-full blur-xl animate-float-slow"></div>
+              
+              <!-- Grille de fond subtile -->
+              <div class="absolute inset-0 opacity-5">
+                <div class="h-full w-full" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 50px 50px;"></div>
+              </div>
+              
+            </div>
           </div>
 
         </div>
       </div>
 
-      <style>
-        .tab-button.active {
-          background: rgba(59, 130, 246, 0.2);
-          border-bottom: 2px solid #3b82f6;
-        }
-        .tab-button.active span {
-          color: white;
-        }
-        .auth-form {
-          transition: all 0.3s ease-in-out;
-        }
-        .auth-form.hidden {
-          display: none;
-        }
-        .auth-form.active {
-          display: block;
-        }
-      </style>
+      <!-- CSS Animations (reproduction exacte du React) -->
+      ${this.createAnimationStyles()}
     `;
     return div.firstElementChild as HTMLElement;
   }
 
   private bindEvents(): void {
-    // Tab switching
-    const loginTab = this.element.querySelector('#login-tab');
-    const registerTab = this.element.querySelector('#register-tab');
+    // Form switching
+    const switchToRegister = this.element.querySelector('#switch-to-register');
+    const switchToLogin = this.element.querySelector('#switch-to-login');
 
-    loginTab?.addEventListener('click', () => this.switchTab('login'));
-    registerTab?.addEventListener('click', () => this.switchTab('register'));
+    switchToRegister?.addEventListener('click', () => this.switchMode('register'));
+    switchToLogin?.addEventListener('click', () => this.switchMode('login'));
 
     // Form submissions
-    const loginForm = this.element.querySelector('#login-form-element');
-    const registerForm = this.element.querySelector('#register-form-element');
+    const loginForm = this.element.querySelector('#login-form');
+    const registerForm = this.element.querySelector('#register-form');
 
     loginForm?.addEventListener('submit', (e) => this.handleLogin(e));
     registerForm?.addEventListener('submit', (e) => this.handleRegister(e));
 
-    // Password toggles
-    this.setupPasswordToggle('login');
-    this.setupPasswordToggle('register');
+    // Floating input effects
+    this.setupFloatingInputs();
+
+    // Premium button effects
+    this.setupPremiumButtons();
 
     // OAuth buttons
     const githubBtn = this.element.querySelector('#github-auth');
@@ -316,7 +389,13 @@ export class AuthPage {
     githubBtn?.addEventListener('click', () => this.handleGitHubAuth());
     googleBtn?.addEventListener('click', () => this.handleGoogleAuth());
 
-    console.log('🔐 AuthPage: Event listeners bound');
+    // Carousel indicators
+    const indicators = this.element.querySelectorAll('.carousel-indicator');
+    indicators.forEach((indicator, index) => {
+      indicator.addEventListener('click', () => this.setAnimation(index));
+    });
+
+    console.log('🔐 AuthPage: Event listeners bound (React-like)');
   }
 
   private subscribeToAuth(): void {
@@ -333,54 +412,211 @@ export class AuthPage {
     });
   }
 
-  private switchTab(tab: 'login' | 'register'): void {
-    this.currentTab = tab;
+  private startAnimationCarousel(): void {
+    // Carrousel automatique toutes les 15 secondes comme React
+    this.animationInterval = window.setInterval(() => {
+      this.currentAnimation = (this.currentAnimation + 1) % this.animations.length;
+      this.updateAnimationDisplay();
+    }, 15000);
+  }
+
+  private setAnimation(index: number): void {
+    this.currentAnimation = index;
+    this.updateAnimationDisplay();
+  }
+
+  private updateAnimationDisplay(): void {
+    // Masquer toutes les animations
+    const containers = this.element.querySelectorAll('.animation-container');
+    containers.forEach(container => {
+      container.classList.add('hidden');
+      container.classList.remove('active');
+    });
+
+    // Afficher l'animation courante
+    const currentContainer = this.element.querySelector(`#animation-${this.animations[this.currentAnimation]}`);
+    if (currentContainer) {
+      currentContainer.classList.remove('hidden');
+      currentContainer.classList.add('active');
+    }
+
+    // Mettre à jour les indicateurs
+    const indicators = this.element.querySelectorAll('.carousel-indicator');
+    indicators.forEach((indicator, index) => {
+      if (index === this.currentAnimation) {
+        indicator.classList.add('bg-white', 'scale-125');
+        indicator.classList.remove('bg-white/30');
+      } else {
+        indicator.classList.remove('bg-white', 'scale-125');
+        indicator.classList.add('bg-white/30');
+      }
+    });
+  }
+
+  private switchMode(newMode: 'login' | 'register'): void {
+    this.isTransitioning = true;
+    const formContainer = this.element.querySelector('#form-container');
     
-    // Update tab buttons
-    const loginTab = this.element.querySelector('#login-tab');
-    const registerTab = this.element.querySelector('#register-tab');
+    // Animation de transition comme React
+    if (formContainer) {
+      formContainer.classList.add('opacity-0', 'scale-95');
+    }
+    
+    setTimeout(() => {
+      this.currentMode = newMode;
+      this.updateModeDisplay();
+      this.isTransitioning = false;
+      
+      if (formContainer) {
+        formContainer.classList.remove('opacity-0', 'scale-95');
+        formContainer.classList.add('opacity-100', 'scale-100');
+      }
+    }, 150);
+
+    console.log(`🔐 AuthPage: Switched to ${newMode} mode (React-like transition)`);
+  }
+
+  private updateModeDisplay(): void {
+    // Configuration dynamique selon le mode (comme React)
+    const authConfig = {
+      login: {
+        title: "Welcome Back!",
+        subtitle: "Sign in to access your Pong account and compete with players worldwide."
+      },
+      register: {
+        title: "Join the Game!",
+        subtitle: "Create your account and start your journey in the legendary Pong universe."
+      }
+    };
+
+    // Mettre à jour le titre et sous-titre
+    const title = this.element.querySelector('#auth-title');
+    const subtitle = this.element.querySelector('#auth-subtitle');
+    
+    if (title) title.textContent = authConfig[this.currentMode].title;
+    if (subtitle) subtitle.textContent = authConfig[this.currentMode].subtitle;
+
+    // Basculer les formulaires
     const loginForm = this.element.querySelector('#login-form');
     const registerForm = this.element.querySelector('#register-form');
 
-    // Clear any existing error
+    // Clear error
     this.hideError();
 
-    if (tab === 'login') {
-      loginTab?.classList.add('active');
-      registerTab?.classList.remove('active');
+    if (this.currentMode === 'login') {
       loginForm?.classList.remove('hidden');
       loginForm?.classList.add('active');
-      registerForm?.classList.remove('active');
       registerForm?.classList.add('hidden');
+      registerForm?.classList.remove('active');
     } else {
-      registerTab?.classList.add('active');
-      loginTab?.classList.remove('active');
       registerForm?.classList.remove('hidden');
       registerForm?.classList.add('active');
-      loginForm?.classList.remove('active');
       loginForm?.classList.add('hidden');
+      loginForm?.classList.remove('active');
     }
-
-    console.log(`🔐 AuthPage: Switched to ${tab} tab`);
   }
 
-  private setupPasswordToggle(formType: 'login' | 'register'): void {
-    const toggleBtn = this.element.querySelector(`#${formType}-toggle-password`);
-    const passwordInput = this.element.querySelector(`#${formType}-password`) as HTMLInputElement;
-    const eyeOpen = this.element.querySelector(`#${formType}-eye-open`);
-    const eyeClosed = this.element.querySelector(`#${formType}-eye-closed`);
-
-    toggleBtn?.addEventListener('click', () => {
-      const isPassword = passwordInput.type === 'password';
-      passwordInput.type = isPassword ? 'text' : 'password';
+  private setupFloatingInputs(): void {
+    // Effet floating label pour tous les inputs
+    const floatingInputs = this.element.querySelectorAll('.floating-input');
+    
+    floatingInputs.forEach(input => {
+      const inputElement = input as HTMLInputElement;
+      const label = this.element.querySelector(`label[for="${inputElement.id}"]`);
       
-      if (isPassword) {
-        eyeOpen?.classList.add('hidden');
-        eyeClosed?.classList.remove('hidden');
-      } else {
-        eyeOpen?.classList.remove('hidden');
-        eyeClosed?.classList.add('hidden');
-      }
+      const updateLabel = () => {
+        const hasValue = inputElement.value.length > 0;
+        const isFocused = document.activeElement === inputElement;
+        
+        if (label) {
+          if (isFocused || hasValue) {
+            label.classList.add('top-2', 'text-xs', 'text-gray-600');
+            label.classList.remove('top-4', 'text-base', 'text-gray-500');
+          } else {
+            label.classList.remove('top-2', 'text-xs', 'text-gray-600');
+            label.classList.add('top-4', 'text-base', 'text-gray-500');
+          }
+          
+          if (isFocused) {
+            label.classList.add('text-gray-900');
+          } else {
+            label.classList.remove('text-gray-900');
+          }
+        }
+        
+        // Background change based on value
+        if (hasValue) {
+          inputElement.classList.add('bg-white');
+          inputElement.classList.remove('bg-transparent');
+        } else {
+          inputElement.classList.remove('bg-white');
+          inputElement.classList.add('bg-transparent');
+        }
+      };
+      
+      inputElement.addEventListener('focus', updateLabel);
+      inputElement.addEventListener('blur', updateLabel);
+      inputElement.addEventListener('input', updateLabel);
+      
+      // Initial state
+      updateLabel();
+    });
+  }
+
+  private setupPremiumButtons(): void {
+    // Effet magnétique et ripple pour les boutons premium
+    const premiumButtons = this.element.querySelectorAll('.premium-button');
+    
+    premiumButtons.forEach(button => {
+      const buttonElement = button as HTMLButtonElement;
+      
+      // Effet magnétique au survol
+      buttonElement.addEventListener('mousemove', (e) => {
+        if (buttonElement.disabled) return;
+        
+        const rect = buttonElement.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        const distance = Math.sqrt(x * x + y * y);
+        const maxDistance = rect.width / 2;
+        
+        if (distance < maxDistance) {
+          const translateX = (x / maxDistance) * 3;
+          const translateY = (y / maxDistance) * 3;
+          buttonElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(1.02)`;
+        }
+      });
+      
+      buttonElement.addEventListener('mouseleave', () => {
+        buttonElement.style.transform = 'translate(0, 0) scale(1)';
+      });
+      
+      // Effet ripple au clic
+      buttonElement.addEventListener('click', (e) => {
+        if (buttonElement.disabled) return;
+        
+        const rect = buttonElement.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const id = Date.now();
+        
+        this.ripples.push({ x, y, id });
+        
+        // Créer l'élément ripple
+        const ripple = document.createElement('span');
+        ripple.className = 'absolute bg-white/30 rounded-full pointer-events-none animate-ripple';
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        ripple.style.transform = 'translate(-50%, -50%)';
+        
+        buttonElement.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+          this.ripples = this.ripples.filter(r => r.id !== id);
+        }, 600);
+      });
     });
   }
 
@@ -397,7 +633,7 @@ export class AuthPage {
     };
 
     if (!credentials.email || !credentials.password) {
-      this.showError('Veuillez remplir tous les champs');
+      this.showError('Please fill in all fields');
       return;
     }
 
@@ -407,10 +643,13 @@ export class AuthPage {
     try {
       await authManager.login(credentials);
       console.log('✅ AuthPage: Login successful');
-      // AuthManager will handle navigation
+      // Navigation vers menu
+      import('../router').then(({ router }) => {
+        router.navigate('/menu');
+      });
     } catch (error) {
       console.error('❌ AuthPage: Login failed:', error);
-      this.showError(error instanceof Error ? error.message : 'Erreur de connexion');
+      this.showError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       this.setSubmitLoading('login', false);
     }
@@ -432,12 +671,12 @@ export class AuthPage {
     };
 
     if (!credentials.username || !credentials.email || !credentials.password) {
-      this.showError('Veuillez remplir tous les champs obligatoires');
+      this.showError('Please fill in all required fields');
       return;
     }
 
     if (!credentials.data_consent) {
-      this.showError('Vous devez accepter le traitement des données personnelles');
+      this.showError('You must accept the data processing policy');
       return;
     }
 
@@ -447,10 +686,13 @@ export class AuthPage {
     try {
       await authManager.register(credentials);
       console.log('✅ AuthPage: Registration successful');
-      // AuthManager will handle navigation
+      // Navigation vers menu
+      import('../router').then(({ router }) => {
+        router.navigate('/menu');
+      });
     } catch (error) {
       console.error('❌ AuthPage: Registration failed:', error);
-      this.showError(error instanceof Error ? error.message : 'Erreur d\'inscription');
+      this.showError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       this.setSubmitLoading('register', false);
     }
@@ -492,10 +734,10 @@ export class AuthPage {
       submitBtn.disabled = loading;
       
       if (loading) {
-        submitText.textContent = formType === 'login' ? 'Connexion...' : 'Inscription...';
+        submitText.textContent = formType === 'login' ? 'Signing in...' : 'Signing up...';
         submitSpinner.classList.remove('hidden');
       } else {
-        submitText.textContent = formType === 'login' ? 'Se connecter' : 'S\'inscrire';
+        submitText.textContent = formType === 'login' ? 'Sign In' : 'Sign Up';
         submitSpinner.classList.add('hidden');
       }
     }
@@ -511,6 +753,407 @@ export class AuthPage {
     }
   }
 
+  // Méthodes pour créer les animations (reproduction exacte du React)
+  private createPongAnimation(): string {
+    return `
+      <div class="relative z-10 text-center text-white px-12 animate-fade-in">
+        <div class="mb-8">
+          <div class="w-80 h-48 mx-auto relative">
+            <div class="w-full h-full border-2 border-white/20 rounded-lg relative backdrop-blur-sm bg-white/5 shadow-2xl overflow-hidden">
+              <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/30 transform -translate-x-1/2">
+                <div class="w-full h-full bg-gradient-to-b from-transparent via-white/50 to-transparent animate-pulse"></div>
+              </div>
+              <div class="absolute left-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-left">
+                <div class="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
+              </div>
+              <div class="absolute right-2 w-1.5 h-12 bg-white/80 rounded-full shadow-lg animate-paddle-realistic-right">
+                <div class="absolute inset-0 bg-white/50 blur-sm animate-pulse"></div>
+              </div>
+              <div class="absolute w-2 h-2 animate-ball-realistic">
+                <div class="relative">
+                  <div class="absolute inset-0 bg-white rounded-full blur-md scale-150 opacity-50"></div>
+                  <div class="relative w-2 h-2 bg-white rounded-full shadow-lg">
+                    <div class="absolute inset-0 bg-white rounded-full animate-ping"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-left">
+                <div class="w-full h-full bg-white/60 rounded-full blur-md"></div>
+              </div>
+              <div class="absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 opacity-0 animate-collision-right">
+                <div class="w-full h-full bg-white/60 rounded-full blur-md"></div>
+              </div>
+              <div class="absolute top-4 left-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash"></div>
+              <div class="absolute top-4 right-1/4 w-1 h-1 bg-white/40 rounded-full animate-score-flash" style="animation-delay: 3s"></div>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <h3 class="text-2xl font-bold">Master the Classic</h3>
+          <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+            Experience the legendary Pong game with modern multiplayer features, tournaments, and real-time competitions.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private createTournamentAnimation(): string {
+    return `
+      <div class="relative z-10 text-center text-white px-12 animate-fade-in">
+        <div class="mb-8">
+          <div class="w-80 h-60 mx-auto relative">
+            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
+              <div class="w-8 h-8 animate-tournament-trophy">
+                <div class="text-2xl animate-float-slow">🏆</div>
+                <div class="absolute inset-0 animate-tournament-confetti">
+                  <div class="absolute -top-2 -left-1 w-1 h-1 bg-yellow-400 rounded-full animate-confetti-1"></div>
+                  <div class="absolute -top-1 left-2 w-1 h-1 bg-blue-400 rounded-full animate-confetti-2"></div>
+                  <div class="absolute -top-3 right-0 w-1 h-1 bg-red-400 rounded-full animate-confetti-3"></div>
+                  <div class="absolute -top-2 right-3 w-1 h-1 bg-green-400 rounded-full animate-confetti-4"></div>
+                  <div class="absolute -top-1 -right-1 w-1 h-1 bg-purple-400 rounded-full animate-confetti-5"></div>
+                </div>
+              </div>
+            </div>
+            <svg class="w-full h-full" viewBox="0 0 320 240" fill="none">
+              <!-- Tournament bracket structure -->
+              <line x1="160" y1="20" x2="160" y2="40" class="stroke-white/30 stroke-1 animate-tournament-final" stroke-dasharray="2,2" />
+              <line x1="120" y1="40" x2="160" y2="40" class="stroke-white/40 animate-tournament-semi-1" stroke-dasharray="2,2" />
+              <line x1="200" y1="40" x2="160" y2="40" class="stroke-white/40 animate-tournament-semi-2" stroke-dasharray="2,2" />
+              <!-- Players and connections -->
+              <circle cx="40" cy="120" r="3" class="fill-white/60 animate-tournament-player-1" />
+              <circle cx="80" cy="120" r="3" class="fill-white/60 animate-tournament-player-2" />
+              <circle cx="120" cy="120" r="3" class="fill-white/60 animate-tournament-player-3" />
+              <circle cx="160" cy="120" r="3" class="fill-white/60 animate-tournament-player-4" />
+              <circle cx="200" cy="120" r="3" class="fill-white/60 animate-tournament-player-5" />
+              <circle cx="240" cy="120" r="3" class="fill-white/60 animate-tournament-player-6" />
+              <circle cx="280" cy="120" r="3" class="fill-white/60 animate-tournament-player-7" />
+              <!-- Winner path -->
+              <line x1="120" y1="120" x2="120" y2="100" class="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-1" />
+              <circle cx="120" cy="120" r="4" class="fill-yellow-400 animate-tournament-winner-glow" />
+            </svg>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <h3 class="text-2xl font-bold">Tournament Glory</h3>
+          <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+            Compete in thrilling tournaments, climb the brackets, and claim your victory with style and strategy.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private createChatAnimation(): string {
+    return `
+      <div class="relative z-10 text-center text-white px-12 animate-fade-in">
+        <div class="mb-8">
+          <div class="w-80 h-60 mx-auto relative">
+            <div class="w-full h-full relative">
+              <div class="absolute inset-0">
+                <div class="absolute top-8 left-4 animate-chat-message-1">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-2 h-2 bg-white/60 rounded-full"></div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                      <div class="text-sm opacity-90">Ready to play?</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="absolute top-20 right-6 animate-chat-message-2">
+                  <div class="flex items-center space-x-3 justify-end">
+                    <div class="bg-white/15 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/30">
+                      <div class="text-sm opacity-90">Let's go!</div>
+                    </div>
+                    <div class="w-2 h-2 bg-white/80 rounded-full"></div>
+                  </div>
+                </div>
+                <div class="absolute top-32 left-1/2 transform -translate-x-1/2 animate-chat-message-3">
+                  <div class="bg-white/8 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/15 text-center">
+                    <div class="text-xs opacity-70 mb-1">Game Invitation</div>
+                    <div class="text-sm opacity-90">Join Tournament</div>
+                  </div>
+                </div>
+                <div class="absolute top-44 left-8 animate-chat-typing">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-2 h-2 bg-white/40 rounded-full"></div>
+                    <div class="bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
+                      <div class="flex space-x-1 items-center">
+                        <div class="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-1"></div>
+                        <div class="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-2"></div>
+                        <div class="w-1 h-1 bg-white/60 rounded-full animate-chat-dot-3"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <svg class="absolute inset-0 w-full h-full" viewBox="0 0 320 240" fill="none">
+                <line x1="20" y1="40" x2="160" y2="120" class="stroke-white/20 stroke-1 animate-chat-connection-1" stroke-dasharray="3,3" />
+                <line x1="300" y1="80" x2="160" y2="120" class="stroke-white/20 stroke-1 animate-chat-connection-2" stroke-dasharray="3,3" />
+                <circle cx="160" cy="120" r="4" class="fill-white/30 animate-chat-hub" />
+                <circle cx="160" cy="120" r="8" class="fill-none stroke-white/20 stroke-1 animate-chat-hub-ring" />
+              </svg>
+              <div class="absolute inset-0 pointer-events-none">
+                <div class="absolute top-16 right-12 w-1 h-1 bg-white/40 rounded-full animate-chat-particle-1"></div>
+                <div class="absolute top-36 left-12 w-1 h-1 bg-white/30 rounded-full animate-chat-particle-2"></div>
+                <div class="absolute bottom-20 right-16 w-1 h-1 bg-white/35 rounded-full animate-chat-particle-3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <h3 class="text-2xl font-bold">Connect & Communicate</h3>
+          <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+            Seamless real-time communication with players worldwide. Chat, invite, and build your gaming network.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private createAnimationStyles(): string {
+    return `
+      <style>
+        /* Floating Input Styles */
+        .floating-input-container {
+          position: relative;
+        }
+        
+        .floating-input:focus ~ .floating-label,
+        .floating-input:not(:placeholder-shown) ~ .floating-label {
+          top: 0.5rem;
+          font-size: 0.75rem;
+          color: #4b5563;
+        }
+        
+        .floating-input:focus ~ .floating-label {
+          color: #111827;
+        }
+        
+        /* Auth Form Transitions */
+        .auth-form {
+          transition: all 0.3s ease-in-out;
+        }
+        
+        .auth-form.hidden {
+          display: none;
+        }
+        
+        .auth-form.active {
+          display: block;
+        }
+        
+        /* Animation Container */
+        .animation-container {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: opacity 0.5s ease-in-out;
+        }
+        
+        .animation-container.hidden {
+          opacity: 0;
+          pointer-events: none;
+        }
+        
+        .animation-container.active {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        
+        /* Ripple Animation */
+        @keyframes ripple {
+          0% {
+            width: 0;
+            height: 0;
+            opacity: 1;
+          }
+          100% {
+            width: 200px;
+            height: 200px;
+            opacity: 0;
+          }
+        }
+        
+        .animate-ripple {
+          animation: ripple 0.6s ease-out;
+        }
+        
+        /* Pong Animations */
+        @keyframes paddle-realistic-left {
+          0%, 100% { top: 20%; }
+          25% { top: 40%; }
+          50% { top: 60%; }
+          75% { top: 30%; }
+        }
+        
+        @keyframes paddle-realistic-right {
+          0%, 100% { top: 60%; }
+          25% { top: 20%; }
+          50% { top: 40%; }
+          75% { top: 70%; }
+        }
+        
+        @keyframes ball-realistic {
+          0% { left: 10%; top: 50%; }
+          25% { left: 45%; top: 30%; }
+          50% { left: 90%; top: 40%; }
+          75% { left: 55%; top: 70%; }
+          100% { left: 10%; top: 50%; }
+        }
+        
+        @keyframes collision-left {
+          0%, 90%, 100% { opacity: 0; }
+          95% { opacity: 1; }
+        }
+        
+        @keyframes collision-right {
+          0%, 40%, 50%, 100% { opacity: 0; }
+          45% { opacity: 1; }
+        }
+        
+        @keyframes score-flash {
+          0%, 95%, 100% { opacity: 0.4; }
+          97% { opacity: 1; }
+        }
+        
+        .animate-paddle-realistic-left {
+          animation: paddle-realistic-left 4s infinite ease-in-out;
+        }
+        
+        .animate-paddle-realistic-right {
+          animation: paddle-realistic-right 4s infinite ease-in-out;
+        }
+        
+        .animate-ball-realistic {
+          animation: ball-realistic 4s infinite linear;
+        }
+        
+        .animate-collision-left {
+          animation: collision-left 4s infinite;
+        }
+        
+        .animate-collision-right {
+          animation: collision-right 4s infinite;
+        }
+        
+        .animate-score-flash {
+          animation: score-flash 6s infinite;
+        }
+        
+        /* Floating animations */
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite 2s;
+        }
+        
+        .animate-float-slow {
+          animation: float-slow 10s ease-in-out infinite 1s;
+        }
+        
+        /* Fade in animation */
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+        
+        /* Chat animations */
+        @keyframes chat-message-1 {
+          0%, 20%, 100% { opacity: 0; transform: translateX(-20px); }
+          25%, 95% { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes chat-message-2 {
+          0%, 30%, 100% { opacity: 0; transform: translateX(20px); }
+          35%, 85% { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes chat-message-3 {
+          0%, 40%, 100% { opacity: 0; transform: translateY(-10px); }
+          45%, 75% { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes chat-typing {
+          0%, 60%, 100% { opacity: 0; }
+          65%, 95% { opacity: 1; }
+        }
+        
+        @keyframes chat-dot-1 {
+          0%, 60% { opacity: 0.3; }
+          20% { opacity: 1; }
+          40% { opacity: 0.3; }
+        }
+        
+        @keyframes chat-dot-2 {
+          0%, 60% { opacity: 0.3; }
+          30% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        
+        @keyframes chat-dot-3 {
+          0%, 60% { opacity: 0.3; }
+          40% { opacity: 1; }
+          60% { opacity: 0.3; }
+        }
+        
+        .animate-chat-message-1 { animation: chat-message-1 8s infinite; }
+        .animate-chat-message-2 { animation: chat-message-2 8s infinite; }
+        .animate-chat-message-3 { animation: chat-message-3 8s infinite; }
+        .animate-chat-typing { animation: chat-typing 8s infinite; }
+        .animate-chat-dot-1 { animation: chat-dot-1 1.5s infinite; }
+        .animate-chat-dot-2 { animation: chat-dot-2 1.5s infinite 0.2s; }
+        .animate-chat-dot-3 { animation: chat-dot-3 1.5s infinite 0.4s; }
+        
+        /* Tournament animations */
+        @keyframes tournament-trophy {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(5deg); }
+        }
+        
+        @keyframes confetti-1 {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(30px) rotate(180deg); opacity: 0; }
+        }
+        
+        .animate-tournament-trophy { animation: tournament-trophy 3s infinite ease-in-out; }
+        .animate-confetti-1 { animation: confetti-1 2s infinite; }
+        .animate-confetti-2 { animation: confetti-1 2s infinite 0.2s; }
+        .animate-confetti-3 { animation: confetti-1 2s infinite 0.4s; }
+        .animate-confetti-4 { animation: confetti-1 2s infinite 0.6s; }
+        .animate-confetti-5 { animation: confetti-1 2s infinite 0.8s; }
+      </style>
+    `;
+  }
+
   getElement(): HTMLElement {
     return this.element;
   }
@@ -520,7 +1163,11 @@ export class AuthPage {
       this.authUnsubscribe();
     }
     
-    console.log('🔐 AuthPage: Destroyed');
+    if (this.animationInterval) {
+      clearInterval(this.animationInterval);
+    }
+    
+    console.log('🔐 AuthPage: Destroyed (React-like)');
     this.element.remove();
   }
 }
