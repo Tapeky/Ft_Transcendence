@@ -97,21 +97,15 @@ export class FriendsPage {
       </div>
     `;
 
-    this.setupEventListeners();
-    return container;
-  }
-
-  private setupEventListeners(): void {
-    // Back button
-    const backBtn = this.element.querySelector('#back-btn');
+    // Bind events directly on container before returning it
+    const backBtn = container.querySelector('#back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
         router.navigate('/menu');
       });
     }
 
-    // Logout button
-    const logoutBtn = this.element.querySelector('#logout-btn');
+    const logoutBtn = container.querySelector('#logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         try {
@@ -121,6 +115,14 @@ export class FriendsPage {
         }
       });
     }
+
+    console.log('👥 FriendsPage: Event listeners bound');
+    return container;
+  }
+
+  private setupEventListeners(): void {
+    // This method is now unused - events are bound in createElement()
+    // Keeping for potential future use or additional event handling
   }
 
   public getElement(): HTMLElement {
