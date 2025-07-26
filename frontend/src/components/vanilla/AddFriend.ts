@@ -35,13 +35,16 @@ export class AddFriend {
         <input 
           id="nameInput" 
           type="text" 
-          class="rounded-md mr-3 mb-5 text-black indent-4 w-[330px]" 
+          class="rounded-md mr-3 mb-5 text-black indent-4 w-[330px] focus:ring-2 focus:ring-blue-500" 
           maxlength="12"
           placeholder="Username..."
+          aria-label="Enter username to add as friend"
+          aria-describedby="status-message"
         />
         <button 
           id="add-btn" 
-          class="rounded-md border-[2px] px-3 hover:scale-110 ml-4 mb-5">
+          class="rounded-md border-[2px] px-3 hover:scale-110 ml-4 mb-5 focus:ring-2 focus:ring-blue-500"
+          aria-label="Send friend request">
           ADD
         </button>
       </div>

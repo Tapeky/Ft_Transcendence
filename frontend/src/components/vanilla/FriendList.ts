@@ -30,14 +30,23 @@ export class FriendList {
   private createElement(): HTMLElement {
     // Portal pattern - overlay sur toute la page
     const container = document.createElement('div');
-    container.className = `${this.visible ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white`;
+    container.className = `${this.visible ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white transition-opacity duration-200`;
+    container.setAttribute('role', 'dialog');
+    container.setAttribute('aria-modal', 'true');
+    container.setAttribute('aria-labelledby', 'friends-title');
 
     container.innerHTML = `
       <!-- Modal principal -->
-      <div class="flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 min-w-[500px] h-[600px] border-[5px] border-black text-[2rem] box-border font-iceland select-none">
+      <div class="flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black text-[2rem] box-border font-iceland select-none transform transition-transform duration-300 ease-out">
+        
+        <!-- Screen reader title -->
+        <h1 id="friends-title" class="sr-only">Friends Management</h1>
         
         <!-- Close Button -->
-        <button id="close-btn" class="w-[40px] h-[40px] bg-white border-2 border-black absolute right-2 top-2 text-black text-[1.5rem] hover:bg-gray-200">
+        <button id="close-btn" 
+                class="w-[40px] h-[40px] bg-white border-2 border-black absolute right-2 top-2 text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
+                aria-label="Close friends list" 
+                title="Close">
           ×
         </button>
 
@@ -45,7 +54,10 @@ export class FriendList {
         <div id="components-container"></div>
 
         <!-- Refresh Button -->
-        <button id="refresh-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black absolute ml-[7.2rem] mt-2 mb-0">
+        <button id="refresh-btn" 
+                class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black absolute ml-[7.2rem] mt-2 mb-0 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
+                aria-label="Refresh friends list" 
+                title="Refresh">
           <img src="/src/img/refresh.svg" alt="refresh" />
         </button>
 
@@ -62,8 +74,8 @@ export class FriendList {
 
   private bindEvents(): void {
     // Close button
-    const closeBtn = this.element.querySelector('#close-btn');
-    closeBtn?.addEventListener('click', () => this.close());
+    const closeButton = this.element.querySelector('#close-btn');
+    closeButton?.addEventListener('click', () => this.close());
 
     // Refresh button
     const refreshBtn = this.element.querySelector('#refresh-btn');
@@ -75,6 +87,19 @@ export class FriendList {
         this.close();
       }
     });
+
+    // Keyboard accessibility - Escape to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.visible) {
+        this.close();
+      }
+    });
+
+    // Focus management - focus close button on open
+    const closeBtnFocus = this.element.querySelector('#close-btn') as HTMLButtonElement;
+    if (closeBtnFocus) {
+      setTimeout(() => closeBtnFocus.focus(), 100);
+    }
 
     console.log('👥 FriendList: Event listeners bound (React-like)');
   }

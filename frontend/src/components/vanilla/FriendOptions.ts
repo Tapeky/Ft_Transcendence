@@ -35,7 +35,7 @@ export class FriendOptions {
 
     // Modal container - DIMENSIONS EXACTES React
     const modalContent = document.createElement('div');
-    modalContent.className = 'z-[65] w-[500px] h-[600px] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
+    modalContent.className = 'z-[65] w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
 
     // Flex column layout - EXACTEMENT React
     const flexContainer = document.createElement('div');
