@@ -1,29 +1,24 @@
-import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
 import { Header } from '../components/vanilla/Header';
 import { Banner } from '../components/vanilla/Banner';
 import { Choice } from '../components/vanilla/Choice';
 
-export class MenuPage {
+// MenuTest - Test page pour tester les composants Menu sans protection auth
+export class MenuTestPage {
   private element: HTMLElement;
   private header?: Header;
   private banner?: Banner;
   private choice?: Choice;
-  private authUnsubscribe?: () => void;
 
   constructor() {
     this.element = this.createElement();
-    this.bindEvents();
-    this.subscribeToAuth();
-    
-    console.log('🏠 MenuPage: Initialized with vanilla components (React-like)');
+    console.log('🧪 MenuTestPage: Initialized for testing');
   }
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
-    // Create components
+    // Create components for testing
     this.header = new Header(true); // userVisible = true
     this.banner = new Banner();
     this.choice = new Choice();
@@ -34,26 +29,6 @@ export class MenuPage {
     container.appendChild(this.choice.getElement());
 
     return container;
-  }
-
-  private bindEvents(): void {
-    // Les événements sont gérés par les composants individuels
-    console.log('🏠 MenuPage: Event delegation to components (React-like)');
-  }
-
-  private subscribeToAuth(): void {
-    // Vérifier l'authentification comme dans le React Menu
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
-      if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
-        console.log('🏠 MenuPage: User not authenticated, redirecting to auth');
-        router.navigate('/');
-      }
-    });
-
-    // Vérification initiale
-    if (!authManager.isAuthenticated() || !authManager.getCurrentUser()) {
-      router.navigate('/');
-    }
   }
 
   getElement(): HTMLElement {
@@ -71,13 +46,8 @@ export class MenuPage {
     if (this.choice) {
       this.choice.destroy();
     }
-
-    // Cleanup auth subscription
-    if (this.authUnsubscribe) {
-      this.authUnsubscribe();
-    }
     
-    console.log('🏠 MenuPage: Destroyed with all components (React-like)');
+    console.log('🧪 MenuTestPage: Destroyed');
     this.element.remove();
   }
 }
