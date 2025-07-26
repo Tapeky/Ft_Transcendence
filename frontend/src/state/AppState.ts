@@ -38,12 +38,17 @@ export class AppState {
   private subscribers: StateSubscriber[] = [];
   private stateHistory: AppStateData[] = [];
   private maxHistorySize = 10;
+  public router: any = null; // Will be set by main initialization
 
   constructor() {
     this.state = this.getInitialState();
     this.setupDevTools();
     
     console.log('🗄️ AppState: Initialized', this.state);
+  }
+
+  public setRouter(router: any): void {
+    this.router = router;
   }
 
   private getInitialState(): AppStateData {

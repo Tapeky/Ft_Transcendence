@@ -1,42 +1,44 @@
 import './index.css';
-import { router } from './router';
-import './router';
-
-// Global error handler to prevent crashes from malformed error objects
-window.addEventListener('error', (event) => {
-  if (event.error && event.error.message && event.error.message.includes("Cannot read properties of undefined (reading 'logs')")) {
-    console.error('Caught global error with logs property access:', event.error.message);
-    event.preventDefault();
-    return false;
-  }
-});
-
-// Global unhandled promise rejection handler
-window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason && typeof event.reason === 'object' && event.reason.message && 
-      event.reason.message.includes("Cannot read properties of undefined (reading 'logs')")) {
-    console.error('Caught unhandled promise rejection with logs property access:', event.reason.message);
-    event.preventDefault();
-    return false;
-  }
-});
+import { application } from './core/Application';
 
 class App {
   constructor() {
     this.init();
   }
 
-  private init() {
+  private async init() {
     const root = document.getElementById('root');
     if (!root) {
       throw new Error('Root element not found');
     }
 
-    // Phase 2: Router initialization
-    // Le router se charge automatiquement de la route initiale
-    console.log('✅ Vanilla TS App initialized - Phase 2');
-    console.log('🛣️ Router system active');
-    console.log(`📍 Current route: ${window.location.pathname}`);
+    try {
+      // Initialize the application with all systems
+      await application.initialize();
+      
+      console.log('✅ Vanilla TS App initialized with route protection');
+      console.log('🛡️ Route guard active');
+      console.log(`📍 Current route: ${window.location.pathname}`);
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize application:', error);
+      
+      // Show error page
+      root.innerHTML = `
+        <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626); 
+                    display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
+          <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+            <h1 style="font-size: 3rem; margin-bottom: 20px;">⚠️ Initialization Error</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 20px;">Failed to start the application</p>
+            <button onclick="window.location.reload()" 
+                    style="padding: 10px 20px; font-size: 1rem; background: white; color: #dc2626; 
+                           border: none; border-radius: 5px; cursor: pointer;">
+              Retry
+            </button>
+          </div>
+        </div>
+      `;
+    }
   }
 }
 
