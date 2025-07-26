@@ -5,9 +5,19 @@ import { apiService, LoginCredentials, RegisterCredentials, User } from '../serv
 // Remplace AuthContext.tsx en gardant EXACTEMENT la même logique
 
 export class AuthManager {
-  constructor() {
+  private static instance: AuthManager;
+  private authStateCallbacks: ((isAuthenticated: boolean) => void)[] = [];
+
+  private constructor() {
     this.initializeAuth();
     console.log('🔐 AuthManager: Initialized');
+  }
+
+  public static getInstance(): AuthManager {
+    if (!AuthManager.instance) {
+      AuthManager.instance = new AuthManager();
+    }
+    return AuthManager.instance;
   }
 
   private async initializeAuth(): Promise<void> {
@@ -37,6 +47,9 @@ export class AuthManager {
           loading: false
         });
         
+        // Notify auth state change
+        this.notifyAuthStateChange(true);
+        
         console.log('✅ AuthManager: Utilisateur authentifié:', currentUser.username);
       } else {
         // Pas de token valide
@@ -45,6 +58,10 @@ export class AuthManager {
           isAuthenticated: false,
           loading: false
         });
+        
+        // Notify auth state change
+        this.notifyAuthStateChange(false);
+        
         console.log('ℹ️ AuthManager: Aucun token valide trouvé');
       }
     } catch (error) {
@@ -57,6 +74,9 @@ export class AuthManager {
         isAuthenticated: false,
         loading: false
       });
+      
+      // Notify auth state change
+      this.notifyAuthStateChange(false);
     }
   }
 
@@ -75,6 +95,9 @@ export class AuthManager {
         isAuthenticated: true,
         loading: false
       });
+      
+      // Notify auth state change
+      this.notifyAuthStateChange(true);
       
       console.log('✅ AuthManager: Connexion réussie:', authResponse.user.username);
       
@@ -106,6 +129,9 @@ export class AuthManager {
         isAuthenticated: true,
         loading: false
       });
+      
+      // Notify auth state change
+      this.notifyAuthStateChange(true);
       
       console.log('✅ AuthManager: Inscription réussie:', authResponse.user.username);
       
@@ -148,6 +174,9 @@ export class AuthManager {
         loading: false
       });
       
+      // Notify auth state change
+      this.notifyAuthStateChange(false);
+      
       console.log('✅ AuthManager: Déconnexion réussie');
       
       // Navigation vers page d'accueil
@@ -162,6 +191,9 @@ export class AuthManager {
         isAuthenticated: false,
         loading: false
       });
+      
+      // Notify auth state change
+      this.notifyAuthStateChange(false);
       
       this.navigateToHome();
     }
@@ -231,10 +263,30 @@ export class AuthManager {
       });
     });
   }
+
+  // Auth state change callbacks for RouteGuard
+  public onAuthStateChange(callback: (isAuthenticated: boolean) => void): () => void {
+    this.authStateCallbacks.push(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.authStateCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.authStateCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  private notifyAuthStateChange(isAuthenticated: boolean): void {
+    this.authStateCallbacks.forEach(callback => {
+      try {
+        callback(isAuthenticated);
+      } catch (error) {
+        console.error('Error in auth state change callback:', error);
+      }
+    });
+  }
 }
 
-// Export singleton
-export const authManager = new AuthManager();
-
-// Export pour testing
-export const createAuthManager = () => new AuthManager();
+// Export singleton - use getInstance
+export const authManager = AuthManager.getInstance();

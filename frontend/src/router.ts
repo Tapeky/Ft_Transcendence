@@ -1,11 +1,16 @@
 export class Router {
   private routes: Map<string, () => Promise<HTMLElement>> = new Map();
   private currentPage: HTMLElement | null = null;
+  private routeGuard: any = null; // Will be set by RouteGuard
 
   constructor() {
     this.setupRoutes();
     this.handleInitialRoute();
     this.setupPopState();
+  }
+
+  public setRouteGuard(guard: any): void {
+    this.routeGuard = guard;
   }
 
   private setupRoutes(): void {
@@ -18,6 +23,32 @@ export class Router {
     this.routes.set('/auth', async () => {
       const { AuthPage } = await import('./pages/Auth');
       return new AuthPage().getElement();
+    });
+    
+    // Protected routes
+    this.routes.set('/menu', async () => {
+      const { MenuPage } = await import('./pages/Menu');
+      return new MenuPage().getElement();
+    });
+    
+    this.routes.set('/profile', async () => {
+      const { ProfilePage } = await import('./pages/Profile');
+      return new ProfilePage().getElement();
+    });
+    
+    this.routes.set('/friends', async () => {
+      const { FriendsPage } = await import('./pages/Friends');
+      return new FriendsPage().getElement();
+    });
+    
+    this.routes.set('/tournament', async () => {
+      const { TournamentPage } = await import('./pages/Tournament');
+      return new TournamentPage().getElement();
+    });
+    
+    this.routes.set('/chat', async () => {
+      const { ChatPage } = await import('./pages/Chat');
+      return new ChatPage().getElement();
     });
     
     this.routes.set('/404', async () => {
@@ -33,8 +64,16 @@ export class Router {
     console.log('🛣️ Router: Routes enregistrées', Array.from(this.routes.keys()));
   }
 
-  public async navigate(path: string): Promise<void> {
+  public async navigate(path: string, skipGuard: boolean = false): Promise<void> {
     console.log(`🧭 Router: Navigation vers ${path}`);
+    
+    // Check route protection if guard is available and not skipped
+    if (!skipGuard && this.routeGuard) {
+      if (!this.routeGuard.canNavigateTo(path)) {
+        console.log(`🚫 Router: Navigation bloquée vers ${path}`);
+        return;
+      }
+    }
     
     try {
       // Trouver la page ou fallback vers 404
