@@ -404,7 +404,7 @@ export class ProfilePage {
   }
 
   private updateMainAvatar(): void {
-    // Update the main avatar image when avatar changes
+    // Update the main avatar image when avatar changes (permanent)
     const user = authManager.getCurrentUser();
     const mainAvatar = document.querySelector('#user-avatar') as HTMLImageElement;
     

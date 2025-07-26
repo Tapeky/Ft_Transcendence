@@ -1,6 +1,7 @@
 import { authManager } from '../../auth/AuthManager';
 import { getAvatarUrl } from '../../utils/avatar';
 import { router } from '../../router';
+import { FriendList } from './FriendList';
 
 // Header - Reproduction exacte de la version React
 // Background image city.png + User profile card + Options dropdown
@@ -212,7 +213,7 @@ export class Header {
 export class Options {
   private element: HTMLElement;
   private onClose: () => void;
-  private friendListInstance?: any; // FriendList sera importé plus tard
+  private friendListInstance?: FriendList;
 
   constructor(onClose: () => void) {
     this.onClose = onClose;
@@ -280,9 +281,20 @@ export class Options {
   }
 
   private openFriends(): void {
-    this.onClose();
-    // TODO: Implémenter FriendList quand il sera migré
-    console.log('🎯 Options: Friends clicked (FriendList à implémenter)');
+    this.onClose(); // Fermer le menu d'abord comme React
+    
+    // Créer et afficher FriendList en overlay (pas de navigation)
+    if (!this.friendListInstance) {
+      this.friendListInstance = new FriendList(() => {
+        // Callback pour fermer
+        this.friendListInstance = undefined;
+      });
+    }
+    
+    // Attacher à document.body (portal pattern)
+    document.body.appendChild(this.friendListInstance.getElement());
+    
+    console.log('🎯 Options: Friends interface opened as overlay (React-like portal)');
   }
 
   private async handleLogout(): Promise<void> {
