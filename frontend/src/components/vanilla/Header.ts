@@ -1,4 +1,5 @@
 import { authManager } from '../../auth/AuthManager';
+import { getAvatarUrl } from '../../utils/avatar';
 import { router } from '../../router';
 
 // Header - Reproduction exacte de la version React
@@ -46,7 +47,7 @@ export class Header {
           <div class="flex justify-center items-center">
             <img 
               id="user-avatar" 
-              src="${this.getAvatarUrl(user?.avatar_url)}" 
+              src="${getAvatarUrl(user?.avatar_url)}" 
               alt="icon" 
               class="h-[70px] w-[70px] min-h-[70px] min-w-[70px] border-2 border-solid m-2"
             />
@@ -153,23 +154,9 @@ export class Header {
 
     if (displayName) displayName.textContent = user?.display_name || 'User';
     if (username) username.textContent = user?.username || 'username';
-    if (avatar) avatar.src = this.getAvatarUrl(user?.avatar_url);
+    if (avatar) avatar.src = getAvatarUrl(user?.avatar_url);
   }
 
-  private getAvatarUrl(avatarUrl?: string): string {
-    // Reproduction exacte de la logique React
-    if (!avatarUrl) {
-      return '/src/img/default-avatar.png';
-    }
-    
-    // Si c'est déjà une URL complète
-    if (avatarUrl.startsWith('http')) {
-      return avatarUrl;
-    }
-    
-    // Si c'est un path relatif du backend
-    return `${window.location.origin}/api${avatarUrl}`;
-  }
 
   public setUserVisible(visible: boolean): void {
     this.userVisible = visible;
@@ -188,6 +175,27 @@ export class Header {
 
   getElement(): HTMLElement {
     return this.element;
+  }
+
+  // Method to refresh user data and update avatar/info
+  public refresh(): void {
+    const user = authManager.getCurrentUser();
+    
+    // Update avatar
+    const avatar = this.element.querySelector('#user-avatar') as HTMLImageElement;
+    if (avatar) {
+      avatar.src = getAvatarUrl(user?.avatar_url);
+      console.log('🎯 Header: Avatar updated to:', avatar.src);
+    }
+    
+    // Update display name and username
+    const displayName = this.element.querySelector('#user-display-name');
+    const username = this.element.querySelector('#user-username');
+    
+    if (displayName) displayName.textContent = user?.display_name || user?.username || 'User';
+    if (username) username.textContent = user?.username || 'username';
+    
+    console.log('🎯 Header: User data refreshed');
   }
 
   destroy(): void {

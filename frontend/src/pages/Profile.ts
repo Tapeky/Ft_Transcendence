@@ -5,6 +5,7 @@ import { BackBtn } from '../components/vanilla/BackBtn';
 import { CloseBtn } from '../components/vanilla/CloseBtn';
 import { AvatarSelect } from '../components/vanilla/AvatarSelect';
 import { apiService } from '../services/api';
+import { getAvatarUrl } from '../utils/avatar';
 
 export class ProfilePage {
   private element: HTMLElement;
@@ -121,11 +122,11 @@ export class ProfilePage {
     const rightColumn = document.createElement('div');
     rightColumn.className = 'flex-[0.5] flex justify-center relative';
     
-    // Avatar (functional)
+    // Avatar (functional with proper URL handling)
     rightColumn.innerHTML = `
       <img 
         id="user-avatar"
-        src="${user?.avatar_url ? `/api/avatars/${user.avatar_url}` : '/api/placeholder/300/295'}" 
+        src="${getAvatarUrl(user?.avatar_url)}" 
         alt="Avatar" 
         class="h-[295px] w-[300px] border-4 p-0 border-blue-800"
       />
@@ -187,6 +188,12 @@ export class ProfilePage {
       
       // Refresh user data
       await authManager.refreshUser();
+      
+      // Update Header display name too!
+      if (this.header) {
+        this.header.refresh();
+        console.log('👤 ProfilePage: Header display name refreshed');
+      }
       
       // Show success feedback
       this.showFeedback('Display name updated successfully!', 'success');
@@ -401,10 +408,16 @@ export class ProfilePage {
     const user = authManager.getCurrentUser();
     const mainAvatar = document.querySelector('#user-avatar') as HTMLImageElement;
     
-    if (mainAvatar && user?.avatar_url) {
-      const newAvatarUrl = `/api/avatars/${user.avatar_url}`;
+    if (mainAvatar) {
+      const newAvatarUrl = getAvatarUrl(user?.avatar_url);
       mainAvatar.src = newAvatarUrl;
       console.log('👤 ProfilePage: Main avatar updated to:', newAvatarUrl);
+    }
+    
+    // CRUCIAL: Update Header avatar too!
+    if (this.header) {
+      this.header.refresh();
+      console.log('👤 ProfilePage: Header avatar refreshed');
     }
   }
 
