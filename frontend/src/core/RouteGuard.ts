@@ -47,6 +47,12 @@ export class RouteGuard {
    * Validate route access and handle redirections
    */
   validateRouteAccess(targetPath: string): { allowed: boolean; redirectTo?: string } {
+    // CRITICAL FIX: Wait for auth initialization to complete
+    // This prevents race condition where routes are validated before auth check finishes
+    if (appState.getState().loading) {
+      return { allowed: true }; // Allow navigation during loading, validation will happen after init
+    }
+
     const isAuthenticated = this.isAuthenticated();
     const isProtected = this.isProtectedRoute(targetPath);
     const isGuestOnly = this.isGuestOnlyRoute(targetPath);
@@ -95,7 +101,8 @@ export class RouteGuard {
   initialize(): void {
     // Listen for authentication state changes
     this.authManager.onAuthStateChange((isAuthenticated: boolean) => {
-      if (appState.router) {
+      // Only process auth changes when not loading (auth init complete)
+      if (!appState.getState().loading && appState.router) {
         const currentPath = appState.router.getCurrentPath();
         const validation = this.validateRouteAccess(currentPath);
         
@@ -105,13 +112,22 @@ export class RouteGuard {
       }
     });
 
-    // Check initial route on page load
-    if (appState.router) {
-      const currentPath = appState.router.getCurrentPath();
-      if (!this.canNavigateTo(currentPath)) {
-        // Navigation will be handled by canNavigateTo method
+    // Listen for loading state changes to validate route after auth init
+    appState.subscribe((state) => {
+      // When loading finishes, validate current route
+      if (!state.loading && appState.router) {
+        const currentPath = appState.router.getCurrentPath();
+        const validation = this.validateRouteAccess(currentPath);
+        
+        if (!validation.allowed && validation.redirectTo) {
+          console.log('🛡️ RouteGuard: Post-auth validation, redirecting to:', validation.redirectTo);
+          appState.router.navigate(validation.redirectTo, true);
+        }
       }
-    }
+    });
+
+    // Skip initial route check - will be handled after auth initialization completes
+    console.log('🛡️ RouteGuard: Initialized with loading-aware validation');
   }
 
   /**
