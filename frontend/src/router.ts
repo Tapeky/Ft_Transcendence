@@ -61,6 +61,11 @@ export class Router {
       return new TestPage().getElement();
     });
     
+    this.routes.set('/menutest', async () => {
+      const { MenuTestPage } = await import('./pages/MenuTest');
+      return new MenuTestPage().getElement();
+    });
+    
     console.log('🛣️ Router: Routes enregistrées', Array.from(this.routes.keys()));
   }
 
