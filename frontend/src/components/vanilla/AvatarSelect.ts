@@ -3,6 +3,7 @@
 
 import { apiService, Avatar } from '../../services/api';
 import { authManager } from '../../auth/AuthManager';
+import { getAvatarUrl } from '../../utils/avatar';
 
 export class AvatarSelect {
   private element: HTMLElement;
@@ -55,7 +56,7 @@ export class AvatarSelect {
     
     this.avatars.forEach((avatar, index) => {
       const avatarImg = document.createElement('img');
-      avatarImg.src = avatar.url;
+      avatarImg.src = getAvatarUrl(avatar.url); // Use consistent avatar URL handling
       avatarImg.alt = 'avatar';
       avatarImg.className = 'h-[170px] w-[170px] cursor-pointer border-2 border-black hover:scale-125 transition duration-300';
       avatarImg.dataset.avatarId = avatar.id;
