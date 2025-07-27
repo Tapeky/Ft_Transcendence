@@ -5,6 +5,8 @@ import { apiService, User } from '../../services/api';
 
 export class BlockList {
   private element: HTMLElement;
+  private buttonElement?: HTMLElement;
+  private dropdownElement?: HTMLElement;
   private isListVisible: boolean = false;
   private blockedUsers: User[] = [];
 
@@ -17,27 +19,32 @@ export class BlockList {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'absolute ml-3 mt-2 mb-0';
+    container.className = 'block-list-container';
 
-    container.innerHTML = `
-      <!-- Toggle Button -->
-      <button id="toggle-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-        <img src="/src/img/blocklist.svg" alt="block list" />
-      </button>
+    // Create button separately
+    this.buttonElement = document.createElement('button');
+    this.buttonElement.id = 'toggle-btn';
+    this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
+    this.buttonElement.setAttribute('title', 'Blocked Users');
+    this.buttonElement.innerHTML = '<img src="/src/img/blocklist.svg" alt="block list" />';
 
-      <!-- Dropdown List -->
-      <div id="blocked-dropdown" class="${this.isListVisible ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] relative right-[370px] top-[250px] flex-col items-center z-[45]">
-        
-        <!-- Header -->
-        <h2 class="text-white border-b-2 border-white">Blocked users</h2>
-        
-        <!-- Content Container -->
-        <div id="blocked-content" class="flex flex-col overflow-auto w-full">
-          <!-- Blocked users will be injected here -->
-        </div>
-        
+    // Create dropdown separately
+    this.dropdownElement = document.createElement('div');
+    this.dropdownElement.id = 'blocked-dropdown';
+    this.dropdownElement.className = `${this.isListVisible ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] absolute top-[70px] left-4 flex-col items-center z-[45]`;
+    this.dropdownElement.innerHTML = `
+      <!-- Header -->
+      <h2 class="text-white border-b-2 border-white">Blocked users</h2>
+      
+      <!-- Content Container -->
+      <div id="blocked-content" class="flex flex-col overflow-auto w-full">
+        <!-- Blocked users will be injected here -->
       </div>
     `;
+
+    // Add both to container for backward compatibility
+    container.appendChild(this.buttonElement);
+    container.appendChild(this.dropdownElement);
 
     return container;
   }
@@ -154,6 +161,14 @@ export class BlockList {
 
   getElement(): HTMLElement {
     return this.element;
+  }
+
+  getButtonElement(): HTMLElement {
+    return this.buttonElement!;
+  }
+
+  getDropdownElement(): HTMLElement {
+    return this.dropdownElement!;
   }
 
   destroy(): void {

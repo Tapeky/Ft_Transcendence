@@ -43,21 +43,25 @@ export class FriendList {
         <h1 id="friends-title" class="sr-only">Friends Management</h1>
         
         <!-- Header zone for buttons -->
-        <div class="relative h-[60px] w-full flex-shrink-0">
-          <!-- Close Button -->
+        <div class="flex justify-between items-center h-[60px] w-full flex-shrink-0 px-4 py-2">
+          <!-- Left buttons group -->
+          <div id="left-buttons" class="flex gap-2 items-center">
+            <!-- Refresh Button -->
+            <button id="refresh-btn" 
+                    class="border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
+                    aria-label="Refresh friends list" 
+                    title="Refresh">
+              <img src="/src/img/refresh.svg" alt="refresh" />
+            </button>
+            <!-- BlockList and Requests buttons will be inserted here -->
+          </div>
+
+          <!-- Right button -->
           <button id="close-btn" 
-                  class="w-[40px] h-[40px] bg-white border-2 border-black absolute right-2 top-2 text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
+                  class="w-[40px] h-[40px] bg-white border-2 border-black text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
                   aria-label="Close friends list" 
                   title="Close">
             ×
-          </button>
-
-          <!-- Refresh Button -->
-          <button id="refresh-btn" 
-                  class="border-2 h-[40px] w-[40px] bg-white border-black absolute left-[2.8rem] top-2 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
-                  aria-label="Refresh friends list" 
-                  title="Refresh">
-            <img src="/src/img/refresh.svg" alt="refresh" />
           </button>
         </div>
 
@@ -107,20 +111,25 @@ export class FriendList {
   }
 
   private initializeComponents(): void {
-    const container = this.element.querySelector('#components-container');
-    if (!container) return;
+    const leftButtonsContainer = this.element.querySelector('#left-buttons');
+    const componentsContainer = this.element.querySelector('#components-container');
+    if (!leftButtonsContainer || !componentsContainer) return;
 
-    // Create component instances (React component structure)
+    // Create component instances
     this.blockListInstance = new BlockList();
     this.requestsInstance = new Requests();
     this.addFriendInstance = new AddFriend();
 
-    // Inject components into modal (absolute positioned like React)
-    container.appendChild(this.blockListInstance.getElement());
-    container.appendChild(this.requestsInstance.getElement());
-    container.appendChild(this.addFriendInstance.getElement());
+    // Add buttons to header (properly positioned)
+    leftButtonsContainer.appendChild(this.blockListInstance.getButtonElement());
+    leftButtonsContainer.appendChild(this.requestsInstance.getButtonElement());
 
-    console.log('👥 FriendList: All components initialized (React-like)');
+    // Add dropdown containers to components area
+    componentsContainer.appendChild(this.blockListInstance.getDropdownElement());
+    componentsContainer.appendChild(this.requestsInstance.getDropdownElement());
+    componentsContainer.appendChild(this.addFriendInstance.getElement());
+
+    console.log('👥 FriendList: All components initialized with proper positioning');
   }
 
   private async fetchFriends(): Promise<void> {

@@ -6,6 +6,8 @@ import { getAvatarUrl } from '../../utils/avatar';
 
 export class Requests {
   private element: HTMLElement;
+  private buttonElement?: HTMLElement;
+  private dropdownElement?: HTMLElement;
   private isRequestWindowVisible: boolean = false;
   private requests: FriendRequest[] = [];
 
@@ -18,27 +20,32 @@ export class Requests {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'absolute ml-[4rem] mt-2 mb-0';
+    container.className = 'requests-container';
 
-    container.innerHTML = `
-      <!-- Toggle Button -->
-      <button id="toggle-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-        <img src="/src/img/requests.svg" alt="requests" />
-      </button>
+    // Create button separately
+    this.buttonElement = document.createElement('button');
+    this.buttonElement.id = 'toggle-btn';
+    this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
+    this.buttonElement.setAttribute('title', 'Friend Requests');
+    this.buttonElement.innerHTML = '<img src="/src/img/requests.svg" alt="requests" />';
 
-      <!-- Dropdown Window -->
-      <div id="requests-dropdown" class="${this.isRequestWindowVisible ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] relative right-[472px] bottom-[150px] z-[45] flex-col items-center">
-        
-        <!-- Header -->
-        <h2 class="text-white border-b-2 border-white">Friend requests</h2>
-        
-        <!-- Content Container -->
-        <div id="requests-content" class="flex flex-col overflow-auto w-full">
-          <!-- Friend requests will be injected here -->
-        </div>
-        
+    // Create dropdown separately
+    this.dropdownElement = document.createElement('div');
+    this.dropdownElement.id = 'requests-dropdown';
+    this.dropdownElement.className = `${this.isRequestWindowVisible ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] absolute top-[70px] right-4 flex-col items-center z-[45]`;
+    this.dropdownElement.innerHTML = `
+      <!-- Header -->
+      <h2 class="text-white border-b-2 border-white">Friend requests</h2>
+      
+      <!-- Content Container -->
+      <div id="requests-content" class="flex flex-col overflow-auto w-full">
+        <!-- Friend requests will be injected here -->
       </div>
     `;
+
+    // Add both to container for backward compatibility
+    container.appendChild(this.buttonElement);
+    container.appendChild(this.dropdownElement);
 
     return container;
   }
@@ -215,6 +222,14 @@ export class Requests {
 
   getElement(): HTMLElement {
     return this.element;
+  }
+
+  getButtonElement(): HTMLElement {
+    return this.buttonElement!;
+  }
+
+  getDropdownElement(): HTMLElement {
+    return this.dropdownElement!;
   }
 
   destroy(): void {
