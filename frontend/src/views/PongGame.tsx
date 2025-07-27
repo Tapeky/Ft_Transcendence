@@ -8,12 +8,11 @@ const PongGame: React.FC = () => {
 	const socketRef = useRef<WebSocket | null>(null);
 	const [ballX, setBallX] = useState(500);
 	const [ballY, setBallY] = useState(200);
+	let id = Number;
 
 	useEffect(() =>
 	{
-		console.log('Waiting...')
-		setTimeout(connect, 100); //pour eviter une erreur navigateur
-		
+
 		return () => socketRef.current?.close();
 
 	}, []);
@@ -41,12 +40,19 @@ const PongGame: React.FC = () => {
 
 	const connect = () =>
 	{
+		const ready = document.getElementById('ready');
+		const lobby = document.getElementById('lobby');
+
+		ready?.classList.replace('flex', 'hidden');
+		lobby?.classList.replace('hidden', 'flex');
+
 		socketRef.current = new WebSocket('wss://localhost:8000/ws');
 	
 		socketRef.current.onopen = () =>
 		{
 			console.log('Hey !');
 			auth();
+			socketRef.current?.send(JSON.stringify({"type": "online_users"}));	//tout changer sans react
 		};
 	
 		socketRef.current.onmessage = (event) => {
@@ -59,7 +65,13 @@ const PongGame: React.FC = () => {
 					console.log('Connected !');
 					break;
 				case 'game_update':
-					game(data);
+
+					break;
+				case 'auth_success':
+					id = data.data.userId;
+					break;
+				case 'online_users':
+					update_list(data);
 					break;
 
 			}
@@ -71,38 +83,40 @@ const PongGame: React.FC = () => {
 		socketRef.current.onclose = () => console.log('Bye !');
 	}
 
-
-	const game = (data: any) =>
+	const update_list = (data: any) =>
 	{
-		const x = data.data.ball.pos.x * 2;
-		const y = data.data.ball.pos.y * 2;
-		console.log(x);
-		console.log(y);
+		const online_users = document.getElementById('online_users')!;
 
-		setBallX(x);
-		setBallY(y);
-	}
-
-	const test = () =>
-	{
-		const socket = socketRef.current;
-
-
-		if (!(socket && socket.readyState === WebSocket.OPEN))
+		if (data.data.length !== 0)
 		{
-			console.error('socket closed');
-			return ;
+			let error = 0;
+			online_users.innerHTML = '';
+
+			const ul = document.createElement('ul');
+			ul.className = 'text-[3rem] items-center text-center mx-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-8';
+
+			data.data.forEach((user: any) => {
+				if (user.id === id)
+				{
+					if (data.data.length === 1)
+						error = 1;
+					return ;
+				}
+				const li = document.createElement('li');
+				li.className = 'border-b-2 border-white w-full';
+				li.textContent = user.username;
+				ul.appendChild(li);
+			});
+			if (!error)
+				online_users.appendChild(ul);
+			else
+				online_users.innerHTML = `<h1> No opponent for now </h1>`;	
 		}
-
-		const test =
-		{
-			"type": "start_game",
-			"opponentId": 10
-		};
-
-		socket?.send(JSON.stringify(test));
-		console.log('click');
+		else
+			online_users.innerHTML = `<h1> No opponent for now </h1>`;
+		console.log('list updated');
 	};
+
 
 
   
@@ -119,16 +133,30 @@ return (
 
 	{!gameStarted ? (
 	<div className="flex flex-col items-center">
-		<div className='min-w-[450px] h-[500px] border-2 flex flex-col items-center text-[2rem]'>
-		<h1>Online players</h1>
+		<button id='ready' className='border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[100px] w-[250px] flex items-center justify-center text-[4rem]' onClick={connect}>
+			Ready
+		</button>
+
+		<div id='lobby' className='min-w-[450px] h-[500px] border-2 flex-col items-center text-[2rem] text-center hidden'>
+			<div className='flex w-full mt-2'>
+				<div className='flex-[0.5] items-center justify-center'>
+					<button className="border-2 h-[40px] w-[40px] mr-2 bg-white border-black" onClick={() => socketRef.current?.send(JSON.stringify({"type": "online_users"}))}>
+                		<img src="/src/img/refresh.svg" alt="block list" />
+            		</button>
+				</div>
+				<h1 className='border-b-2 flex-[2] text-[3rem]' >Online players</h1>
+				<div className='flex-[0.5]'></div>
+			</div>
+
+			<div id='online_users' className='flex-col items-center text-[2rem] flex-grow w-full'>
+
+			</div>
 
 
-
-
+		</div>
 	</div>
 
 
-	</div>
 	) : (
 	<div className="relative flex flex-col items-center">
 		<div className='border-4 h-[400px] w-[1000px] relative'>
