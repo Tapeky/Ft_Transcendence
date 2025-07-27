@@ -51,6 +51,34 @@ export class Router {
       return new ChatPage().getElement();
     });
     
+    // Dynamic route for dashboard with user ID pattern: /dashboard/123
+    this.routes.set('/dashboard', async (path: string) => {
+      // Utiliser le path passé en paramètre au lieu de window.location.pathname
+      const pathSegments = path.split('/');
+      const userId = pathSegments[2]; // /dashboard/123 -> segments[2] = "123"
+      
+      console.log('🔍 Router Dashboard - Debug:', {
+        passedPath: path,
+        windowPath: window.location.pathname,
+        pathSegments,
+        userId,
+        userIdExists: !!userId,
+        matchesPattern: userId?.match(/^\d+$/)
+      });
+      
+      if (!userId || !userId.match(/^\d+$/)) {
+        console.log('❌ Router: Invalid userId, loading 404');
+        const { NotFoundPage } = await import('./pages/NotFound');
+        return new NotFoundPage().getElement();
+      }
+      
+      console.log('✅ Router: Valid userId, loading Dashboard');
+      const { Dashboard } = await import('./pages/Dashboard');
+      const container = document.createElement('div');
+      new Dashboard(container, userId);
+      return container;
+    });
+    
     this.routes.set('/404', async () => {
       const { NotFoundPage } = await import('./pages/NotFound');
       return new NotFoundPage().getElement();
@@ -69,6 +97,23 @@ export class Router {
     console.log('🛣️ Router: Routes enregistrées', Array.from(this.routes.keys()));
   }
 
+  private findRoute(path: string): (() => Promise<HTMLElement>) | undefined {
+    // Essayer match exact d'abord
+    if (this.routes.has(path)) {
+      return this.routes.get(path);
+    }
+    
+    // Essayer match dynamique pour dashboard
+    if (path.startsWith('/dashboard/')) {
+      const segments = path.split('/');
+      if (segments.length === 3 && segments[2].match(/^\d+$/)) {
+        return this.routes.get('/dashboard');
+      }
+    }
+    
+    return undefined;
+  }
+
   public async navigate(path: string, skipGuard: boolean = false): Promise<void> {
     console.log(`🧭 Router: Navigation vers ${path}`);
     
@@ -81,11 +126,11 @@ export class Router {
     }
     
     try {
-      // Trouver la page ou fallback vers 404
-      const pageFactory = this.routes.get(path) || this.routes.get('/404')!;
+      // Trouver la page avec matching intelligent
+      const pageFactory = this.findRoute(path) || this.routes.get('/404')!;
       
       // Render la nouvelle page (await du dynamic import)
-      const page = await pageFactory();
+      const page = await pageFactory(path);
       this.render(page);
       
       // Mettre à jour l'URL du navigateur
@@ -131,7 +176,7 @@ export class Router {
       
       try {
         // Navigate sans pushState pour éviter la boucle
-        const pageFactory = this.routes.get(currentPath) || this.routes.get('/404')!;
+        const pageFactory = this.findRoute(currentPath) || this.routes.get('/404')!;
         const page = await pageFactory();
         this.render(page);
       } catch (error) {
