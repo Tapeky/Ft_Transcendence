@@ -125,7 +125,7 @@ export class ProfilePage {
     // Avatar (functional with proper URL handling)
     rightColumn.innerHTML = `
       <img 
-        id="user-avatar"
+        id="profile-main-avatar"
         src="${getAvatarUrl(user?.avatar_url)}" 
         alt="Avatar" 
         class="h-[295px] w-[300px] border-4 p-0 border-blue-800"
@@ -402,11 +402,29 @@ export class ProfilePage {
   private updateMainAvatar(): void {
     // Update the main avatar image when avatar changes (permanent)
     const user = authManager.getCurrentUser();
-    const mainAvatar = document.querySelector('#user-avatar') as HTMLImageElement;
+    console.log('🖼️ Profile: updateMainAvatar called, user avatar_url:', user?.avatar_url);
+    
+    const mainAvatar = document.querySelector('#profile-main-avatar') as HTMLImageElement;
+    console.log('🔍 Profile: Found mainAvatar element?', !!mainAvatar);
+    console.log('🔍 Profile: mainAvatar element:', mainAvatar);
     
     if (mainAvatar) {
       const newAvatarUrl = getAvatarUrl(user?.avatar_url);
-      mainAvatar.src = newAvatarUrl;
+      console.log('🖼️ Profile: Setting new avatar URL:', newAvatarUrl);
+      console.log('🖼️ Profile: Old avatar URL was:', mainAvatar.src);
+      
+      // Force refresh by adding cache buster
+      const hasQueryParams = newAvatarUrl.includes('?');
+      const cacheBuster = hasQueryParams ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+      console.log('🔗 Profile: hasQueryParams:', hasQueryParams, 'cacheBuster:', cacheBuster);
+      const finalUrl = newAvatarUrl + cacheBuster;
+      
+      console.log('🖼️ Profile: Final URL with cache buster:', finalUrl);
+      mainAvatar.src = finalUrl;
+      console.log('✅ Profile: Avatar image src updated!');
+    } else {
+      console.error('❌ Profile: Could not find #profile-main-avatar element!');
+      console.log('🔍 Profile: All images in page:', document.querySelectorAll('img'));
     }
     
     // CRUCIAL: Update Header avatar too!
@@ -417,21 +435,24 @@ export class ProfilePage {
 
   private async handleAvatarUpload(file: File): Promise<void> {
     try {
+      console.log('📤 Profile: Starting avatar upload for file:', file.name);
       this.updateUploadStatus('Uploading avatar...', 'info');
       
       const result = await apiService.uploadAvatar(file);
+      console.log('📤 Profile: Upload result:', result);
       
       // Refresh user data (React exact)
+      console.log('🔄 Profile: Refreshing user data after upload...');
       await authManager.refreshUser();
       
       // Update main avatar
+      console.log('🖼️ Profile: Calling updateMainAvatar after upload...');
       this.updateMainAvatar();
       
       this.updateUploadStatus('Avatar updated successfully!', 'success');
       
-      setTimeout(() => {
-        this.closeAvatarModal();
-      }, 1500);
+      // Note: Modal stays open like with predefined avatars
+      // User can close manually or select another avatar
       
     } catch (error) {
       console.error('Error uploading avatar:', error);

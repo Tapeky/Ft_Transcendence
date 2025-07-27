@@ -84,10 +84,13 @@ export class AvatarSelect {
       await apiService.setAvatar(avatarId);
       
       // Refresh user data (React exact)
+      console.log('🔄 AvatarSelect: Refreshing user data...');
       await authManager.refreshUser();
+      console.log('✅ AvatarSelect: User data refreshed');
       
       // Notify parent component
       if (this.onAvatarChange) {
+        console.log('📞 AvatarSelect: Calling onAvatarChange callback');
         this.onAvatarChange();
       }
       
