@@ -36,8 +36,7 @@ const PongGame: React.FC = () => {
 		}
 
 		socket?.send(JSON.stringify(msg));
-		setBallX(500);
-		setBallY(200);
+
 	}
 
 	const connect = () =>
@@ -108,7 +107,7 @@ const PongGame: React.FC = () => {
 
   
 return (
-	<div className="relative min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none bg-gradient-to-r from-blue-600 to-red-600 text-white">
+	<div className="relative min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none bg-gradient-to-br from-purple-800 to-blue-900 text-white">
 
 	<Header />
 
@@ -118,26 +117,14 @@ return (
 		<div className='flex-1'></div>
 	</div>
 
-	<div className='flex justify-center gap-10'>
-		<button className='border-2 w-[300px] h-[200px] text-[2rem]' onClick={test}>Click here when both players are on page</button>
-		<h1 className='text-[4rem] text-red-500'>X : {ballX}</h1>
-		<h1 className='text-[4rem] text-blue-500'>Y : { String(ballY).substring(0, 6) }</h1>
-	</div>
-		
-	{gameStarted ? (
+	{!gameStarted ? (
 	<div className="flex flex-col items-center">
-		<div className='min-w-[450px] h-[500px] border-2 flex flex-col items-center justify-evenly text-[2rem]'>
-		<h1>Reglages ?</h1>
-		<h1>choix</h1>
-		<h1>choix</h1>
+		<div className='min-w-[450px] h-[500px] border-2 flex flex-col items-center text-[2rem]'>
+		<h1>Online players</h1>
 
 
 
-		<button 
-			className="bg-blue-500 hover:scale-110 text-white py-2 px-4 rounded-md border-white border-2 w-2/3"
-			onClick={test}>
-			Start 
-		</button>
+
 	</div>
 
 

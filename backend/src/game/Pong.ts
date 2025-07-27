@@ -124,7 +124,7 @@ export class Pong {
 		this.rightPaddle = new Paddle(new Point2(arenaSize.width, arenaSize.height / 2), this);
 
 		this.ball = new Ball(
-			new Vector2(arenaSize.width / 2, arenaSize.height / 2), Vector2.up, this);
+			new Vector2(arenaSize.width / 2, arenaSize.height / 2), Vector2.right, this);
 	}
 
 	public update(deltaTime: number, leftInput: Input, rightInput: Input) {
