@@ -16,6 +16,13 @@ class App {
       // Initialize the application with all systems
       await application.initialize();
       
+      // Initialize dev tools (only in development)
+      if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
+        const { initUserSwitcher } = await import('./components/dev/UserSwitcher');
+        initUserSwitcher();
+        console.log('🔧 Dev tools initialized');
+      }
+      
       // Success;
       console.log('🛡️ Route guard active');
       console.log(`📍 Current route: ${window.location.pathname}`);
