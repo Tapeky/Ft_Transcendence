@@ -31,7 +31,7 @@ export class BlockList {
     // Create dropdown separately
     this.dropdownElement = document.createElement('div');
     this.dropdownElement.id = 'blocked-dropdown';
-    this.dropdownElement.className = `${this.isListVisible ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] absolute top-[70px] left-4 flex-col items-center z-[45]`;
+    this.dropdownElement.className = `${this.isListVisible ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] absolute top-[70px] left-[-350px] flex-col items-center z-[45]`;
     this.dropdownElement.innerHTML = `
       <!-- Header -->
       <h2 class="text-white border-b-2 border-white">Blocked users</h2>
@@ -50,11 +50,8 @@ export class BlockList {
   }
 
   private bindEvents(): void {
-    const toggleBtn = this.element.querySelector('#toggle-btn');
-
-    // Toggle button click
-    toggleBtn?.addEventListener('click', () => this.toggleList());
-
+    // Attach event listener directly to the button element
+    this.buttonElement?.addEventListener('click', () => this.toggleList());
   }
 
   private async toggleList(): Promise<void> {
@@ -68,15 +65,14 @@ export class BlockList {
   }
 
   private updateVisibility(): void {
-    const dropdown = this.element.querySelector('#blocked-dropdown');
-    if (!dropdown) return;
+    if (!this.dropdownElement) return;
 
     if (this.isListVisible) {
-      dropdown.classList.remove('hidden');
-      dropdown.classList.add('flex');
+      this.dropdownElement.classList.remove('hidden');
+      this.dropdownElement.classList.add('flex');
     } else {
-      dropdown.classList.add('hidden');
-      dropdown.classList.remove('flex');
+      this.dropdownElement.classList.add('hidden');
+      this.dropdownElement.classList.remove('flex');
     }
   }
 
@@ -94,7 +90,7 @@ export class BlockList {
   }
 
   private renderBlockedUsers(): void {
-    const content = this.element.querySelector('#blocked-content');
+    const content = this.dropdownElement?.querySelector('#blocked-content');
     if (!content) return;
 
     // Clear existing content

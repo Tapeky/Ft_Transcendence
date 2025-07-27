@@ -3,6 +3,7 @@ import { AddFriend } from './AddFriend';
 import { BlockList } from './BlockList';
 import { Requests } from './Requests';
 import { FriendItem } from './FriendItem';
+import { getAvatarUrl } from '../../utils/avatar';
 
 // FriendList - Reproduction exacte de la version React avec portal pattern
 // Overlay modal 500x600px avec CloseBtn, BlockList, Requests, AddFriend + Friends list
@@ -16,6 +17,7 @@ export class FriendList {
   private blockListInstance?: BlockList;
   private requestsInstance?: Requests;
   private friendItems: FriendItem[] = [];
+  private activeTab: 'friends' | 'blocked' | 'requests' | 'chat' = 'friends';
 
   constructor(onClose: () => void) {
     this.onClose = onClose;
@@ -42,35 +44,47 @@ export class FriendList {
         <!-- Screen reader title -->
         <h1 id="friends-title" class="sr-only">Friends Management</h1>
         
-        <!-- Header zone for buttons -->
-        <div class="flex justify-between items-center h-[60px] w-full flex-shrink-0 px-4 py-2">
-          <!-- Left buttons group -->
-          <div id="left-buttons" class="flex gap-2 items-center">
+        <!-- Header avec onglets et boutons -->
+        <div class="flex justify-between items-center h-[60px] w-full flex-shrink-0 px-4 py-2 border-b-2 border-black">
+          <!-- Navigation par onglets -->
+          <div class="flex gap-1">
+            <button id="tab-friends" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-white text-black rounded-t transition-colors" data-tab="friends">
+              Friends
+            </button>
+            <button id="tab-blocked" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="blocked">
+              Blocked
+            </button>
+            <button id="tab-requests" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="requests">
+              Requests
+            </button>
+            <button id="tab-chat" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="chat">
+              Chat
+            </button>
+          </div>
+
+          <!-- Actions à droite -->
+          <div class="flex gap-2 items-center">
             <!-- Refresh Button -->
             <button id="refresh-btn" 
                     class="border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
-                    aria-label="Refresh friends list" 
+                    aria-label="Refresh current tab" 
                     title="Refresh">
               <img src="/src/img/refresh.svg" alt="refresh" />
             </button>
-            <!-- BlockList and Requests buttons will be inserted here -->
+            
+            <!-- Close Button -->
+            <button id="close-btn" 
+                    class="w-[40px] h-[40px] bg-white border-2 border-black text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
+                    aria-label="Close friends list" 
+                    title="Close">
+              ×
+            </button>
           </div>
-
-          <!-- Right button -->
-          <button id="close-btn" 
-                  class="w-[40px] h-[40px] bg-white border-2 border-black text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
-                  aria-label="Close friends list" 
-                  title="Close">
-            ×
-          </button>
         </div>
 
-        <!-- Components will be injected here by initializeComponents() -->
-        <div id="components-container"></div>
-
-        <!-- Friends List -->
-        <div id="friends-list" class="flex-grow overflow-auto flex flex-col items-center gap-4">
-          <!-- Friends seront injectés ici -->
+        <!-- Zone de contenu dynamique -->
+        <div id="content-area" class="flex-grow overflow-auto flex flex-col items-center">
+          <!-- Le contenu changera selon l'onglet actif -->
         </div>
 
       </div>
@@ -86,7 +100,16 @@ export class FriendList {
 
     // Refresh button
     const refreshBtn = this.element.querySelector('#refresh-btn');
-    refreshBtn?.addEventListener('click', () => this.refreshList());
+    refreshBtn?.addEventListener('click', () => this.refreshCurrentTab());
+
+    // Tab navigation
+    const tabButtons = this.element.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = (e.currentTarget as HTMLElement).dataset.tab as 'friends' | 'blocked' | 'requests' | 'chat';
+        this.switchTab(tab);
+      });
+    });
 
     // Click outside to close
     this.element.addEventListener('click', (e) => {
@@ -107,29 +130,18 @@ export class FriendList {
     if (closeBtnFocus) {
       setTimeout(() => closeBtnFocus.focus(), 100);
     }
-
   }
 
   private initializeComponents(): void {
-    const leftButtonsContainer = this.element.querySelector('#left-buttons');
-    const componentsContainer = this.element.querySelector('#components-container');
-    if (!leftButtonsContainer || !componentsContainer) return;
-
-    // Create component instances
+    // Create component instances pour les données
     this.blockListInstance = new BlockList();
     this.requestsInstance = new Requests();
     this.addFriendInstance = new AddFriend();
 
-    // Add buttons to header (properly positioned)
-    leftButtonsContainer.appendChild(this.blockListInstance.getButtonElement());
-    leftButtonsContainer.appendChild(this.requestsInstance.getButtonElement());
+    // Initialiser avec l'onglet Friends actif
+    this.renderCurrentTab();
 
-    // Add dropdown containers to components area
-    componentsContainer.appendChild(this.blockListInstance.getDropdownElement());
-    componentsContainer.appendChild(this.requestsInstance.getDropdownElement());
-    componentsContainer.appendChild(this.addFriendInstance.getElement());
-
-    console.log('👥 FriendList: All components initialized with proper positioning');
+    console.log('👥 FriendList: Components initialized with tab system');
   }
 
   private async fetchFriends(): Promise<void> {
@@ -144,18 +156,28 @@ export class FriendList {
     }
   }
 
-  private renderFriendsList(): void {
-    const friendsList = this.element.querySelector('#friends-list');
+  private renderFriendsList(container?: Element): void {
+    const friendsList = container || this.element.querySelector('#friends-container');
     if (!friendsList) return;
 
-    // Clear existing content and friend items
-    friendsList.innerHTML = '';
+    // Clear existing content and friend items (mais garder AddFriend si c'est le container principal)
+    if (!container) {
+      friendsList.innerHTML = '';
+    } else {
+      // Garder seulement AddFriend, supprimer le reste
+      const addFriendEl = friendsList.querySelector('.add-friend');
+      friendsList.innerHTML = '';
+      if (addFriendEl) {
+        friendsList.appendChild(addFriendEl);
+      }
+    }
+    
     this.destroyFriendItems();
 
     if (this.friends.length === 0) {
       // No friends case - exact React reproduction
       const noFriendsDiv = document.createElement('div');
-      noFriendsDiv.className = 'flex flex-col items-center';
+      noFriendsDiv.className = 'flex flex-col items-center mt-4';
       noFriendsDiv.innerHTML = `
         NO FRIEND
         <img src="/src/img/ouin.gif" alt="OUIN" class="w-[350px]"/>
@@ -185,19 +207,248 @@ export class FriendList {
   }
 
 
-  private refreshList(): void {
-    console.log('👥 FriendList: Refreshing friends list and all components');
-    
-    // Refresh main friends list
-    this.fetchFriends();
-    
-    // Refresh child components
-    if (this.blockListInstance) {
-      this.blockListInstance.refresh();
+  private switchTab(tab: 'friends' | 'blocked' | 'requests' | 'chat'): void {
+    this.activeTab = tab;
+    this.updateTabButtons();
+    this.renderCurrentTab();
+    console.log(`👥 FriendList: Switched to ${tab} tab`);
+  }
+
+  private updateTabButtons(): void {
+    const tabs = this.element.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+      const tabName = (tab as HTMLElement).dataset.tab;
+      if (tabName === this.activeTab) {
+        // Onglet actif
+        tab.className = 'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-white text-black rounded-t transition-colors';
+      } else {
+        // Onglet inactif
+        tab.className = 'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors';
+      }
+    });
+  }
+
+  private async renderCurrentTab(): Promise<void> {
+    const contentArea = this.element.querySelector('#content-area');
+    if (!contentArea) return;
+
+    // Clear content
+    contentArea.innerHTML = '';
+
+    switch (this.activeTab) {
+      case 'friends':
+        await this.renderFriendsTab(contentArea);
+        break;
+      case 'blocked':
+        await this.renderBlockedTab(contentArea);
+        break;
+      case 'requests':
+        await this.renderRequestsTab(contentArea);
+        break;
+      case 'chat':
+        await this.renderChatTab(contentArea);
+        break;
     }
-    if (this.requestsInstance) {
-      this.requestsInstance.refresh();
+  }
+
+  private async renderFriendsTab(container: Element): Promise<void> {
+    // Ajouter le composant AddFriend en haut
+    if (this.addFriendInstance) {
+      container.appendChild(this.addFriendInstance.getElement());
     }
+
+    // Fetch et afficher les amis
+    await this.fetchFriends();
+    
+    // Zone pour la liste des amis
+    const friendsContainer = document.createElement('div');
+    friendsContainer.id = 'friends-container';
+    friendsContainer.className = 'flex flex-col items-center gap-4 w-full px-4';
+    
+    this.renderFriendsList(friendsContainer);
+    container.appendChild(friendsContainer);
+  }
+
+  private async renderBlockedTab(container: Element): Promise<void> {
+    if (!this.blockListInstance) return;
+    
+    // Fetch blocked users directement
+    try {
+      const data = await apiService.getBlockedUsers();
+      this.renderBlockedContent(container, data);
+    } catch (error) {
+      console.error('❌ FriendList: Failed to fetch blocked users in tab:', error);
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'text-center text-white p-4';
+      errorDiv.textContent = 'Failed to load blocked users';
+      container.appendChild(errorDiv);
+    }
+  }
+
+  private renderBlockedContent(container: Element, blockedUsers: any[]): void {
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'flex flex-col w-full px-4 gap-2';
+
+    if (blockedUsers.length === 0) {
+      contentDiv.innerHTML = '<div class="text-center text-white p-4">No one in there :)</div>';
+    } else {
+      blockedUsers.forEach(user => {
+        const blockedElement = this.createBlockedItem(user);
+        contentDiv.appendChild(blockedElement);
+      });
+    }
+
+    container.appendChild(contentDiv);
+  }
+
+  private createBlockedItem(user: any): HTMLElement {
+    const item = document.createElement('div');
+    item.className = 'flex items-center gap-2 p-2 text-white border-b border-gray-600 w-full';
+    
+    item.innerHTML = `
+      <img src="${getAvatarUrl(user.avatar_url)}" alt="avatar" class="w-[40px] h-[40px] border-2 border-white"/>
+      <div class="flex flex-col flex-grow">
+        <span class="text-[1rem]">${user.display_name || user.username}</span>
+        <span class="text-[0.8rem] text-gray-300">@${user.username}</span>
+      </div>
+      <button class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-sm" data-user-id="${user.id}">
+        Unblock
+      </button>
+    `;
+
+    // Unblock functionality
+    const unblockBtn = item.querySelector('button');
+    unblockBtn?.addEventListener('click', async () => {
+      try {
+        await apiService.unblockUser(user.id);
+        item.remove();
+        console.log('🚫 User unblocked successfully');
+      } catch (error) {
+        console.error('❌ Failed to unblock user:', error);
+      }
+    });
+
+    return item;
+  }
+
+  private async renderRequestsTab(container: Element): Promise<void> {
+    if (!this.requestsInstance) return;
+    
+    // Fetch requests directement
+    try {
+      const data = await apiService.getFriendRequests();
+      this.renderRequestsContent(container, data);
+    } catch (error) {
+      console.error('❌ FriendList: Failed to fetch requests in tab:', error);
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'text-center text-white p-4';
+      errorDiv.textContent = 'Failed to load requests';
+      container.appendChild(errorDiv);
+    }
+  }
+
+  private renderRequestsContent(container: Element, requests: any[]): void {
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'flex flex-col w-full px-4 gap-2';
+
+    if (requests.length === 0) {
+      contentDiv.innerHTML = '<div class="text-center text-white p-4">No requests. :(</div>';
+    } else {
+      requests.forEach(request => {
+        const requestElement = this.createRequestItem(request);
+        contentDiv.appendChild(requestElement);
+      });
+    }
+
+    container.appendChild(contentDiv);
+  }
+
+  private createRequestItem(request: any): HTMLElement {
+    const item = document.createElement('div');
+    item.className = 'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
+    
+    item.innerHTML = `
+      <!-- Avatar Section -->
+      <div class="flex items-center justify-center min-w-[120px]">
+        <img src="${getAvatarUrl(request.avatar_url)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
+      </div>
+
+      <!-- Content Section -->
+      <div class="flex flex-col flex-grow">
+        <h2 class="mt-2 flex-grow text-white">${request.username}</h2>
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-2 items-end ml-12">
+          <button class="block-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+            <img src="/src/img/block.svg" alt="block" />
+          </button>
+          <button class="reject-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+            <img src="/src/img/reject.svg" alt="reject" />
+          </button>
+          <button class="accept-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+            <img src="/src/img/accept.svg" alt="accept" />
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Bind actions avec event listeners fonctionnels
+    this.bindRequestItemActions(item, request);
+
+    return item;
+  }
+
+  private bindRequestItemActions(element: HTMLElement, request: any): void {
+    const blockBtn = element.querySelector('.block-btn');
+    const rejectBtn = element.querySelector('.reject-btn');
+    const acceptBtn = element.querySelector('.accept-btn');
+
+    blockBtn?.addEventListener('click', async () => {
+      try {
+        await apiService.blockUser(request.user_id);
+        element.remove();
+        console.log('User blocked successfully!');
+      } catch (error) {
+        console.error('Error blocking user:', error);
+      }
+    });
+
+    rejectBtn?.addEventListener('click', async () => {
+      try {
+        await apiService.declineFriendRequest(request.id);
+        element.remove();
+        console.log('Request rejected!');
+      } catch (error) {
+        console.error('Error rejecting request:', error);
+      }
+    });
+
+    acceptBtn?.addEventListener('click', async () => {
+      try {
+        await apiService.acceptFriendRequest(request.id);
+        element.remove();
+        console.log('Request accepted!');
+      } catch (error) {
+        console.error('Error accepting request:', error);
+      }
+    });
+  }
+
+  private async renderChatTab(container: Element): Promise<void> {
+    // Placeholder pour le chat - à implémenter plus tard
+    const chatPlaceholder = document.createElement('div');
+    chatPlaceholder.className = 'flex flex-col items-center justify-center h-full text-white text-center';
+    chatPlaceholder.innerHTML = `
+      <div class="text-[1.5rem] mb-4">💬 Chat</div>
+      <div class="text-[1rem] text-gray-300">Chat functionality coming soon...</div>
+      <div class="text-[0.8rem] text-gray-400 mt-2">Select a friend to start chatting</div>
+    `;
+    container.appendChild(chatPlaceholder);
+  }
+
+  private refreshCurrentTab(): void {
+    console.log(`👥 FriendList: Refreshing ${this.activeTab} tab`);
+    this.renderCurrentTab();
   }
 
   private close(): void {

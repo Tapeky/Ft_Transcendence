@@ -32,7 +32,7 @@ export class Requests {
     // Create dropdown separately
     this.dropdownElement = document.createElement('div');
     this.dropdownElement.id = 'requests-dropdown';
-    this.dropdownElement.className = `${this.isRequestWindowVisible ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] absolute top-[70px] right-4 flex-col items-center z-[45]`;
+    this.dropdownElement.className = `${this.isRequestWindowVisible ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] absolute top-[70px] left-[-400px] flex-col items-center z-[45]`;
     this.dropdownElement.innerHTML = `
       <!-- Header -->
       <h2 class="text-white border-b-2 border-white">Friend requests</h2>
@@ -51,11 +51,8 @@ export class Requests {
   }
 
   private bindEvents(): void {
-    const toggleBtn = this.element.querySelector('#toggle-btn');
-
-    // Toggle button click
-    toggleBtn?.addEventListener('click', () => this.toggleRequest());
-
+    // Attach event listener directly to the button element
+    this.buttonElement?.addEventListener('click', () => this.toggleRequest());
   }
 
   private async toggleRequest(): Promise<void> {
@@ -69,15 +66,14 @@ export class Requests {
   }
 
   private updateVisibility(): void {
-    const dropdown = this.element.querySelector('#requests-dropdown');
-    if (!dropdown) return;
+    if (!this.dropdownElement) return;
 
     if (this.isRequestWindowVisible) {
-      dropdown.classList.remove('hidden');
-      dropdown.classList.add('flex');
+      this.dropdownElement.classList.remove('hidden');
+      this.dropdownElement.classList.add('flex');
     } else {
-      dropdown.classList.add('hidden');
-      dropdown.classList.remove('flex');
+      this.dropdownElement.classList.add('hidden');
+      this.dropdownElement.classList.remove('flex');
     }
   }
 
@@ -95,7 +91,7 @@ export class Requests {
   }
 
   private renderRequests(): void {
-    const content = this.element.querySelector('#requests-content');
+    const content = this.dropdownElement?.querySelector('#requests-content');
     if (!content) return;
 
     // Clear existing content
@@ -206,7 +202,7 @@ export class Requests {
 
     // If no more requests, show empty message
     if (this.requests.length === 0) {
-      const content = this.element.querySelector('#requests-content');
+      const content = this.dropdownElement?.querySelector('#requests-content');
       if (content) {
         content.innerHTML = '<div class="text-center text-white p-4">No requests. :(</div>';
       }
