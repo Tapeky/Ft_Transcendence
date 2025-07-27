@@ -197,11 +197,8 @@ export class AuthManager {
   // Refresh user data
   public async refreshUser(): Promise<void> {
     try {
-      console.log('🔄 AuthManager: Starting refreshUser()');
       const currentUser = await apiService.getCurrentUser();
-      console.log('📡 AuthManager: Got user from API:', currentUser?.avatar_url);
       appState.setState({ user: currentUser });
-      console.log('✅ AuthManager: AppState updated with new user data');
       // User info updated successfully
     } catch (error) {
       console.error('AuthManager user refresh error:', this.getErrorMessage(error));

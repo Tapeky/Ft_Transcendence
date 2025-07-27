@@ -134,7 +134,7 @@ export class Dashboard {
         
         <div class="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4">
           <div class="text-center text-[4rem] border-b-2 w-full flex">
-            <div id="back-btn-container"></div>
+            <div id="back-btn-container" class="flex-1"></div>
             <h1 class="flex-1">${this.player?.username || 'Unknown'}'s <br /> Dashboard</h1>
             <div class="flex-1"></div>
           </div>
