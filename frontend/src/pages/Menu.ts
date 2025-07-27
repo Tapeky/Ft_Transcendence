@@ -1,8 +1,8 @@
 import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
-import { Header } from '../components/vanilla/Header';
-import { Banner } from '../components/vanilla/Banner';
-import { Choice } from '../components/vanilla/Choice';
+import { router } from '../app/Router';
+import { Header } from '../components/ui/Header';
+import { Banner } from '../components/ui/Banner';
+import { Choice } from '../components/ui/Choice';
 
 export class MenuPage {
   private element: HTMLElement;
@@ -16,7 +16,6 @@ export class MenuPage {
     this.bindEvents();
     this.subscribeToAuth();
     
-    console.log('🏠 MenuPage: Initialized with vanilla components (React-like)');
   }
 
   private createElement(): HTMLElement {
@@ -38,14 +37,12 @@ export class MenuPage {
 
   private bindEvents(): void {
     // Les événements sont gérés par les composants individuels
-    console.log('🏠 MenuPage: Event delegation to components (React-like)');
   }
 
   private subscribeToAuth(): void {
     // Vérifier l'authentification comme dans le React Menu
     this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
-        console.log('🏠 MenuPage: User not authenticated, redirecting to auth');
         router.navigate('/');
       }
     });
@@ -77,7 +74,6 @@ export class MenuPage {
       this.authUnsubscribe();
     }
     
-    console.log('🏠 MenuPage: Destroyed with all components (React-like)');
     this.element.remove();
   }
 }

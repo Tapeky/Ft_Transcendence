@@ -75,9 +75,7 @@ export class StateMonitor {
 
     if (content) {
       content.innerHTML = `
-        <div>🔐 Auth: ${state.isAuthenticated ? '✅' : '❌'}</div>
         <div>👤 User: ${state.user?.username || 'null'}</div>
-        <div>⌛ Loading: ${state.loading ? '✅' : '❌'}</div>
         <div>📍 Path: ${state.currentPath}</div>
         <div>🔢 Version: ${state.stateVersion}</div>
       `;

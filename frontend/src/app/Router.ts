@@ -1,5 +1,5 @@
 export class Router {
-  private routes: Map<string, () => Promise<HTMLElement>> = new Map();
+  private routes: Map<string, (path?: string) => Promise<HTMLElement>> = new Map();
   private currentPage: HTMLElement | null = null;
   private routeGuard: any = null; // Will be set by RouteGuard
 
@@ -16,50 +16,50 @@ export class Router {
   private setupRoutes(): void {
     // Enregistrer les routes avec leurs factory functions dynamiques
     this.routes.set('/', async () => {
-      const { HomePage } = await import('./pages/Home');
+      const { HomePage } = await import('../pages/Home');
       return new HomePage().getElement();
     });
     
     this.routes.set('/auth', async () => {
-      const { AuthPage } = await import('./pages/Auth');
+      const { AuthPage } = await import('../pages/Auth');
       return new AuthPage().getElement();
     });
     
     // Protected routes
     this.routes.set('/menu', async () => {
-      const { MenuPage } = await import('./pages/Menu');
+      const { MenuPage } = await import('../pages/Menu');
       return new MenuPage().getElement();
     });
     
     this.routes.set('/profile', async () => {
-      const { ProfilePage } = await import('./pages/Profile');
+      const { ProfilePage } = await import('../pages/Profile');
       return new ProfilePage().getElement();
     });
     
     this.routes.set('/friends', async () => {
-      const { FriendsPage } = await import('./pages/Friends');
+      const { FriendsPage } = await import('../pages/Friends');
       return new FriendsPage().getElement();
     });
     
     this.routes.set('/tournament', async () => {
-      const { TournamentPage } = await import('./pages/Tournament');
+      const { TournamentPage } = await import('../pages/Tournament');
       return new TournamentPage().getElement();
     });
     
     this.routes.set('/chat', async () => {
-      const { ChatPage } = await import('./pages/Chat');
+      const { ChatPage } = await import('../pages/Chat');
       return new ChatPage().getElement();
     });
     
     // Dynamic route for dashboard with user ID pattern: /dashboard/123
-    this.routes.set('/dashboard', async () => {
-      const path = window.location.pathname;
-      // Utiliser le path passé en paramètre au lieu de window.location.pathname
-      const pathSegments = path.split('/');
+    this.routes.set('/dashboard', async (path?: string) => {
+      const currentPath = path || window.location.pathname;
+      const pathSegments = currentPath.split('/');
       const userId = pathSegments[2]; // /dashboard/123 -> segments[2] = "123"
       
       console.log('🔍 Router Dashboard - Debug:', {
-        path: path,
+        originalPath: path,
+        currentPath: currentPath,
         pathSegments,
         userId,
         userIdExists: !!userId,
@@ -68,36 +68,27 @@ export class Router {
       
       if (!userId || !userId.match(/^\d+$/)) {
         console.log('❌ Router: Invalid userId, loading 404');
-        const { NotFoundPage } = await import('./pages/NotFound');
+        const { NotFoundPage } = await import('../pages/NotFound');
         return new NotFoundPage().getElement();
       }
       
-      console.log('✅ Router: Valid userId, loading Dashboard');
-      const { Dashboard } = await import('./pages/Dashboard');
+      // Success;
+      const { Dashboard } = await import('../pages/Dashboard');
       const container = document.createElement('div');
       new Dashboard(container, userId);
       return container;
     });
     
     this.routes.set('/404', async () => {
-      const { NotFoundPage } = await import('./pages/NotFound');
+      const { NotFoundPage } = await import('../pages/NotFound');
       return new NotFoundPage().getElement();
     });
     
-    this.routes.set('/test', async () => {
-      const { TestPage } = await import('./pages/Test');
-      return new TestPage().getElement();
-    });
-    
-    this.routes.set('/menutest', async () => {
-      const { MenuTestPage } = await import('./pages/MenuTest');
-      return new MenuTestPage().getElement();
-    });
     
     console.log('🛣️ Router: Routes enregistrées', Array.from(this.routes.keys()));
   }
 
-  private findRoute(path: string): (() => Promise<HTMLElement>) | undefined {
+  private findRoute(path: string): ((path?: string) => Promise<HTMLElement>) | undefined {
     // Essayer match exact d'abord
     if (this.routes.has(path)) {
       return this.routes.get(path);
@@ -130,7 +121,7 @@ export class Router {
       const pageFactory = this.findRoute(path) || this.routes.get('/404')!;
       
       // Render la nouvelle page (await du dynamic import)
-      const page = await pageFactory();
+      const page = await pageFactory(path);
       this.render(page);
       
       // Mettre à jour l'URL du navigateur
@@ -157,13 +148,12 @@ export class Router {
     root.appendChild(page);
     this.currentPage = page;
     
-    console.log('✅ Router: Page rendue');
+    // Success;
   }
 
   private handleInitialRoute(): void {
     // Gérer la route initiale au chargement
     const currentPath = window.location.pathname;
-    console.log(`🚀 Router: Route initiale détectée: ${currentPath}`);
     
     this.navigate(currentPath);
   }
@@ -177,7 +167,7 @@ export class Router {
       try {
         // Navigate sans pushState pour éviter la boucle
         const pageFactory = this.findRoute(currentPath) || this.routes.get('/404')!;
-        const page = await pageFactory();
+        const page = await pageFactory(currentPath);
         this.render(page);
       } catch (error) {
         console.error('❌ Router: Erreur popstate:', error);

@@ -28,7 +28,6 @@ export class HomePage {
             <!-- Auth Page Card -->
             <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
               <div class="text-center">
-                <div class="text-4xl mb-4">🔐</div>
                 <h3 class="text-xl font-bold text-white mb-3">Auth Page</h3>
                 <p class="text-gray-300 mb-4">Authentification</p>
                 <button id="goto-auth" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
@@ -77,7 +76,6 @@ export class HomePage {
 
           <!-- All Routes Quick Test Section -->
           <div class="max-w-6xl mx-auto mt-12">
-            <h2 class="text-3xl font-bold text-white text-center mb-8">🚀 Test Rapide des Routes</h2>
             
             <!-- Public Routes -->
             <div class="mb-8">
@@ -87,7 +85,6 @@ export class HomePage {
                   🏠 Home (/)
                 </button>
                 <button id="goto-auth" class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
-                  🔐 Auth (/auth)
                 </button>
                 <button id="goto-test" class="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium">
                   🧪 Test (/test)
@@ -112,7 +109,6 @@ export class HomePage {
                   👥 Friends (/friends)  
                 </button>
                 <button id="goto-chat" class="px-4 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors font-medium">
-                  💬 Chat (/chat)
                 </button>
                 <button id="goto-tournament" class="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium">
                   🏆 Tournament (/tournament)
@@ -133,7 +129,6 @@ export class HomePage {
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-400">Status Router:</span>
-                  <span class="text-green-400">✅ Actif</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-400">Auth Status:</span>
@@ -147,7 +142,6 @@ export class HomePage {
               
               <div class="mt-4 pt-4 border-t border-gray-600">
                 <button id="show-routes" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm">
-                  📋 Afficher toutes les routes
                 </button>
                 <button id="clear-auth" class="ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm">
                   🚪 Clear Auth (test)
@@ -189,8 +183,7 @@ export class HomePage {
     routes.forEach(route => {
       const btn = this.element.querySelector(`#${route.id}`);
       btn?.addEventListener('click', () => {
-        console.log(`🏠 HomePage: Navigation vers ${route.path} (${route.label})`);
-        import('../router').then(({ router }) => {
+        import('../app/Router').then(({ router }) => {
           router.navigate(route.path);
         });
       });
@@ -201,16 +194,14 @@ export class HomePage {
     // Show routes button
     const showRoutesBtn = this.element.querySelector('#show-routes');
     showRoutesBtn?.addEventListener('click', () => {
-      import('../router').then(({ router }) => {
+      import('../app/Router').then(({ router }) => {
         const routes = router.getAvailableRoutes();
-        alert(`📋 Routes disponibles (${routes.length}):\\n\\n${routes.join('\\n')}`);
       });
     });
 
     // Clear auth button (for testing)
     const clearAuthBtn = this.element.querySelector('#clear-auth');
     clearAuthBtn?.addEventListener('click', () => {
-      console.log('🏠 HomePage: Clear auth for testing');
       import('../auth/AuthManager').then(({ authManager }) => {
         authManager.logout();
         this.updateAuthStatus();
@@ -227,7 +218,6 @@ export class HomePage {
         const user = authManager.getCurrentUser();
         
         if (isAuthenticated && user) {
-          authStatusElement.innerHTML = `✅ ${user.username}`;
           authStatusElement.className = 'text-green-400';
         } else {
           authStatusElement.innerHTML = '❌ Non connecté';
@@ -238,7 +228,7 @@ export class HomePage {
   }
 
   private updateTotalRoutes(): void {
-    import('../router').then(({ router }) => {
+    import('../app/Router').then(({ router }) => {
       const totalRoutesElement = this.element.querySelector('#total-routes');
       if (totalRoutesElement) {
         const routes = router.getAvailableRoutes();

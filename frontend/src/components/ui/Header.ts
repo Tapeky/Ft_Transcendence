@@ -1,6 +1,6 @@
 import { authManager } from '../../auth/AuthManager';
 import { getAvatarUrl } from '../../utils/avatar';
-import { router } from '../../router';
+import { router } from '../../app/Router';
 import { FriendList } from './FriendList';
 
 // Header - Reproduction exacte de la version React
@@ -18,7 +18,6 @@ export class Header {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('🎯 Header: Initialized with React-like design');
   }
 
   private createElement(): HTMLElement {
@@ -100,7 +99,6 @@ export class Header {
       this.updateUserInfo(authState.user);
     });
 
-    console.log('🎯 Header: Event listeners bound (React-like)');
   }
 
   private showClickIndicator(): void {
@@ -186,7 +184,6 @@ export class Header {
     const avatar = this.element.querySelector('#user-avatar') as HTMLImageElement;
     if (avatar) {
       avatar.src = getAvatarUrl(user?.avatar_url);
-      console.log('🎯 Header: Avatar updated to:', avatar.src);
     }
     
     // Update display name and username
@@ -196,7 +193,6 @@ export class Header {
     if (displayName) displayName.textContent = user?.display_name || user?.username || 'User';
     if (username) username.textContent = user?.username || 'username';
     
-    console.log('🎯 Header: User data refreshed');
   }
 
   destroy(): void {
@@ -204,7 +200,6 @@ export class Header {
       this.optionsInstance.destroy();
     }
     
-    console.log('🎯 Header: Destroyed (React-like)');
     this.element.remove();
   }
 }
@@ -277,7 +272,6 @@ export class Options {
     const logoutOption = this.element.querySelector('#logout-option');
     logoutOption?.addEventListener('click', () => this.handleLogout());
 
-    console.log('🎯 Options: Event listeners bound (React-like)');
   }
 
   private openFriends(): void {
@@ -294,7 +288,6 @@ export class Options {
     // Attacher à document.body (portal pattern)
     document.body.appendChild(this.friendListInstance.getElement());
     
-    console.log('🎯 Options: Friends interface opened as overlay (React-like portal)');
   }
 
   private async handleLogout(): Promise<void> {
@@ -315,7 +308,6 @@ export class Options {
       this.friendListInstance.destroy();
     }
     
-    console.log('🎯 Options: Destroyed (React-like)');
     this.element.remove();
   }
 }

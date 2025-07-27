@@ -1,4 +1,4 @@
-import { router } from '../../router';
+import { router } from '../../app/Router';
 
 // Choice - Reproduction exacte de la version React  
 // 2 boutons Pong et Tournament avec animations hover et backgrounds GIF
@@ -10,7 +10,6 @@ export class Choice {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('🎮 Choice: Initialized with React-like design');
   }
 
   private createElement(): HTMLElement {
@@ -66,7 +65,6 @@ export class Choice {
     // Add hover sound effects (optionnel - comme dans les vraies interfaces de jeu)
     this.setupHoverEffects();
 
-    console.log('🎮 Choice: Event listeners bound (React-like)');
   }
 
   private setupHoverEffects(): void {
@@ -76,7 +74,6 @@ export class Choice {
     choices.forEach(choice => {
       choice.addEventListener('mouseenter', () => {
         // Ajouter un effet sonore de hover si désiré
-        console.log(`🎮 Choice: Hovering ${choice.getAttribute('data-route')}`);
       });
 
       choice.addEventListener('mouseleave', () => {
@@ -86,12 +83,10 @@ export class Choice {
   }
 
   private navigateToGame(): void {
-    console.log('🎮 Choice: Navigating to Pong game');
     router.navigate('/game');
   }
 
   private navigateToTournament(): void {
-    console.log('🎮 Choice: Navigating to Tournament');
     router.navigate('/tournament');
   }
 
@@ -100,7 +95,6 @@ export class Choice {
   }
 
   destroy(): void {
-    console.log('🎮 Choice: Destroyed (React-like)');
     this.element.remove();
   }
 }

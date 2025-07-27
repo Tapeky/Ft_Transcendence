@@ -104,7 +104,6 @@ export class FriendList {
       setTimeout(() => closeBtnFocus.focus(), 100);
     }
 
-    console.log('👥 FriendList: Event listeners bound (React-like)');
   }
 
   private initializeComponents(): void {

@@ -1,4 +1,4 @@
-import { router } from '../router';
+import { router } from '../app/Router';
 
 export class NotFoundPage {
   private element: HTMLElement;
@@ -33,7 +33,6 @@ export class NotFoundPage {
           
           <div class="mt-8 text-sm text-gray-400">
             <p>Phase 1: Vanilla TypeScript Migration</p>
-            <p class="mt-1">✅ Build System | ✅ Tailwind CSS | ✅ Event Handling</p>
           </div>
         </div>
       </div>

@@ -49,7 +49,6 @@ export class Requests {
     // Toggle button click
     toggleBtn?.addEventListener('click', () => this.toggleRequest());
 
-    console.log('📮 Requests: Event listeners bound (React-like)');
   }
 
   private async toggleRequest(): Promise<void> {

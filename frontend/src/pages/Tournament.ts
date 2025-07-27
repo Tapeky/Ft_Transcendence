@@ -1,5 +1,5 @@
 import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
+import { router } from '../app/Router';
 
 export class TournamentPage {
   private element: HTMLElement;
@@ -175,7 +175,6 @@ export class TournamentPage {
       });
     }
 
-    console.log('🏆 TournamentPage: Event listeners bound');
     return container;
   }
 
