@@ -52,14 +52,14 @@ export class Router {
     });
     
     // Dynamic route for dashboard with user ID pattern: /dashboard/123
-    this.routes.set('/dashboard', async (path: string) => {
+    this.routes.set('/dashboard', async () => {
+      const path = window.location.pathname;
       // Utiliser le path passé en paramètre au lieu de window.location.pathname
       const pathSegments = path.split('/');
       const userId = pathSegments[2]; // /dashboard/123 -> segments[2] = "123"
       
       console.log('🔍 Router Dashboard - Debug:', {
-        passedPath: path,
-        windowPath: window.location.pathname,
+        path: path,
         pathSegments,
         userId,
         userIdExists: !!userId,
@@ -130,7 +130,7 @@ export class Router {
       const pageFactory = this.findRoute(path) || this.routes.get('/404')!;
       
       // Render la nouvelle page (await du dynamic import)
-      const page = await pageFactory(path);
+      const page = await pageFactory();
       this.render(page);
       
       // Mettre à jour l'URL du navigateur
