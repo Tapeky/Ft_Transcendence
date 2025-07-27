@@ -161,7 +161,25 @@ class ApiService {
 			}
 			return data;
 		} catch (error) {
-			console.error('Erreur API:', error);
+			// Only log unexpected errors, not expected validation errors
+			if (error instanceof Error) {
+				// Don't log expected validation errors (4xx status codes)
+				const isValidationError = error.message.includes('déjà pris') || 
+					error.message.includes('déjà utilisé') || 
+					error.message.includes('déjà utilisé') ||
+					error.message.includes('existe déjà') ||
+					error.message.includes('invalide') ||
+					error.message.includes('incorrect');
+					
+				if (!isValidationError) {
+					console.error('Erreur API inattendue:', {
+						message: error.message,
+						name: error.name
+					});
+				}
+			} else {
+				console.error('Erreur API non-standard:', String(error));
+			}
 			throw error;
 		}
 
@@ -210,7 +228,12 @@ class ApiService {
 				body: JSON.stringify({})
 			});
 		} catch (error) {
-			console.error('Logout backend error:', error);
+			// Properly log logout errors without accessing undefined properties
+			if (error instanceof Error) {
+				console.error('Logout backend error:', error.message);
+			} else {
+				console.error('Logout backend error:', String(error));
+			}
 		} finally {
 			this.clearToken();
 		}
@@ -245,7 +268,7 @@ class ApiService {
 		}
 
 		if (error) {
-			console.error('Erreur auth callback:', error);
+			console.error('Erreur auth callback:', String(error));
 			// Nettoyer l'URL
 			window.history.replaceState({}, document.title, window.location.pathname);
 			if (error === 'google_auth_failed') {

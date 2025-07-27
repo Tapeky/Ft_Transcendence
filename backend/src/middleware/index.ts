@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
+import { validateInputLengths } from './validation';
 
-// Middleware d'authentification
+// Auth middleware
 export async function authenticateToken(
   request: FastifyRequest,
   reply: FastifyReply
@@ -10,9 +11,7 @@ export async function authenticateToken(
   try {
     await request.jwtVerify();
     
-    // Le token JWT contient déjà les infos utilisateur
     const payload = request.user as { id: number; username: string; email: string };
-    
     const db = DatabaseManager.getInstance().getDb();
     const userRepo = new UserRepository(db);
     
@@ -38,8 +37,36 @@ export async function authenticateToken(
   }
 }
 
-// Configuration des middlewares (version simplifiée et fonctionnelle)
+
 export function setupMiddleware(server: FastifyInstance) {
+  // DoS protection
+  server.addHook('preHandler', async (request, reply) => {
+    const contentLength = request.headers['content-length'];
+    if (contentLength && parseInt(contentLength) > 2 * 1024 * 1024) { // 2MB limit
+      return reply.status(413).send({
+        success: false,
+        error: 'Payload trop volumineux (maximum 2MB)'
+      });
+    }
+  });
+
+  // Check all POST/PUT/PATCH requests for input length validation
+  server.addHook('preHandler', async (request, reply) => {
+    const methodsToValidate = ['POST', 'PUT', 'PATCH'];
+    
+    if (methodsToValidate.includes(request.method) && request.body) {
+      try {
+        validateInputLengths(request.body);
+      } catch (error) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Validation des données échouée',
+          details: error instanceof Error ? error.message : 'Données invalides'
+        });
+      }
+    }
+  });
+
   // Headers de sécurité basiques
   server.addHook('onRequest', async (request, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
@@ -47,7 +74,7 @@ export function setupMiddleware(server: FastifyInstance) {
     reply.header('X-XSS-Protection', '1; mode=block');
   });
   
-  // Log simple des requêtes
+  // Log
   server.addHook('onRequest', async (request, reply) => {
     request.log.info({
       method: request.method,
@@ -58,4 +85,4 @@ export function setupMiddleware(server: FastifyInstance) {
   });
 }
 
-export { validateInput, validateDisplayname } from './validation';
+export { validateInput, validateDisplayname, validateInputLengths, VALIDATION_LIMITS } from './validation';

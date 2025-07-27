@@ -27,14 +27,14 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
       });
     }
 
-    // LECTURE SÉCURISÉE avec limite de taille
+    // Read the file in chunks to avoid memory issues
     const chunks: Buffer[] = [];
     let totalSize = 0;
     
     for await (const chunk of data.file) {
       totalSize += chunk.length;
       
-      // Vérification de taille en temps réel pour éviter les attaques DoS
+      // MAX_FILE_SIZE
       if (totalSize > MAX_FILE_SIZE) {
         return reply.status(400).send({
           success: false,
