@@ -53,7 +53,6 @@ export class BlockedUser {
     // Unblock button click
     unblockBtn?.addEventListener('click', () => this.unblock());
 
-    console.log('🚫 BlockedUser: Event listeners bound (React-like)');
   }
 
   private async unblock(): Promise<void> {

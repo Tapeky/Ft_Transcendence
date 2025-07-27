@@ -1,5 +1,5 @@
 import './index.css';
-import { application } from './core/Application';
+import { application } from './app/Application';
 
 class App {
   constructor() {
@@ -16,7 +16,7 @@ class App {
       // Initialize the application with all systems
       await application.initialize();
       
-      console.log('✅ Vanilla TS App initialized with route protection');
+      // Success;
       console.log('🛡️ Route guard active');
       console.log(`📍 Current route: ${window.location.pathname}`);
       

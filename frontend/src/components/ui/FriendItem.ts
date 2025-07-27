@@ -1,6 +1,6 @@
 import { getAvatarUrl } from '../../utils/avatar';
 import { FriendOptions } from './FriendOptions';
-import { router } from '../../router';
+import { router } from '../../app/Router';
 
 // FriendItem - Reproduction exacte de la version React
 // Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
@@ -88,7 +88,6 @@ export class FriendItem {
     // Options button - open FriendOptions modal
     optionsBtn?.addEventListener('click', () => this.openOptions());
 
-    console.log('👥 FriendItem: Event listeners bound (React-like)');
   }
 
   private openOptions(): void {

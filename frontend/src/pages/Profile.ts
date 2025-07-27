@@ -1,9 +1,9 @@
 import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
-import { Header } from '../components/vanilla/Header';
-import { BackBtn } from '../components/vanilla/BackBtn';
-import { CloseBtn } from '../components/vanilla/CloseBtn';
-import { AvatarSelect } from '../components/vanilla/AvatarSelect';
+import { router } from '../app/Router';
+import { Header } from '../components/ui/Header';
+import { BackBtn } from '../components/ui/BackBtn';
+import { CloseBtn } from '../components/ui/CloseBtn';
+import { AvatarSelect } from '../components/ui/AvatarSelect';
 import { apiService } from '../services/api';
 import { getAvatarUrl } from '../utils/avatar';
 
@@ -143,7 +143,6 @@ export class ProfilePage {
     centerContainer.appendChild(mainContent);
     container.appendChild(centerContainer);
 
-    console.log('👤 ProfilePage: Created with React exact layout');
     return container;
   }
 
@@ -160,7 +159,6 @@ export class ProfilePage {
     const editAvatarBtn = this.element.querySelector('#edit-avatar-btn');
     editAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
 
-    console.log('👤 ProfilePage: Event listeners bound');
   }
 
   private async handleSaveDisplayName(): Promise<void> {
@@ -183,7 +181,6 @@ export class ProfilePage {
     }
 
     try {
-      console.log('👤 ProfilePage: Updating display name to:', newDisplayName);
       await apiService.updateProfileDisplayName(newDisplayName);
       
       // Refresh user data
@@ -192,7 +189,6 @@ export class ProfilePage {
       // Update Header display name too!
       if (this.header) {
         this.header.refresh();
-        console.log('👤 ProfilePage: Header display name refreshed');
       }
       
       // Show success feedback
@@ -411,13 +407,11 @@ export class ProfilePage {
     if (mainAvatar) {
       const newAvatarUrl = getAvatarUrl(user?.avatar_url);
       mainAvatar.src = newAvatarUrl;
-      console.log('👤 ProfilePage: Main avatar updated to:', newAvatarUrl);
     }
     
     // CRUCIAL: Update Header avatar too!
     if (this.header) {
       this.header.refresh();
-      console.log('👤 ProfilePage: Header avatar refreshed');
     }
   }
 
@@ -425,7 +419,6 @@ export class ProfilePage {
     try {
       this.updateUploadStatus('Uploading avatar...', 'info');
       
-      console.log('👤 ProfilePage: Starting avatar upload:', file.name);
       const result = await apiService.uploadAvatar(file);
       
       // Refresh user data (React exact)
@@ -530,7 +523,6 @@ export class ProfilePage {
       this.backBtn.destroy();
     }
     
-    console.log('👤 ProfilePage: Destroyed (React-like)');
     this.element.remove();
   }
 }

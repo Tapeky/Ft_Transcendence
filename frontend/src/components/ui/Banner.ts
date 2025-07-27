@@ -1,5 +1,5 @@
 import { authManager } from '../../auth/AuthManager';
-import { router } from '../../router';
+import { router } from '../../app/Router';
 
 // Banner - Reproduction exacte de la version React
 // User stats + Dashboard link
@@ -57,7 +57,6 @@ export class Banner {
     const dashboardBtn = div.querySelector('#dashboard-btn');
     dashboardBtn?.addEventListener('click', () => this.navigateToDashboard());
 
-    console.log('🎨 Banner: Event listeners bound (React-like)');
     return div;
   }
 
@@ -66,7 +65,6 @@ export class Banner {
     const dashboardBtn = this.element.querySelector('#dashboard-btn');
     dashboardBtn?.addEventListener('click', () => this.navigateToDashboard());
 
-    console.log('🎨 Banner: Event listeners bound (React-like)');
   }
 
   private subscribeToAuth(): void {

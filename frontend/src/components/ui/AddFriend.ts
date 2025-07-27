@@ -67,7 +67,6 @@ export class AddFriend {
       }
     });
 
-    console.log('👤 AddFriend: Event listeners bound (React-like)');
   }
 
   private async addFriend(): Promise<void> {

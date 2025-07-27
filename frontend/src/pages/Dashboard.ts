@@ -1,5 +1,5 @@
-import { Header } from '../components/vanilla/Header';
-import { BackBtn } from '../components/vanilla/BackBtn';
+import { Header } from '../components/ui/Header';
+import { BackBtn } from '../components/ui/BackBtn';
 import { apiService, User, Match } from '../services/api';
 import { appState } from '../state/AppState';
 
@@ -51,7 +51,7 @@ export class Dashboard {
       return;
     }
 
-    console.log('✅ Dashboard: Auth check passed, loading data...');
+    // Success;
 
     // Charger les données
     await Promise.all([

@@ -1,5 +1,5 @@
 import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
+import { router } from '../app/Router';
 
 export class ChatPage {
   private element: HTMLElement;
@@ -209,7 +209,6 @@ export class ChatPage {
       });
     }
 
-    console.log('💬 ChatPage: Event listeners bound');
     return container;
   }
 
@@ -220,9 +219,7 @@ export class ChatPage {
 
   private sendMessage(message: string): void {
     if (!message.trim()) return;
-    
     // TODO: Implement actual message sending
-    console.log('Sending message:', message);
   }
 
   public getElement(): HTMLElement {

@@ -20,7 +20,6 @@ export class AuthPage {
     this.subscribeToAuth();
     this.startAnimationCarousel();
     
-    console.log('🔐 AuthPage: Initialized with React-like design');
   }
 
   private createElement(): HTMLElement {
@@ -395,7 +394,6 @@ export class AuthPage {
       indicator.addEventListener('click', () => this.setAnimation(index));
     });
 
-    console.log('🔐 AuthPage: Event listeners bound (React-like)');
   }
 
   private subscribeToAuth(): void {
@@ -404,8 +402,7 @@ export class AuthPage {
       
       // Si déjà connecté, rediriger vers menu
       if (authState.isAuthenticated && authState.user) {
-        console.log('🔐 AuthPage: User already authenticated, redirecting...');
-        import('../router').then(({ router }) => {
+        import('../app/Router').then(({ router }) => {
           router.navigate('/menu');
         });
       }
@@ -473,7 +470,6 @@ export class AuthPage {
       }
     }, 150);
 
-    console.log(`🔐 AuthPage: Switched to ${newMode} mode (React-like transition)`);
   }
 
   private updateModeDisplay(): void {
@@ -608,7 +604,6 @@ export class AuthPage {
 
   private async handleLogin(e: Event): Promise<void> {
     e.preventDefault();
-    console.log('🔐 AuthPage: Login form submitted');
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -628,9 +623,8 @@ export class AuthPage {
 
     try {
       await authManager.login(credentials);
-      console.log('✅ AuthPage: Login successful');
       // Navigation vers menu
-      import('../router').then(({ router }) => {
+      import('../app/Router').then(({ router }) => {
         router.navigate('/menu');
       });
     } catch (error) {
@@ -643,7 +637,6 @@ export class AuthPage {
 
   private async handleRegister(e: Event): Promise<void> {
     e.preventDefault();
-    console.log('🔐 AuthPage: Register form submitted');
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -671,9 +664,8 @@ export class AuthPage {
 
     try {
       await authManager.register(credentials);
-      console.log('✅ AuthPage: Registration successful');
       // Navigation vers menu
-      import('../router').then(({ router }) => {
+      import('../app/Router').then(({ router }) => {
         router.navigate('/menu');
       });
     } catch (error) {
@@ -685,13 +677,11 @@ export class AuthPage {
   }
 
   private handleGitHubAuth(): void {
-    console.log('🔐 AuthPage: GitHub auth initiated');
     const githubUrl = authManager.getGitHubAuthUrl();
     window.location.href = githubUrl;
   }
 
   private handleGoogleAuth(): void {
-    console.log('🔐 AuthPage: Google auth initiated');
     const googleUrl = authManager.getGoogleAuthUrl();
     window.location.href = googleUrl;
   }
@@ -1198,7 +1188,6 @@ export class AuthPage {
       clearInterval(this.animationInterval);
     }
     
-    console.log('🔐 AuthPage: Destroyed (React-like)');
     this.element.remove();
   }
 }

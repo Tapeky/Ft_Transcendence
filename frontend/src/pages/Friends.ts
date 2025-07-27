@@ -1,5 +1,5 @@
 import { authManager } from '../auth/AuthManager';
-import { router } from '../router';
+import { router } from '../app/Router';
 
 export class FriendsPage {
   private element: HTMLElement;
@@ -116,7 +116,6 @@ export class FriendsPage {
       });
     }
 
-    console.log('👥 FriendsPage: Event listeners bound');
     return container;
   }
 

@@ -2,7 +2,7 @@
 // Modal 500x600px avec avatar, dashboard, block/remove actions
 
 import { apiService } from '../../services/api';
-import { router } from '../../router';
+import { router } from '../../app/Router';
 import { CloseBtn } from './CloseBtn';
 import { getAvatarUrl } from '../../utils/avatar';
 
@@ -105,7 +105,6 @@ export class FriendOptions {
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
 
-    console.log('👥 FriendOptions: Event listeners bound (React EXACT)');
   }
 
   private handleDashboard(): void {

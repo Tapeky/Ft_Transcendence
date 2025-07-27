@@ -10,7 +10,6 @@ export class AuthManager {
 
   private constructor() {
     this.initializeAuth();
-    console.log('🔐 AuthManager: Initialized');
   }
 
   public static getInstance(): AuthManager {
@@ -21,23 +20,22 @@ export class AuthManager {
   }
 
   private async initializeAuth(): Promise<void> {
-    console.log('🔐 AuthManager: Starting initialization...');
     appState.setLoading(true);
 
     try {
       // Étape 1: Gérer callback OAuth (GitHub/Google)
       const callbackToken = apiService.handleAuthCallback();
       if (callbackToken) {
-        console.log('🔐 AuthManager: Token reçu depuis callback OAuth');
+        // Token received from OAuth callback
       }
     } catch (error) {
-      console.error('🔐 AuthManager: Erreur callback OAuth:', this.getErrorMessage(error));
+      console.error('AuthManager OAuth callback error:', this.getErrorMessage(error));
     }
 
     try {
       // Étape 2: Vérifier si déjà authentifié
       if (apiService.isAuthenticated()) {
-        console.log('🔐 AuthManager: Token trouvé, récupération des infos utilisateur...');
+        // Token found, retrieving user info
         const currentUser = await apiService.getCurrentUser();
         
         // Mettre à jour AppState au lieu de React state
@@ -50,7 +48,7 @@ export class AuthManager {
         // Notify auth state change
         this.notifyAuthStateChange(true);
         
-        console.log('✅ AuthManager: Utilisateur authentifié:', currentUser.username);
+        // User authenticated successfully
       } else {
         // Pas de token valide
         appState.setState({
@@ -62,10 +60,10 @@ export class AuthManager {
         // Notify auth state change
         this.notifyAuthStateChange(false);
         
-        console.log('ℹ️ AuthManager: Aucun token valide trouvé');
+        // No valid token found
       }
     } catch (error) {
-      console.error('🔐 AuthManager: Erreur lors de la récupération des infos utilisateur:', this.getErrorMessage(error));
+      console.error('AuthManager user info retrieval error:', this.getErrorMessage(error));
       
       // Nettoyer token invalide
       apiService.clearToken();
@@ -82,7 +80,6 @@ export class AuthManager {
 
   // Login - EXACTEMENT la même logique que AuthContext
   public async login(credentials: LoginCredentials): Promise<void> {
-    console.log('🔐 AuthManager: Tentative de connexion pour:', credentials.email);
     appState.setLoading(true);
 
     try {
@@ -99,7 +96,7 @@ export class AuthManager {
       // Notify auth state change
       this.notifyAuthStateChange(true);
       
-      console.log('✅ AuthManager: Connexion réussie:', authResponse.user.username);
+      // Login successful
       
       // Navigation automatique vers menu (comme dans AuthContext)
       this.navigateToMenu();
@@ -107,7 +104,7 @@ export class AuthManager {
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
-      console.error('❌ AuthManager: Échec de connexion:', errorMessage);
+      console.error('AuthManager login failed:', errorMessage);
       
       // Re-throw pour que le formulaire puisse afficher l'erreur
       throw new Error(errorMessage);
@@ -116,7 +113,6 @@ export class AuthManager {
 
   // Register - EXACTEMENT la même logique que AuthContext  
   public async register(credentials: RegisterCredentials): Promise<void> {
-    console.log('🔐 AuthManager: Tentative d\'inscription pour:', credentials.username);
     appState.setLoading(true);
 
     try {
@@ -133,7 +129,7 @@ export class AuthManager {
       // Notify auth state change
       this.notifyAuthStateChange(true);
       
-      console.log('✅ AuthManager: Inscription réussie:', authResponse.user.username);
+      // Registration successful
       
       // Navigation automatique vers menu
       this.navigateToMenu();
@@ -150,7 +146,7 @@ export class AuthManager {
         errorMessage.includes('incorrect');
       
       if (!isValidationError) {
-        console.error('❌ AuthManager: Erreur inscription inattendue:', errorMessage);
+        console.error('AuthManager unexpected registration error:', errorMessage);
       }
       
       // Re-throw pour que le formulaire puisse afficher l'erreur
@@ -160,7 +156,6 @@ export class AuthManager {
 
   // Logout - EXACTEMENT la même logique que AuthContext
   public async logout(): Promise<void> {
-    console.log('🔐 AuthManager: Déconnexion...');
     appState.setLoading(true);
 
     try {
@@ -177,13 +172,13 @@ export class AuthManager {
       // Notify auth state change
       this.notifyAuthStateChange(false);
       
-      console.log('✅ AuthManager: Déconnexion réussie');
+      // Logout successful
       
       // Navigation vers page d'accueil
       this.navigateToHome();
       
     } catch (error) {
-      console.error('❌ AuthManager: Erreur lors de la déconnexion:', this.getErrorMessage(error));
+      console.error('AuthManager logout error:', this.getErrorMessage(error));
       
       // Même si l'API échoue, on déconnecte côté client
       appState.setState({
@@ -204,9 +199,9 @@ export class AuthManager {
     try {
       const currentUser = await apiService.getCurrentUser();
       appState.setState({ user: currentUser });
-      console.log('✅ AuthManager: Informations utilisateur mises à jour');
+      // User info updated successfully
     } catch (error) {
-      console.error('❌ AuthManager: Erreur lors de la mise à jour des infos utilisateur:', this.getErrorMessage(error));
+      console.error('AuthManager user refresh error:', this.getErrorMessage(error));
     }
   }
 
@@ -222,13 +217,13 @@ export class AuthManager {
   // Helpers privés
   private navigateToMenu(): void {
     // Utiliser le router pour naviguer
-    import('../router').then(({ router }) => {
+    import('../app/Router').then(({ router }) => {
       router.navigate('/menu');
     });
   }
 
   private navigateToHome(): void {
-    import('../router').then(({ router }) => {
+    import('../app/Router').then(({ router }) => {
       router.navigate('/');
     });
   }

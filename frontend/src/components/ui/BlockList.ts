@@ -48,7 +48,6 @@ export class BlockList {
     // Toggle button click
     toggleBtn?.addEventListener('click', () => this.toggleList());
 
-    console.log('🚫 BlockList: Event listeners bound (React-like)');
   }
 
   private async toggleList(): Promise<void> {
