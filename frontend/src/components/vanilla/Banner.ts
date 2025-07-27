@@ -44,7 +44,7 @@ export class Banner {
           <button 
             id="dashboard-btn" 
             class="hover:text-blue-400 transition-colors cursor-pointer"
-            data-user-id="${user?.id || ''}"
+            data-user-id="${user?.id ? String(user.id) : ''}"
           >
             ► Dashboard ◄
           </button>
@@ -103,13 +103,25 @@ export class Banner {
 
   private navigateToDashboard(): void {
     const dashboardBtn = this.element.querySelector('#dashboard-btn');
-    const userId = dashboardBtn?.getAttribute('data-user-id');
+    let userId = dashboardBtn?.getAttribute('data-user-id');
     
-    if (userId) {
+    // Si pas d'userId dans l'attribut, essayer de le récupérer directement
+    if (!userId || userId === '') {
+      const currentUser = authManager.getCurrentUser();
+      userId = currentUser?.id ? String(currentUser.id) : null;
+      
+      // Mettre à jour l'attribut pour les prochaines fois
+      if (userId && dashboardBtn) {
+        dashboardBtn.setAttribute('data-user-id', userId);
+      }
+    }
+    
+    if (userId && userId !== '') {
       router.navigate(`/dashboard/${userId}`);
       console.log(`🎨 Banner: Navigating to dashboard for user ${userId}`);
     } else {
       console.warn('🎨 Banner: No user ID available for dashboard navigation');
+      console.warn('🎨 Banner: Current user:', authManager.getCurrentUser());
     }
   }
 

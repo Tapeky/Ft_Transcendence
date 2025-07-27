@@ -30,7 +30,7 @@ export class FriendList {
   private createElement(): HTMLElement {
     // Portal pattern - overlay sur toute la page
     const container = document.createElement('div');
-    container.className = `${this.visible ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white transition-opacity duration-200`;
+    container.className = `${this.visible ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-start pt-20 text-white transition-opacity duration-200`;
     container.setAttribute('role', 'dialog');
     container.setAttribute('aria-modal', 'true');
     container.setAttribute('aria-labelledby', 'friends-title');
@@ -42,24 +42,27 @@ export class FriendList {
         <!-- Screen reader title -->
         <h1 id="friends-title" class="sr-only">Friends Management</h1>
         
-        <!-- Close Button -->
-        <button id="close-btn" 
-                class="w-[40px] h-[40px] bg-white border-2 border-black absolute right-2 top-2 text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
-                aria-label="Close friends list" 
-                title="Close">
-          ×
-        </button>
+        <!-- Header zone for buttons -->
+        <div class="relative h-[60px] w-full flex-shrink-0">
+          <!-- Close Button -->
+          <button id="close-btn" 
+                  class="w-[40px] h-[40px] bg-white border-2 border-black absolute right-2 top-2 text-black text-[1.5rem] hover:bg-gray-200 focus:ring-2 focus:ring-blue-500" 
+                  aria-label="Close friends list" 
+                  title="Close">
+            ×
+          </button>
+
+          <!-- Refresh Button -->
+          <button id="refresh-btn" 
+                  class="border-2 h-[40px] w-[40px] bg-white border-black absolute left-[2.8rem] top-2 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
+                  aria-label="Refresh friends list" 
+                  title="Refresh">
+            <img src="/src/img/refresh.svg" alt="refresh" />
+          </button>
+        </div>
 
         <!-- Components will be injected here by initializeComponents() -->
         <div id="components-container"></div>
-
-        <!-- Refresh Button -->
-        <button id="refresh-btn" 
-                class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black absolute ml-[7.2rem] mt-2 mb-0 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500" 
-                aria-label="Refresh friends list" 
-                title="Refresh">
-          <img src="/src/img/refresh.svg" alt="refresh" />
-        </button>
 
         <!-- Friends List -->
         <div id="friends-list" class="flex-grow overflow-auto flex flex-col items-center gap-4">
