@@ -27,6 +27,11 @@ export class FriendList {
   private messages: Message[] = [];
   private currentUser: any = null;
   private chatView: 'friends' | 'conversation' = 'friends'; // État de la vue chat
+  
+  // Navigation cleanup
+  private originalPushState?: typeof history.pushState;
+  private originalReplaceState?: typeof history.replaceState;
+  private navigationCleanup?: () => void;
 
   constructor(onClose: () => void) {
     this.onClose = onClose;
@@ -35,6 +40,7 @@ export class FriendList {
     this.bindEvents();
     this.initializeComponents();
     this.fetchFriends();
+    this.setupNavigationListener();
     
     console.log('👥 FriendList: Initialized with React portal pattern');
   }
@@ -101,6 +107,40 @@ export class FriendList {
     `;
 
     return container;
+  }
+
+  private setupNavigationListener(): void {
+    // Écouter les changements de route pour fermer automatiquement la modal
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    const closeOnNavigation = () => {
+      // Se fermer si on navigue vers une autre page
+      console.log('👥 FriendList: Navigation détectée, fermeture automatique');
+      this.close();
+    };
+    
+    // Override pushState pour détecter les navigations
+    history.pushState = function(state, title, url) {
+      const result = originalPushState.call(this, state, title, url);
+      closeOnNavigation();
+      return result;
+    };
+    
+    // Override replaceState pour détecter les navigations  
+    history.replaceState = function(state, title, url) {
+      const result = originalReplaceState.call(this, state, title, url);
+      closeOnNavigation();
+      return result;
+    };
+    
+    // Écouter les événements popstate (bouton retour)
+    window.addEventListener('popstate', closeOnNavigation);
+    
+    // Nettoyer les listeners quand on détruit le composant
+    this.originalPushState = originalPushState;
+    this.originalReplaceState = originalReplaceState;
+    this.navigationCleanup = closeOnNavigation;
   }
 
   private bindEvents(): void {
@@ -904,6 +944,17 @@ export class FriendList {
     chatService.off('message_received', () => {});
     chatService.off('message_sent', () => {});
     chatService.off('conversations_updated', () => {});
+    
+    // Clean up navigation listeners
+    if (this.originalPushState) {
+      history.pushState = this.originalPushState;
+    }
+    if (this.originalReplaceState) {
+      history.replaceState = this.originalReplaceState;
+    }
+    if (this.navigationCleanup) {
+      window.removeEventListener('popstate', this.navigationCleanup);
+    }
 
     if (this.element.parentNode) {
       this.element.remove();
