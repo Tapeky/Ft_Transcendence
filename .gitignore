@@ -149,3 +149,9 @@ package-lock.json
 */package-lock.json
 yarn.lock
 */yarn.lock
+
+# CLI C files
+*.o
+*.d
+lib*.a
+trans_cli
