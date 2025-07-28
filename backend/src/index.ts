@@ -88,7 +88,8 @@ async function start() {
     
     // 4. WebSocket handlers
     console.log('🌐 Configuration des WebSockets...');
-    setupWebSocket(server);
+    const wsManager = setupWebSocket(server);
+    (server as any).websocketManager = wsManager;
     
     // 5. Routes
     console.log('🛣️ Configuration des routes...');

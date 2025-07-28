@@ -1,0 +1,186 @@
+import { chatService } from './ChatService';
+import { GameInviteNotification, GameInvite } from '../components/ui/GameInviteNotification';
+
+export class GameInviteManager {
+  private static instance: GameInviteManager;
+  private activeNotifications: Map<number, GameInviteNotification> = new Map();
+
+  private constructor() {
+    this.setupChatServiceListeners();
+  }
+
+  static getInstance(): GameInviteManager {
+    if (!GameInviteManager.instance) {
+      GameInviteManager.instance = new GameInviteManager();
+    }
+    return GameInviteManager.instance;
+  }
+
+  private setupChatServiceListeners(): void {
+    // Écouter les invitations reçues via WebSocket
+    chatService.on('game_invite_received', (data: { invite: GameInvite }) => {
+      this.handleInviteReceived(data.invite);
+    });
+
+    // Écouter les réponses aux invitations envoyées
+    chatService.on('game_invite_response', (data: { 
+      action: 'accept' | 'decline'; 
+      inviteId: number; 
+      responderId: number;
+      responderUsername: string;
+    }) => {
+      this.handleInviteResponse(data);
+    });
+
+    console.log('🎮 GameInviteManager: Chat service listeners setup');
+  }
+
+  private handleInviteReceived(invite: GameInvite): void {
+    console.log('🎮 GameInviteManager: Received game invite from', invite.sender_username);
+
+    // Vérifier si l'invitation n'est pas expirée
+    const expiresAt = new Date(invite.expires_at);
+    const now = new Date();
+    
+    if (now >= expiresAt) {
+      console.log('🎮 GameInviteManager: Invite already expired, ignoring');
+      return;
+    }
+
+    // Fermer une notification existante du même expéditeur
+    const existingNotification = this.activeNotifications.get(invite.sender_id);
+    if (existingNotification) {
+      existingNotification.destroy();
+      this.activeNotifications.delete(invite.sender_id);
+    }
+
+    // Créer et afficher la nouvelle notification
+    const notification = new GameInviteNotification(invite, () => {
+      this.activeNotifications.delete(invite.sender_id);
+    });
+
+    // Ajouter au DOM
+    document.body.appendChild(notification.getElement());
+    
+    // Garder la référence
+    this.activeNotifications.set(invite.sender_id, notification);
+
+    // Son de notification (optionnel)
+    this.playNotificationSound();
+  }
+
+  private handleInviteResponse(data: { 
+    action: 'accept' | 'decline'; 
+    inviteId: number; 
+    responderId: number;
+    responderUsername: string;
+  }): void {
+    console.log(`🎮 GameInviteManager: ${data.responderUsername} ${data.action}ed your game invite`);
+
+    // Afficher une notification de réponse
+    this.showResponseNotification(data);
+  }
+
+  private showResponseNotification(data: { 
+    action: 'accept' | 'decline'; 
+    responderUsername: string;
+  }): void {
+    const notification = document.createElement('div');
+    notification.className = `
+      fixed top-4 right-4 z-[70] 
+      bg-blue-800 border-2 border-white text-white 
+      p-4 rounded-lg shadow-lg 
+      w-[350px] max-w-[90vw]
+      animate-fade-in
+    `;
+
+    const isAccepted = data.action === 'accept';
+    const icon = isAccepted ? '✅' : '❌';
+    const message = isAccepted 
+      ? `${data.responderUsername} accepted your invite!`
+      : `${data.responderUsername} declined your invite`;
+
+    notification.innerHTML = `
+      <div class="flex justify-between items-start mb-3">
+        <h3 class="text-[1.5rem] font-bold">${icon} Invite Response</h3>
+        <button class="close-btn text-[1.2rem] hover:scale-110 transition">✕</button>
+      </div>
+      <p class="text-[1.2rem]">${message}</p>
+      ${isAccepted ? '<p class="text-[0.9rem] opacity-80 mt-2">🎮 Game starting soon...</p>' : ''}
+    `;
+
+    // Bouton fermer
+    const closeBtn = notification.querySelector('.close-btn');
+    closeBtn?.addEventListener('click', () => {
+      notification.remove();
+    });
+
+    // Ajouter au DOM
+    document.body.appendChild(notification);
+
+    // Auto-close après 5 secondes
+    setTimeout(() => {
+      notification.remove();
+    }, 5000);
+
+    // Si accepté, on pourrait rediriger vers le jeu
+    if (isAccepted) {
+      // TODO: Rediriger vers le jeu ou créer une partie
+      console.log('🎮 GameInviteManager: TODO - Start game with', data.responderUsername);
+    }
+  }
+
+  private playNotificationSound(): void {
+    try {
+      // Son simple avec Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      // Pas grave si le son ne marche pas
+      console.log('🎮 GameInviteManager: Could not play notification sound');
+    }
+  }
+
+  public async loadPendingInvites(): Promise<void> {
+    try {
+      console.log('🎮 GameInviteManager: Loading pending invites...');
+      
+      const invites = await apiService.getReceivedGameInvites();
+      
+      for (const invite of invites) {
+        this.handleInviteReceived(invite);
+      }
+      
+      console.log(`🎮 GameInviteManager: Loaded ${invites.length} pending invites`);
+      
+    } catch (error) {
+      console.error('🎮 GameInviteManager: Error loading pending invites:', error);
+    }
+  }
+
+  public clearAllNotifications(): void {
+    console.log('🎮 GameInviteManager: Clearing all notifications');
+    
+    this.activeNotifications.forEach((notification) => {
+      notification.destroy();
+    });
+    
+    this.activeNotifications.clear();
+  }
+}
+
+// Export singleton instance
+export const gameInviteManager = GameInviteManager.getInstance();

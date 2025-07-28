@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animation pour les notifications d'invitation de jeu */
+@keyframes fade-in {
+  0% { 
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
 @keyframes ball-realistic {
   0% { 
     left: 50%;

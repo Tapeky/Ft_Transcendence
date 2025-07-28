@@ -73,6 +73,22 @@ export class FriendOptions {
     `;
     flexContainer.appendChild(dashboardSection);
 
+    // Game invite section - NEW
+    const gameSection = document.createElement('div');
+    gameSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
+    gameSection.innerHTML = `
+      <h2 class="text-[1.8rem]">🎮 Challenge ${this.props.username} 🎮</h2>
+      <div class="h-[80px] w-3/4 text-center">
+        <button 
+          id="invite-btn"
+          class="text-[2rem] border-2 px-4 hover:scale-110 rounded-md bg-green-700 w-full h-full transition duration-200"
+        >
+          Send Game Invite
+        </button>
+      </div>
+    `;
+    flexContainer.appendChild(gameSection);
+
     // Action buttons section - EXACTEMENT React
     const actionsSection = document.createElement('div');
     actionsSection.className = 'flex-grow flex justify-evenly items-center';
@@ -97,6 +113,10 @@ export class FriendOptions {
     const dashboardBtn = this.element.querySelector('#dashboard-btn');
     dashboardBtn?.addEventListener('click', () => this.handleDashboard());
 
+    // Game invite button - NEW
+    const inviteBtn = this.element.querySelector('#invite-btn');
+    inviteBtn?.addEventListener('click', () => this.handleGameInvite());
+
     // Remove friend button - EXACTEMENT React
     const removeBtn = this.element.querySelector('#remove-btn');
     removeBtn?.addEventListener('click', () => this.handleRemoveFriend());
@@ -113,6 +133,25 @@ export class FriendOptions {
     // Navigate to dashboard - EXACTEMENT React
     router.navigate(`/dashboard/${this.props.id}`);
     this.props.setIsOpen();
+  }
+
+  private async handleGameInvite(): Promise<void> {
+    try {
+      console.log('🎮 FriendOptions: Sending game invite to', this.props.username);
+      
+      // Send game invite via API
+      await apiService.sendGameInvite(this.props.id);
+      
+      console.log('✅ Game invite sent successfully!');
+      alert(`🎮 Game invite sent to ${this.props.username}!`);
+      
+      // Close the modal
+      this.props.setIsOpen();
+      
+    } catch (error) {
+      console.error('Error sending game invite:', error);
+      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
+    }
   }
 
   private async handleRemoveFriend(): Promise<void> {

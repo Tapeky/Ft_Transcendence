@@ -551,8 +551,11 @@ export class FriendList {
           ${friend.is_online ? '🟢 Online' : '🔴 Offline'}
         </div>
         
-        <!-- Chat Button -->
+        <!-- Action Buttons -->
         <div class="flex gap-2 items-end ml-12">
+          <button class="invite-btn border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 self-end text-white text-sm rounded">
+            ✈️ Invite
+          </button>
           <button class="chat-btn border-2 min-h-[40px] px-4 bg-green-600 hover:bg-green-700 border-black mb-4 self-end text-white text-sm rounded">
             💬 Chat
           </button>
@@ -560,13 +563,34 @@ export class FriendList {
       </div>
     `;
 
-    // Bind click event pour ouvrir le chat avec cet ami
+    // Bind click events
+    const inviteBtn = item.querySelector('.invite-btn');
+    inviteBtn?.addEventListener('click', async () => {
+      await this.sendGameInviteToFriend(friend);
+    });
+
     const chatBtn = item.querySelector('.chat-btn');
     chatBtn?.addEventListener('click', async () => {
       await this.openChatWithFriend(friend);
     });
 
     return item;
+  }
+
+  private async sendGameInviteToFriend(friend: Friend): Promise<void> {
+    try {
+      console.log(`✈️ Sending game invite to ${friend.username}`);
+      
+      // Envoyer l'invitation via l'API
+      await apiService.sendGameInvite(friend.id);
+      
+      console.log('✅ Game invite sent successfully!');
+      alert(`✈️ Game invite sent to ${friend.username}!`);
+      
+    } catch (error) {
+      console.error('❌ Error sending game invite:', error);
+      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
+    }
   }
 
   private async openChatWithFriend(friend: Friend): Promise<void> {

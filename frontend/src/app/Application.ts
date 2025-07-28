@@ -2,6 +2,7 @@ import { appState } from '../state/AppState';
 import { router } from './Router';
 import { AuthManager } from '../auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
+import { gameInviteManager } from '../services/GameInviteManager';
 
 /**
  * Application bootstrapper
@@ -41,10 +42,13 @@ export class Application {
       // Step 2: Initialize route protection
       this.initializeRouteProtection();
 
-      // Step 3: Setup global error handling
+      // Step 3: Initialize game invite system
+      this.initializeGameInviteSystem();
+
+      // Step 4: Setup global error handling
       this.setupErrorHandling();
 
-      // Step 4: Mark as initialized
+      // Step 5: Mark as initialized
       this.isInitialized = true;
 
     } catch (error) {
@@ -64,6 +68,23 @@ export class Application {
   private initializeRouteProtection(): void {
     // Initialize route guard (sets up auth state monitoring)
     this.routeGuard.initialize();
+  }
+
+  private initializeGameInviteSystem(): void {
+    // Initialize game invite manager (sets up WebSocket listeners)
+    console.log('🎮 Application: Initializing game invite system...');
+    
+    // The manager is already initialized as singleton
+    // Load any pending invites when user is authenticated
+    this.authManager.onAuthStateChange((user) => {
+      if (user) {
+        // User is authenticated, load pending invites
+        gameInviteManager.loadPendingInvites();
+      } else {
+        // User logged out, clear notifications
+        gameInviteManager.clearAllNotifications();
+      }
+    });
   }
 
   private setupErrorHandling(): void {

@@ -1,6 +1,7 @@
 import { getAvatarUrl } from '../../utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../app/Router';
+import { apiService } from '../../services/api';
 
 // FriendItem - Reproduction exacte de la version React
 // Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
@@ -55,6 +56,11 @@ export class FriendItem {
         <!-- Action Buttons -->
         <div class="flex-1 flex justify-evenly items-start mt-1">
           
+          <!-- Game Invite Button -->
+          <button id="invite-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 transition">
+            <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
+          </button>
+
           <!-- Chat Button -->
           <button id="chat-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
             <img src="/src/img/chat.svg" alt="chat" />
@@ -76,8 +82,14 @@ export class FriendItem {
   }
 
   private bindEvents(): void {
+    const inviteBtn = this.element.querySelector('#invite-btn');
     const chatBtn = this.element.querySelector('#chat-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
+
+    // Game invite button - send game invitation
+    inviteBtn?.addEventListener('click', () => {
+      this.sendGameInvite();
+    });
 
     // Chat button - navigate to chat (React NavLink behavior)
     chatBtn?.addEventListener('click', () => {
@@ -88,6 +100,22 @@ export class FriendItem {
     // Options button - open FriendOptions modal
     optionsBtn?.addEventListener('click', () => this.openOptions());
 
+  }
+
+  private async sendGameInvite(): Promise<void> {
+    try {
+      console.log(`✈️ FriendItem: Sending game invite to ${this.props.username}`);
+      
+      // Envoyer l'invitation via l'API
+      await apiService.sendGameInvite(this.props.id);
+      
+      console.log('✅ Game invite sent successfully!');
+      alert(`✈️ Game invite sent to ${this.props.username}!`);
+      
+    } catch (error) {
+      console.error('❌ Error sending game invite:', error);
+      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
+    }
   }
 
   private openOptions(): void {
