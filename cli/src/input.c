@@ -18,7 +18,7 @@ void input_deinit(ctx *ctx)
 	XUngrabKeyboard(ctx->dpy, CurrentTime);
 }
 
-static void on_key_event(ctx *ctx, XKeyEvent xkey, int is_press)
+static void update_key_state(ctx *ctx, XKeyEvent xkey, int is_press)
 {
 	KeySym keysym = XkbKeycodeToKeysym(ctx->dpy, xkey.keycode, 0, xkey.state & ShiftMask);
 
@@ -65,9 +65,40 @@ void input_poll(ctx *ctx)
 					continue;
 				}
 			}
-			on_key_event(ctx, event.xkey, event.type == KeyPress);
+			update_key_state(ctx, event.xkey, event.type == KeyPress);
 		}
 	}
 	ctx->input.pressed.n |= ctx->input.just_pressed.n; // add all bits whose inputs were just pressed
 	ctx->input.pressed.n &= ~ctx->input.just_released.n; // clear all bits whose inputs were just released
+}
+
+void input_loop(ctx *ctx, on_input_func on_key_event)
+{
+	XEvent event;
+	while (1)
+	{
+		XNextEvent(ctx->dpy, &event);
+		if (event.type == KeyPress || event.type == KeyRelease)
+		{
+			if (event.type == KeyRelease && XPending(ctx->dpy))
+			{
+				// check for auto-repeating key and remove it
+				XEvent next_event;
+				XPeekEvent(ctx->dpy, &next_event);
+				if (next_event.type == KeyPress
+					&& next_event.xkey.time == event.xkey.time
+					&& next_event.xkey.keycode == event.xkey.keycode)
+				{
+					XNextEvent(ctx->dpy, &next_event); // consume event
+					continue;
+				}
+			}
+			KeySym keysym = XkbKeycodeToKeysym(ctx->dpy, event.xkey.keycode, 0, event.xkey.state & ShiftMask);
+			if (on_key_event(keysym, event.type == KeyPress))
+				break;
+		}
+	}
+	// burn remaining events
+	while (XPending(ctx->dpy))
+		XNextEvent(ctx->dpy, &event);
 }
