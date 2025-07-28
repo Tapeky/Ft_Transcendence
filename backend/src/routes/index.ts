@@ -7,6 +7,7 @@ import { matchRoutes } from './matches';
 import { profileRoutes } from './profile';
 import { friendRoutes } from './friends';
 import { avatarsRoutes } from './avatars';
+import { chatRoutes } from './chat';
 
 export async function setupRoutes(server: FastifyInstance) {
   // Préfixe API
@@ -31,6 +32,9 @@ export async function setupRoutes(server: FastifyInstance) {
 
     // Routes avatars
     await server.register(avatarsRoutes, { prefix: '/avatars' });
+
+    // Routes chat
+    await server.register(chatRoutes, { prefix: '/chat' });
     
   }, { prefix: '/api' });
 }
