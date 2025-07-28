@@ -3,8 +3,10 @@ import { FastifyInstance } from 'fastify';
 import { SocketStream } from '@fastify/websocket';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
+import { ChatRepository } from '../repositories/ChatRepository';
 import { GameManager } from './game_manager';
 import { Input } from '../game/Input';
+import { DirectMessageData } from '../types/chat';
 
 interface ConnectedUser {
   id: number;
@@ -119,8 +121,56 @@ export function setupWebSocket(server: FastifyInstance) {
               connection.socket.send(JSON.stringify({ type: 'pong' }));
               break;
 
+            case 'direct_message':
+              // Messages directs avec persistance en DB
+              if (userId && message.toUserId && message.message) {
+                try {
+                  const db = DatabaseManager.getInstance().getDb();
+                  const chatRepo = new ChatRepository(db);
+                  
+                  // Créer ou récupérer la conversation
+                  const conversation = await chatRepo.getOrCreateConversation(userId, message.toUserId);
+                  
+                  // Créer le message en DB
+                  const savedMessage = await chatRepo.createMessage({
+                    conversation_id: conversation.id,
+                    sender_id: userId,
+                    content: message.message,
+                    type: 'text'
+                  });
+                  
+                  // Envoyer au destinataire si connecté
+                  const recipient = wsManager.getUser(message.toUserId);
+                  if (recipient) {
+                    wsManager.sendToUser(message.toUserId, {
+                      type: 'direct_message_received',
+                      data: {
+                        message: savedMessage,
+                        conversation: conversation
+                      }
+                    });
+                  }
+                  
+                  // Confirmer l'envoi à l'expéditeur
+                  connection.socket.send(JSON.stringify({
+                    type: 'direct_message_sent',
+                    data: {
+                      message: savedMessage,
+                      conversation: conversation
+                    }
+                  }));
+                  
+                } catch (error: any) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'error',
+                    message: error.message || 'Erreur lors de l\'envoi du message'
+                  }));
+                }
+              }
+              break;
+
             case 'chat_message':
-              // Message de chat basique
+              // Ancienne méthode (gardée pour compatibilité temporaire)
               if (userId && message.toUserId && message.message) {
                 wsManager.sendToUser(message.toUserId, {
                   type: 'chat_message',

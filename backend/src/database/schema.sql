@@ -191,3 +191,51 @@ AFTER UPDATE ON users
 BEGIN
     UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
+
+-- ======================================
+-- CHAT SYSTEM TABLES
+-- ======================================
+
+-- Table des conversations (messages directs)
+CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user1_id INTEGER NOT NULL,
+    user2_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- S'assurer que user1_id < user2_id pour éviter les doublons
+    CHECK (user1_id < user2_id),
+    UNIQUE(user1_id, user2_id)
+);
+
+-- Table des messages
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL,
+    sender_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    type VARCHAR(20) DEFAULT 'text', -- 'text', 'game_invite', 'tournament_notification'
+    metadata TEXT, -- JSON pour invitations/notifications
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index pour les performances
+CREATE INDEX IF NOT EXISTS idx_conversations_users ON conversations(user1_id, user2_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+
+-- Trigger pour mettre à jour updated_at des conversations
+CREATE TRIGGER IF NOT EXISTS update_conversation_timestamp
+AFTER INSERT ON messages
+BEGIN
+    UPDATE conversations 
+    SET updated_at = CURRENT_TIMESTAMP 
+    WHERE id = NEW.conversation_id;
+END;

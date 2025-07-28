@@ -1,0 +1,20 @@
+Objectif : Créer un site web de Pong en ligne, multijoueur, SPA TypeScript, backend PHP (ou module), Docker one-command, compatible navigateurs.
+
+Obligatoire :
+- Jeu Pong multijoueur local, tournoi/matchmaking, saisie alias, équité, esprit Pong 1972.
+- Sécurité : hash mdp, XSS/SQLi, HTTPS/WSS, validation entrées, .env pour credentials.
+
+Modules (7 majeurs min. pour 100%) :
+- Web : Fastify+Node.js (Maj), Tailwind+TS (Min), SQLite (Min), Blockchain scores (Maj)
+- Utilisateurs : Auth standard/avatar/amis/stats (Maj), OAuth2 (Maj)
+- Gameplay/UX : Joueurs distants (Maj), >2 joueurs (Maj), autre jeu matchmaking (Maj), personnalisation parties (Min), live chat (Maj)
+- IA/Stats : IA sans A* (Maj), dashboard stats (Min)
+- Cybersécurité : WAF+Vault (Maj), RGPD (Min), JWT+2FA (Maj)
+- DevOps : ELK logs (Maj), Prometheus/Grafana (Min), microservices (Maj)
+- Graphismes : Pong 3D Babylon.js (Maj)
+- Accessibilité : tous appareils (Min), navigateurs (Min), multilingue (Min), accessibilité visuelle (Min), SSR (Min)
+- Server-side Pong : API serveur (Maj), terminal vs web (Maj)
+
+Bonus : +10 pts/majeur, +5 pts/mineur si obligatoire parfait.
+
+Soumission : tout dans le dépôt Git, outils autorisés uniquement.
