@@ -183,6 +183,32 @@ export function setupWebSocket(server: FastifyInstance) {
               }
               break;
             
+            case 'game_invite_received':
+              // Notification d'invitation de jeu reçue
+              if (userId && message.invite) {
+                const recipient = wsManager.getUser(message.invite.receiver_id);
+                if (recipient) {
+                  wsManager.sendToUser(message.invite.receiver_id, {
+                    type: 'game_invite_received',
+                    data: { invite: message.invite }
+                  });
+                }
+              }
+              break;
+
+            case 'game_invite_response':
+              // Réponse à une invitation de jeu
+              if (userId && message.response) {
+                const sender = wsManager.getUser(message.response.sender_id);
+                if (sender) {
+                  wsManager.sendToUser(message.response.sender_id, {
+                    type: 'game_invite_response',
+                    data: { response: message.response }
+                  });
+                }
+              }
+              break;
+
             case 'start_game':
               if (userId && typeof message.opponentId === 'number') {
                 if (message.opponentId == userId) {

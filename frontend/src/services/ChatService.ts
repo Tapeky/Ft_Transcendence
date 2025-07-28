@@ -184,6 +184,16 @@ export class ChatService {
         this.emit('error', data);
         break;
 
+      case 'game_invite_received':
+        console.log('🎮 ChatService: Game invite received:', data.data);
+        this.emit('game_invite_received', data.data);
+        break;
+
+      case 'game_invite_response':
+        console.log('🎮 ChatService: Game invite response:', data.data);
+        this.emit('game_invite_response', data.data);
+        break;
+
       case 'pong':
         // Heartbeat response
         break;

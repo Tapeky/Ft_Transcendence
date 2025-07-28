@@ -193,6 +193,37 @@ BEGIN
 END;
 
 -- ======================================
+-- GAME INVITES SYSTEM
+-- ======================================
+
+-- Table des invitations de jeu
+CREATE TABLE IF NOT EXISTS game_invites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index pour les invitations de jeu
+CREATE INDEX IF NOT EXISTS idx_game_invites_sender ON game_invites(sender_id);
+CREATE INDEX IF NOT EXISTS idx_game_invites_receiver ON game_invites(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_game_invites_status ON game_invites(status);
+CREATE INDEX IF NOT EXISTS idx_game_invites_expires ON game_invites(expires_at);
+
+-- Trigger pour update timestamp des invitations
+CREATE TRIGGER IF NOT EXISTS update_game_invites_timestamp
+AFTER UPDATE ON game_invites
+BEGIN
+    UPDATE game_invites SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- ======================================
 -- CHAT SYSTEM TABLES
 -- ======================================
 

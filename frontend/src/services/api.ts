@@ -620,6 +620,26 @@ class ApiService {
 		});
 	}
 
+	// Game Invites
+	async sendGameInvite(receiverId: number): Promise<void> {
+		await this.request('/api/game-invites/send', {
+			method: 'POST',
+			body: JSON.stringify({ receiverId })
+		});
+	}
+
+	async respondToGameInvite(inviteId: number, action: 'accept' | 'decline'): Promise<void> {
+		await this.request(`/api/game-invites/${inviteId}/respond`, {
+			method: 'POST',
+			body: JSON.stringify({ action })
+		});
+	}
+
+	async getReceivedGameInvites(): Promise<any[]> {
+		const response = await this.request<{ invites: any[] }>('/api/game-invites/received');
+		return response.data?.invites || [];
+	}
+
 }
 
 export const apiService = new ApiService();
