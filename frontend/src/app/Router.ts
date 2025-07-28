@@ -46,11 +46,6 @@ export class Router {
       return new TournamentPage().getElement();
     });
     
-    this.routes.set('/chat', async () => {
-      const { ChatPage } = await import('../pages/Chat');
-      return new ChatPage().getElement();
-    });
-    
     // Dynamic route for dashboard with user ID pattern: /dashboard/123
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
