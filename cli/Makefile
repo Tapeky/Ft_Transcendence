@@ -7,7 +7,7 @@ CFLAGS := -Wall -Wextra -Werror -MMD
 CC := cc
 CJSON := cJSON/libcjson.a
 
-C_FILES := input ctx
+C_FILES := main input ctx
 
 include Functions.mk
 
