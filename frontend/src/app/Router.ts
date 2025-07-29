@@ -74,6 +74,34 @@ export class Router {
       return container;
     });
     
+    // Dynamic route for game with game ID pattern: /game/123
+    this.routes.set('/game', async (path?: string) => {
+      const currentPath = path || window.location.pathname;
+      const pathSegments = currentPath.split('/');
+      const gameId = pathSegments[2]; // /game/123 -> segments[2] = "123"
+      
+      console.log('🎮 Router Game - Debug:', {
+        originalPath: path,
+        currentPath: currentPath,
+        pathSegments,
+        gameId,
+        gameIdExists: !!gameId,
+        matchesPattern: gameId?.match(/^\d+$/)
+      });
+      
+      if (!gameId || !gameId.match(/^\d+$/)) {
+        console.log('❌ Router: Invalid gameId, loading 404');
+        const { NotFoundPage } = await import('../pages/NotFound');
+        return new NotFoundPage().getElement();
+      }
+      
+      // Success;
+      const { Game } = await import('../pages/Game');
+      const container = document.createElement('div');
+      new Game(container, gameId);
+      return container;
+    });
+    
     this.routes.set('/404', async () => {
       const { NotFoundPage } = await import('../pages/NotFound');
       return new NotFoundPage().getElement();
@@ -94,6 +122,14 @@ export class Router {
       const segments = path.split('/');
       if (segments.length === 3 && segments[2].match(/^\d+$/)) {
         return this.routes.get('/dashboard');
+      }
+    }
+    
+    // Essayer match dynamique pour game
+    if (path.startsWith('/game/')) {
+      const segments = path.split('/');
+      if (segments.length === 3 && segments[2].match(/^\d+$/)) {
+        return this.routes.get('/game');
       }
     }
     

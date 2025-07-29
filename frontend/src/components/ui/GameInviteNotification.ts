@@ -111,6 +111,11 @@ export class GameInviteNotification {
     try {
       console.log(`🎮 GameInviteNotification: ${action}ing invite from`, this.invite.sender_username);
       
+      // Show loading state immediately
+      if (action === 'accept') {
+        this.showLoadingState();
+      }
+      
       // Désactiver les boutons
       const acceptBtn = this.element.querySelector('#accept-btn') as HTMLButtonElement;
       const declineBtn = this.element.querySelector('#decline-btn') as HTMLButtonElement;
@@ -124,10 +129,11 @@ export class GameInviteNotification {
       // Afficher le message de confirmation
       this.showConfirmation(action);
       
-      // Fermer après 2 secondes
+      // Fermer après différents délais selon l'action
+      const closeDelay = action === 'accept' ? 1000 : 2000; // Accept ferme plus vite car le jeu va démarrer
       setTimeout(() => {
         this.close();
-      }, 2000);
+      }, closeDelay);
       
     } catch (error) {
       console.error('Error responding to game invite:', error);
@@ -139,7 +145,41 @@ export class GameInviteNotification {
       if (acceptBtn) acceptBtn.disabled = false;
       if (declineBtn) declineBtn.disabled = false;
       
-      alert(`Erreur: ${error}`);
+      // Show error in the notification instead of alert
+      this.showError(`Failed to ${action} invitation. Please try again.`);
+    }
+  }
+
+  private showLoadingState(): void {
+    const content = this.element.querySelector('.mb-4');
+    if (content) {
+      content.innerHTML = `
+        <p class="text-[1.2rem] mb-2">
+          🎮 Starting game...
+        </p>
+        <div class="flex items-center">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          <span class="text-[0.9rem] opacity-80">Connecting players...</span>
+        </div>
+      `;
+    }
+
+    // Update button styles to show loading
+    const acceptBtn = this.element.querySelector('#accept-btn') as HTMLButtonElement;
+    const declineBtn = this.element.querySelector('#decline-btn') as HTMLButtonElement;
+    
+    if (acceptBtn) {
+      acceptBtn.innerHTML = `
+        <div class="flex items-center justify-center">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          Accepting...
+        </div>
+      `;
+      acceptBtn.className = `${acceptBtn.className} opacity-75 cursor-not-allowed`;
+    }
+    
+    if (declineBtn) {
+      declineBtn.className = `${declineBtn.className} opacity-50 cursor-not-allowed`;
     }
   }
 
@@ -151,7 +191,7 @@ export class GameInviteNotification {
           ${action === 'accept' ? '✅ Invitation accepted!' : '❌ Invitation declined'}
         </p>
         <p class="text-[0.9rem] opacity-80">
-          ${action === 'accept' ? 'Get ready to play!' : 'Maybe next time...'}
+          ${action === 'accept' ? 'Game will start momentarily...' : 'Maybe next time...'}
         </p>
       `;
     }
@@ -161,6 +201,28 @@ export class GameInviteNotification {
     if (buttonsDiv) {
       buttonsDiv.remove();
     }
+  }
+
+  private showError(message: string): void {
+    const content = this.element.querySelector('.mb-4');
+    if (content) {
+      content.innerHTML = `
+        <p class="text-[1.2rem] mb-2 text-red-300">
+          ❌ Error
+        </p>
+        <p class="text-[0.9rem] opacity-80">
+          ${message}
+        </p>
+      `;
+    }
+
+    // Change container color to indicate error
+    this.element.className = this.element.className.replace('bg-green-800', 'bg-red-800');
+
+    // Auto-close after 5 seconds
+    setTimeout(() => {
+      this.close();
+    }, 5000);
   }
 
   private expire(): void {

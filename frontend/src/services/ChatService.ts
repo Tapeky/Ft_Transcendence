@@ -1,4 +1,6 @@
 import { apiService } from './api';
+import { GameState, Input } from '../types/GameTypes';
+import { router } from '../app/Router';
 
 // Types pour le frontend
 export interface Conversation {
@@ -37,6 +39,42 @@ export interface ChatState {
   isLoading: boolean;
 }
 
+// ============================================================================
+// Game WebSocket Message Types
+// ============================================================================
+
+export interface GameStartMessage {
+  type: 'start_game';
+  opponentId: number;
+}
+
+export interface GameInputMessage {
+  type: 'update_input';
+  input: Input;
+}
+
+export interface GameUpdateMessage {
+  type: 'game_update';
+  data: GameState;
+}
+
+export interface GameSuccessMessage {
+  type: 'success';
+  data: { gameId: number };
+}
+
+export interface GameErrorMessage {
+  type: 'error' | 'err_game_not_found' | 'err_player_not_in_game' | 'err_game_already_ended' | 'err_invalid_input';
+  message: string;
+}
+
+export type GameWebSocketMessage = 
+  | GameStartMessage 
+  | GameInputMessage 
+  | GameUpdateMessage 
+  | GameSuccessMessage 
+  | GameErrorMessage;
+
 type ChatEventListener = (data: any) => void;
 
 export class ChatService {
@@ -50,10 +88,21 @@ export class ChatService {
     isLoading: false
   };
   
+  // Game state management
+  private currentGameId: number | null = null;
+  private gameState: GameState | null = null;
+  private isInGame = false;
+  
   private listeners: Map<string, ChatEventListener[]> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+
+  // Helper method to build API URLs with correct base URL
+  private getApiUrl(endpoint: string): string {
+    const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
+    return `${API_BASE_URL}${endpoint}`;
+  }
 
   private constructor() {}
 
@@ -194,6 +243,34 @@ export class ChatService {
         this.emit('game_invite_response', data.data);
         break;
 
+      // ============ Game Messages ============
+      case 'success':
+        console.log('✅ ChatService: Game success:', data.data);
+        this.handleGameSuccess(data);
+        break;
+
+      case 'game_update':
+        this.handleGameUpdate(data);
+        break;
+
+      case 'game_started':
+        console.log('🎮 ChatService: Game started:', data.data);
+        this.handleGameStarted(data);
+        break;
+
+      case 'game_ended':
+        console.log('🏁 ChatService: Game ended:', data.data);
+        this.handleGameEnded(data);
+        break;
+
+      case 'err_game_not_found':
+      case 'err_player_not_in_game':
+      case 'err_game_already_ended':
+      case 'err_invalid_input':
+        console.error('❌ ChatService: Game error:', data.message);
+        this.emit('game_error', { type: data.type, message: data.message });
+        break;
+
       case 'pong':
         // Heartbeat response
         break;
@@ -238,6 +315,65 @@ export class ChatService {
     this.emit('conversations_updated', Array.from(this.state.conversations.values()));
   }
 
+  // ============ Game Message Handlers ============
+
+  private handleGameSuccess(data: { data: { gameId: number } }): void {
+    this.currentGameId = data.data.gameId;
+    this.isInGame = true;
+    
+    console.log(`🎮 ChatService: Successfully joined game ${this.currentGameId}`);
+    this.emit('game_joined', { gameId: this.currentGameId });
+  }
+
+  private handleGameUpdate(data: { data: GameState }): void {
+    if (!this.isInGame || !this.currentGameId) {
+      console.warn('⚠️ ChatService: Received game update but not in game');
+      return;
+    }
+    
+    this.gameState = data.data;
+    this.emit('game_state_update', this.gameState);
+  }
+
+  private handleGameStarted(data: { data: { 
+    gameId: number; 
+    opponent: { id: number; username: string; avatar: string }; 
+    playerSide: 'left' | 'right' 
+  } }): void {
+    const { gameId, opponent, playerSide } = data.data;
+    
+    console.log(`🚀 ChatService: Game ${gameId} started with ${opponent.username} (playing as ${playerSide})`);
+    
+    // Update internal game state
+    this.currentGameId = gameId;
+    this.isInGame = true;
+    
+    // Emit event for UI components
+    this.emit('game_started', {
+      gameId,
+      opponent,
+      playerSide
+    });
+    
+    // Automatically navigate to the game page
+    router.navigate(`/game/${gameId}`).catch(error => {
+      console.error('❌ ChatService: Failed to navigate to game:', error);
+      // If navigation fails, show error to user
+      this.emit('game_navigation_error', { error, gameId });
+    });
+  }
+
+  private handleGameEnded(data: { data: any }): void {
+    console.log(`🏁 ChatService: Game ${this.currentGameId} has ended`);
+    
+    this.emit('game_ended', data.data);
+    
+    // Clean up game state
+    this.currentGameId = null;
+    this.gameState = null;
+    this.isInGame = false;
+  }
+
   // ============ Public API ============
 
   async sendMessage(toUserId: number, content: string): Promise<void> {
@@ -260,12 +396,21 @@ export class ChatService {
     try {
       this.state.isLoading = true;
       
-      const response = await apiService.request<{ conversations: Conversation[] }>('/api/chat/conversations');
-      const conversations = response.data?.conversations || [];
+      // Use fetch directly since apiService.request is private
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(this.getApiUrl('/api/chat/conversations'), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+      
+      const data = await response.json();
+      const conversations = data.conversations || [];
       
       // Mettre à jour le state
       this.state.conversations.clear();
-      conversations.forEach(conv => {
+      conversations.forEach((conv: Conversation) => {
         this.state.conversations.set(conv.id, conv);
       });
       
@@ -282,11 +427,17 @@ export class ChatService {
 
   async loadConversationMessages(conversationId: number, page: number = 1): Promise<Message[]> {
     try {
-      const response = await apiService.request<{ messages: Message[] }>(
-        `/api/chat/conversations/${conversationId}/messages?page=${page}&limit=50`
-      );
+      // Use fetch directly since apiService.request is private
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(this.getApiUrl(`/api/chat/conversations/${conversationId}/messages?page=${page}&limit=50`), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
       
-      const messages = response.data?.messages || [];
+      const data = await response.json();
+      const messages = data.messages || [];
       
       // Mettre à jour le state
       this.state.messages.set(conversationId, messages);
@@ -303,12 +454,24 @@ export class ChatService {
 
   async createOrGetConversation(withUserId: number): Promise<Conversation> {
     try {
-      const response = await apiService.request<{ conversation: Conversation }>('/api/chat/conversations', {
+      // Use fetch directly since apiService.request is private
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(this.getApiUrl('/api/chat/conversations'), {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({ withUserId })
       });
       
-      const conversation = response.data?.conversation;
+      const data = await response.json();
+      console.log('💬 ChatService: Response data:', data);
+      
+      // Handle different response structures
+      const conversation = data.data?.conversation || data.conversation || data.data || data;
+      console.log('💬 ChatService: Extracted conversation:', conversation);
+      
       if (!conversation) {
         throw new Error('Erreur création conversation');
       }
@@ -372,6 +535,79 @@ export class ChatService {
         console.error(`❌ ChatService: Erreur dans listener ${event}:`, error);
       }
     });
+  }
+
+  // ============ Game API ============
+
+  /**
+   * Start a new Pong game with specified opponent
+   */
+  async startGame(opponentId: number): Promise<void> {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket non connecté');
+    }
+
+    if (this.isInGame) {
+      throw new Error('Déjà dans une partie');
+    }
+
+    console.log(`🎮 ChatService: Starting game with opponent ${opponentId}`);
+    
+    this.ws.send(JSON.stringify({
+      type: 'start_game',
+      opponentId: opponentId
+    }));
+  }
+
+  /**
+   * Send player input to the current game
+   */
+  sendGameInput(input: Input): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('⚠️ ChatService: Cannot send input - WebSocket not connected');
+      return;
+    }
+
+    if (!this.isInGame || !this.currentGameId) {
+      console.warn('⚠️ ChatService: Cannot send input - not in game');
+      return;
+    }
+
+    this.ws.send(JSON.stringify({
+      type: 'update_input',
+      input: input
+    }));
+  }
+
+  /**
+   * Leave the current game
+   */
+  leaveGame(): void {
+    if (this.isInGame && this.currentGameId) {
+      console.log(`🚪 ChatService: Leaving game ${this.currentGameId}`);
+      
+      // Emit event for UI to handle
+      this.emit('game_left', { gameId: this.currentGameId });
+      
+      // Clean up state
+      this.currentGameId = null;
+      this.gameState = null;
+      this.isInGame = false;
+    }
+  }
+
+  // ============ Game State Getters ============
+
+  getCurrentGameId(): number | null {
+    return this.currentGameId;
+  }
+
+  getCurrentGameState(): GameState | null {
+    return this.gameState;
+  }
+
+  isCurrentlyInGame(): boolean {
+    return this.isInGame;
   }
 
   // ============ Utility ============
