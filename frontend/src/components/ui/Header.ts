@@ -1,7 +1,7 @@
 import { authManager } from '../../auth/AuthManager';
 import { getAvatarUrl } from '../../utils/avatar';
 import { router } from '../../app/Router';
-import { FriendList } from './FriendList';
+import { FriendListModal } from './FriendList';
 
 // Header - Reproduction exacte de la version React
 // Background image city.png + User profile card + Options dropdown
@@ -208,7 +208,7 @@ export class Header {
 export class Options {
   private element: HTMLElement;
   private onClose: () => void;
-  private friendListInstance?: FriendList;
+  private friendListInstance?: FriendListModal;
 
   constructor(onClose: () => void) {
     this.onClose = onClose;
@@ -277,11 +277,13 @@ export class Options {
   private openFriends(): void {
     this.onClose(); // Fermer le menu d'abord comme React
     
-    // Créer et afficher FriendList en overlay (pas de navigation)
+    // Créer et afficher FriendListModal en overlay (pas de navigation)
     if (!this.friendListInstance) {
-      this.friendListInstance = new FriendList(() => {
-        // Callback pour fermer
-        this.friendListInstance = undefined;
+      this.friendListInstance = new FriendListModal({
+        onClose: () => {
+          // Callback pour fermer
+          this.friendListInstance = undefined;
+        }
       });
     }
     
