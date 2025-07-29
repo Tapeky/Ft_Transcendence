@@ -21,6 +21,7 @@ void label_init(console_component *c, u16 x, u16 y, char *content)
 {
 	BASE_INIT(LABEL, c, x, y);
 	c->u.c_label.str = content;
+	c->u.c_label.str_len = strlen(content);
 }
 
 void label_draw(console_component *c)
@@ -206,6 +207,7 @@ void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_f
 	BASE_INIT(BUTTON, c, x, y);
 	component_button *self = &c->u.c_button;
 	self->str = text;
+	self->str_len = strlen(text);
 	self->func = func;
 	self->held = 0;
 }

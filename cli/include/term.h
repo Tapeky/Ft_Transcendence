@@ -30,6 +30,7 @@ typedef enum
 typedef struct
 {
 	char	*str;
+	size_t	str_len;
 }	component_label;
 
 typedef struct
@@ -64,6 +65,7 @@ typedef void (button_action_func)(int pressed);
 typedef struct
 {
 	char				*str;
+	size_t				str_len;
 	button_action_func	*func;
 	int					held;
 }	component_button;
