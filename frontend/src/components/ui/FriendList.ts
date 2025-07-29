@@ -6,6 +6,9 @@ import { FriendItem } from './FriendItem';
 import { getAvatarUrl } from '../../utils/avatar';
 import { chatService, Conversation, Message } from '../../services/ChatService';
 import { authManager } from '../../auth/AuthManager';
+import { ChatConversation } from './ChatConversation';
+import { ChatFriendsList } from './ChatFriendsList';
+import { TabManager, TabType } from './TabManager';
 
 // FriendList - Reproduction exacte de la version React avec portal pattern
 // Overlay modal 500x600px avec CloseBtn, BlockList, Requests, AddFriend + Friends list
@@ -19,7 +22,12 @@ export class FriendList {
   private blockListInstance?: BlockList;
   private requestsInstance?: Requests;
   private friendItems: FriendItem[] = [];
-  private activeTab: 'friends' | 'blocked' | 'requests' | 'chat' = 'friends';
+  private activeTab: TabType = 'friends';
+  
+  // New component instances
+  private tabManager?: TabManager;
+  private chatConversation?: ChatConversation;
+  private chatFriendsList?: ChatFriendsList;
   
   // Chat state  
   private conversations: Conversation[] = [];
@@ -49,7 +57,6 @@ export class FriendList {
     this.fetchFriends();
     this.setupNavigationListener();
     
-    console.log('👥 FriendList: Initialized with React portal pattern');
   }
 
   private createElement(): HTMLElement {
@@ -69,20 +76,9 @@ export class FriendList {
         
         <!-- Header avec onglets et boutons -->
         <div class="flex justify-between items-center h-[60px] w-full flex-shrink-0 px-4 py-2 border-b-2 border-black">
-          <!-- Navigation par onglets -->
-          <div class="flex gap-1">
-            <button id="tab-friends" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-white text-black rounded-t transition-colors" data-tab="friends">
-              Friends
-            </button>
-            <button id="tab-blocked" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="blocked">
-              Blocked
-            </button>
-            <button id="tab-requests" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="requests">
-              Requests
-            </button>
-            <button id="tab-chat" class="tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors" data-tab="chat">
-              Chat
-            </button>
+          <!-- Navigation par onglets (sera remplacé par TabManager) -->
+          <div id="tab-navigation" class="flex gap-1">
+            <!-- TabManager will be inserted here -->
           </div>
 
           <!-- Actions à droite -->
@@ -123,7 +119,6 @@ export class FriendList {
     
     const closeOnNavigation = () => {
       // Se fermer si on navigue vers une autre page
-      console.log('👥 FriendList: Navigation détectée, fermeture automatique');
       this.close();
     };
     
@@ -159,14 +154,7 @@ export class FriendList {
     const refreshBtn = this.element.querySelector('#refresh-btn');
     refreshBtn?.addEventListener('click', () => this.refreshCurrentTab());
 
-    // Tab navigation
-    const tabButtons = this.element.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const tab = (e.currentTarget as HTMLElement).dataset.tab as 'friends' | 'blocked' | 'requests' | 'chat';
-        this.switchTab(tab);
-      });
-    });
+    // Tab navigation handled by TabManager
 
     // Click outside to close
     this.element.addEventListener('click', (e) => {
@@ -195,19 +183,34 @@ export class FriendList {
     this.requestsInstance = new Requests();
     this.addFriendInstance = new AddFriend();
 
+    // Initialize TabManager
+    this.tabManager = new TabManager({
+      tabs: [
+        { id: 'friends', label: 'Friends', active: true },
+        { id: 'blocked', label: 'Blocked', active: false },
+        { id: 'requests', label: 'Requests', active: false },
+        { id: 'chat', label: 'Chat', active: false }
+      ],
+      onTabChange: (tab: TabType) => this.switchTab(tab)
+    });
+
+    // Insert TabManager into navigation area
+    const tabNavigation = this.element.querySelector('#tab-navigation');
+    if (tabNavigation) {
+      tabNavigation.appendChild(this.tabManager.getElement());
+    }
+
     // Initialiser avec l'onglet Friends actif
     this.renderCurrentTab();
 
-    console.log('👥 FriendList: Components initialized with tab system');
   }
 
   private async fetchFriends(): Promise<void> {
+    if (!this.visible) return;
+    
     try {
-      if (this.visible) {
-        const data = await apiService.getFriends();
-        this.friends = data;
-        this.renderFriendsList();
-      }
+      this.friends = await apiService.getFriends();
+      this.renderFriendsList();
     } catch (error) {
       console.error('❌ FriendList: Failed to fetch friends:', error);
     }
@@ -217,44 +220,52 @@ export class FriendList {
     const friendsList = container || this.element.querySelector('#friends-container');
     if (!friendsList) return;
 
-    // Clear existing content and friend items (mais garder AddFriend si c'est le container principal)
-    if (!container) {
-      friendsList.innerHTML = '';
-    } else {
-      // Garder seulement AddFriend, supprimer le reste
-      const addFriendEl = friendsList.querySelector('.add-friend');
-      friendsList.innerHTML = '';
-      if (addFriendEl) {
-        friendsList.appendChild(addFriendEl);
-      }
-    }
-    
+    this.clearFriendsList(friendsList, container);
     this.destroyFriendItems();
 
     if (this.friends.length === 0) {
-      // No friends case - exact React reproduction
-      const noFriendsDiv = document.createElement('div');
-      noFriendsDiv.className = 'flex flex-col items-center mt-4';
-      noFriendsDiv.innerHTML = `
-        NO FRIEND
-        <img src="/src/img/ouin.gif" alt="OUIN" class="w-[350px]"/>
-      `;
-      friendsList.appendChild(noFriendsDiv);
+      this.renderNoFriendsMessage(friendsList);
     } else {
-      // Render friends using FriendItem components
-      this.friends.forEach(friend => {
-        const friendItem = new FriendItem({
-          username: friend.username,
-          displayName: friend.display_name,
-          avatar: friend.avatar_url,
-          is_online: friend.is_online,
-          id: friend.id
-        });
-
-        this.friendItems.push(friendItem);
-        friendsList.appendChild(friendItem.getElement());
-      });
+      this.renderFriendItems(friendsList);
     }
+  }
+
+  private clearFriendsList(friendsList: Element, container?: Element): void {
+    if (!container) {
+      friendsList.innerHTML = '';
+      return;
+    }
+    
+    const addFriendEl = friendsList.querySelector('.add-friend');
+    friendsList.innerHTML = '';
+    if (addFriendEl) {
+      friendsList.appendChild(addFriendEl);
+    }
+  }
+
+  private renderNoFriendsMessage(friendsList: Element): void {
+    const noFriendsDiv = document.createElement('div');
+    noFriendsDiv.className = 'flex flex-col items-center mt-4';
+    noFriendsDiv.innerHTML = `
+      NO FRIEND
+      <img src="/src/img/ouin.gif" alt="OUIN" class="w-[350px]"/>
+    `;
+    friendsList.appendChild(noFriendsDiv);
+  }
+
+  private renderFriendItems(friendsList: Element): void {
+    this.friends.forEach(friend => {
+      const friendItem = new FriendItem({
+        username: friend.username,
+        displayName: friend.display_name,
+        avatar: friend.avatar_url,
+        is_online: friend.is_online,
+        id: friend.id
+      });
+
+      this.friendItems.push(friendItem);
+      friendsList.appendChild(friendItem.getElement());
+    });
   }
 
   private destroyFriendItems(): void {
@@ -264,7 +275,7 @@ export class FriendList {
   }
 
 
-  private switchTab(tab: 'friends' | 'blocked' | 'requests' | 'chat'): void {
+  private switchTab(tab: TabType): void {
     this.activeTab = tab;
     
     // Si on passe à l'onglet chat, remettre la vue des amis
@@ -273,23 +284,7 @@ export class FriendList {
       this.currentConversation = null;
     }
     
-    this.updateTabButtons();
     this.renderCurrentTab();
-    console.log(`👥 FriendList: Switched to ${tab} tab`);
-  }
-
-  private updateTabButtons(): void {
-    const tabs = this.element.querySelectorAll('.tab-btn');
-    tabs.forEach(tab => {
-      const tabName = (tab as HTMLElement).dataset.tab;
-      if (tabName === this.activeTab) {
-        // Onglet actif
-        tab.className = 'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-white text-black rounded-t transition-colors';
-      } else {
-        // Onglet inactif
-        tab.className = 'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black bg-gray-300 text-gray-600 rounded-t transition-colors';
-      }
-    });
   }
 
   private async renderCurrentTab(): Promise<void> {
@@ -386,7 +381,6 @@ export class FriendList {
       try {
         await apiService.unblockUser(user.id);
         item.remove();
-        console.log('🚫 User unblocked successfully');
       } catch (error) {
         console.error('❌ Failed to unblock user:', error);
       }
@@ -471,7 +465,6 @@ export class FriendList {
       try {
         await apiService.blockUser(request.user_id);
         element.remove();
-        console.log('User blocked successfully!');
       } catch (error) {
         console.error('Error blocking user:', error);
       }
@@ -481,7 +474,6 @@ export class FriendList {
       try {
         await apiService.declineFriendRequest(request.id);
         element.remove();
-        console.log('Request rejected!');
       } catch (error) {
         console.error('Error rejecting request:', error);
       }
@@ -491,7 +483,6 @@ export class FriendList {
       try {
         await apiService.acceptFriendRequest(request.id);
         element.remove();
-        console.log('Request accepted!');
       } catch (error) {
         console.error('Error accepting request:', error);
       }
@@ -515,191 +506,105 @@ export class FriendList {
     // Fetch les amis comme dans l'onglet Friends
     await this.fetchFriends();
     
-    // Conteneur principal pour les amis
-    const friendsListContainer = document.createElement('div');
-    friendsListContainer.className = 'flex flex-col items-center gap-4 w-full px-4';
-    
-    if (this.friends.length === 0) {
-      // Pas d'amis - même style que l'onglet Friends
-      const noFriendsDiv = document.createElement('div');
-      noFriendsDiv.className = 'flex flex-col items-center mt-4';
-      noFriendsDiv.innerHTML = `
-        NO FRIENDS TO CHAT WITH
-        <img src="/src/img/ouin.gif" alt="OUIN" class="w-[300px]"/>
-        <div class="text-sm text-gray-300 mt-2">Add friends to start chatting</div>
-      `;
-      friendsListContainer.appendChild(noFriendsDiv);
-    } else {
-      // Liste des amis avec boutons Chat
-      this.friends.forEach(friend => {
-        const friendChatItem = this.createChatFriendItem(friend);
-        friendsListContainer.appendChild(friendChatItem);
-      });
+    // Clean up existing chat friends list
+    if (this.chatFriendsList) {
+      this.chatFriendsList.destroy();
     }
     
-    container.appendChild(friendsListContainer);
-  }
-
-  private createChatFriendItem(friend: Friend): HTMLElement {
-    const item = document.createElement('div');
-    item.className = 'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
+    // Create new ChatFriendsList component
+    this.chatFriendsList = new ChatFriendsList({
+      friends: this.friends,
+      onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend),
+      onGameInvite: (friend: Friend) => this.sendGameInviteToFriend(friend)
+    });
     
-    item.innerHTML = `
-      <!-- Avatar Section -->
-      <div class="flex items-center justify-center min-w-[120px]">
-        <img src="${getAvatarUrl(friend.avatar_url)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
-      </div>
-
-      <!-- Content Section -->
-      <div class="flex flex-col flex-grow">
-        <h2 class="mt-2 flex-grow text-white">${friend.display_name || friend.username}</h2>
-        <div class="text-sm text-gray-300">@${friend.username}</div>
-        <div class="text-xs text-gray-400 mt-1">
-          ${friend.is_online ? '🟢 Online' : '🔴 Offline'}
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="flex gap-2 items-end ml-12">
-          <button class="invite-btn border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 self-end text-white text-sm rounded">
-            ✈️ Invite
-          </button>
-          <button class="chat-btn border-2 min-h-[40px] px-4 bg-green-600 hover:bg-green-700 border-black mb-4 self-end text-white text-sm rounded">
-            💬 Chat
-          </button>
-        </div>
-      </div>
-    `;
-
-    // Bind click events
-    const inviteBtn = item.querySelector('.invite-btn');
-    inviteBtn?.addEventListener('click', async () => {
-      await this.sendGameInviteToFriend(friend);
-    });
-
-    const chatBtn = item.querySelector('.chat-btn');
-    chatBtn?.addEventListener('click', async () => {
-      await this.openChatWithFriend(friend);
-    });
-
-    return item;
+    container.appendChild(this.chatFriendsList.getElement());
   }
+
+  // createChatFriendItem method moved to ChatFriendsList component
 
   private async sendGameInviteToFriend(friend: Friend): Promise<void> {
+    if (!friend?.id || !friend?.username) {
+      console.error('❌ Invalid friend data for game invite');
+      return;
+    }
+
     try {
-      console.log(`✈️ Sending game invite to ${friend.username}`);
-      
-      // Envoyer l'invitation via l'API
       await apiService.sendGameInvite(friend.id);
-      
-      console.log('✅ Game invite sent successfully!');
       alert(`✈️ Game invite sent to ${friend.username}!`);
-      
     } catch (error) {
       console.error('❌ Error sending game invite:', error);
-      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
+      alert(`Failed to send invitation to ${friend.username}`);
     }
   }
 
   private async openChatWithFriend(friend: Friend): Promise<void> {
+    if (!friend?.id) {
+      console.error('❌ Invalid friend data for chat');
+      return;
+    }
+
     try {
-      // Créer ou récupérer la conversation avec cet ami
       const conversation = await chatService.createOrGetConversation(friend.id);
+      if (!conversation) {
+        throw new Error('Failed to create conversation');
+      }
+
       this.currentConversation = conversation;
-      
-      // Charger les messages de cette conversation
       const loadedMessages = await chatService.loadConversationMessages(conversation.id);
-      
-      // Combiner avec les messages stockés localement (pour les messages reçus en temps réel)
       const localMessages = this.allMessages.get(conversation.id) || [];
       
-      // Fusionner et dédupliquer les messages par ID
-      const allMessages = [...loadedMessages];
-      localMessages.forEach(localMsg => {
-        if (!allMessages.find(m => m.id === localMsg.id)) {
-          allMessages.push(localMsg);
-        }
-      });
-      
-      // Trier par date de création
-      allMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      // Merge and deduplicate messages
+      const allMessages = this.mergeMessages(loadedMessages, localMessages);
       
       this.messages = allMessages;
-      this.allMessages.set(conversation.id, allMessages); // Mettre à jour le cache
-      
-      // Passer en vue conversation
+      this.allMessages.set(conversation.id, allMessages);
       this.chatView = 'conversation';
       
-      // Re-render l'onglet chat avec la vue conversation
       await this.renderCurrentTab();
-      
-      console.log(`💬 Opened chat with ${friend.username}`);
     } catch (error) {
       console.error('❌ Error opening chat with friend:', error);
     }
   }
 
-  private async renderChatConversation(container: Element): Promise<void> {
-    // Bouton retour vers la liste des amis
-    const backButton = document.createElement('div');
-    backButton.className = 'bg-gray-700 p-2 border-b border-gray-600';
-    backButton.innerHTML = `
-      <button id="back-to-friends" class="text-white text-sm hover:text-blue-400 flex items-center gap-2">
-        ← Back to Friends
-      </button>
-    `;
-    
-    // Layout du chat (comme avant mais sans sidebar)
-    const chatContainer = document.createElement('div');
-    chatContainer.className = 'flex flex-col w-full h-full';
-    
-    const messagesArea = document.createElement('div');
-    messagesArea.className = 'flex-1 flex flex-col bg-gray-900';
-    messagesArea.innerHTML = `
-      <!-- Header de la conversation -->
-      <div id="chat-header" class="bg-gray-700 p-2 border-b border-gray-600 text-white text-sm">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs">
-            ${this.getOtherUserInConversation()?.username?.charAt(0).toUpperCase() || '?'}
-          </div>
-          <span id="chat-username">${this.getOtherUserInConversation()?.username || 'Unknown'}</span>
-        </div>
-      </div>
-      
-      <!-- Messages -->
-      <div id="messages-container" class="flex-1 overflow-y-auto p-2">
-        <div id="messages-list" class="space-y-2"></div>
-      </div>
-      
-      <!-- Input de message -->
-      <div id="message-input-area" class="bg-gray-700 p-2 border-t border-gray-600">
-        <div class="flex gap-2">
-          <input id="message-input" type="text" placeholder="Type a message..." 
-                 class="flex-1 bg-gray-800 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm">
-            Send
-          </button>
-        </div>
-      </div>
-    `;
-    
-    chatContainer.appendChild(backButton);
-    chatContainer.appendChild(messagesArea);
-    container.appendChild(chatContainer);
-    
-    // Bind events
-    this.bindChatEvents();
-    
-    // Bind back button
-    const backBtn = container.querySelector('#back-to-friends');
-    backBtn?.addEventListener('click', () => {
-      this.chatView = 'friends';
-      this.currentConversation = null;
-      this.renderCurrentTab();
+  private mergeMessages(loadedMessages: Message[], localMessages: Message[]): Message[] {
+    const allMessages = [...loadedMessages];
+    localMessages.forEach(localMsg => {
+      if (!allMessages.find(m => m.id === localMsg.id)) {
+        allMessages.push(localMsg);
+      }
     });
     
-    // Render messages
-    this.renderMessages();
-    this.scrollToBottom();
+    return allMessages.sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }
+
+  private async renderChatConversation(container: Element): Promise<void> {
+    if (!this.currentConversation) return;
+    
+    // Clean up existing chat conversation
+    if (this.chatConversation) {
+      this.chatConversation.destroy();
+    }
+    
+    // Create new ChatConversation component
+    this.chatConversation = new ChatConversation({
+      conversation: this.currentConversation,
+      currentUser: this.currentUser,
+      messages: this.messages, // Pass current messages to component
+      onBack: () => {
+        this.chatView = 'friends';
+        this.currentConversation = null;
+        this.renderCurrentTab();
+      },
+      onMessageSent: (message: Message) => {
+        // Handle message sent callback if needed
+        console.log('Message sent:', message);
+      }
+    });
+    
+    container.appendChild(this.chatConversation.getElement());
   }
   
   private getOtherUserInConversation() {
@@ -749,7 +654,7 @@ export class FriendList {
     this.conversationsUpdatedHandler = (conversations: Conversation[]) => {
       console.log('🟡 FriendList: conversationsUpdatedHandler appelé');
       this.conversations = conversations;
-      this.renderConversationsList();
+      // renderConversationsList removed - handled by ChatConversation component
     };
 
     // S'abonner avec les handlers stockés
@@ -786,15 +691,21 @@ export class FriendList {
       // Si c'est la conversation active, mettre à jour l'affichage
       if (this.currentConversation && this.currentConversation.id === conversation.id) {
         this.messages = conversationMessages;
-        this.renderMessages();
-        this.scrollToBottom();
+        console.log('🔍 DEBUG FriendList: ChatConversation exists?', !!this.chatConversation);
+        console.log('🔍 DEBUG FriendList: ChatView is:', this.chatView);
+        console.log('🔍 DEBUG FriendList: ActiveTab is:', this.activeTab);
+        // Update ChatConversation component if it exists
+        if (this.chatConversation) {
+          console.log('🔍 DEBUG FriendList: Calling chatConversation.updateMessages');
+          this.chatConversation.updateMessages(this.messages);
+        }
         console.log('✅ Message affiché dans la conversation active');
       }
     } else {
       console.log('⚠️ Message déjà présent dans allMessages, ignoré');
     }
     
-    this.renderConversationsList();
+    // renderConversationsList removed - handled by ChatConversation component
   }
   
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
@@ -821,178 +732,40 @@ export class FriendList {
       // Si c'est la conversation active, mettre à jour l'affichage
       if (this.currentConversation && this.currentConversation.id === conversation.id) {
         this.messages = conversationMessages;
-        this.renderMessages();
-        this.scrollToBottom();
+        // Update ChatConversation component if it exists
+        if (this.chatConversation) {
+          console.log('🔍 DEBUG FriendList: Calling chatConversation.updateMessages for sent message');
+          this.chatConversation.updateMessages(this.messages);
+        }
       }
     }
     
-    this.renderConversationsList();
+    // renderConversationsList removed - handled by ChatConversation component
   }
   
-  private async loadConversations(): Promise<void> {
-    try {
-      this.conversations = await chatService.loadConversations();
-      this.renderConversationsList();
-    } catch (error) {
-      console.error('❌ Failed to load conversations:', error);
-    }
-  }
+  // loadConversations method no longer needed with simplified chat flow
   
-  private renderConversationsList(): void {
-    const listContainer = this.element.querySelector('#conversations-list');
-    if (!listContainer) return;
-    
-    if (this.conversations.length === 0) {
-      listContainer.innerHTML = `
-        <div class="text-center text-gray-400 p-4 text-xs">
-          No conversations yet<br>
-          Start chatting with your friends!
-        </div>
-      `;
-      return;
-    }
-    
-    listContainer.innerHTML = this.conversations.map(conversation => {
-      const otherUser = chatService.getOtherUserInConversation(conversation, this.currentUser?.id);
-      const isActive = this.currentConversation?.id === conversation.id;
-      
-      return `
-        <div class="conversation-item ${isActive ? 'bg-blue-600' : 'hover:bg-gray-700'} p-2 cursor-pointer border-b border-gray-600" 
-             data-conversation-id="${conversation.id}">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs text-white">
-              ${otherUser.username.charAt(0).toUpperCase()}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-white text-xs font-medium truncate">${otherUser.username}</div>
-              <div class="text-gray-300 text-xs truncate">
-                ${conversation.last_message || 'No messages yet'}
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-    
-    // Bind click events
-    listContainer.querySelectorAll('.conversation-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const conversationId = parseInt(item.getAttribute('data-conversation-id') || '0');
-        this.selectConversation(conversationId);
-      });
-    });
-  }
+  // renderConversationsList method no longer needed with ChatConversation component
   
-  private async selectConversation(conversationId: number): Promise<void> {
-    const conversation = this.conversations.find(c => c.id === conversationId);
-    if (!conversation) return;
-    
-    try {
-      this.currentConversation = conversation;
-      this.messages = await chatService.loadConversationMessages(conversationId);
-      
-      this.renderChatHeader();
-      this.renderMessages();
-      this.showChatArea();
-      this.renderConversationsList(); // Re-render pour highlight
-      this.scrollToBottom();
-    } catch (error) {
-      console.error('❌ Error selecting conversation:', error);
-    }
-  }
+  // selectConversation method no longer needed with ChatConversation component
   
-  private renderChatHeader(): void {
-    if (!this.currentConversation) return;
-    
-    const header = this.element.querySelector('#chat-header');
-    const username = this.element.querySelector('#chat-username');
-    
-    const otherUser = chatService.getOtherUserInConversation(this.currentConversation, this.currentUser?.id);
-    
-    if (username) username.textContent = otherUser.username;
-    header?.classList.remove('hidden');
-  }
+  // renderChatHeader method moved to ChatConversation component
   
-  private renderMessages(): void {
-    const messagesList = this.element.querySelector('#messages-list');
-    if (!messagesList) return;
-    
-    messagesList.innerHTML = this.messages.map(message => {
-      const isOwn = message.sender_id === this.currentUser?.id;
-      
-      return `
-        <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
-          <div class="max-w-[70%] ${isOwn ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-3 py-1">
-            <div class="text-xs">${message.content}</div>
-            <div class="text-xs text-gray-300 mt-1">
-              ${this.formatMessageTime(message.created_at)}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+  // renderMessages method moved to ChatConversation component
   
-  private showChatArea(): void {
-    this.element.querySelector('#no-conversation')?.classList.add('hidden');
-    this.element.querySelector('#messages-list')?.classList.remove('hidden');
-    this.element.querySelector('#message-input-area')?.classList.remove('hidden');
-  }
+  // showChatArea method moved to ChatConversation component
   
-  private bindChatEvents(): void {
-    // Send message
-    const messageInput = this.element.querySelector('#message-input') as HTMLInputElement;
-    const sendBtn = this.element.querySelector('#send-btn');
-    
-    const sendMessage = () => {
-      const content = messageInput?.value.trim();
-      if (!content || !this.currentConversation) return;
-      
-      this.sendMessage(content);
-      messageInput.value = '';
-    };
-    
-    sendBtn?.addEventListener('click', sendMessage);
-    messageInput?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  }
+  // bindChatEvents method moved to ChatConversation component
   
-  private async sendMessage(content: string): Promise<void> {
-    if (!this.currentConversation) return;
-    
-    try {
-      const otherUser = chatService.getOtherUserInConversation(this.currentConversation, this.currentUser?.id);
-      
-      // Pas d'affichage optimiste - attendre la confirmation serveur
-      // Les messages seront affichés via handleMessageSent quand le serveur confirme
-      
-      // Envoyer via WebSocket
-      await chatService.sendMessage(otherUser.id, content);
-      
-    } catch (error) {
-      console.error('❌ Error sending message:', error);
-    }
-  }
+  // sendMessage method moved to ChatConversation component
   
-  private scrollToBottom(): void {
-    const messagesContainer = this.element.querySelector('#messages-container');
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-  }
+  // scrollToBottom method moved to ChatConversation component
   
-  private formatMessageTime(timestamp: string): string {
-    return chatService.formatMessageTime(timestamp);
-  }
+  // formatMessageTime method moved to ChatConversation component
   
   // ============ End Chat Methods ============
 
   private refreshCurrentTab(): void {
-    console.log(`👥 FriendList: Refreshing ${this.activeTab} tab`);
     this.renderCurrentTab();
   }
 
@@ -1000,7 +773,6 @@ export class FriendList {
     this.visible = false;
     this.element.remove();
     this.onClose();
-    console.log('👥 FriendList: Closed (React-like portal pattern)');
   }
 
   public setVisible(visible: boolean): void {
@@ -1020,40 +792,52 @@ export class FriendList {
   }
 
   destroy(): void {
-    console.log('🧹 FriendList: destroy() appelé');
-    
     // Clean up all component instances
     this.destroyFriendItems();
-    
-    if (this.addFriendInstance) {
-      this.addFriendInstance.destroy();
-    }
-    if (this.blockListInstance) {
-      this.blockListInstance.destroy();
-    }
-    if (this.requestsInstance) {
-      this.requestsInstance.destroy();
-    }
-    
-    // Clean up chat service events
-    console.log('🧹 FriendList: Suppression des event listeners...');
-    if (this.messageReceivedHandler) {
-      chatService.off('message_received', this.messageReceivedHandler);
-      console.log('✅ FriendList: messageReceivedHandler supprimé');
-    }
-    if (this.messageSentHandler) {
-      chatService.off('message_sent', this.messageSentHandler);
-      console.log('✅ FriendList: messageSentHandler supprimé');
-    }
-    if (this.conversationsUpdatedHandler) {
-      chatService.off('conversations_updated', this.conversationsUpdatedHandler);
-      console.log('✅ FriendList: conversationsUpdatedHandler supprimé');
-    }
+    this.destroyComponentInstances();
+    this.cleanupChatServiceEvents();
+    this.cleanupNavigationListeners();
     
     // Reset chat initialization flag
     this.chatInitialized = false;
-    
-    // Clean up navigation listeners
+
+    if (this.element.parentNode) {
+      this.element.remove();
+    }
+  }
+
+  private destroyComponentInstances(): void {
+    const components = [
+      this.addFriendInstance,
+      this.blockListInstance, 
+      this.requestsInstance,
+      this.tabManager,
+      this.chatConversation,
+      this.chatFriendsList
+    ];
+
+    components.forEach(component => {
+      if (component) {
+        component.destroy();
+      }
+    });
+  }
+
+  private cleanupChatServiceEvents(): void {
+    const handlers = [
+      { event: 'message_received', handler: this.messageReceivedHandler },
+      { event: 'message_sent', handler: this.messageSentHandler },
+      { event: 'conversations_updated', handler: this.conversationsUpdatedHandler }
+    ];
+
+    handlers.forEach(({ event, handler }) => {
+      if (handler) {
+        chatService.off(event, handler);
+      }
+    });
+  }
+
+  private cleanupNavigationListeners(): void {
     if (this.originalPushState) {
       history.pushState = this.originalPushState;
     }
@@ -1063,11 +847,5 @@ export class FriendList {
     if (this.navigationCleanup) {
       window.removeEventListener('popstate', this.navigationCleanup);
     }
-
-    if (this.element.parentNode) {
-      this.element.remove();
-    }
-    
-    console.log('👥 FriendList: Destroyed with all components (React-like)');
   }
 }
