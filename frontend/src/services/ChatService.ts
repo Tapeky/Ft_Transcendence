@@ -288,12 +288,16 @@ export class ChatService {
     
     // Ajouter le message
     const messages = this.state.messages.get(conversation.id) || [];
-    messages.push(message);
-    this.state.messages.set(conversation.id, messages);
-    
-    // Émettre les événements
-    this.emit('message_received', { message, conversation });
-    this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+    const exists = messages.find(m => m.id === message.id);
+
+    if (!exists) {
+      messages.push(message);
+      this.state.messages.set(conversation.id, messages);
+      
+      // Émettre les événements
+      this.emit('message_received', { message, conversation });
+      this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+    }
   }
 
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
@@ -305,14 +309,15 @@ export class ChatService {
     // Ajouter le message (si pas déjà là)
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
+    
     if (!exists) {
       messages.push(message);
       this.state.messages.set(conversation.id, messages);
+      
+      // Émettre les événements
+      this.emit('message_sent', { message, conversation });
+      this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
-    
-    // Émettre les événements
-    this.emit('message_sent', { message, conversation });
-    this.emit('conversations_updated', Array.from(this.state.conversations.values()));
   }
 
   // ============ Game Message Handlers ============
@@ -515,6 +520,7 @@ export class ChatService {
     const listeners = this.listeners.get(event) || [];
     listeners.push(listener);
     this.listeners.set(event, listeners);
+    console.log(`➕ ChatService: Listener ajouté pour '${event}' - Total: ${listeners.length}`);
   }
 
   off(event: string, listener: ChatEventListener): void {
@@ -523,11 +529,15 @@ export class ChatService {
     if (index > -1) {
       listeners.splice(index, 1);
       this.listeners.set(event, listeners);
+      console.log(`➖ ChatService: Listener supprimé pour '${event}' - Total restant: ${listeners.length}`);
+    } else {
+      console.warn(`⚠️ ChatService: Impossible de supprimer listener pour '${event}' - listener non trouvé`);
     }
   }
 
   private emit(event: string, data: any): void {
     const listeners = this.listeners.get(event) || [];
+    console.log(`📢 ChatService: Émission '${event}' vers ${listeners.length} listener(s)`);
     listeners.forEach(listener => {
       try {
         listener(data);

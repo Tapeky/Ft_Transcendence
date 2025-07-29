@@ -25,8 +25,15 @@ export class FriendList {
   private conversations: Conversation[] = [];
   private currentConversation: Conversation | null = null;
   private messages: Message[] = [];
+  private allMessages: Map<number, Message[]> = new Map(); // conversationId -> messages[]
   private currentUser: any = null;
   private chatView: 'friends' | 'conversation' = 'friends'; // État de la vue chat
+  
+  // Event handlers pour cleanup
+  private messageReceivedHandler?: (data: { message: Message; conversation: Conversation }) => void;
+  private messageSentHandler?: (data: { message: Message; conversation: Conversation }) => void;
+  private conversationsUpdatedHandler?: (conversations: Conversation[]) => void;
+  private chatInitialized: boolean = false;
   
   // Navigation cleanup
   private originalPushState?: typeof history.pushState;
@@ -600,7 +607,24 @@ export class FriendList {
       this.currentConversation = conversation;
       
       // Charger les messages de cette conversation
-      this.messages = await chatService.loadConversationMessages(conversation.id);
+      const loadedMessages = await chatService.loadConversationMessages(conversation.id);
+      
+      // Combiner avec les messages stockés localement (pour les messages reçus en temps réel)
+      const localMessages = this.allMessages.get(conversation.id) || [];
+      
+      // Fusionner et dédupliquer les messages par ID
+      const allMessages = [...loadedMessages];
+      localMessages.forEach(localMsg => {
+        if (!allMessages.find(m => m.id === localMsg.id)) {
+          allMessages.push(localMsg);
+        }
+      });
+      
+      // Trier par date de création
+      allMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      
+      this.messages = allMessages;
+      this.allMessages.set(conversation.id, allMessages); // Mettre à jour le cache
       
       // Passer en vue conversation
       this.chatView = 'conversation';
@@ -686,9 +710,16 @@ export class FriendList {
   // ============ Chat Methods ============
   
   private async initializeChat(): Promise<void> {
+    // Éviter d'initialiser plusieurs fois
+    if (this.chatInitialized) {
+      console.log('⚠️ Chat déjà initialisé, on ignore');
+      return;
+    }
+    
     try {
       await chatService.connect();
       this.setupChatEvents();
+      this.chatInitialized = true;
       console.log('💬 Chat initialized in FriendList');
     } catch (error) {
       console.error('❌ Failed to initialize chat:', error);
@@ -696,39 +727,71 @@ export class FriendList {
   }
   
   private setupChatEvents(): void {
-    // Message reçu
-    chatService.on('message_received', (data: { message: Message; conversation: Conversation }) => {
+    console.log('🔧 FriendList: setupChatEvents() appelé');
+    
+    // Vérifier si les handlers sont déjà définis pour éviter les doublons
+    if (this.messageReceivedHandler) {
+      console.log('⚠️ FriendList: Event listeners déjà configurés, on ignore');
+      return;
+    }
+    
+    // Stocker les handlers pour pouvoir les supprimer plus tard
+    this.messageReceivedHandler = (data: { message: Message; conversation: Conversation }) => {
+      console.log('🔵 FriendList: messageReceivedHandler appelé pour message ID:', data.message.id);
       this.handleMessageReceived(data);
-    });
+    };
     
-    // Message envoyé confirmé
-    chatService.on('message_sent', (data: { message: Message; conversation: Conversation }) => {
+    this.messageSentHandler = (data: { message: Message; conversation: Conversation }) => {
+      console.log('🟢 FriendList: messageSentHandler appelé pour message ID:', data.message.id);
       this.handleMessageSent(data);
-    });
+    };
     
-    // Conversations mises à jour
-    chatService.on('conversations_updated', (conversations: Conversation[]) => {
+    this.conversationsUpdatedHandler = (conversations: Conversation[]) => {
+      console.log('🟡 FriendList: conversationsUpdatedHandler appelé');
       this.conversations = conversations;
       this.renderConversationsList();
-    });
+    };
+
+    // S'abonner avec les handlers stockés
+    chatService.on('message_received', this.messageReceivedHandler);
+    chatService.on('message_sent', this.messageSentHandler);
+    chatService.on('conversations_updated', this.conversationsUpdatedHandler);
+    
+    console.log('✅ FriendList: Event listeners attachés');
   }
   
   private handleMessageReceived(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
     
+    console.log('🔍 DEBUG: handleMessageReceived appelé pour message ID:', message.id);
+
     // Mettre à jour la conversation dans la liste
     const index = this.conversations.findIndex(c => c.id === conversation.id);
+    
     if (index >= 0) {
       this.conversations[index] = conversation;
     } else {
       this.conversations.unshift(conversation);
     }
     
-    // Si c'est la conversation active, ajouter le message
-    if (this.currentConversation && this.currentConversation.id === conversation.id) {
-      this.messages.push(message);
-      this.renderMessages();
-      this.scrollToBottom();
+    // Stocker le message dans la Map globale des messages
+    const conversationMessages = this.allMessages.get(conversation.id) || [];
+    const existingMessage = conversationMessages.find(m => m.id === message.id);
+    
+    if (!existingMessage) {
+      conversationMessages.push(message);
+      this.allMessages.set(conversation.id, conversationMessages);
+      console.log('✅ Message stocké dans allMessages pour conversation', conversation.id);
+      
+      // Si c'est la conversation active, mettre à jour l'affichage
+      if (this.currentConversation && this.currentConversation.id === conversation.id) {
+        this.messages = conversationMessages;
+        this.renderMessages();
+        this.scrollToBottom();
+        console.log('✅ Message affiché dans la conversation active');
+      }
+    } else {
+      console.log('⚠️ Message déjà présent dans allMessages, ignoré');
     }
     
     this.renderConversationsList();
@@ -737,13 +800,33 @@ export class FriendList {
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
     
-    // Le message est déjà affiché (envoyé en optimistic)
-    // Juste mettre à jour la conversation
+    console.log('🔍 DEBUG: handleMessageSent appelé pour message ID:', message.id);
+
+    // Mettre à jour la conversation dans la liste
     const index = this.conversations.findIndex(c => c.id === conversation.id);
     if (index >= 0) {
       this.conversations[index] = conversation;
-      this.renderConversationsList();
+    } else {
+      this.conversations.unshift(conversation);
     }
+    
+    // Déduplication simple pour les messages envoyés
+    const conversationMessages = this.allMessages.get(conversation.id) || [];
+    const existingMessage = conversationMessages.find(m => m.id === message.id);
+    
+    if (!existingMessage) {
+      conversationMessages.push(message);
+      this.allMessages.set(conversation.id, conversationMessages);
+      
+      // Si c'est la conversation active, mettre à jour l'affichage
+      if (this.currentConversation && this.currentConversation.id === conversation.id) {
+        this.messages = conversationMessages;
+        this.renderMessages();
+        this.scrollToBottom();
+      }
+    }
+    
+    this.renderConversationsList();
   }
   
   private async loadConversations(): Promise<void> {
@@ -884,22 +967,8 @@ export class FriendList {
     try {
       const otherUser = chatService.getOtherUserInConversation(this.currentConversation, this.currentUser?.id);
       
-      // Affichage optimiste
-      const optimisticMessage: Message = {
-        id: Date.now(),
-        conversation_id: this.currentConversation.id,
-        sender_id: this.currentUser?.id || 0,
-        content: content,
-        type: 'text',
-        created_at: new Date().toISOString(),
-        username: this.currentUser?.username || 'You',
-        avatar_url: this.currentUser?.avatar_url,
-        display_name: this.currentUser?.display_name
-      };
-      
-      this.messages.push(optimisticMessage);
-      this.renderMessages();
-      this.scrollToBottom();
+      // Pas d'affichage optimiste - attendre la confirmation serveur
+      // Les messages seront affichés via handleMessageSent quand le serveur confirme
       
       // Envoyer via WebSocket
       await chatService.sendMessage(otherUser.id, content);
@@ -951,6 +1020,8 @@ export class FriendList {
   }
 
   destroy(): void {
+    console.log('🧹 FriendList: destroy() appelé');
+    
     // Clean up all component instances
     this.destroyFriendItems();
     
@@ -965,9 +1036,22 @@ export class FriendList {
     }
     
     // Clean up chat service events
-    chatService.off('message_received', () => {});
-    chatService.off('message_sent', () => {});
-    chatService.off('conversations_updated', () => {});
+    console.log('🧹 FriendList: Suppression des event listeners...');
+    if (this.messageReceivedHandler) {
+      chatService.off('message_received', this.messageReceivedHandler);
+      console.log('✅ FriendList: messageReceivedHandler supprimé');
+    }
+    if (this.messageSentHandler) {
+      chatService.off('message_sent', this.messageSentHandler);
+      console.log('✅ FriendList: messageSentHandler supprimé');
+    }
+    if (this.conversationsUpdatedHandler) {
+      chatService.off('conversations_updated', this.conversationsUpdatedHandler);
+      console.log('✅ FriendList: conversationsUpdatedHandler supprimé');
+    }
+    
+    // Reset chat initialization flag
+    this.chatInitialized = false;
     
     // Clean up navigation listeners
     if (this.originalPushState) {
