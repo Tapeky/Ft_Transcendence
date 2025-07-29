@@ -54,20 +54,28 @@ void cdeinit()
 
 void chandle_key_event(KeySym key, int on_press)
 {
+	console_component *cur = ccurrent_component();
+	if (!cur)
+		return;
 	if (on_press)
 	{
-		console_component *cur = ccurrent_component();
-		if (key < 256 && isprint(key) && cur && cur->type == TEXT_AREA)
+		if (key < 256 && isprint(key) && cur->type == TEXT_AREA)
 			text_area_addc(cur, (unsigned char)key);
-		else if (key == XK_BackSpace && cur && cur->type == TEXT_AREA)
+		else if (key == XK_BackSpace && cur->type == TEXT_AREA)
 			text_area_back(cur);
-			
-		else if (key == XK_Down)
+		else if (key == XK_Down && (cur->type != BUTTON || !cur->u.c_button.held))
 			cnext_component();
-		else if (key == XK_Up)
+		else if (key == XK_Up && (cur->type != BUTTON || !cur->u.c_button.held))
 			cprev_component();
 
 		crefresh(0);
+	}
+	if (key == XK_Return && cur->type == BUTTON)
+	{
+		component_button *button = &cur->u.c_button;
+		button->held = on_press;
+		if (button->func)
+			button->func(on_press);
 	}
 }
 
@@ -93,6 +101,9 @@ void crefresh(int force_redraw)
 					break;
 				case BOX:
 					box_draw(c);
+					break;
+				case BUTTON:
+					button_draw(c);
 					break;
 				default:
 					fprintf(stderr, "Invalid component type %d\n", c->type);
@@ -188,4 +199,21 @@ int add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden
 	ccomponent_add(box);
 
 	return (1);
+}
+
+void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func)
+{
+	assert(text);
+
+	console_component button, box;
+	button_init(&button, x + 1, y + 1, text, func);
+
+	box_init(&box,
+		x, y, strlen(text) + 2, 3,
+		'-', '-', '|', '|',
+		'+', '+', '+', '+'
+	);
+
+	ccomponent_add(button);
+	ccomponent_add(box);
 }

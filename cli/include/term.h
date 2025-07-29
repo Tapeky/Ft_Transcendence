@@ -23,6 +23,7 @@ typedef enum
 	LABEL = 1,
 	TEXT_AREA,
 	BOX,
+	BUTTON,
 	COMPONENT_TYPE_MAX
 }	component_type;
 
@@ -57,7 +58,17 @@ typedef struct
 	char	bottom_right;
 }	component_box;
 
+typedef void (button_action_func)(int pressed);
+
+// basically just a label that you can select and press
 typedef struct
+{
+	char				*str;
+	button_action_func	*func;
+	int					held;
+}	component_button;
+
+typedef struct s_console_component
 {
 	component_type	type;
 	u16				x;
@@ -68,6 +79,7 @@ typedef struct
 		component_label 	c_label;
 		component_text_area	c_text_area;
 		component_box		c_box;
+		component_button	c_button;
 	}	u;
 }	console_component;
 
@@ -92,6 +104,9 @@ void	box_init(console_component *c,
 
 void	box_draw(console_component *c);
 
+void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func);
+void	button_draw(console_component *c);
+
 extern u16 c_y;
 extern u16 c_x;
 
@@ -115,7 +130,7 @@ void cprev_component();
 
 static inline int is_selectable(console_component *component)
 {
-	return (component->type == TEXT_AREA);
+	return (component->type == TEXT_AREA || component->type == BUTTON);
 }
 
 static inline console_component *ccurrent_component()
@@ -127,6 +142,7 @@ static inline console_component *ccurrent_component()
 
 void cursor_goto(u16 x, u16 y);
 
-int add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
+int		add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
+void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func);
 
 #endif
