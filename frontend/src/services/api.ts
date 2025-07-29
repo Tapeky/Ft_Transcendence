@@ -284,12 +284,11 @@ class ApiService {
 	}
 
 	private getWebSocketUrl(): string {
-		const isHttps = window.location.protocol === 'https:';
-		const protocol = isHttps ? 'wss:' : 'ws:';
-		const host = window.location.hostname;
-		const port = process.env.NODE_ENV === 'production' ? '' : ':8000';
+		// Use the same base URL as the API, but change http/https to ws/wss
+		const apiUrl = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
+		const wsUrl = apiUrl.replace(/^https?:/, window.location.protocol === 'https:' ? 'wss:' : 'ws:');
 		
-		return `${protocol}//${host}${port}/ws`;
+		return `${wsUrl}/ws`;
 	}
 	
 	connectWebSocket(): WebSocket {

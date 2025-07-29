@@ -169,7 +169,7 @@ export class UserSwitcher {
         email,
         username,
         password,
-        confirmPassword: password
+        data_consent: true
       });
       
       this.showStatus('User created! Logging in...', 'loading');

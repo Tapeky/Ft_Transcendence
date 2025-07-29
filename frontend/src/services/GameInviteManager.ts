@@ -1,4 +1,5 @@
 import { chatService } from './ChatService';
+import { apiService } from './api';
 import { GameInviteNotification, GameInvite } from '../components/ui/GameInviteNotification';
 
 export class GameInviteManager {
@@ -30,6 +31,20 @@ export class GameInviteManager {
       responderUsername: string;
     }) => {
       this.handleInviteResponse(data);
+    });
+
+    // Écouter les parties qui commencent
+    chatService.on('game_started', (data: { 
+      gameId: number; 
+      opponent: { id: number; username: string; avatar: string }; 
+      playerSide: 'left' | 'right' 
+    }) => {
+      this.handleGameStarted(data);
+    });
+
+    // Écouter les erreurs de navigation vers le jeu
+    chatService.on('game_navigation_error', (data: { error: any; gameId: number }) => {
+      this.handleGameNavigationError(data);
     });
 
     console.log('🎮 GameInviteManager: Chat service listeners setup');
@@ -123,10 +138,9 @@ export class GameInviteManager {
       notification.remove();
     }, 5000);
 
-    // Si accepté, on pourrait rediriger vers le jeu
+    // Si accepté, le jeu va démarrer automatiquement via le backend
     if (isAccepted) {
-      // TODO: Rediriger vers le jeu ou créer une partie
-      console.log('🎮 GameInviteManager: TODO - Start game with', data.responderUsername);
+      console.log('🎮 GameInviteManager: Game will start automatically with', data.responderUsername);
     }
   }
 
@@ -169,6 +183,102 @@ export class GameInviteManager {
     } catch (error) {
       console.error('🎮 GameInviteManager: Error loading pending invites:', error);
     }
+  }
+
+  private handleGameStarted(data: { 
+    gameId: number; 
+    opponent: { id: number; username: string; avatar: string }; 
+    playerSide: 'left' | 'right' 
+  }): void {
+    console.log(`🎮 GameInviteManager: Game ${data.gameId} started with ${data.opponent.username}`);
+    
+    // Clear all active invitation notifications since the game is starting
+    this.clearAllNotifications();
+    
+    // Show a brief "Game Starting" notification
+    this.showGameStartingNotification(data);
+  }
+
+  private handleGameNavigationError(data: { error: any; gameId: number }): void {
+    console.error(`🎮 GameInviteManager: Failed to navigate to game ${data.gameId}:`, data.error);
+    
+    // Show error notification
+    this.showErrorNotification(`Failed to join game ${data.gameId}. Please try again.`);
+  }
+
+  private showGameStartingNotification(data: { 
+    gameId: number; 
+    opponent: { id: number; username: string; avatar: string }; 
+    playerSide: 'left' | 'right' 
+  }): void {
+    const notification = document.createElement('div');
+    notification.className = `
+      fixed top-4 right-4 z-[80] 
+      bg-green-800 border-2 border-white text-white 
+      p-4 rounded-lg shadow-lg 
+      w-[350px] max-w-[90vw]
+      animate-fade-in
+    `;
+
+    notification.innerHTML = `
+      <div class="flex justify-between items-start mb-3">
+        <h3 class="text-[1.5rem] font-bold">🚀 Game Starting!</h3>
+        <button class="close-btn text-[1.2rem] hover:scale-110 transition">✕</button>
+      </div>
+      <p class="text-[1.2rem] mb-2">vs ${data.opponent.username}</p>
+      <p class="text-[0.9rem] opacity-80">You're playing as ${data.playerSide} paddle</p>
+      <div class="mt-3 flex items-center">
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+        <span class="text-[0.9rem]">Loading game...</span>
+      </div>
+    `;
+
+    // Bouton fermer
+    const closeBtn = notification.querySelector('.close-btn');
+    closeBtn?.addEventListener('click', () => {
+      notification.remove();
+    });
+
+    // Ajouter au DOM
+    document.body.appendChild(notification);
+
+    // Auto-close après 3 secondes
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  private showErrorNotification(message: string): void {
+    const notification = document.createElement('div');
+    notification.className = `
+      fixed top-4 right-4 z-[80] 
+      bg-red-800 border-2 border-white text-white 
+      p-4 rounded-lg shadow-lg 
+      w-[350px] max-w-[90vw]
+      animate-fade-in
+    `;
+
+    notification.innerHTML = `
+      <div class="flex justify-between items-start mb-3">
+        <h3 class="text-[1.5rem] font-bold">❌ Error</h3>
+        <button class="close-btn text-[1.2rem] hover:scale-110 transition">✕</button>
+      </div>
+      <p class="text-[1.2rem]">${message}</p>
+    `;
+
+    // Bouton fermer
+    const closeBtn = notification.querySelector('.close-btn');
+    closeBtn?.addEventListener('click', () => {
+      notification.remove();
+    });
+
+    // Ajouter au DOM
+    document.body.appendChild(notification);
+
+    // Auto-close après 7 secondes
+    setTimeout(() => {
+      notification.remove();
+    }, 7000);
   }
 
   public clearAllNotifications(): void {
