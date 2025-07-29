@@ -200,3 +200,18 @@ void	box_draw(console_component *c)
 		}
 	}
 }
+
+void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func)
+{
+	BASE_INIT(BUTTON, c, x, y);
+	component_button *self = &c->u.c_button;
+	self->str = text;
+	self->func = func;
+	self->held = 0;
+}
+
+void	button_draw(console_component *c)
+{
+	// dirty ? yes. works ? yes.
+	label_draw(c);
+}

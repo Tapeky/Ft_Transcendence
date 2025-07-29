@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include "ctx.h"
 #include "term.h"
 
@@ -9,6 +8,11 @@ int on_key_event(KeySym key, int on_press)
 {
 	chandle_key_event(key, on_press);
 	return (key == XK_Escape);
+}
+
+void handle_button(int press)
+{
+	dprintf(2, "BUTTON PRESS: %d\n", press);
 }
 
 int main()
@@ -30,6 +34,7 @@ int main()
 
 	add_pretty_textarea(3, 3, 32, "...", 0);
 	add_pretty_textarea(3, 7, 32, "...", 1);
+	add_pretty_button(3, 15, " LOGIN ", handle_button);
 
 	ccomponent_add(label1);
 	ccomponent_add(label2);
