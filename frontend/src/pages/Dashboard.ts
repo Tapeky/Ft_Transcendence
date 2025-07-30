@@ -383,8 +383,10 @@ export class Dashboard {
 	const left = this.container.querySelector('#graph-left');
 	const right = this.container.querySelector('#graph-right');
 
-	if (left) left.innerHTML = this.generateBarChart(scores, 'Last scores');
-	if (right) right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
+	if (left)
+		left.innerHTML = this.generateBarChart(scores, 'Last scores');
+	if (right)
+		right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
 	}
 
 	private generateBarChart(data: number[], title: string): string {
@@ -413,12 +415,12 @@ export class Dashboard {
 
 
 
-destroy() {
-	if (this.header) {
-	this.header.destroy();
+	destroy() {
+		if (this.header) {
+		this.header.destroy();
+		}
+		if (this.backBtn) {
+		this.backBtn.destroy();
+		}
 	}
-	if (this.backBtn) {
-	this.backBtn.destroy();
-	}
-}
 }

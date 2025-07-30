@@ -31,7 +31,7 @@ export class FriendOptions {
   private createElement(): HTMLElement {
     // EXACTEMENT comme React - Overlay fullscreen avec modal 500x600
     const container = document.createElement('div');
-    container.className = `${this.props.isOpen ? 'flex' : 'hidden'} fixed top-0 left-0 z-[60] bg-white bg-opacity-20 w-screen h-screen justify-center items-center text-white`;
+    container.className = `${this.props.isOpen ? 'flex' : 'hidden'} fixed top-0 left-0 z-[60] bg-white bg-opacity-20 w-screen h-screen justify-center items-center text-white font-iceland`;
 
     // Modal container - DIMENSIONS EXACTES React
     const modalContent = document.createElement('div');
