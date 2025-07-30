@@ -50,6 +50,11 @@ export interface Input {
   down: boolean;
 }
 
+export interface TwoPlayerInput {
+  player1: Input;
+  player2: Input;
+}
+
 export class GameInput implements Input {
   public up: boolean = false;
   public down: boolean = false;
@@ -62,6 +67,21 @@ export class GameInput implements Input {
   public copy(input: Input): void {
     this.up = input.up;
     this.down = input.down;
+  }
+}
+
+export class TwoPlayerGameInput implements TwoPlayerInput {
+  public player1: GameInput = new GameInput();
+  public player2: GameInput = new GameInput();
+
+  public reset(): void {
+    this.player1.reset();
+    this.player2.reset();
+  }
+
+  public copy(input: TwoPlayerInput): void {
+    this.player1.copy(input.player1);
+    this.player2.copy(input.player2);
   }
 }
 
@@ -91,6 +111,9 @@ export interface GameState {
   rightPaddle: PaddleData;
   ball: BallData;
   state: PongState;
+  leftScore?: number;
+  rightScore?: number;
+  lastUpdate?: number;
   opponentInput?: Input;
 }
 
@@ -106,12 +129,18 @@ export const GAME_CONSTANTS = {
   paddle: {
     width: 8,
     height: 30,
-    speed: 20 // units / sec
+    speed: 300 // pixels / sec (consistent with LocalGameEngine)
   },
   ball: {
     radius: 5,
-    speed: 50, // units / sec
-    maxBounceAngle: 75
+    speed: 200, // pixels / sec (consistent with LocalGameEngine)
+    maxBounceAngle: 45, // degrees (more reasonable)
+    speedIncrementPerHit: 10,
+    maxSpeed: 400
+  },
+  game: {
+    winningScore: 5,
+    maxGameDurationMinutes: 10
   }
 } as const;
 
@@ -137,10 +166,13 @@ export interface GameSession {
   player1: GamePlayer;
   player2: GamePlayer;
   state: PongState;
+  leftScore?: number;
+  rightScore?: number;
   created_at: string;
   started_at?: string;
   ended_at?: string;
   duration_seconds?: number;
+  winner?: 'left' | 'right' | 'draw';
 }
 
 // ============================================================================

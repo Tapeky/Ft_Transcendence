@@ -635,7 +635,7 @@ class ApiService {
 	}
 
 	async getReceivedGameInvites(): Promise<any[]> {
-		const response = await this.request<{ invites: any[] }>('/api/game-invites/received');
+		const response = await this.request<{ invites: any[] }>('/api/game-invites/pending');
 		return response.data?.invites || [];
 	}
 

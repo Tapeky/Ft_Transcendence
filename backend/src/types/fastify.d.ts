@@ -14,3 +14,9 @@ declare module '@fastify/jwt' {
     };
   }
 }
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    websocketManager: any;
+  }
+}

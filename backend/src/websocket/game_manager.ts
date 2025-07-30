@@ -1,4 +1,4 @@
-import { Pong } from "../game/Pong";
+import { Pong, PongState } from "../game/Pong";
 import { Input } from "../game/Input";
 
 export class PongPlayer {
@@ -49,7 +49,6 @@ export class PongGame {
     else
       throw Error(`unknown player id ${playerId} in game ${this.id}`);
 
-    console.log(opponentInput)
     let repr = this.pong.repr();
     repr["opponentInput"] = opponentInput;
     
@@ -103,15 +102,52 @@ export class GameManager {
         game.update(deltaTime);
         // TODO: handle errors lmao
         game.leftPlayer.socket.send(JSON.stringify({
-          type: 'game_update',
+          type: 'game_state',
           data: game.repr(game.leftPlayer.id)
         }));
         game.rightPlayer.socket.send(JSON.stringify({
-          type: 'game_update',
+          type: 'game_state',
           data: game.repr(game.rightPlayer.id)
         }));
-        if (game.pong.state) {
+        if (game.pong.state !== PongState.Running) {
           console.log(`game ${game.id} finished with state ${game.pong.state} !`);
+          
+          // Determine winner and send game_end message to both players
+          let winner = 'Unknown';
+          if (game.pong.state === PongState.LeftWins) {
+            winner = 'Left Player';
+          } else if (game.pong.state === PongState.RightWins) {
+            winner = 'Right Player';
+          } else if (game.pong.state === PongState.Aborted) {
+            winner = 'Game Aborted';
+          }
+          
+          const gameEndMessage = {
+            type: 'game_end',
+            data: {
+              winner: winner,
+              finalScore: {
+                left: game.pong.leftScore,
+                right: game.pong.rightScore
+              },
+              gameId: game.id,
+              state: game.pong.state
+            }
+          };
+          
+          // Send game_end message to both players
+          try {
+            game.leftPlayer.socket.send(JSON.stringify(gameEndMessage));
+          } catch (error) {
+            console.error(`Failed to send game_end to left player:`, error);
+          }
+          
+          try {
+            game.rightPlayer.socket.send(JSON.stringify(gameEndMessage));
+          } catch (error) {
+            console.error(`Failed to send game_end to right player:`, error);
+          }
+          
           this._games.delete(game.id);
         }
       }

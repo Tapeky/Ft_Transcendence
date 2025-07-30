@@ -74,32 +74,56 @@ export class Router {
       return container;
     });
     
-    // Dynamic route for game with game ID pattern: /game/123
+    // Route pour game mode selector
     this.routes.set('/game', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
-      const gameId = pathSegments[2]; // /game/123 -> segments[2] = "123"
+      const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
       
       console.log('🎮 Router Game - Debug:', {
         originalPath: path,
         currentPath: currentPath,
         pathSegments,
-        gameId,
-        gameIdExists: !!gameId,
-        matchesPattern: gameId?.match(/^\d+$/)
+        gameMode,
+        gameModeExists: !!gameMode
       });
       
-      if (!gameId || !gameId.match(/^\d+$/)) {
-        console.log('❌ Router: Invalid gameId, loading 404');
-        const { NotFoundPage } = await import('../pages/NotFound');
-        return new NotFoundPage().getElement();
+      // Si pas de mode spécifié, afficher le sélecteur de mode
+      if (!gameMode) {
+        const { PongModeSelector } = await import('../pages/PongModeSelector');
+        const container = document.createElement('div');
+        new PongModeSelector(container);
+        return container;
       }
       
-      // Success;
-      const { Game } = await import('../pages/Game');
-      const container = document.createElement('div');
-      new Game(container, gameId);
-      return container;
+      // Si mode local
+      if (gameMode === 'local') {
+        const { Game } = await import('../pages/Game');
+        const container = document.createElement('div');
+        new Game(container, undefined, 'local');
+        return container;
+      }
+      
+      // Si mode online sans ID spécifique, afficher la sélection d'adversaire
+      if (gameMode === 'online') {
+        const { OnlinePlayerSelector } = await import('../pages/OnlinePlayerSelector');
+        const container = document.createElement('div');
+        new OnlinePlayerSelector(container);
+        return container;
+      }
+      
+      // Si ID d'adversaire spécifique (mode online avec joueur)
+      if (gameMode.match(/^\d+$/)) {
+        const { Game } = await import('../pages/Game');
+        const container = document.createElement('div');
+        const opponentId = parseInt(gameMode);
+        new Game(container, opponentId, 'online');
+        return container;
+      }
+      
+      // Route invalide, rediriger vers 404
+      const { NotFoundPage } = await import('../pages/NotFound');
+      return new NotFoundPage().getElement();
     });
     
     this.routes.set('/404', async () => {
@@ -125,10 +149,12 @@ export class Router {
       }
     }
     
-    // Essayer match dynamique pour game
-    if (path.startsWith('/game/')) {
+    // Essayer match dynamique pour game (avec tous les modes)
+    if (path.startsWith('/game')) {
       const segments = path.split('/');
-      if (segments.length === 3 && segments[2].match(/^\d+$/)) {
+      // Accepter /game, /game/local, /game/online, ou /game/123
+      if (segments.length === 2 || 
+          (segments.length === 3 && (segments[2] === 'local' || segments[2] === 'online' || segments[2].match(/^\d+$/)))) {
         return this.routes.get('/game');
       }
     }

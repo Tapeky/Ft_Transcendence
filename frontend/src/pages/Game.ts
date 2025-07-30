@@ -1,866 +1,630 @@
-// ============================================================================
-// Game.ts - Main game page component for Pong game system
-// ============================================================================
-// Handles game session management, WebSocket connection, and game rendering
-
-import { Header } from '../components/ui/Header';
-import { BackBtn } from '../components/ui/BackBtn';
-import { GameCanvas } from '../components/game/GameCanvas';
-import { GameWebSocket, GameWebSocketCallbacks } from '../components/game/GameWebSocket';
-import { GameInputHandler, InputOptions } from '../components/game/GameInput';
-import { GameTestHelper } from '../components/game/GameTestHelper';
-import { appState } from '../state/AppState';
-import { apiService } from '../services/api';
-import { chatService } from '../services/ChatService';
-import { 
-  GameSession, 
-  GameState, 
-  PongState, 
-  GameConfig, 
-  DEFAULT_GAME_CONFIG,
-  GameError,
-  GameNotFoundError,
-  WebSocketError,
-  InvalidGameStateError,
-  Point2,
-  Vector2,
-  GAME_CONSTANTS
-} from '../types/GameTypes';
+interface GameState {
+    leftPaddle: { pos: { x: number; y: number }; hitCount: number; };
+    rightPaddle: { pos: { x: number; y: number }; hitCount: number; };
+    ball: { pos: { x: number; y: number }; direction: { x: number; y: number }; };
+    state: number;
+    leftScore: number;
+    rightScore: number;
+}
 
 export class Game {
-  private container: HTMLElement;
-  private gameId: string;
-  private gameSession: GameSession | null = null;
-  private gameState: GameState | null = null;
-  private loading = true;
-  private error: string | null = null;
-  
-  // UI Components
-  private header: Header | null = null;
-  private backBtn: BackBtn | null = null;
-  
-  // Game rendering
-  private gameCanvas: GameCanvas | null = null;
-  private config: GameConfig = { ...DEFAULT_GAME_CONFIG };
-  
-  // WebSocket connection (Phase 3 implementation)
-  private gameWebSocket: GameWebSocket | null = null;
-  private isConnected = false;
-  
-  // Input system (Phase 4 implementation)
-  private gameInputHandler: GameInputHandler | null = null;
-  
-  // Game state management
-  private playerSide: 'left' | 'right' | null = null;
-  private animationFrameId: number | null = null;
-  private lastGameUpdateTime = 0;
+    private canvas!: HTMLCanvasElement;
+    private ctx!: CanvasRenderingContext2D;
+    private ws: WebSocket | null = null;
+    private gameState: GameState | null = null;
+    private input = { up: false, down: false };
+    private localInputLeft = { up: false, down: false };
+    private localInputRight = { up: false, down: false };
+    private animationId: number | null = null;
+    private container: HTMLElement;
+    private gameMode: 'local' | 'online';
+    private opponentId?: number;
+    private gameEndOverlay: HTMLElement | null = null;
 
-  constructor(container: HTMLElement, gameId: string) {
-    this.container = container;
-    this.gameId = gameId;
-    this.init();
-  }
+    // Constants
+    private readonly ARENA_WIDTH = 500;
+    private readonly ARENA_HEIGHT = 200; 
+    private readonly PADDLE_WIDTH = 8;
+    private readonly PADDLE_HEIGHT = 30;
+    private readonly BALL_RADIUS = 5;
 
-  private async init(): Promise<void> {
-    console.log(`🎮 Game: Initializing game with ID ${this.gameId}`);
-    
-    try {
-      // Wait for authentication if still loading
-      await this.waitForAuthInitialization();
-      
-      // Check authentication
-      const state = appState.getState();
-      if (!state.isAuthenticated || !state.user) {
-        console.log('❌ Game: Authentication required, redirecting');
-        appState.router?.navigate('/');
-        return;
-      }
-      
-      // Load game session data
-      await this.loadGameSession();
-      
-      // Set up the game UI
-      this.loading = false;
-      this.render();
-      
-      // Initialize game components after rendering
-      this.initializeGameComponents();
-      
-    } catch (error) {
-      console.error('❌ Game: Initialization failed:', error);
-      this.handleError(error);
-    }
-  }
-
-  private async waitForAuthInitialization(): Promise<void> {
-    return new Promise((resolve) => {
-      if (!appState.getState().loading) {
-        resolve();
-        return;
-      }
-
-      const unsubscribe = appState.subscribe((state) => {
-        if (!state.loading) {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
-
-  private async loadGameSession(): Promise<void> {
-    try {
-      console.log(`🔍 Game: Loading game session ${this.gameId}`);
-      
-      // TODO: Replace with actual API call when available
-      // const response = await apiService.getGameSession(Number(this.gameId));
-      // this.gameSession = response;
-      
-      // For now, create a mock game session for development
-      this.gameSession = this.createMockGameSession();
-      
-      console.log('✅ Game: Game session loaded:', this.gameSession);
-      
-    } catch (error) {
-      console.error('❌ Game: Failed to load game session:', error);
-      
-      if (error instanceof Error && error.message.includes('404')) {
-        throw new GameNotFoundError(Number(this.gameId));
-      }
-      
-      throw new GameError('Failed to load game session', 'LOAD_ERROR', Number(this.gameId));
-    }
-  }
-
-  private createMockGameSession(): GameSession {
-    const currentUser = appState.getState().user;
-    
-    return {
-      id: Number(this.gameId),
-      player1: {
-        player: currentUser || undefined,
-        score: 0,
-        isReady: false
-      },
-      player2: {
-        guest_name: 'Opponent',
-        score: 0,
-        isReady: false
-      },
-      state: PongState.Running,
-      created_at: new Date().toISOString()
-    };
-  }
-
-  private handleError(error: unknown): void {
-    console.error('🚨 Game: Error occurred:', error);
-    
-    if (error instanceof GameNotFoundError) {
-      this.error = `Game ${this.gameId} not found`;
-    } else if (error instanceof WebSocketError) {
-      this.error = 'Connection failed. Please try again.';
-    } else if (error instanceof InvalidGameStateError) {
-      this.error = 'Invalid game state. Please refresh the page.';
-    } else if (error instanceof GameError) {
-      this.error = error.message;
-    } else {
-      this.error = 'An unexpected error occurred';
-    }
-    
-    this.loading = false;
-    this.render();
-  }
-
-  private render(): void {
-    if (this.loading) {
-      this.renderLoadingState();
-      return;
-    }
-    
-    if (this.error) {
-      this.renderErrorState();
-      return;
-    }
-    
-    this.renderGameState();
-  }
-
-  private renderLoadingState(): void {
-    this.container.innerHTML = `
-      <div class="min-h-screen bg-blue-900 text-white flex items-center justify-center">
-        <div class="text-center">
-          <div class="text-4xl font-iceland mb-4">Loading Game...</div>
-          <div class="text-xl">Game ID: ${this.gameId}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  private renderErrorState(): void {
-    this.container.innerHTML = `
-      <div class="min-h-screen bg-red-900 text-white flex items-center justify-center">
-        <div class="text-center p-8">
-          <div class="text-4xl font-iceland mb-4">⚠️ Game Error</div>
-          <div class="text-xl mb-6">${this.error}</div>
-          <div class="flex gap-4 justify-center">
-            <button 
-              id="retry-btn" 
-              class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded text-lg transition duration-300"
-            >
-              Retry
-            </button>
-            <button 
-              id="back-to-menu-btn" 
-              class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded text-lg transition duration-300"
-            >
-              Back to Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    // Add event listeners for error state buttons
-    this.container.querySelector('#retry-btn')?.addEventListener('click', () => {
-      this.retry();
-    });
-    
-    this.container.querySelector('#back-to-menu-btn')?.addEventListener('click', () => {
-      appState.router?.navigate('/menu');
-    });
-  }
-
-  private renderGameState(): void {
-    if (!this.gameSession) {
-      this.handleError(new GameError('No game session available', 'NO_SESSION'));
-      return;
-    }
-
-    this.container.innerHTML = `
-      <div class="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white">
-        <div id="header-container"></div>
+    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' = 'online') {
+        console.log('🏗️ Game constructor called');
+        console.log('🏗️ Container:', container);
+        console.log('🏗️ OpponentId:', opponentId);
+        console.log('🏗️ Game mode:', gameMode);
         
-        <div class="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4">
-          <!-- Game Header -->
-          <div class="text-center text-[3rem] border-b-2 w-full flex">
-            <div id="back-btn-container" class="flex-1"></div>
-            <h1 class="flex-1">Pong Game</h1>
-            <div class="flex-1"></div>
-          </div>
-          
-          <!-- Game Info -->
-          <div class="flex justify-between items-center p-4 text-2xl">
-            <div class="flex items-center gap-4">
-              <div class="text-3xl">${this.gameSession.player1.player?.username || this.gameSession.player1.guest_name || 'Player 1'}</div>
-              <div id="left-score" class="text-4xl font-bold">${this.gameSession.player1.score}</div>
-            </div>
+        this.container = container;
+        this.gameMode = gameMode;
+        this.opponentId = opponentId;
+        
+        console.log('🏗️ Setting up canvas...');
+        this.setupCanvas();
+        console.log('🏗️ Setting up UI...');
+        this.setupUI();
+        console.log('🏗️ Initializing game...');
+        this.initializeGame();
+    }
+
+    private setupCanvas() {
+        console.log('🎨 Setting up canvas...');
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = this.ARENA_WIDTH;
+        this.canvas.height = this.ARENA_HEIGHT;
+        this.canvas.style.border = '1px solid #fff';
+        this.canvas.style.backgroundColor = '#000';
+        
+        console.log('🎨 Canvas created:', this.canvas);
+        console.log('🎨 Canvas dimensions:', this.canvas.width, 'x', this.canvas.height);
+        
+        this.ctx = this.canvas.getContext('2d')!;
+        this.ctx.fillStyle = '#fff';
+        console.log('🎨 Canvas context:', this.ctx);
+        console.log('✅ Canvas setup complete');
+    }
+
+    private setupUI() {
+        console.log('🖼️ Setting up UI...');
+        console.log('🖼️ Container:', this.container);
+        console.log('🖼️ Game mode:', this.gameMode);
+        
+        this.container.innerHTML = '';
+        this.container.style.backgroundColor = '#222';
+        this.container.style.color = '#fff';
+        this.container.style.fontFamily = 'Arial, sans-serif';
+        this.container.style.display = 'flex';
+        this.container.style.flexDirection = 'column';
+        this.container.style.alignItems = 'center';
+        this.container.style.justifyContent = 'center';
+        this.container.style.minHeight = '100vh';
+        this.container.style.margin = '0';
+
+        const title = document.createElement('h1');
+        title.textContent = 'Pong Game';
+        title.style.marginBottom = '20px';
+        console.log('🖼️ Title created:', title);
+
+        const instructions = document.createElement('div');
+        instructions.innerHTML = this.gameMode === 'local' 
+            ? `<p>Player 1: W/S | Player 2: ↑/↓</p><p>Mode: LOCAL (server-side)</p>`
+            : `<p>Use W/S or ↑/↓ keys to move</p><p>Mode: ONLINE</p>`;
+        instructions.style.textAlign = 'center';
+        instructions.style.marginBottom = '20px';
+        console.log('🖼️ Instructions created:', instructions);
+
+        console.log('🖼️ Adding elements to container...');
+        this.container.appendChild(title);
+        this.container.appendChild(instructions);
+        this.container.appendChild(this.canvas);
+        
+        console.log('🖼️ UI elements added to container');
+        console.log('🖼️ Container children count:', this.container.children.length);
+        console.log('✅ UI setup complete');
+    }
+
+    private async initializeGame() {
+        console.log('🎮 initializeGame() called');
+        console.log('🎮 Game mode:', this.gameMode);
+        
+        console.log('🔍 Checking for authentication token...');
+        let token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+        console.log('🔍 Token found:', token ? `${token.substring(0, 20)}...` : 'NULL');
+        
+        if (!token) {
+            console.error('❌ No authentication token found!');
+            this.showError('No authentication token found');
+            return;
+        }
+
+        console.log('✅ Token found, connecting to WebSocket...');
+        this.connectWebSocket(token);
+    }
+
+    private connectWebSocket(token: string) {
+        console.log('🔌 Connecting to WebSocket...');
+        console.log('🔌 WebSocket URL: wss://localhost:8000/ws');
+        
+        this.ws = new WebSocket('wss://localhost:8000/ws');
+        console.log('🔌 WebSocket instance created:', this.ws);
+        
+        this.setupWebSocketListeners(token);
+        this.setupKeyboardListeners();
+    }
+
+    private setupWebSocketListeners(token: string) {
+        if (!this.ws) {
+            console.error('❌ No WebSocket instance to setup listeners on!');
+            return;
+        }
+
+        console.log('🎧 Setting up WebSocket listeners...');
+
+        this.ws.onopen = () => {
+            console.log('✅ WebSocket connection opened!');
+            console.log('🔑 Sending authentication with token:', token ? `${token.substring(0, 20)}...` : 'NULL');
+            this.sendMessage('auth', { token });
+        };
+
+        this.ws.onmessage = (event) => {
+            console.log('📨 WebSocket message received:', event.data);
             
-            <div class="text-center">
-              <div class="text-xl">Game #${this.gameSession.id}</div>
-              <div id="game-status" class="text-lg text-gray-300">${this.getGameStatusText()}</div>
-            </div>
+            try {
+                const message = JSON.parse(event.data);
+                console.log('📋 Parsed message:', message);
+                
+                switch(message.type) {
+                    case 'auth_success':
+                        console.log('✅ Authentication successful!', message.data);
+                        if (this.gameMode === 'local') {
+                            console.log('🏠 Starting local game...');
+                            console.log('🏠 Sending start_local_game message to backend...');
+                            this.sendMessage('start_local_game', {});
+                        } else {
+                            console.log('🌐 Starting online game with opponent:', this.opponentId);
+                            this.sendMessage('start_game', { opponentId: this.opponentId });
+                        }
+                        break;
+
+                    case 'auth_error':
+                        console.error('❌ Authentication failed:', message.message);
+                        this.showError('Authentication failed: ' + message.message);
+                        break;
+
+                    case 'connected':
+                        console.log('🔌 Server connected message:', message.message);
+                        // Message informatif, pas d'action requise
+                        break;
+
+                    case 'success':
+                        console.log('🎮 Game started successfully!');
+                        this.startGameLoop();
+                        break;
+
+                    case 'game_state':
+                        console.log('📊 Game state received:', message.data);
+                        this.gameState = message.data;
+                        
+                        // Defensive: Check for game end conditions in case backend doesn't send game_end
+                        if (this.gameState && (this.gameState.leftScore >= 5 || this.gameState.rightScore >= 5)) {
+                            console.log('🛡️ Defensive game end detection: Score reached 5');
+                            console.log('🛡️ Final scores:', this.gameState.leftScore, '-', this.gameState.rightScore);
+                            setTimeout(() => {
+                                if (this.animationId) { // Double-check we haven't already stopped
+                                    console.log('🛡️ Stopping game loop defensively');
+                                    this.stopGameLoop();
+                                    const winner = this.gameState!.leftScore >= 5 ? 'Left Player' : 'Right Player';
+                                    this.showGameEnd(winner);
+                                }
+                            }, 100); // Small delay to allow backend message to arrive first
+                        }
+                        break;
+
+                    case 'game_end':
+                        console.log('🏁 Game ended:', message.data);
+                        this.stopGameLoop();
+                        this.showGameEnd(message.data.winner);
+                        break;
+
+                    case 'err_self':
+                    case 'err_game_started':
+                    case 'err_unknown_id':
+                    case 'err_user_offline':
+                    case 'err_not_in_game':
+                        console.error('❌ Game error:', message.message);
+                        this.showError(message.message);
+                        break;
+
+                    case 'error':
+                        console.error('❌ Server error:', message.message);
+                        this.showError(message.message);
+                        break;
+
+                    default:
+                        console.log('❓ Unknown message type:', message.type, message);
+                        if (message.message) {
+                            console.warn('⚠️ Unhandled server message:', message.message);
+                        }
+                }
+            } catch (error) {
+                console.error('❌ Failed to parse WebSocket message:', error);
+                console.error('❌ Raw message:', event.data);
+            }
+        };
+
+        this.ws.onclose = (event) => {
+            console.log('🔌 WebSocket connection closed');
+            console.log('🔍 Close event details:', {
+                code: event.code,
+                reason: event.reason,
+                wasClean: event.wasClean
+            });
+            this.stopGameLoop();
+        };
+
+        this.ws.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+            console.error('❌ WebSocket state:', this.ws?.readyState);
+            this.showError('Connection error');
+        };
+
+        console.log('✅ WebSocket listeners setup complete');
+    }
+
+    private setupKeyboardListeners() {
+        console.log('⌨️ Setting up keyboard listeners...');
+        
+        const keydownHandler = (e: KeyboardEvent) => {
+            console.log('⌨️ Key down:', e.key, 'Mode:', this.gameMode);
             
-            <div class="flex items-center gap-4">
-              <div id="right-score" class="text-4xl font-bold">${this.gameSession.player2.score}</div>
-              <div class="text-3xl">${this.gameSession.player2.player?.username || this.gameSession.player2.guest_name || 'Player 2'}</div>
-            </div>
-          </div>
-          
-          <!-- Game Canvas Container -->
-          <div class="flex-grow flex items-center justify-center p-8">
-            <div class="relative">
-              <canvas 
-                id="game-canvas" 
-                width="${this.config.canvasWidth}" 
-                height="${this.config.canvasHeight}"
-                class="border-4 border-white bg-gray-900"
-                style="max-width: 100%; height: auto;"
-              ></canvas>
-              
-              <!-- Game overlay for connection status, etc. -->
-              <div id="game-overlay" class="absolute inset-0 flex items-center justify-center text-white text-2xl">
-                ${this.getGameOverlayContent()}
-              </div>
-            </div>
-          </div>
-          
-          <!-- Game Controls Info -->
-          <div class="text-center text-lg text-gray-300 border-t-2 pt-4">
-            <div>Controls: Use <span class="font-bold">W/S</span> or <span class="font-bold">↑/↓</span> arrow keys to move your paddle</div>
-            <div class="mt-2">Touch controls available on mobile devices</div>
-            <div class="mt-2">Connection: <span id="connection-status" class="font-bold">${this.getConnectionStatusText()}</span></div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Initialize components after rendering
-    this.initializeComponents();
-  }
-
-  private getGameStatusText(): string {
-    if (!this.gameSession) return 'Unknown';
-    
-    switch (this.gameSession.state) {
-      case PongState.Running:
-        return 'In Progress';
-      case PongState.LeftWins:
-        return 'Left Player Wins!';
-      case PongState.RightWins:
-        return 'Right Player Wins!';
-      case PongState.Aborted:
-        return 'Game Aborted';
-      default:
-        return 'Unknown State';
-    }
-  }
-
-  private getGameOverlayContent(): string {
-    if (!this.isConnected) {
-      return `
-        <div class="bg-black bg-opacity-75 p-6 rounded text-center">
-          <div class="text-3xl mb-4">⚡ Connecting to Game...</div>
-          <div class="text-lg">Please wait while we connect you to the game server</div>
-        </div>
-      `;
-    }
-    
-    if (this.gameSession?.state !== PongState.Running) {
-      return `
-        <div class="bg-black bg-opacity-75 p-6 rounded text-center">
-          <div class="text-3xl mb-4">${this.getGameStatusText()}</div>
-        </div>
-      `;
-    }
-    
-    return ''; // No overlay during active gameplay
-  }
-
-  private getConnectionStatusText(): string {
-    if (!this.isConnected) return 'Connecting...';
-    return 'Connected';
-  }
-
-  private initializeComponents(): void {
-    // Initialize Header
-    const headerContainer = this.container.querySelector('#header-container') as HTMLElement;
-    if (headerContainer) {
-      this.header = new Header(true);
-      headerContainer.appendChild(this.header.getElement());
-    }
-
-    // Initialize BackBtn
-    const backBtnContainer = this.container.querySelector('#back-btn-container') as HTMLElement;
-    if (backBtnContainer) {
-      this.backBtn = new BackBtn();
-      backBtnContainer.appendChild(this.backBtn.getElement());
-    }
-  }
-
-  private initializeGameComponents(): void {
-    // Initialize GameCanvas with full rendering system
-    const canvas = this.container.querySelector('#game-canvas') as HTMLCanvasElement;
-    if (canvas) {
-      try {
-        this.gameCanvas = new GameCanvas(canvas, this.config);
-        
-        // Start animation with mock game state
-        this.gameCanvas.startAnimation();
-        
-        console.log('✅ Game: GameCanvas initialized and animation started');
-        
-        // Set up resize handler
-        this.setupResizeHandler();
-        
-      } catch (error) {
-        console.error('❌ Game: Failed to initialize GameCanvas:', error);
-        this.handleError(new GameError('Failed to initialize game canvas', 'CANVAS_ERROR'));
-        return;
-      }
-    }
-    
-    // Phase 3 - Initialize WebSocket connection
-    this.initializeWebSocket().catch(error => {
-      console.error('❌ Game: WebSocket initialization failed:', error);
-    });
-    
-    // Phase 4 - Initialize input system
-    this.initializeInputSystem();
-  }
-
-  /**
-   * Phase 4: Initialize comprehensive input system
-   */
-  private initializeInputSystem(): void {
-    try {
-      console.log('⌨️ Game: Initializing input system');
-      
-      // Configure input options
-      const inputOptions: InputOptions = {
-        enableMobileControls: true,
-        enableVisualFeedback: true,
-        throttleRate: 60, // 60 FPS input rate
-        keyMappings: {
-          up: ['KeyW', 'ArrowUp'],
-          down: ['KeyS', 'ArrowDown']
-        }
-      };
-      
-      // Create input handler
-      this.gameInputHandler = new GameInputHandler(inputOptions);
-      
-      // Set up input callback to send to WebSocket
-      const inputCallback = (input: any) => {
-        if (this.gameWebSocket && this.isConnected) {
-          this.gameWebSocket.sendInput(input);
-        }
-      };
-      
-      // Activate input handler with game container
-      this.gameInputHandler.activate(inputCallback, this.container);
-      
-      // Update connection status in input handler
-      this.gameInputHandler.updateConnectionStatus(this.isConnected);
-      
-      console.log('✅ Game: Input system initialized successfully');
-      
-    } catch (error) {
-      console.error('❌ Game: Failed to initialize input system:', error);
-      // Continue without input system - game can still run for spectating
-    }
-  }
-
-  /**
-   * Phase 3: Initialize WebSocket connection for real-time game updates
-   */
-  private async initializeWebSocket(): Promise<void> {
-    try {
-      console.log('🌐 Game: Initializing WebSocket connection');
-      
-      // Create WebSocket callbacks
-      const callbacks: GameWebSocketCallbacks = {
-        onGameUpdate: (gameState: GameState) => {
-          this.handleGameStateUpdate(gameState);
-        },
-        
-        onGameEnd: (winner: 'left' | 'right' | 'aborted', finalState?: GameState) => {
-          this.handleGameEnd(winner, finalState);
-        },
-        
-        onGameStarted: (gameData: any) => {
-          console.log('🚀 Game: Game started', gameData);
-          this.handleGameStarted(gameData);
-        },
-        
-        onGameJoined: (gameId: number) => {
-          console.log(`✅ Game: Successfully joined game ${gameId}`);
-          this.handleGameJoined(gameId);
-        },
-        
-        onGameError: (error: { type: string; message: string }) => {
-          console.error('❌ Game: WebSocket game error:', error);
-          this.handleGameError(error);
-        },
-        
-        onConnectionChange: (isConnected: boolean) => {
-          console.log(`🔌 Game: Connection status changed: ${isConnected}`);
-          this.isConnected = isConnected;
-          this.updateConnectionStatus();
-          
-          // Update input handler connection status
-          if (this.gameInputHandler) {
-            this.gameInputHandler.updateConnectionStatus(isConnected);
-          }
-        }
-      };
-      
-      // Create and connect GameWebSocket
-      this.gameWebSocket = new GameWebSocket(Number(this.gameId), callbacks);
-      await this.gameWebSocket.connect();
-      
-      console.log('✅ Game: WebSocket connection initialized');
-      
-    } catch (error) {
-      console.error('❌ Game: Failed to initialize WebSocket:', error);
-      this.handleError(new WebSocketError('Failed to connect to game server'));
-    }
-  }
-
-  /**
-   * Handle real-time game state updates from WebSocket
-   */
-  private handleGameStateUpdate(gameState: GameState): void {
-    this.lastGameUpdateTime = Date.now();
-    this.gameState = gameState;
-    
-    // Update canvas with real game state
-    if (this.gameCanvas) {
-      this.gameCanvas.updateGameState(gameState);
-    }
-    
-    // Update UI if needed (scores, game status)
-    this.updateGameUI();
-  }
-
-  /**
-   * Handle game end events
-   */
-  private handleGameEnd(winner: 'left' | 'right' | 'aborted', finalState?: GameState): void {
-    console.log(`🏁 Game: Game ended - winner: ${winner}`);
-    
-    if (finalState) {
-      this.gameState = finalState;
-      if (this.gameCanvas) {
-        this.gameCanvas.updateGameState(finalState);
-      }
-    }
-    
-    // Update game session state
-    if (this.gameSession) {
-      this.gameSession.state = winner === 'left' ? PongState.LeftWins : 
-                               winner === 'right' ? PongState.RightWins : 
-                               PongState.Aborted;
-    }
-    
-    this.updateGameUI();
-  }
-
-  /**
-   * Handle game started events
-   */
-  private handleGameStarted(gameData: any): void {
-    if (this.gameSession) {
-      this.gameSession.state = PongState.Running;
-      this.gameSession.started_at = new Date().toISOString();
-    }
-    
-    this.updateGameUI();
-  }
-
-  /**
-   * Handle successful game join
-   */
-  private handleGameJoined(gameId: number): void {
-    console.log(`🎮 Game: Successfully joined game ${gameId}`);
-    this.updateConnectionStatus();
-  }
-
-  /**
-   * Handle WebSocket game errors
-   */
-  private handleGameError(error: { type: string; message: string }): void {
-    console.error('🚨 Game: WebSocket error:', error);
-    
-    // Display error to user
-    const overlay = this.container.querySelector('#game-overlay');
-    if (overlay) {
-      overlay.innerHTML = `
-        <div class="bg-red-900 bg-opacity-90 p-6 rounded text-center">
-          <div class="text-3xl mb-4">⚠️ Game Error</div>
-          <div class="text-lg mb-4">${error.message}</div>
-          <button 
-            id="retry-connection-btn" 
-            class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-lg transition duration-300"
-          >
-            Retry Connection
-          </button>
-        </div>
-      `;
-      
-      // Add retry handler
-      overlay.querySelector('#retry-connection-btn')?.addEventListener('click', async () => {
-        try {
-          if (this.gameWebSocket) {
-            await this.gameWebSocket.connect();
-          }
-        } catch (retryError) {
-          console.error('❌ Game: Retry failed:', retryError);
-        }
-      });
-    }
-  }
-
-  /**
-   * Update connection status display
-   */
-  private updateConnectionStatus(): void {
-    const statusElement = this.container.querySelector('#connection-status');
-    if (statusElement) {
-      statusElement.textContent = this.isConnected ? 'Connected' : 'Connecting...';
-    }
-    
-    // Update overlay if needed
-    this.updateGameOverlay();
-  }
-
-  /**
-   * Update game UI elements (scores, status, etc.)
-   */
-  private updateGameUI(): void {
-    if (!this.gameSession) return;
-    
-    // Update scores
-    const leftScoreElement = this.container.querySelector('#left-score');
-    const rightScoreElement = this.container.querySelector('#right-score');
-    
-    if (leftScoreElement) {
-      leftScoreElement.textContent = this.gameSession.player1.score.toString();
-    }
-    if (rightScoreElement) {
-      rightScoreElement.textContent = this.gameSession.player2.score.toString();
-    }
-    
-    // Update game status
-    const statusElement = this.container.querySelector('#game-status');
-    if (statusElement) {
-      statusElement.textContent = this.getGameStatusText();
-    }
-    
-    // Update overlay
-    this.updateGameOverlay();
-  }
-
-  /**
-   * Update game overlay content
-   */
-  private updateGameOverlay(): void {
-    const overlay = this.container.querySelector('#game-overlay');
-    if (overlay) {
-      overlay.innerHTML = this.getGameOverlayContent();
-    }
-  }
-
-  private setupResizeHandler(): void {
-    // Handle window resize to maintain canvas aspect ratio
-    const handleResize = () => {
-      if (this.gameCanvas) {
-        const container = this.container.querySelector('#game-canvas') as HTMLCanvasElement;
-        if (container) {
-          // Maintain aspect ratio while fitting in container
-          const containerRect = container.parentElement?.getBoundingClientRect();
-          if (containerRect) {
-            const aspectRatio = this.config.canvasWidth / this.config.canvasHeight;
-            let newWidth = containerRect.width * 0.9; // Leave some margin
-            let newHeight = newWidth / aspectRatio;
+            let changed = false;
             
-            // Ensure canvas fits vertically
-            if (newHeight > containerRect.height * 0.8) {
-              newHeight = containerRect.height * 0.8;
-              newWidth = newHeight * aspectRatio;
+            if (this.gameMode === 'local') {
+                // Local mode: handle both players, send to backend
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                        console.log('⌨️ Player 1 UP');
+                        if (!this.localInputLeft.up) {
+                            this.localInputLeft.up = true;
+                            changed = true;
+                        }
+                        break;
+                    case 's':
+                        console.log('⌨️ Player 1 DOWN');
+                        if (!this.localInputLeft.down) {
+                            this.localInputLeft.down = true;
+                            changed = true;
+                        }
+                        break;
+                    case 'arrowup':
+                        console.log('⌨️ Player 2 UP');
+                        if (!this.localInputRight.up) {
+                            this.localInputRight.up = true;
+                            changed = true;
+                        }
+                        break;
+                    case 'arrowdown':
+                        console.log('⌨️ Player 2 DOWN');
+                        if (!this.localInputRight.down) {
+                            this.localInputRight.down = true;
+                            changed = true;
+                        }
+                        break;
+                }
+                
+                if (changed) {
+                    console.log('⌨️ Local input changed:', { left: this.localInputLeft, right: this.localInputRight });
+                    this.sendMessage('update_local_input', { 
+                        leftInput: this.localInputLeft, 
+                        rightInput: this.localInputRight 
+                    });
+                }
+            } else {
+                // Online mode: handle current player only
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        if (!this.input.up) {
+                            this.input.up = true;
+                            changed = true;
+                        }
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        if (!this.input.down) {
+                            this.input.down = true;
+                            changed = true;
+                        }
+                        break;
+                }
+                
+                if (changed) {
+                    console.log('⌨️ Online input changed:', this.input);
+                    this.sendMessage('update_input', { input: this.input });
+                }
+            }
+        };
+
+        const keyupHandler = (e: KeyboardEvent) => {
+            let changed = false;
+            
+            if (this.gameMode === 'local') {
+                // Local mode: handle keyup for both players, send to backend
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                        if (this.localInputLeft.up) {
+                            this.localInputLeft.up = false;
+                            changed = true;
+                        }
+                        break;
+                    case 's':
+                        if (this.localInputLeft.down) {
+                            this.localInputLeft.down = false;
+                            changed = true;
+                        }
+                        break;
+                    case 'arrowup':
+                        if (this.localInputRight.up) {
+                            this.localInputRight.up = false;
+                            changed = true;
+                        }
+                        break;
+                    case 'arrowdown':
+                        if (this.localInputRight.down) {
+                            this.localInputRight.down = false;
+                            changed = true;
+                        }
+                        break;
+                }
+                
+                if (changed) {
+                    this.sendMessage('update_local_input', { 
+                        leftInput: this.localInputLeft, 
+                        rightInput: this.localInputRight 
+                    });
+                }
+            } else {
+                // Online mode: handle current player only
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'arrowup':
+                        if (this.input.up) {
+                            this.input.up = false;
+                            changed = true;
+                        }
+                        break;
+                    case 's':
+                    case 'arrowdown':
+                        if (this.input.down) {
+                            this.input.down = false;
+                            changed = true;
+                        }
+                        break;
+                }
+                
+                if (changed) {
+                    this.sendMessage('update_input', { input: this.input });
+                }
+            }
+        };
+
+        document.addEventListener('keydown', keydownHandler);
+        document.addEventListener('keyup', keyupHandler);
+    }
+
+    private sendMessage(type: string, data: any) {
+        const message = { type, ...data };
+        console.log('📤 Sending message:', message);
+        
+        if (!this.ws) {
+            console.error('❌ Cannot send message: WebSocket is null');
+            return;
+        }
+        
+        console.log('🔍 WebSocket state:', this.ws.readyState, {
+            CONNECTING: WebSocket.CONNECTING,
+            OPEN: WebSocket.OPEN,
+            CLOSING: WebSocket.CLOSING,
+            CLOSED: WebSocket.CLOSED
+        });
+        
+        if (this.ws.readyState === WebSocket.OPEN) {
+            const jsonMessage = JSON.stringify(message);
+            console.log('📤 Sending JSON:', jsonMessage);
+            this.ws.send(jsonMessage);
+        } else {
+            console.warn('⚠️ Cannot send message: WebSocket not open (state:', this.ws.readyState, ')');
+        }
+    }
+
+    private startGameLoop() {
+        console.log('🎬 Starting game loop...');
+        if (this.animationId) {
+            console.log('⚠️ Game loop already running, skipping');
+            return;
+        }
+        
+        let frameCount = 0;
+        const gameLoop = () => {
+            // Stop if no animation ID (cancelled)
+            if (!this.animationId) {
+                console.log('🛑 Game loop stopped - no animationId');
+                return;
             }
             
-            this.gameCanvas.resize(newWidth, newHeight);
-          }
+            frameCount++;
+            if (frameCount % 60 === 0) { // Log every 60 frames (1 second at 60fps)
+                console.log('🎬 Game loop running, frame:', frameCount, 'gameState:', !!this.gameState);
+            }
+            
+            // Both local and online modes now use backend physics
+            this.render();
+            this.animationId = requestAnimationFrame(gameLoop);
+        };
+        
+        console.log('🎬 Requesting first animation frame...');
+        this.animationId = requestAnimationFrame(gameLoop);
+        console.log('✅ Game loop started');
+    }
+
+    private stopGameLoop() {
+        console.log('🛑 Stopping game loop...');
+        console.log('🛑 Current animationId:', this.animationId);
+        if (this.animationId) {
+            console.log('🛑 Calling cancelAnimationFrame for id:', this.animationId);
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+            console.log('✅ Game loop stopped - animationId set to null');
+        } else {
+            console.log('⚠️ No game loop to stop - animationId is already null');
         }
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    // Initial resize
-    setTimeout(handleResize, 100);
-  }
-
-  /**
-   * Phase 3: Start game for testing purposes
-   * In Phase 5, this will be replaced with proper invitation system
-   */
-  public async startTestGame(opponentId: number = 2): Promise<void> {
-    if (!this.gameWebSocket) {
-      console.error('❌ Game: GameWebSocket not initialized');
-      return;
     }
 
-    try {
-      console.log(`🧪 Game: Starting test game with opponent ${opponentId}`);
-      await this.gameWebSocket.startGame(opponentId);
-    } catch (error) {
-      console.error('❌ Game: Failed to start test game:', error);
-      this.handleGameError({ type: 'start_error', message: 'Failed to start game' });
+    private render() {
+        if (!this.gameState) {
+            // Show a debug message on canvas when no game state
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = '16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Waiting for game state...', this.ARENA_WIDTH / 2, this.ARENA_HEIGHT / 2);
+            this.ctx.textAlign = 'start';
+            return;
+        }
+
+        // Clear canvas
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
+        this.ctx.fillStyle = '#fff';
+
+        // Center line
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.ARENA_WIDTH / 2, 0);
+        this.ctx.lineTo(this.ARENA_WIDTH / 2, this.ARENA_HEIGHT);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        // Left paddle
+        this.ctx.fillRect(
+            this.gameState.leftPaddle.pos.x,
+            this.gameState.leftPaddle.pos.y,
+            this.PADDLE_WIDTH,
+            this.PADDLE_HEIGHT
+        );
+
+        // Right paddle
+        this.ctx.fillRect(
+            this.gameState.rightPaddle.pos.x - this.PADDLE_WIDTH,
+            this.gameState.rightPaddle.pos.y,
+            this.PADDLE_WIDTH,
+            this.PADDLE_HEIGHT
+        );
+
+        // Ball
+        this.ctx.beginPath();
+        this.ctx.arc(
+            this.gameState.ball.pos.x,
+            this.gameState.ball.pos.y,
+            this.BALL_RADIUS,
+            0,
+            2 * Math.PI
+        );
+        this.ctx.fill();
+
+        // Scores
+        this.ctx.font = '24px Arial';
+        this.ctx.fillText(
+            (this.gameState.leftScore || 0).toString(),
+            this.ARENA_WIDTH / 4,
+            30
+        );
+        this.ctx.fillText(
+            (this.gameState.rightScore || 0).toString(),
+            (3 * this.ARENA_WIDTH) / 4,
+            30
+        );
     }
-  }
 
-  /**
-   * Create a mock GameState for immediate visual testing
-   */
-  private createStaticMockGameState(): GameState {
-    const centerY = GAME_CONSTANTS.arena.height / 2;
-    
-    return {
-      leftPaddle: {
-        pos: new Point2(GAME_CONSTANTS.paddle.width / 2, centerY - 20),
-        hitCount: 3
-      },
-      rightPaddle: {
-        pos: new Point2(
-          GAME_CONSTANTS.arena.width - GAME_CONSTANTS.paddle.width / 2, 
-          centerY + 15
-        ),
-        hitCount: 5
-      },
-      ball: {
-        pos: new Point2(
-          GAME_CONSTANTS.arena.width / 2 + 50,
-          GAME_CONSTANTS.arena.height / 2 - 25
-        ),
-        direction: new Vector2(1, 0.5)
-      },
-      state: PongState.Running
-    };
-  }
+    private showGameEnd(winner: string) {
+        // Prevent multiple overlays - if one already exists, don't create another
+        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
+            console.log('🛡️ Game end overlay already exists, skipping creation');
+            return;
+        }
 
-  private retry(): void {
-    console.log('🔄 Game: Retrying game initialization');
-    this.error = null;
-    this.loading = true;
-    this.render();
-    this.init();
-  }
+        console.log('🏁 Creating game end overlay');
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.color = '#fff';
+        overlay.style.fontSize = '24px';
+        overlay.style.zIndex = '1000';
 
-  public destroy(): void {
-    console.log('🗑️ Game: Cleaning up game resources');
-    
-    // Clean up UI components
-    if (this.header) {
-      this.header.destroy();
+        const backButton = document.createElement('button');
+        backButton.textContent = 'Back to Menu';
+        backButton.style.padding = '10px 20px';
+        backButton.style.fontSize = '18px';
+        backButton.style.backgroundColor = '#007bff';
+        backButton.style.color = 'white';
+        backButton.style.border = 'none';
+        backButton.style.borderRadius = '5px';
+        backButton.style.cursor = 'pointer';
+        backButton.style.marginTop = '20px';
+
+        backButton.addEventListener('click', () => {
+            console.log('🔘 Back to Menu button clicked');
+            // Remove the overlay first
+            if (document.body.contains(overlay)) {
+                console.log('✅ Removing game end overlay from body');
+                document.body.removeChild(overlay);
+                this.gameEndOverlay = null; // Clear reference
+            }
+            // Clean up the game
+            this.destroy();
+            // Navigate to main menu
+            (window as any).router?.navigate('/menu');
+        });
+
+        overlay.innerHTML = `<h2>Game Over!</h2><p>Winner: ${winner}</p>`;
+        overlay.appendChild(backButton);
+        document.body.appendChild(overlay);
+        
+        // Store reference to prevent duplicate overlays
+        this.gameEndOverlay = overlay;
+        console.log('✅ Game end overlay created and stored');
     }
-    if (this.backBtn) {
-      this.backBtn.destroy();
+
+
+    private showError(message: string) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '20px';
+        errorDiv.style.right = '20px';
+        errorDiv.style.backgroundColor = '#ff4444';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '10px 20px';
+        errorDiv.style.borderRadius = '5px';
+        errorDiv.style.zIndex = '1000';
+        errorDiv.textContent = message;
+
+        document.body.appendChild(errorDiv);
+
+        setTimeout(() => {
+            if (document.body.contains(errorDiv)) {
+                document.body.removeChild(errorDiv);
+            }
+        }, 5000);
     }
-    
-    // Clean up GameCanvas
-    if (this.gameCanvas) {
-      this.gameCanvas.destroy();
-      this.gameCanvas = null;
+
+    public destroy() {
+        console.log('🧹 Destroying game instance');
+        this.stopGameLoop();
+        
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+
+        // Clean up any remaining game end overlay
+        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
+            console.log('🧹 Cleaning up remaining game end overlay');
+            document.body.removeChild(this.gameEndOverlay);
+            this.gameEndOverlay = null;
+        }
+
+        document.removeEventListener('keydown', this.setupKeyboardListeners);
+        document.removeEventListener('keyup', this.setupKeyboardListeners);
+
+        this.container.innerHTML = '';
+        this.gameState = null;
     }
-    
-    // Clean up input system
-    if (this.gameInputHandler) {
-      this.gameInputHandler.deactivate();
-      this.gameInputHandler = null;
-    }
-    
-    // Clean up game resources
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
-    
-    // Clean up WebSocket connection
-    if (this.gameWebSocket) {
-      this.gameWebSocket.disconnect();
-      this.gameWebSocket = null;
-    }
-    
-    // Remove resize listener
-    window.removeEventListener('resize', this.setupResizeHandler);
-  }
-
-  // ============================================================================
-  // Public API for debugging and external access
-  // ============================================================================
-
-  public getGameId(): string {
-    return this.gameId;
-  }
-
-  public getGameSession(): GameSession | null {
-    return this.gameSession;
-  }
-
-  public getGameState(): GameState | null {
-    return this.gameState;
-  }
-
-  public isGameLoading(): boolean {
-    return this.loading;
-  }
-
-  public getGameError(): string | null {
-    return this.error;
-  }
-
-  public getGameCanvas(): GameCanvas | null {
-    return this.gameCanvas;
-  }
-
-  public getGameConfig(): GameConfig {
-    return this.config;
-  }
-
-  /**
-   * Phase 3: Update game rendering with new state (used by WebSocket integration)
-   */
-  public updateGameState(gameState: GameState): void {
-    this.gameState = gameState;
-    if (this.gameCanvas) {
-      this.gameCanvas.updateGameState(gameState);
-    }
-  }
-
-  /**
-   * Phase 3: Get GameWebSocket instance for external access
-   */
-  public getGameWebSocket(): GameWebSocket | null {
-    return this.gameWebSocket;
-  }
-
-  /**
-   * Phase 3: Check WebSocket connection status
-   */
-  public isWebSocketConnected(): boolean {
-    return this.gameWebSocket ? this.gameWebSocket.isGameConnected() : false;
-  }
-
-  /**
-   * Phase 3: Get detailed connection status
-   */
-  public getConnectionStatus(): any {
-    return this.gameWebSocket ? this.gameWebSocket.getConnectionStatus() : null;
-  }
-
-  /**
-   * Phase 3: Start animated test for WebSocket integration
-   */
-  public startAnimatedTest(duration: number = 10000): void {
-    GameTestHelper.startAnimatedTest(Number(this.gameId), duration);
-  }
-
-  /**
-   * Phase 3: Get test helper for manual testing
-   */
-  public getTestHelper(): typeof GameTestHelper {
-    return GameTestHelper;
-  }
-
-  /**
-   * Phase 4: Get input handler for external access
-   */
-  public getInputHandler(): GameInputHandler | null {
-    return this.gameInputHandler;
-  }
-
-  /**
-   * Phase 4: Get input statistics
-   */
-  public getInputStats(): any {
-    return this.gameInputHandler ? this.gameInputHandler.getInputStats() : null;
-  }
-
-  /**
-   * Phase 4: Simulate input for testing
-   */
-  public simulateInput(up: boolean, down: boolean): void {
-    if (this.gameInputHandler) {
-      this.gameInputHandler.simulateInput(up, down, 'game-api');
-    }
-  }
-
-  /**
-   * Phase 4: Update input options dynamically
-   */
-  public updateInputOptions(options: Partial<InputOptions>): void {
-    if (this.gameInputHandler) {
-      this.gameInputHandler.updateOptions(options);
-    }
-  }
 }
