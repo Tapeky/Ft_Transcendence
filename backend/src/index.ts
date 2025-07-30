@@ -207,6 +207,7 @@ async function start() {
 
     GameManager.instance.registerLoop();
   } catch (err) {
+    console.error('❌ Erreur de démarrage du serveur:', err);
     server.log.error('❌ Erreur de démarrage du serveur:', err);
     process.exit(1);
   }

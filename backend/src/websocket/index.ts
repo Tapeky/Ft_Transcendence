@@ -7,6 +7,8 @@ import { ChatRepository } from '../repositories/ChatRepository';
 import { GameManager } from './game_manager';
 import { Input } from '../game/Input';
 import { DirectMessageData } from '../types/chat';
+import { Pong } from '../game/Pong';
+import { error } from 'console';
 
 interface ConnectedUser {
   id: number;
@@ -66,6 +68,12 @@ class WebSocketManager {
 export function setupWebSocket(server: FastifyInstance) {
   const wsManager = WebSocketManager.getInstance();
   const gameManager = GameManager.instance;
+  
+  // Attacher le WebSocketManager à Fastify pour les routes
+  server.decorate('websocketManager', wsManager);
+  
+  // Démarrer la boucle de jeu du GameManager
+  gameManager.registerLoop();
 
   server.register(async function (server) {
     server.get('/ws', { websocket: true }, async (connection: SocketStream, req) => {
@@ -259,6 +267,27 @@ export function setupWebSocket(server: FastifyInstance) {
                 }));
               }
               break;
+
+            case 'start_local_game':
+              // Start a local (single-player) game where user controls both paddles
+              if (userId) {
+                if (GameManager.instance.getFromPlayerId(userId)) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_game_started',
+                    message: 'Vous êtes déjà en partie !!'
+                  }));
+                  break;
+                }
+
+                userInput.reset();
+                // For local game, use same user ID for both players but different socket references
+                const id = gameManager.startGame(userId, userId, connection.socket, connection.socket);
+                connection.socket.send(JSON.stringify({
+                  type: 'success',
+                  data: { gameId: id }
+                }));
+              }
+              break;
             
             case 'update_input':
               if (userId && message.input
@@ -275,6 +304,33 @@ export function setupWebSocket(server: FastifyInstance) {
                   userInput.down = message.input.down;
                   game.updateInput(userId, userInput);
                   // is it necessary to send a success message ?
+                }
+              }
+              break;
+
+            case 'update_local_input':
+              // Handle input from local game (both paddles controlled by same user)
+              if (userId && message.leftInput && message.rightInput) {
+                const game = gameManager.getFromPlayerId(userId);
+                if (!game) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'err_not_in_game',
+                    message: 'Ce joueur n\'est pas en partie !'
+                  }));
+                }
+                else {
+                  // For local games, both players have the same ID but we need to update both inputs
+                  const leftInput = new Input();
+                  leftInput.up = message.leftInput.up;
+                  leftInput.down = message.leftInput.down;
+                  
+                  const rightInput = new Input();
+                  rightInput.up = message.rightInput.up;
+                  rightInput.down = message.rightInput.down;
+                  
+                  // In local games, left and right player have same ID, so we update the game directly
+                  game.leftPlayer.input.copy(leftInput);
+                  game.rightPlayer.input.copy(rightInput);
                 }
               }
               break;
@@ -326,6 +382,5 @@ export function setupWebSocket(server: FastifyInstance) {
       }));
     });
   });
-
   return wsManager;
 }

@@ -38,7 +38,7 @@ export async function setupRoutes(server: FastifyInstance) {
     await server.register(chatRoutes, { prefix: '/chat' });
 
     // Routes game invites
-    await server.register(gameInviteRoutes);
+    await server.register(gameInviteRoutes, { prefix: '/game-invites' });
     
   }, { prefix: '/api' });
 }

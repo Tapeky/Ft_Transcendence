@@ -10,15 +10,16 @@ const arenaSize = {
 	height: 200
 };
 
-const paddleSpeed = 20; // units / sec
+const paddleSpeed = 200; // units / sec
 const paddleSize = {
 	width: 8,
 	height: 30
 };
 
 const ballRadius = 5;
-const ballSpeed = 50; // units / sec
+const ballSpeed = 300; // units / sec
 const ballMaxBounceAngle = 75;
+const winningScore = 5; // First to 5 points wins
 
 export class Paddle {
 	public rect: Rectangle;
@@ -74,12 +75,12 @@ export class Ball {
 			this._direction.y = -this._direction.y;
 		}
 
-		// the entire ball needs to pass the border to lose
+		// the entire ball needs to pass the border to score
 		if (this.circle.right < 0) {
-			return 1; // left wins
+			return 1; // right player scores
 		}
 		else if (this.circle.left > arenaSize.width) {
-			return 2; // right wins
+			return 2; // left player scores
 		}
 		return 0;
 	}
@@ -93,7 +94,6 @@ export class Ball {
 
 			const normalized = yDiff / paddleSize.height / 2;
 			const bounceAngle = normalized * ballMaxBounceAngle * Math.PI / 360;
-			console.log(bounceAngle * 360 / Math.PI);
 			this._direction.x = Math.cos(bounceAngle) * directionMuliplier.x;
 			this._direction.y = Math.sin(bounceAngle) * directionMuliplier.y;
 			return true;
@@ -104,6 +104,10 @@ export class Ball {
 	public get pos() { return this.circle.pos; }
 	public get radius() { return this.circle.radius; }
 	public get direction() { return this._direction; }
+	
+	public setDirection(direction: Vector2) {
+		this._direction = direction;
+	}
 }
 
 export enum PongState {
@@ -118,13 +122,23 @@ export class Pong {
 	public readonly rightPaddle: Paddle;
 	public readonly ball: Ball;
 	private _state: PongState = PongState.Running;
+	private _leftScore: number = 0;
+	private _rightScore: number = 0;
 
 	public constructor() {
-		this.leftPaddle = new Paddle(new Point2(0, arenaSize.height / 2), this);
-		this.rightPaddle = new Paddle(new Point2(arenaSize.width, arenaSize.height / 2), this);
+    	this.leftPaddle = new Paddle(new Point2(10 + paddleSize.width / 2, arenaSize.height / 2), this);      // Centre à x=8
+    	this.rightPaddle = new Paddle(new Point2(arenaSize.width - 2 - paddleSize.width / 2, arenaSize.height / 2), this); // Centre à x=492
+
+		// Direction aléatoire avec composante horizontale garantie
+		const randomAngle = (Math.random() - 0.5) * Math.PI / 3; // angle entre -60° et +60°
+		const horizontalDirection = Math.random() < 0.5 ? 1 : -1; // gauche ou droite
+		const initialDirection = new Vector2(
+			Math.cos(randomAngle) * horizontalDirection,
+			Math.sin(randomAngle)
+		).normalized;
 
 		this.ball = new Ball(
-			new Vector2(arenaSize.width / 2, arenaSize.height / 2), Vector2.up, this);
+			new Vector2(arenaSize.width / 2, arenaSize.height / 2), initialDirection, this);
 	}
 
 	public update(deltaTime: number, leftInput: Input, rightInput: Input) {
@@ -132,10 +146,22 @@ export class Pong {
 			this.leftPaddle.move(deltaTime, leftInput);
 			this.rightPaddle.move(deltaTime, rightInput);
 			const ballResult = this.ball.move(deltaTime);
-			if (ballResult == 1)
+			
+			// Handle scoring
+			if (ballResult == 1) {
+				this._rightScore++; // right player scores
+				this.resetBall();
+			} else if (ballResult == 2) {
+				this._leftScore++; // left player scores
+				this.resetBall();
+			}
+			
+			// Check win condition
+			if (this._leftScore >= winningScore) {
 				this._state = PongState.LeftWins;
-			else if (ballResult == 2)
+			} else if (this._rightScore >= winningScore) {
 				this._state = PongState.RightWins;
+			}
 		}
 	}
 
@@ -143,8 +169,31 @@ export class Pong {
 		this._state = PongState.Aborted;
 	}
 
+	private resetBall() {
+		// Reset ball to center
+		this.ball.circle.pos.x = arenaSize.width / 2;
+		this.ball.circle.pos.y = arenaSize.height / 2;
+		
+		// Random direction with guaranteed horizontal component
+		const randomAngle = (Math.random() - 0.5) * Math.PI / 3; // angle between -60° and +60°  
+		const horizontalDirection = Math.random() < 0.5 ? 1 : -1; // left or right
+		const initialDirection = new Vector2(
+			Math.cos(randomAngle) * horizontalDirection,
+			Math.sin(randomAngle)
+		).normalized;
+		this.ball.setDirection(initialDirection);
+	}
+
 	public get state() {
 		return this._state;
+	}
+
+	public get leftScore() {
+		return this._leftScore;
+	}
+
+	public get rightScore() {
+		return this._rightScore;
 	}
 
 	public repr(): {[k: string]: any} {
@@ -164,7 +213,9 @@ export class Pong {
 				//radius: this.ball.radius,
 				direction: this.ball.direction
 			},
-			state: this._state
+			state: this._state,
+			leftScore: this._leftScore,
+			rightScore: this._rightScore
 		};
 	}
 }

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Local Pong</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .test-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #333;
+            border-radius: 5px;
+        }
+        .test-info h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .token-info {
+            background: #444;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        #game-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h2>🎮 Test Local Pong Game</h2>
+        <p><strong>Instructions:</strong></p>
+        <ul>
+            <li>Player 1: Use W/S keys</li>
+            <li>Player 2: Use ↑/↓ arrow keys</li>
+            <li>The game should work without backend matchmaking</li>
+        </ul>
+        <div class="token-info">
+            <strong>Auth Token:</strong> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsInVzZXJuYW1lIjoidGVzdHBvbmciLCJlbWFpbCI6InRlc3Rwb25nQHRlc3QuY29tIiwiaWF0IjoxNzUzODkzNDQzLCJleHAiOjE3NTM5Nzk4NDN9.BgheF6VzHJRde_70g1bWnwCmpAms1zm_d1tbD3EjL3c
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <script type="module">
+        // Set auth token in localStorage for the game
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDMsInVzZXJuYW1lIjoidGVzdHBvbmciLCJlbWFpbCI6InRlc3Rwb25nQHRlc3QuY29tIiwiaWF0IjoxNzUzODkzNDQzLCJleHAiOjE3NTM5Nzk4NDN9.BgheF6VzHJRde_70g1bWnwCmpAms1zm_d1tbD3EjL3c';
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('auth_token', token);
+
+        console.log('🔑 Auth token set in localStorage');
+
+        // Import and start the game
+        import('./src/pages/Game.js').then(({ Game }) => {
+            console.log('🎮 Starting local Pong game...');
+            const container = document.getElementById('game-container');
+            const game = new Game(container, undefined, 'local');
+            console.log('🎮 Game instance created:', game);
+        }).catch(error => {
+            console.error('❌ Failed to load game:', error);
+            document.getElementById('game-container').innerHTML = 
+                `<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px;">
+                    <h3>❌ Failed to load game</h3>
+                    <p>Error: ${error.message}</p>
+                    <p>Make sure the development server is running on port 3001</p>
+                </div>`;
+        });
+    </script>
+</body>
+</html>
