@@ -12,6 +12,8 @@ u16 c_y = 0;
 u16 c_x = 0;
 term_info	cterm_info;
 
+struct termios orig_termios;
+
 static void fetch_term_sz()
 {
 	struct winsize wz;
@@ -30,6 +32,14 @@ void cinit()
 {
 	memset(&cterm_info, 0, sizeof(cterm_info));
 	cterm_info.selected_component = -1u;
+
+	// set the terminal in raw mode
+	tcgetattr(STDIN_FILENO, &orig_termios);
+	struct termios raw_info;
+	raw_info = orig_termios;
+	cfmakeraw(&raw_info);
+	tcsetattr(STDIN_FILENO, TCSANOW,&raw_info);
+
 	PUTS(ESC_DISABLE_CURSOR);
 	PUTS(ESC_CLEAR_SCREEN);
 	fflush(stdout);
@@ -50,6 +60,9 @@ void cdeinit()
 			free(c->u.c_text_area.buf);
 	}
 	memset(&cterm_info, 0, sizeof(cterm_info));
+
+	// restore terminal attributes
+	tcsetattr(STDIN_FILENO, TCSANOW,&orig_termios);
 }
 
 void chandle_key_event(KeySym key, int on_press)
