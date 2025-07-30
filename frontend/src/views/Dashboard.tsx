@@ -5,6 +5,7 @@ import MatchRecap from "../components/Dashboard/MatchRecap";
 import { apiService, User, Match } from "../services/api";
 import { useState, useEffect } from "react";
 import { useNav } from "../contexts/NavContext";
+import CloseBtn from "../components/Common/CloseBtn";
 
 type Props = {
   id: string,
@@ -15,6 +16,7 @@ const Dashboard = ({ id }: Props) => {
     const { user, loading, isAuthenticated } = useAuth();
     const [player, setPlayer] = useState<User>();
     const [match, setMatch] = useState<Match[]>([]);
+	const [graph, setGraph] = useState(false);
 	const { goTo } = useNav();
 
 	useEffect(() => {
@@ -78,7 +80,9 @@ const Dashboard = ({ id }: Props) => {
                     <BackBtn />
 
                     <h1 className="flex-1">{player?.username}'s <br /> Dashboard</h1>
-                    <div className="flex-1"></div>
+                    <div className="flex-1 flex items-center justify-center">
+						<button onClick={() => setGraph(true)} className="border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[120px] flex items-center justify-center text-[3rem]">More</button>
+					</div>
                 </div>
 
                 <div className="flex flex-col mt-6 mx-10 flex-grow text-white text-[3rem]">
@@ -103,6 +107,32 @@ const Dashboard = ({ id }: Props) => {
 
 
             </div>
+
+			<div className={`${graph ? 'flex' : 'hidden'} fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white`}>
+						<div className="h-[500px] w-[1200px] bg-gradient-to-tl from-purple-700 to-blue-800 border-4 flex flex-col gap-10">
+							<CloseBtn func={() => setGraph(false)}/>
+
+							<div className="flex h-full text-[2.5rem]">
+
+								<div className="flex-1 h-full">
+
+
+
+								</div>
+
+								<div className="flex-1 h-full">
+									
+
+								</div>
+
+							</div>
+
+
+
+						</div>
+			</div>
+
+
         </div>
     );
 
