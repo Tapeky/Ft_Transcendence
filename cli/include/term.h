@@ -2,6 +2,7 @@
 # define TERM_H
 
 #include "types.h"
+#include "aabb.h"
 #include <X11/X.h>
 #include <stdio.h>
 
@@ -109,8 +110,11 @@ void	box_draw(console_component *c);
 void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func);
 void	button_draw(console_component *c);
 
-extern u16 c_y;
-extern u16 c_x;
+aabb	component_bouding_box(console_component *c);
+
+extern u16 		c_y;
+extern u16 		c_x;
+extern float	c_pixel_ratio;
 
 #define MAX_COMPONENT_NUMBER 100
 typedef struct
@@ -127,8 +131,16 @@ void cdeinit();
 void crefresh(int force_redraw);
 void ccomponent_add(console_component component);
 void chandle_key_event(KeySym key, int on_press);
-void cnext_component();
-void cprev_component();
+
+typedef enum
+{
+	LEFT = 1,
+	UP,
+	RIGHT,
+	DOWN
+}	direction;
+
+void cnext_component(direction dir);
 
 static inline int is_selectable(console_component *component)
 {
@@ -146,5 +158,11 @@ void cursor_goto(u16 x, u16 y);
 
 int		add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
 void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func);
+
+// this algorithm is responsible for finding the closest component from the current
+// component and following a direction. more or less based on this answer:
+// https://stackoverflow.com/a/16577312
+// not perfect but close enough
+size_t find_best_component(direction dir);
 
 #endif

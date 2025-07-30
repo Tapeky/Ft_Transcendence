@@ -4,12 +4,14 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <signal.h>
 #include <unistd.h>
 #include <assert.h>
 
-u16 c_y = 0;
-u16 c_x = 0;
+u16 		c_y = 0;
+u16 		c_x = 0;
+float		c_pixel_ratio = 1;
 term_info	cterm_info;
 
 struct termios orig_termios;
@@ -20,6 +22,21 @@ static void fetch_term_sz()
 	ioctl(STDIN_FILENO, TIOCGWINSZ, &wz);
 	c_x = wz.ws_col;
 	c_y = wz.ws_row;
+
+	// this escape sequence allows to fetch the size in pixels of the terminal. the
+	// return format is '\e[4;{y};{x}t'
+	PUTS("\e[14t");
+	fflush(stdout);
+
+	u32 pixel_x, pixel_y;
+	if (scanf("\e[4;%u;%ut", &pixel_y, &pixel_x) != 2 || !pixel_x || !pixel_y)
+		c_pixel_ratio = 7.0 / 21.0; // most common ratio for terminals
+	else
+	{
+		int sz_tile_x = pixel_x / c_x;
+		int sz_tile_y = pixel_y / c_y;
+		c_pixel_ratio = (float)sz_tile_x / sz_tile_y;
+	}
 }
 
 static void winch(int sig)
@@ -77,9 +94,13 @@ void chandle_key_event(KeySym key, int on_press)
 		else if (key == XK_BackSpace && cur->type == TEXT_AREA)
 			text_area_back(cur);
 		else if (key == XK_Down && (cur->type != BUTTON || !cur->u.c_button.held))
-			cnext_component();
+			cnext_component(DOWN);
 		else if (key == XK_Up && (cur->type != BUTTON || !cur->u.c_button.held))
-			cprev_component();
+			cnext_component(UP);
+		else if (key == XK_Right && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(RIGHT);
+		else if (key == XK_Left && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(LEFT);
 
 		crefresh(0);
 	}
@@ -142,52 +163,16 @@ void ccomponent_add(console_component component)
 	cterm_info.components_count++;
 }
 
-void cnext_component()
+void cnext_component(direction dir)
 {
-	size_t old, new, i;
-
-	if (!cterm_info.components_count || cterm_info.selected_component == -1u)
-		return;
-	i = 0;
-	old = cterm_info.selected_component;
-	new = old;
-	while (i < cterm_info.components_count)
+	if (!cterm_info.components_count)
+		return ;
+	size_t new_selected = find_best_component(dir);
+	if (new_selected != -1u)
 	{
-		new = (new + 1) % cterm_info.components_count;
-		if (is_selectable(&cterm_info.components[new]))
-		{
-			cterm_info.selected_component = new;
-			mark_dirty(&cterm_info.components[new], 1);
-			mark_dirty(&cterm_info.components[old], 1);
-			return;
-		}
-		i++;
-	}
-}
-
-void cprev_component()
-{
-	size_t old, new, i;
-
-	if (!cterm_info.components_count || cterm_info.selected_component == -1u)
-		return;
-	i = 0;
-	old = cterm_info.selected_component;
-	new = old;
-	while (i < cterm_info.components_count)
-	{
-		if (!new)
-			new = cterm_info.components_count - 1;
-		else
-			new--;
-		if (is_selectable(&cterm_info.components[new]))
-		{
-			cterm_info.selected_component = new;
-			mark_dirty(&cterm_info.components[new], 1);
-			mark_dirty(&cterm_info.components[old], 1);
-			return;
-		}
-		i++;
+		mark_dirty(ccurrent_component(), 1);
+		mark_dirty(&cterm_info.components[new_selected], 1);
+		cterm_info.selected_component = new_selected;
 	}
 }
 
@@ -229,4 +214,22 @@ void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func)
 
 	ccomponent_add(button);
 	ccomponent_add(box);
+}
+
+aabb	component_bouding_box(console_component *c)
+{
+	switch (c->type)
+	{
+		case LABEL:
+			return (aabb_create(c->x, c->y, c->u.c_label.str_len, 1));
+		case BUTTON:
+			return (aabb_create(c->x, c->y, c->u.c_button.str_len, 1));
+		case TEXT_AREA:
+			return (aabb_create(c->x, c->y, c->u.c_text_area.len, 1));
+		case BOX:
+			return (aabb_create(c->x, c->y, c->u.c_box.w, c->u.c_box.h));
+		default:
+			fprintf(stderr, "Invalid component type %d\n", c->type);
+			abort();
+	}
 }

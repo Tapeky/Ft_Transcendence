@@ -7,7 +7,7 @@ CFLAGS := -Wall -Wextra -Werror -MMD
 CC := cc
 CJSON := cJSON/libcjson.a
 
-C_FILES := main input ctx term term_components
+C_FILES := main input ctx term term_components aabb best_component
 
 include Functions.mk
 
@@ -18,7 +18,7 @@ $(OBJECTS): $(OBJ_DIR)%.o : $(SOURCE_DIR)%.c
 	@$(CC) $(CFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 $(NAME): $(OBJ_DIR) $(LIBS) $(OBJECTS) $(CJSON)
-	@$(CC) $(CFLAGS) $(OBJECTS) $(LIB_FILES) $(CJSON) -lX11 -o $(NAME)
+	@$(CC) $(CFLAGS) $(OBJECTS) $(LIB_FILES) $(CJSON) -lX11 -lm -o $(NAME)
 
 $(CJSON):
 	@$(MAKE) -C cJSON static
