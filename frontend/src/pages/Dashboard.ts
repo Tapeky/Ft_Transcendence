@@ -3,6 +3,7 @@ import { BackBtn } from '../components/ui/BackBtn';
 import { apiService, User, Match } from '../services/api';
 import { appState } from '../state/AppState';
 
+
 export class Dashboard {
   private container: HTMLElement;
   private player: User | null = null;
@@ -103,7 +104,7 @@ export class Dashboard {
     try {
       if (this.playerId) {
         const response = await apiService.getMatches({ player_id: Number(this.playerId) });
-        this.matches = response.data || [];
+        this.matches = response.data;
       }
     } catch (error) {
       console.error('Error loading matches:', error);
@@ -136,7 +137,13 @@ export class Dashboard {
           <div class="text-center text-[4rem] border-b-2 w-full flex">
             <div id="back-btn-container" class="flex-1"></div>
             <h1 class="flex-1">${this.player?.username || 'Unknown'}'s <br /> Dashboard</h1>
-            <div class="flex-1"></div>
+            
+			<div class="flex-1 flex items-center justify-center">
+				<button id="graph-toggle" class="border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[120px] flex items-center justify-center text-[3rem]">
+					More
+				</button>
+			</div>
+
           </div>
 
           <div class="flex flex-col mt-6 mx-10 flex-grow text-white text-[3rem]">
@@ -159,6 +166,28 @@ export class Dashboard {
       </div>
     `;
 
+	const modalHTML = `
+	<div id="graph-modal" class="hidden fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white font-iceland">
+		<div class="h-[500px] w-[1200px] bg-gradient-to-tl from-purple-700 to-blue-800 border-4 flex flex-col gap-10">
+
+			<div class="flex justify-end">
+				<button id="close-graph" class='border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[50px] mt-2 mr-2 flex items-center z-50 text-[2rem]'>
+					X
+				</button>
+			</div>
+
+
+
+			<div class="flex h-full text-[3rem] px-4 gap-4">
+				<div class="flex-1 h-full" id="graph-left"></div>
+				<div class="flex-1 h-full" id="graph-right"></div>
+			</div>
+		</div>
+	</div>
+	`;
+
+	this.container.insertAdjacentHTML('beforeend', modalHTML);
+
     // Initialiser les composants
     this.initializeComponents();
   }
@@ -177,7 +206,7 @@ export class Dashboard {
     const victory = match.winner_id === currentUser?.id;
 
     return `
-      <div class="${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-4/5 border-2 
+      <div class="${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-[800px] border-2 
         self-center cursor-pointer hover:scale-105 transition duration-300 text-[2rem] p-4 flex mb-4"
         data-match-id="${match.id}">
         
@@ -232,6 +261,24 @@ export class Dashboard {
       backBtnContainer.appendChild(this.backBtn.getElement());
     }
 
+	const graphBtn = this.container.querySelector('#graph-toggle');
+	const modal = document.querySelector('#graph-modal');
+	const closeBtn = document.querySelector('#close-graph');
+
+	if (graphBtn && modal && closeBtn) {
+	graphBtn.addEventListener('click', () => {
+		modal.classList.remove('hidden');
+		modal.classList.add('flex');
+		this.renderGraphs();
+	});
+
+	closeBtn.addEventListener('click', () => {
+		modal.classList.remove('flex');
+		modal.classList.add('hidden');
+	});
+}
+
+
     // Ajouter les event listeners pour les matches
     this.addMatchEventListeners();
   }
@@ -282,52 +329,96 @@ export class Dashboard {
   private renderMatchStatsModal(modal: HTMLElement, matchDetails: any) {
     const modalContent = modal.querySelector('div') as HTMLElement;
     modalContent.innerHTML = `
-      <div class="flex justify-end p-2">
-        <button class="match-stats-close text-white hover:text-red-300 text-[2rem]">✕</button>
-      </div>
+
+	<div class="flex justify-end">
+		<button class='match-stats-close border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[50px] mt-2 mr-2 flex items-center z-50 text-[2rem]'>
+			X
+		</button>
+	</div>
       
-      <div class="flex flex-col items-center border-collapse m-2">
-        <div class="flex w-full text-center gap-10">
-          <div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-start">
-            <img src="${this.getAvatarUrl(matchDetails.player1_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
-            <h1>${matchDetails.player1_username}</h1>
-          </div>
+	<div class="flex flex-col items-center border-collapse m-2">
+		<div class="flex w-full text-center gap-10">
+		<div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-start">
+			<img src="${this.getAvatarUrl(matchDetails.player1_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
+			<h1>${matchDetails.player1_username}</h1>
+		</div>
 
-          <div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-end">
-            <h1>${matchDetails.player2_username}</h1>
-            <img src="${this.getAvatarUrl(matchDetails.player2_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
-          </div>
-        </div>
-      
-        <h2 class="text-[4rem]">${matchDetails.duration_seconds}s</h2>
+		<div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-end">
+			<h1>${matchDetails.player2_username}</h1>
+			<img src="${this.getAvatarUrl(matchDetails.player2_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
+		</div>
+		</div>
+	
+		<h2 class="text-[4rem]">${matchDetails.duration_seconds}s</h2>
 
-        <div class="flex justify-evenly w-full text-center mb-4">
-          <h2 class="flex-1">${matchDetails.player1_score}</h2>
-          <h2 class="flex-1 border-b-2 border-dashed">Score</h2>
-          <h2 class="flex-1">${matchDetails.player2_score}</h2>
-        </div>
+		<div class="flex justify-evenly w-full text-center mb-4">
+		<h2 class="flex-1">${matchDetails.player1_score}</h2>
+		<h2 class="flex-1 border-b-2 border-dashed">Score</h2>
+		<h2 class="flex-1">${matchDetails.player2_score}</h2>
+		</div>
 
-        <div class="flex justify-evenly w-full text-center mb-4">
-          <h2 class="flex-1">${matchDetails.player1_touched_ball}</h2>
-          <h2 class="flex-1 border-b-2 border-dashed">Hits</h2>
-          <h2 class="flex-1">${matchDetails.player2_touched_ball}</h2>
-        </div>
+		<div class="flex justify-evenly w-full text-center mb-4">
+		<h2 class="flex-1">${matchDetails.player1_touched_ball}</h2>
+		<h2 class="flex-1 border-b-2 border-dashed">Hits</h2>
+		<h2 class="flex-1">${matchDetails.player2_touched_ball}</h2>
+		</div>
 
-        <div class="flex justify-evenly w-full text-center">
-          <h2 class="flex-1">${matchDetails.player1_missed_ball}</h2>
-          <h2 class="flex-1 border-b-2 border-dashed">Misses</h2>
-          <h2 class="flex-1">${matchDetails.player2_missed_ball}</h2>
-        </div>
-      </div>
-    `;
-  }
+		<div class="flex justify-evenly w-full text-center">
+		<h2 class="flex-1">${matchDetails.player1_missed_ball}</h2>
+		<h2 class="flex-1 border-b-2 border-dashed">Misses</h2>
+		<h2 class="flex-1">${matchDetails.player2_missed_ball}</h2>
+		</div>
+	</div>
+	`;
+}
 
-  destroy() {
-    if (this.header) {
-      this.header.destroy();
-    }
-    if (this.backBtn) {
-      this.backBtn.destroy();
-    }
-  }
+	private renderGraphs() {
+	const lastMatches = this.matches.slice(-5);
+
+	const currentUsername = appState.getState().user?.username;
+	const scores = lastMatches.map(m => {
+		return m.player1_username === currentUsername ? m.player1_score : m.player2_score;
+	});
+
+	const left = this.container.querySelector('#graph-left');
+	const right = this.container.querySelector('#graph-right');
+
+	if (left) left.innerHTML = this.generateBarChart(scores, 'Last scores');
+	if (right) right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
+	}
+
+	private generateBarChart(data: number[], title: string): string {
+		const max = Math.max(...data);
+		const bars = data.map((val, i) => {
+			const height = (val / max) * 160;
+			const x = 40 + i * 100;
+			const y = 200 - height;
+			return `
+			<rect x="${x}" y="${y}" width="60" height="${height}" class="fill-blue-400"></rect>
+			<text x="${x + 30}" y="220" text-anchor="middle" class="fill-white text-[1.7rem]">${i + 1}</text>
+			<text x="${x + 30}" y="${y - 5}" text-anchor="middle" class="fill-white text-[1.5rem]">${val}</text>
+			`;
+		}).join('');
+
+		return `
+			<svg viewBox="0 0 600 250" class="w-full h-full">
+			<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
+			<line x1="30" y1="200" x2="570" y2="200" stroke="white" />
+			${bars}
+			</svg>
+		`;
+	}
+
+
+
+
+
+destroy() {
+	if (this.header) {
+	this.header.destroy();
+	}
+	if (this.backBtn) {
+	this.backBtn.destroy();
+	}
+}
 }
