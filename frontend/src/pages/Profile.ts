@@ -214,7 +214,7 @@ export class ProfilePage {
     // Create modal overlay
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'password-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
 
     // Modal container
     const modalContainer = document.createElement('div');
@@ -342,7 +342,7 @@ export class ProfilePage {
   private renderAvatarModal(): void {
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'avatar-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
 
     // Modal container
     const modalContainer = document.createElement('div');
