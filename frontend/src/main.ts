@@ -23,6 +23,35 @@ class App {
         console.log('🔧 Dev tools initialized');
       }
       
+      // Initialize KISS Game Invite System
+      console.log('🎮 Initializing KISS Game Invite System...');
+      
+      try {
+        const { gameInviteService } = await import('./services/GameInviteService');
+        const { SimpleInvitePopup } = await import('./components/SimpleInvitePopup');
+        const { kissInviteButtons } = await import('./utils/kissInvites');
+        
+        // Vérification que les services sont correctement chargés
+        if (!gameInviteService) {
+          throw new Error('GameInviteService not loaded');
+        }
+        
+        // Setup auto-popup pour les invitations reçues
+        gameInviteService.onInviteReceived((invite) => {
+          console.log('🎮 KISS: Auto-creating popup for invite from', invite.fromUsername);
+          new SimpleInvitePopup(invite);
+        });
+        
+        // Initialize auto-detection des boutons d'invitation
+        kissInviteButtons.init();
+        
+        console.log('🎮 KISS Game Invite System initialized');
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize KISS Game Invite System:', error);
+        // Ne pas faire planter toute l'application si KISS ne se charge pas
+      }
+      
       // Success;
       console.log('🛡️ Route guard active');
       console.log(`📍 Current route: ${window.location.pathname}`);

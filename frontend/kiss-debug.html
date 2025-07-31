@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KISS Debug - Import Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔧 KISS System Debug</h1>
+        
+        <div class="bg-gray-800 p-4 rounded mb-6">
+            <h2 class="text-xl mb-4">📋 Import Verification</h2>
+            <div id="import-status" class="space-y-2">
+                <div class="text-gray-400">Vérification en cours...</div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded mb-6">
+            <h2 class="text-xl mb-4">🛠️ Manual Fix</h2>
+            <button id="fix-imports" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded">
+                Fix Import Issues
+            </button>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded">
+            <h2 class="text-xl mb-4">📝 Debug Log</h2>
+            <div id="debug-log" class="bg-gray-900 p-2 rounded h-64 overflow-y-auto text-sm font-mono">
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const log = (message, type = 'info') => {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('debug-log');
+            const entry = document.createElement('div');
+            
+            let className = 'text-white';
+            if (type === 'error') className = 'text-red-400';
+            if (type === 'success') className = 'text-green-400';
+            if (type === 'warning') className = 'text-yellow-400';
+            
+            entry.className = className + ' mb-1';
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+
+        const updateStatus = (id, status, message) => {
+            const statusDiv = document.getElementById('import-status');
+            const existingDiv = document.getElementById(id) || document.createElement('div');
+            existingDiv.id = id;
+            
+            const statusIcon = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
+            const className = status === 'success' ? 'text-green-400' : status === 'error' ? 'text-red-400' : 'text-yellow-400';
+            
+            existingDiv.className = className;
+            existingDiv.textContent = `${statusIcon} ${message}`;
+            
+            if (!document.getElementById(id)) {
+                statusDiv.appendChild(existingDiv);
+            }
+        };
+
+        // Vérification des imports
+        async function verifyImports() {
+            log('Starting import verification...', 'info');
+            
+            try {
+                // Test 1: API Service
+                updateStatus('api-test', 'loading', 'Testing API Service...');
+                const { apiService } = await import('./src/services/api.js');
+                
+                if (!apiService) {
+                    updateStatus('api-test', 'error', 'API Service: Not loaded');
+                    log('❌ apiService not loaded', 'error');
+                } else if (typeof apiService.getToken !== 'function') {
+                    updateStatus('api-test', 'error', 'API Service: getToken method missing');
+                    log('❌ apiService.getToken method missing', 'error');
+                } else {
+                    updateStatus('api-test', 'success', 'API Service: OK');
+                    log('✅ apiService loaded and getToken available', 'success');
+                }
+                
+                // Test 2: GameInviteService
+                updateStatus('game-invite-test', 'loading', 'Testing GameInviteService...');
+                try {
+                    const { gameInviteService } = await import('./src/services/GameInviteService.js');
+                    if (!gameInviteService) {
+                        updateStatus('game-invite-test', 'error', 'GameInviteService: Not loaded');
+                        log('❌ gameInviteService not loaded', 'error');
+                    } else {
+                        updateStatus('game-invite-test', 'success', 'GameInviteService: OK');
+                        log('✅ gameInviteService loaded', 'success');
+                    }
+                } catch (error) {
+                    updateStatus('game-invite-test', 'error', `GameInviteService: ${error.message}`);
+                    log(`❌ GameInviteService error: ${error.message}`, 'error');
+                }
+                
+                // Test 3: SimpleInvitePopup
+                updateStatus('popup-test', 'loading', 'Testing SimpleInvitePopup...');
+                try {
+                    const { SimpleInvitePopup } = await import('./src/components/SimpleInvitePopup.js');
+                    if (!SimpleInvitePopup) {
+                        updateStatus('popup-test', 'error', 'SimpleInvitePopup: Not loaded');
+                        log('❌ SimpleInvitePopup not loaded', 'error');
+                    } else {
+                        updateStatus('popup-test', 'success', 'SimpleInvitePopup: OK');
+                        log('✅ SimpleInvitePopup loaded', 'success');
+                    }
+                } catch (error) {
+                    updateStatus('popup-test', 'error', `SimpleInvitePopup: ${error.message}`);
+                    log(`❌ SimpleInvitePopup error: ${error.message}`, 'error');
+                }
+                
+                // Test 4: kissInviteButtons
+                updateStatus('buttons-test', 'loading', 'Testing kissInviteButtons...');
+                try {
+                    const { kissInviteButtons } = await import('./src/utils/kissInvites.js');
+                    if (!kissInviteButtons) {
+                        updateStatus('buttons-test', 'error', 'kissInviteButtons: Not loaded');
+                        log('❌ kissInviteButtons not loaded', 'error');
+                    } else {
+                        updateStatus('buttons-test', 'success', 'kissInviteButtons: OK');
+                        log('✅ kissInviteButtons loaded', 'success');
+                    }
+                } catch (error) {
+                    updateStatus('buttons-test', 'error', `kissInviteButtons: ${error.message}`);
+                    log(`❌ kissInviteButtons error: ${error.message}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`💥 Global error: ${error.message}`, 'error');
+            }
+        }
+
+        // Manual fix function
+        document.getElementById('fix-imports').addEventListener('click', async () => {
+            log('🔧 Attempting manual fix...', 'info');
+            
+            try {
+                // Clear module cache if possible
+                if (typeof window !== 'undefined' && window.location) {
+                    log('🔄 Reloading page to clear cache...', 'info');
+                    window.location.reload(true);
+                }
+            } catch (error) {
+                log(`❌ Manual fix failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Auto-run verification
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 KISS Debug Tool started', 'info');
+            setTimeout(verifyImports, 500);
+        });
+    </script>
+</body>
+</html>
