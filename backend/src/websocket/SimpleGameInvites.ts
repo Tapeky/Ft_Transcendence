@@ -23,6 +23,15 @@ export class SimpleGameInvites {
   // 🔗 Définir la référence au WebSocketManager principal
   setWebSocketManager(wsManager: any): void {
     this.wsManager = wsManager;
+    // KISS: Simple startup cleanup when manager is set
+    this.startupCleanup();
+  }
+
+  // KISS: Clean up any stale invitations
+  private startupCleanup(): void {
+    console.log('🎮 KISS: Starting cleanup of stale invitations');
+    this.invites.clear();
+    console.log('🎮 KISS: Startup cleanup complete');
   }
 
   // 👤 Ces méthodes sont maintenues pour compatibilité mais n'utilisent plus de liste locale

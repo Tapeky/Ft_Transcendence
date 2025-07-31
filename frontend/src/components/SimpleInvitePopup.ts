@@ -1,12 +1,22 @@
 // 🎯 KISS Invite Popup - Une seule classe, intégrée avec le système existant
 import { gameInviteService, GameInvite } from '../services/GameInviteService';
 
+// KISS: Global registry pour éviter les doublons
+const activePopups = new Set<string>();
+
 export class SimpleInvitePopup {
   private element: HTMLElement;
   private isDestroyed = false;
   private autoCloseTimer?: number;
 
   constructor(private invite: GameInvite) {
+    // KISS: Prevent duplicates - simple check
+    if (activePopups.has(invite.inviteId)) {
+      console.log('🎮 KISS: Popup already active for invite', invite.inviteId);
+      return;
+    }
+    
+    activePopups.add(invite.inviteId);
     this.element = this.create();
     this.show();
   }
@@ -289,12 +299,22 @@ export class SimpleInvitePopup {
     
     this.isDestroyed = true;
     
-    if (this.autoCloseTimer) {
-      clearTimeout(this.autoCloseTimer);
-    }
+    // KISS: Clean up popup registry
+    activePopups.delete(this.invite.inviteId);
+    
+    // KISS: Clear all timers
+    this.clearAllTimers();
     
     console.log('🎮 KISS Popup: Closing notification');
     this.element.remove();
+  }
+
+  // KISS: Simple timer cleanup
+  private clearAllTimers(): void {
+    if (this.autoCloseTimer) {
+      clearTimeout(this.autoCloseTimer);
+      this.autoCloseTimer = undefined;
+    }
   }
 
   public destroy(): void {
