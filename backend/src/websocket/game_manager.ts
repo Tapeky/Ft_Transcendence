@@ -3,12 +3,15 @@ import { Input } from "../game/Input";
 
 export class PongPlayer {
   public readonly input: Input = new Input();
+  public isReady: boolean = false;
 
 	public constructor(public readonly id: number, public readonly socket: any) { }
 }
 
 export class PongGame {
   public readonly pong: Pong = new Pong();
+  public gameState: 'waiting_ready' | 'countdown' | 'playing' | 'finished' = 'waiting_ready';
+  public countdownTimer?: NodeJS.Timeout;
 
   public constructor(public readonly id: number, public readonly leftPlayer: PongPlayer, public readonly rightPlayer: PongPlayer) { }
 
@@ -36,8 +39,91 @@ export class PongGame {
     this.getPlayerThrow(playerId).input.copy(input);
   }
 
+  public setPlayerReady(playerId: number, ready: boolean): void {
+    const player = this.getPlayer(playerId);
+    if (player) {
+      player.isReady = ready;
+      console.log(`🎮 Player ${playerId} is ${ready ? 'ready' : 'not ready'} in game ${this.id}`);
+      
+      // Notifier tous les joueurs du changement de statut
+      this.broadcastReadyStatus();
+    }
+  }
+
+  public areAllPlayersReady(): boolean {
+    return this.leftPlayer.isReady && this.rightPlayer.isReady;
+  }
+
+  public broadcastReadyStatus(): void {
+    const statusMessage = {
+      type: 'ready_status',
+      data: {
+        leftPlayerReady: this.leftPlayer.isReady,
+        rightPlayerReady: this.rightPlayer.isReady,
+        gameState: this.gameState
+      }
+    };
+
+    try {
+      this.leftPlayer.socket.send(JSON.stringify(statusMessage));
+      this.rightPlayer.socket.send(JSON.stringify(statusMessage));
+    } catch (error) {
+      console.error('Error broadcasting ready status:', error);
+    }
+  }
+
+  public startCountdown(): void {
+    if (this.gameState !== 'waiting_ready') return;
+    
+    this.gameState = 'countdown';
+    let countdown = 3;
+    
+    console.log(`🎮 Starting countdown for game ${this.id}`);
+    
+    const sendCountdown = () => {
+      const countdownMessage = {
+        type: 'countdown',
+        data: { count: countdown }
+      };
+
+      try {
+        this.leftPlayer.socket.send(JSON.stringify(countdownMessage));
+        this.rightPlayer.socket.send(JSON.stringify(countdownMessage));
+      } catch (error) {
+        console.error('Error sending countdown:', error);
+      }
+
+      countdown--;
+      
+      if (countdown >= 0) {
+        this.countdownTimer = setTimeout(sendCountdown, 1000);
+      } else {
+        // Démarrer la partie
+        this.gameState = 'playing';
+        const startMessage = {
+          type: 'game_start',
+          data: { message: 'Game started!' }
+        };
+        
+        try {
+          this.leftPlayer.socket.send(JSON.stringify(startMessage));
+          this.rightPlayer.socket.send(JSON.stringify(startMessage));
+        } catch (error) {
+          console.error('Error sending game start:', error);
+        }
+        
+        console.log(`🚀 Game ${this.id} started!`);
+      }
+    };
+
+    sendCountdown();
+  }
+
   public update(deltaTime: number) {
-    this.pong.update(deltaTime, this.leftPlayer.input, this.rightPlayer.input);
+    // Ne mettre à jour la physique que si le jeu est en cours
+    if (this.gameState === 'playing') {
+      this.pong.update(deltaTime, this.leftPlayer.input, this.rightPlayer.input);
+    }
   }
 
   public repr(playerId: number) {
@@ -85,7 +171,30 @@ export class GameManager {
 
     const game = new PongGame(gameId, new PongPlayer(leftPlayerId, leftPlayerSocket), new PongPlayer(rightPlayerId, rightPlayerSocket));
     this._games.set(gameId, game);
+    
+    // Si c'est une partie locale (même joueur), démarrer immédiatement
+    if (leftPlayerId === rightPlayerId) {
+      console.log(`🎮 Local game ${gameId} - starting immediately`);
+      game.gameState = 'playing';
+    } else {
+      // Partie online: envoyer le statut ready
+      console.log(`🎮 Online game ${gameId} - waiting for ready check`);
+      game.broadcastReadyStatus();
+    }
+    
     return gameId;
+  }
+
+  public setPlayerReady(gameId: number, playerId: number, ready: boolean): void {
+    const game = this._games.get(gameId);
+    if (game) {
+      game.setPlayerReady(playerId, ready);
+      
+      // Si tous les joueurs sont ready, démarrer le countdown
+      if (game.areAllPlayersReady() && game.gameState === 'waiting_ready') {
+        game.startCountdown();
+      }
+    }
   }
 
   public stopGame(gameId: number) {
@@ -124,15 +233,19 @@ export class GameManager {
     this._intervalId = setInterval(() => {
       for (const game of this._games.values()) {
         game.update(deltaTime);
-        // TODO: handle errors lmao
-        game.leftPlayer.socket.send(JSON.stringify({
-          type: 'game_state',
-          data: game.repr(game.leftPlayer.id)
-        }));
-        game.rightPlayer.socket.send(JSON.stringify({
-          type: 'game_state',
-          data: game.repr(game.rightPlayer.id)
-        }));
+        
+        // N'envoyer les game_state que si le jeu est en cours
+        if (game.gameState === 'playing') {
+          // TODO: handle errors lmao
+          game.leftPlayer.socket.send(JSON.stringify({
+            type: 'game_state',
+            data: game.repr(game.leftPlayer.id)
+          }));
+          game.rightPlayer.socket.send(JSON.stringify({
+            type: 'game_state',
+            data: game.repr(game.rightPlayer.id)
+          }));
+        }
         if (game.pong.state !== PongState.Running) {
           console.log(`game ${game.id} finished with state ${game.pong.state} !`);
           

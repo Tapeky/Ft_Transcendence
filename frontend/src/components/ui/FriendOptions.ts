@@ -5,6 +5,7 @@ import { apiService } from '../../services/api';
 import { router } from '../../app/Router';
 import { CloseBtn } from './CloseBtn';
 import { getAvatarUrl } from '../../utils/avatar';
+import { gameInviteService } from '../../services/GameInviteService';
 
 export interface FriendOptionsProps {
   username: string;
@@ -137,12 +138,19 @@ export class FriendOptions {
 
   private async handleGameInvite(): Promise<void> {
     try {
-      console.log('🎮 FriendOptions: Sending game invite to', this.props.username);
+      console.log('🎮 FriendOptions: Sending KISS game invite to', this.props.username);
       
-      // Send game invite via API
-      await apiService.sendGameInvite(this.props.id);
+      // Vérifier que le service KISS est connecté
+      if (!gameInviteService.isConnected()) {
+        console.error('❌ KISS service not connected');
+        alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
+        return;
+      }
       
-      console.log('✅ Game invite sent successfully!');
+      // Send game invite via KISS system
+      gameInviteService.sendInvite(this.props.id);
+      
+      console.log('✅ KISS Game invite sent successfully!');
       alert(`🎮 Game invite sent to ${this.props.username}!`);
       
       // Close the modal

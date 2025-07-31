@@ -20,6 +20,11 @@ export class Game {
     private gameMode: 'local' | 'online';
     private opponentId?: number;
     private gameEndOverlay: HTMLElement | null = null;
+    
+    // Ready system
+    private gameId?: number;
+    private isReady: boolean = false;
+    private readyOverlay: HTMLElement | null = null;
 
     // Constants
     private readonly ARENA_WIDTH = 500;
@@ -190,7 +195,31 @@ export class Game {
                         break;
 
                     case 'success':
-                        console.log('🎮 Game started successfully!');
+                        console.log('🎮 Game created successfully!');
+                        this.gameId = message.data.gameId;
+                        
+                        // Ready check seulement pour les parties online
+                        if (this.gameMode === 'online') {
+                            this.showReadyScreen();
+                        } else {
+                            // Mode local: démarrer immédiatement
+                            this.startGameLoop();
+                        }
+                        break;
+
+                    case 'ready_status':
+                        console.log('🎮 Ready status update:', message.data);
+                        this.updateReadyStatus(message.data);
+                        break;
+
+                    case 'countdown':
+                        console.log('🎮 Countdown:', message.data.count);
+                        this.showCountdown(message.data.count);
+                        break;
+
+                    case 'game_start':
+                        console.log('🎮 Game starting!');
+                        this.hideReadyScreen();
                         this.startGameLoop();
                         break;
 
@@ -624,15 +653,33 @@ export class Game {
         this.stopGameLoop();
         
         if (this.ws) {
-            this.ws.close();
-            this.ws = null;
+            // Pour éviter les conflits avec KISS, demander au serveur de sortir du jeu
+            // sans fermer la connexion WebSocket pour maintenir le statut en ligne
+            if (this.ws.readyState === WebSocket.OPEN) {
+                console.log('🔌 Sending leave_game message before cleanup');
+                this.sendMessage('leave_game', {});
+                
+                // Attendre un peu pour que le message soit envoyé
+                setTimeout(() => {
+                    console.log('🔌 Keeping WebSocket open to maintain online status');
+                    this.ws = null;
+                }, 100);
+            } else {
+                this.ws = null;
+            }
         }
 
-        // Clean up any remaining game end overlay
+        // Clean up any remaining overlays
         if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
             console.log('🧹 Cleaning up remaining game end overlay');
             document.body.removeChild(this.gameEndOverlay);
             this.gameEndOverlay = null;
+        }
+
+        if (this.readyOverlay && document.body.contains(this.readyOverlay)) {
+            console.log('🧹 Cleaning up remaining ready overlay');
+            document.body.removeChild(this.readyOverlay);
+            this.readyOverlay = null;
         }
 
         document.removeEventListener('keydown', this.setupKeyboardListeners);
@@ -640,5 +687,113 @@ export class Game {
 
         this.container.innerHTML = '';
         this.gameState = null;
+    }
+
+    // 🎮 Ready System Methods
+    private showReadyScreen(): void {
+        if (this.readyOverlay) return; // Already showing
+
+        console.log('🎮 Showing ready screen');
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white font-iceland';
+        
+        overlay.innerHTML = `
+            <div class="bg-gradient-to-b from-blue-900 to-purple-900 p-8 rounded-lg border-4 border-white text-center">
+                <h1 class="text-4xl mb-6">🎮 Game Ready Check</h1>
+                <div class="mb-6">
+                    <p class="text-xl mb-4">Waiting for both players to be ready...</p>
+                    <div id="ready-status" class="text-lg">
+                        <div>You: <span id="your-status" class="text-red-400">Not Ready</span></div>
+                        <div>Opponent: <span id="opponent-status" class="text-red-400">Not Ready</span></div>
+                    </div>
+                </div>
+                <button id="ready-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors">
+                    Click when READY!
+                </button>
+            </div>
+        `;
+
+        // Event listener pour le bouton ready
+        const readyBtn = overlay.querySelector('#ready-btn') as HTMLButtonElement;
+        readyBtn?.addEventListener('click', () => {
+            this.toggleReady();
+        });
+
+        document.body.appendChild(overlay);
+        this.readyOverlay = overlay;
+    }
+
+    private hideReadyScreen(): void {
+        if (this.readyOverlay && document.body.contains(this.readyOverlay)) {
+            console.log('🎮 Hiding ready screen');
+            document.body.removeChild(this.readyOverlay);
+            this.readyOverlay = null;
+        }
+    }
+
+    private toggleReady(): void {
+        this.isReady = !this.isReady;
+        console.log(`🎮 Player toggled ready: ${this.isReady}`);
+        
+        if (this.gameId) {
+            this.sendMessage('player_ready', {
+                gameId: this.gameId,
+                ready: this.isReady
+            });
+        }
+
+        this.updateReadyButton();
+    }
+
+    private updateReadyStatus(data: any): void {
+        if (!this.readyOverlay) return;
+
+        const yourStatus = this.readyOverlay.querySelector('#your-status');
+        const opponentStatus = this.readyOverlay.querySelector('#opponent-status');
+
+        if (yourStatus) {
+            yourStatus.textContent = this.isReady ? 'Ready' : 'Not Ready';
+            yourStatus.className = this.isReady ? 'text-green-400' : 'text-red-400';
+        }
+
+        if (opponentStatus) {
+            // Simple: si on est tous les deux ready, ou si l'autre est ready mais pas nous
+            const bothReady = data.leftPlayerReady && data.rightPlayerReady;
+            const opponentReady = bothReady || ((data.leftPlayerReady || data.rightPlayerReady) && !this.isReady);
+            
+            opponentStatus.textContent = opponentReady ? 'Ready' : 'Not Ready';
+            opponentStatus.className = opponentReady ? 'text-green-400' : 'text-red-400';
+        }
+    }
+
+    private updateReadyButton(): void {
+        if (!this.readyOverlay) return;
+
+        const readyBtn = this.readyOverlay.querySelector('#ready-btn') as HTMLButtonElement;
+        if (readyBtn) {
+            if (this.isReady) {
+                readyBtn.textContent = 'Ready! (Click to cancel)';
+                readyBtn.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors';
+            } else {
+                readyBtn.textContent = 'Click when READY!';
+                readyBtn.className = 'bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors';
+            }
+        }
+    }
+
+    private showCountdown(count: number): void {
+        if (!this.readyOverlay) return;
+
+        console.log(`🎮 Showing countdown: ${count}`);
+        
+        // Remplacer le contenu de l'overlay par le countdown
+        const overlay = this.readyOverlay;
+        overlay.innerHTML = `
+            <div class="bg-gradient-to-b from-red-900 to-orange-900 p-12 rounded-lg border-4 border-white text-center">
+                <h1 class="text-6xl mb-4 animate-pulse">${count}</h1>
+                <p class="text-2xl">Game starting...</p>
+            </div>
+        `;
     }
 }
