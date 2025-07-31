@@ -9,6 +9,7 @@ import { Input } from '../game/Input';
 import { DirectMessageData } from '../types/chat';
 import { Pong } from '../game/Pong';
 import { error } from 'console';
+import { simpleGameInvites } from './SimpleGameInvites';
 
 interface ConnectedUser {
   id: number;
@@ -72,6 +73,9 @@ export function setupWebSocket(server: FastifyInstance) {
   // Attacher le WebSocketManager à Fastify pour les routes
   server.decorate('websocketManager', wsManager);
   
+  // 🔗 Connecter le système KISS au WebSocketManager principal
+  simpleGameInvites.setWebSocketManager(wsManager);
+  
   // Démarrer la boucle de jeu du GameManager
   gameManager.registerLoop();
 
@@ -104,6 +108,9 @@ export function setupWebSocket(server: FastifyInstance) {
                   
                   // Ajouter l'utilisateur aux connexions actives
                   wsManager.addUser(userId, username, connection);
+                  
+                  // Ajouter l'utilisateur au système KISS d'invitations
+                  simpleGameInvites.addUser(userId, username, connection);
                   
                   // Confirmer l'authentification
                   connection.socket.send(JSON.stringify({
@@ -213,6 +220,62 @@ export function setupWebSocket(server: FastifyInstance) {
                     type: 'game_invite_response',
                     data: { response: message.response }
                   });
+                }
+              }
+              break;
+
+            case 'join_existing_game':
+              // 🎯 KISS: Rejoindre une partie existante avec de nouveaux sockets
+              if (userId && typeof message.gameId === 'number' && typeof message.opponentId === 'number') {
+                console.log(`🎮 KISS: ${username} joining existing game ${message.gameId}`);
+                
+                // Récupérer la partie pour déterminer les positions
+                const game = GameManager.instance.getGame(message.gameId);
+                if (!game) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Game not found'
+                  }));
+                  break;
+                }
+                
+                const opponentUser = wsManager.getUser(message.opponentId);
+                let success = false;
+                
+                // Déterminer qui est left/right et mettre à jour les sockets correctement
+                if (game.leftPlayer.id === userId && game.rightPlayer.id === message.opponentId) {
+                  // Le joueur actuel est left, l'opponent est right
+                  success = GameManager.instance.updateGameSockets(
+                    message.gameId,
+                    userId,           // leftPlayerId
+                    message.opponentId, // rightPlayerId  
+                    connection.socket,  // leftSocket
+                    opponentUser?.socket.socket || null // rightSocket
+                  );
+                } else if (game.leftPlayer.id === message.opponentId && game.rightPlayer.id === userId) {
+                  // L'opponent est left, le joueur actuel est right
+                  success = GameManager.instance.updateGameSockets(
+                    message.gameId,
+                    message.opponentId, // leftPlayerId
+                    userId,           // rightPlayerId
+                    opponentUser?.socket.socket || null, // leftSocket
+                    connection.socket   // rightSocket
+                  );
+                } else {
+                  console.error(`🎮 KISS: Player positions don't match in game ${message.gameId}`);
+                }
+                
+                if (success) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'success',
+                    data: { gameId: message.gameId, message: 'Rejoined existing game' }
+                  }));
+                  console.log(`✅ ${username} successfully joined game ${message.gameId}`);
+                } else {
+                  connection.socket.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Game not found or failed to join'
+                  }));
                 }
               }
               break;
@@ -336,6 +399,12 @@ export function setupWebSocket(server: FastifyInstance) {
               break;
 
             default:
+              // Essayer de traiter avec le système KISS d'invitations
+              if (userId && simpleGameInvites.handleMessage(userId, message)) {
+                // Message traité par le système KISS
+                break;
+              }
+              
               connection.socket.send(JSON.stringify({
                 type: 'error',
                 message: 'Type de message non reconnu'
@@ -364,6 +433,7 @@ export function setupWebSocket(server: FastifyInstance) {
           }
           
           wsManager.removeUser(userId);
+          simpleGameInvites.removeUser(userId);
         }
       });
 
@@ -372,6 +442,7 @@ export function setupWebSocket(server: FastifyInstance) {
         console.error('Erreur WebSocket:', error);
         if (userId) {
           wsManager.removeUser(userId);
+          simpleGameInvites.removeUser(userId);
         }
       });
 

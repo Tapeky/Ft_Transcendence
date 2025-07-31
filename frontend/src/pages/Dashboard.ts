@@ -190,6 +190,14 @@ export class Dashboard {
           <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
             <img src="${this.getAvatarUrl(match.player1_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
             <h1>${match.player1_username || match.player1_guest_name || 'Unknown'}</h1>
+            ${match.player1_id && match.player1_id !== currentUser?.id ? `
+              <button 
+                data-invite-user="${match.player1_id}"
+                data-invite-username="${match.player1_username}"
+                class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
+                🎮 Rematch
+              </button>
+            ` : ''}
           </div>
 
           <h1 class="flex-1 text-center text-[4rem]">${match.player1_score} - ${match.player2_score}</h1>
@@ -197,6 +205,14 @@ export class Dashboard {
           <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
             <img src="${this.getAvatarUrl(match.player2_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
             <h1>${match.player2_username || match.player2_guest_name || 'Unknown'}</h1>
+            ${match.player2_id && match.player2_id !== currentUser?.id ? `
+              <button 
+                data-invite-user="${match.player2_id}"
+                data-invite-username="${match.player2_username}"
+                class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
+                🎮 Rematch
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>

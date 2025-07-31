@@ -155,7 +155,21 @@ export class Game {
                 switch(message.type) {
                     case 'auth_success':
                         console.log('✅ Authentication successful!', message.data);
-                        if (this.gameMode === 'local') {
+                        
+                        // 🎯 KISS: Vérifier si on vient d'une invitation acceptée
+                        const existingGameId = localStorage.getItem('kiss_game_id');
+                        const existingOpponentId = localStorage.getItem('kiss_opponent_id');
+                        
+                        if (existingGameId && existingOpponentId) {
+                            console.log('🎮 KISS: Rejoining existing game', existingGameId, 'with opponent', existingOpponentId);
+                            this.sendMessage('join_existing_game', { 
+                                gameId: parseInt(existingGameId),
+                                opponentId: parseInt(existingOpponentId)
+                            });
+                            // Nettoyer les tokens temporaires
+                            localStorage.removeItem('kiss_game_id');
+                            localStorage.removeItem('kiss_opponent_id');
+                        } else if (this.gameMode === 'local') {
                             console.log('🏠 Starting local game...');
                             console.log('🏠 Sending start_local_game message to backend...');
                             this.sendMessage('start_local_game', {});

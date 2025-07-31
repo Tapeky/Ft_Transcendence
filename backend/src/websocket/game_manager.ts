@@ -92,6 +92,30 @@ export class GameManager {
     this._games.delete(gameId);
   }
 
+  // 🔄 Mettre à jour les sockets d'une partie existante (pour KISS handoff)
+  public updateGameSockets(gameId: number, leftPlayerId: number, rightPlayerId: number, leftSocket: any, rightSocket: any): boolean {
+    const game = this._games.get(gameId);
+    if (!game) {
+      console.log(`❌ Game ${gameId} not found for socket update`);
+      return false;
+    }
+
+    // Vérifier que les IDs correspondent et mettre à jour via l'objet socket
+    if (game.leftPlayer.id === leftPlayerId) {
+      // Remplacer l'objet socket readonly par une approche compatible
+      (game.leftPlayer as any).socket = leftSocket;
+      console.log(`🔄 Updated left player socket for game ${gameId}`);
+    }
+    
+    if (game.rightPlayer.id === rightPlayerId) {
+      // Remplacer l'objet socket readonly par une approche compatible
+      (game.rightPlayer as any).socket = rightSocket;
+      console.log(`🔄 Updated right player socket for game ${gameId}`);
+    }
+
+    return true;
+  }
+
   public registerLoop() {
     if (this._intervalId)
       return;

@@ -56,8 +56,12 @@ export class FriendItem {
         <!-- Action Buttons -->
         <div class="flex-1 flex justify-evenly items-start mt-1">
           
-          <!-- Game Invite Button -->
-          <button id="invite-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 transition">
+          <!-- Game Invite Button - KISS Integration -->
+          <button 
+            id="invite-btn" 
+            data-invite-user="${this.props.id}"
+            data-invite-username="${this.props.username}"
+            class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 hover:scale-110 transition">
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
 

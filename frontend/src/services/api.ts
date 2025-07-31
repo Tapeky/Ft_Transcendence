@@ -217,6 +217,10 @@ class ApiService {
 		localStorage.removeItem('auth_token');
 	}
 
+	getToken(): string | null {
+		return this.token;
+	}
+
 	isAuthenticated(): boolean {
 		return !!this.token;
 	}
