@@ -102,7 +102,8 @@ export class FriendsTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderFriends();
-    this.onRefresh?.();
+    // Note: onRefresh callback removed to prevent infinite loop
+    // The parent FriendListModal already handles the refresh
   }
 
   getFriends(): Friend[] {

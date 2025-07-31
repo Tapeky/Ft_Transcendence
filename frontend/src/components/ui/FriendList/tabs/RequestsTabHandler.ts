@@ -141,7 +141,7 @@ export class RequestsTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderRequests();
-    this.onRefresh?.();
+    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   getRequests(): FriendRequest[] {

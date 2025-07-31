@@ -102,7 +102,7 @@ export class BlockedTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderBlockedUsers();
-    this.onRefresh?.();
+    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   getBlockedUsers(): BlockedUser[] {
