@@ -1,5 +1,5 @@
 import './index.css';
-import { application } from './app/Application';
+import { application } from './core/app/Application';
 
 class App {
   constructor() {
@@ -18,7 +18,7 @@ class App {
       
       // Initialize dev tools (only in development)
       if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-        const { initUserSwitcher } = await import('./components/dev/UserSwitcher');
+        const { initUserSwitcher } = await import('./dev/components/UserSwitcher');
         initUserSwitcher();
         console.log('🔧 Dev tools initialized');
       }
@@ -27,9 +27,7 @@ class App {
       console.log('🎮 Initializing KISS Game Invite System...');
       
       try {
-        const { gameInviteService } = await import('./services/GameInviteService');
-        const { SimpleInvitePopup } = await import('./components/SimpleInvitePopup');
-        const { ConnectionStatus } = await import('./components/ui/ConnectionStatus');
+        const { gameInviteService, SimpleInvitePopup, ConnectionStatus } = await import('./features/invitations');
         // const { kissInviteButtons } = await import('./utils/kissInvites');
         
         // Vérification que les services sont correctement chargés

@@ -183,7 +183,7 @@ export class HomePage {
     routes.forEach(route => {
       const btn = this.element.querySelector(`#${route.id}`);
       btn?.addEventListener('click', () => {
-        import('../app/Router').then(({ router }) => {
+        import('../core/app/Router').then(({ router }) => {
           router.navigate(route.path);
         });
       });
@@ -194,7 +194,7 @@ export class HomePage {
     // Show routes button
     const showRoutesBtn = this.element.querySelector('#show-routes');
     showRoutesBtn?.addEventListener('click', () => {
-      import('../app/Router').then(({ router }) => {
+      import('../core/app/Router').then(({ router }) => {
         const routes = router.getAvailableRoutes();
       });
     });
@@ -202,7 +202,7 @@ export class HomePage {
     // Clear auth button (for testing)
     const clearAuthBtn = this.element.querySelector('#clear-auth');
     clearAuthBtn?.addEventListener('click', () => {
-      import('../auth/AuthManager').then(({ authManager }) => {
+      import('../core/auth/AuthManager').then(({ authManager }) => {
         authManager.logout();
         this.updateAuthStatus();
         alert('🚪 Auth cleared! Protected routes will now redirect to /auth');
@@ -211,7 +211,7 @@ export class HomePage {
   }
 
   private updateAuthStatus(): void {
-    import('../auth/AuthManager').then(({ authManager }) => {
+    import('../core/auth/AuthManager').then(({ authManager }) => {
       const authStatusElement = this.element.querySelector('#auth-status');
       if (authStatusElement) {
         const isAuthenticated = authManager.isAuthenticated();
@@ -228,7 +228,7 @@ export class HomePage {
   }
 
   private updateTotalRoutes(): void {
-    import('../app/Router').then(({ router }) => {
+    import('../core/app/Router').then(({ router }) => {
       const totalRoutesElement = this.element.querySelector('#total-routes');
       if (totalRoutesElement) {
         const routes = router.getAvailableRoutes();
