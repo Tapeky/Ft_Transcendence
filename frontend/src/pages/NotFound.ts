@@ -1,4 +1,4 @@
-import { router } from '../app/Router';
+import { router } from '../core/app/Router';
 
 export class NotFoundPage {
   private element: HTMLElement;

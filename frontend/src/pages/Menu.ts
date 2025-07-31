@@ -1,8 +1,8 @@
-import { authManager } from '../auth/AuthManager';
-import { router } from '../app/Router';
-import { Header } from '../components/ui/Header';
-import { Banner } from '../components/ui/Banner';
-import { Choice } from '../components/ui/Choice';
+import { authManager } from '../core/auth/AuthManager';
+import { router } from '../core/app/Router';
+import { Header } from '../shared/components/Header';
+import { Banner } from '../shared/components/Banner';
+import { Choice } from '../shared/components/Choice';
 
 export class MenuPage {
   private element: HTMLElement;
