@@ -23,6 +23,7 @@ export class GameInviteService {
       
       this.ws.onopen = () => {
         console.log('🎮 KISS: WebSocket connected');
+        // KISS: Reset reconnection attempts on successful connection
         this.reconnectAttempts = 0;
         this.authenticate();
       };
@@ -55,35 +56,16 @@ export class GameInviteService {
   private authenticate(): void {
     console.log('🎮 KISS: Starting authentication...');
     
-    // Vérification défensive pour éviter les erreurs de méthode manquante
-    if (!apiService || typeof apiService.getToken !== 'function') {
-      console.error('🎮 KISS: apiService.getToken is not available');
-      // Fallback - essayer de récupérer le token directement du localStorage
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
-      console.log('🎮 KISS: Fallback token found:', token ? `${token.substring(0, 20)}...` : 'NULL');
-      
-      if (!token || !this.ws) {
-        console.error('🎮 KISS: No token found or no WebSocket connection');
-        return;
-      }
-      
-      console.log('🎮 KISS: Sending auth with fallback token');
-      this.ws.send(JSON.stringify({
-        type: 'auth',
-        token: token
-      }));
-      return;
-    }
-
-    const token = apiService.getToken();
-    console.log('🎮 KISS: Token from apiService:', token ? `${token.substring(0, 20)}...` : 'NULL');
+    // KISS: Une seule méthode d'authentification - toujours localStorage en premier
+    const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+    console.log('🎮 KISS: Token found:', token ? `${token.substring(0, 20)}...` : 'NULL');
     
     if (!token || !this.ws) {
       console.error('🎮 KISS: No token found or no WebSocket connection');
       return;
     }
 
-    console.log('🎮 KISS: Sending auth with apiService token');
+    console.log('🎮 KISS: Sending authentication');
     this.ws.send(JSON.stringify({
       type: 'auth',
       token: token
@@ -95,6 +77,8 @@ export class GameInviteService {
       case 'auth_success':
         console.log('🎮 KISS: Authenticated successfully');
         this.isAuthenticated = true;
+        // KISS: Ensure reconnection attempts are reset after successful auth
+        this.reconnectAttempts = 0;
         break;
 
       case 'auth_error':
@@ -195,12 +179,15 @@ export class GameInviteService {
 
   // 📤 Envoyer invitation
   sendInvite(userId: number): void {
-    if (!this.ws || !this.isAuthenticated) {
-      console.error('🎮 KISS: Not connected or authenticated');
+    // KISS: Connection state validation
+    if (!this.isConnected()) {
+      console.error('🎮 KISS: Not connected, attempting reconnection...');
+      this.connect();
       return;
     }
     
-    this.ws.send(JSON.stringify({
+    console.log('🎮 KISS: Sending invite to user', userId);
+    this.ws!.send(JSON.stringify({
       type: 'send_game_invite',
       toUserId: userId
     }));
@@ -208,12 +195,14 @@ export class GameInviteService {
 
   // ✅ Répondre à invitation
   respondToInvite(inviteId: string, accept: boolean): void {
-    if (!this.ws || !this.isAuthenticated) {
-      console.error('🎮 KISS: Not connected or authenticated');
+    // KISS: Connection state validation
+    if (!this.isConnected()) {
+      console.error('🎮 KISS: Not connected, cannot respond to invite');
       return;
     }
     
-    this.ws.send(JSON.stringify({
+    console.log('🎮 KISS: Responding to invite', inviteId, accept ? 'ACCEPT' : 'DECLINE');
+    this.ws!.send(JSON.stringify({
       type: 'respond_game_invite',
       inviteId: inviteId,
       accept: accept
@@ -253,6 +242,37 @@ export class GameInviteService {
       this.ws = null;
     }
     this.isAuthenticated = false;
+  }
+
+  // 🔄 Force reconnection (pour éviter les conflits avec Game.ts)
+  forceReconnect(): void {
+    console.log('🎮 KISS: Forcing reconnection after game ended');
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.isAuthenticated = false;
+    this.reconnectAttempts = 0;
+    
+    // Reconnection immédiate
+    setTimeout(() => {
+      this.connect();
+    }, 500);
+  }
+
+  // KISS: Basic cleanup method for singleton
+  cleanup(): void {
+    console.log('🎮 KISS: Cleaning up GameInviteService');
+    this.disconnect();
+    
+    // Clear all callbacks
+    this.onInviteReceivedCallback = undefined;
+    this.onInviteDeclinedCallback = undefined;
+    this.onGameStartedCallback = undefined;
+    this.onInviteErrorCallback = undefined;
+    this.onInviteSentCallback = undefined;
+    
+    this.reconnectAttempts = 0;
   }
 }
 

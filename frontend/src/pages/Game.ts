@@ -248,6 +248,25 @@ export class Game {
                         this.showGameEnd(message.data.winner);
                         break;
 
+                    case 'game_left':
+                        console.log('🎮 Successfully left game');
+                        break;
+
+                    case 'game_invite_received':
+                        // 🎯 KISS: Rediriger vers GameInviteService
+                        console.log('🎮 KISS: Redirecting invitation to GameInviteService');
+                        this.forwardToKissService(message);
+                        break;
+
+                    case 'invite_sent':
+                    case 'invite_declined':
+                    case 'invite_error':
+                    case 'invite_expired':
+                        // 🎯 KISS: Rediriger tous les messages KISS
+                        console.log('🎮 KISS: Redirecting KISS message to GameInviteService');
+                        this.forwardToKissService(message);
+                        break;
+
                     case 'err_self':
                     case 'err_game_started':
                     case 'err_unknown_id':
@@ -291,6 +310,41 @@ export class Game {
         };
 
         console.log('✅ WebSocket listeners setup complete');
+    }
+
+    private async forwardToKissService(message: any) {
+        try {
+            const { gameInviteService } = await import('../services/GameInviteService');
+            
+            // KISS: Safety checks before forwarding
+            if (!gameInviteService) {
+                console.warn('🎮 KISS: GameInviteService not available');
+                return;
+            }
+            
+            if (!message || !message.type) {
+                console.warn('🎮 KISS: Invalid message for forwarding:', message);
+                return;
+            }
+            
+            console.log('🎮 KISS: Forwarding message to GameInviteService:', message.type);
+            (gameInviteService as any).handleMessage(message);
+            
+        } catch (error) {
+            console.error('🎮 KISS: Error forwarding message to GameInviteService:', error);
+        }
+    }
+
+    private async ensureKissReconnection() {
+        try {
+            const { gameInviteService } = await import('../services/GameInviteService');
+            if (gameInviteService) {
+                console.log('🎮 KISS: Forcing reconnection after Game.ts cleanup');
+                gameInviteService.forceReconnect();
+            }
+        } catch (error) {
+            console.error('🎮 KISS: Error forcing reconnection:', error);
+        }
     }
 
     private setupKeyboardListeners() {
@@ -654,16 +708,21 @@ export class Game {
         
         if (this.ws) {
             // Pour éviter les conflits avec KISS, demander au serveur de sortir du jeu
-            // sans fermer la connexion WebSocket pour maintenir le statut en ligne
             if (this.ws.readyState === WebSocket.OPEN) {
                 console.log('🔌 Sending leave_game message before cleanup');
                 this.sendMessage('leave_game', {});
                 
-                // Attendre un peu pour que le message soit envoyé
+                // Fermer proprement la WebSocket Game.ts pour éviter les conflits
                 setTimeout(() => {
-                    console.log('🔌 Keeping WebSocket open to maintain online status');
-                    this.ws = null;
-                }, 100);
+                    console.log('🔌 Closing Game WebSocket to prevent KISS interference');
+                    if (this.ws) {
+                        this.ws.close();
+                        this.ws = null;
+                    }
+                    
+                    // Forcer la reconnexion du système KISS après fermeture
+                    this.ensureKissReconnection();
+                }, 200);
             } else {
                 this.ws = null;
             }
