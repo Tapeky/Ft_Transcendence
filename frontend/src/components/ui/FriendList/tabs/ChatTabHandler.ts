@@ -156,7 +156,7 @@ export class ChatTabHandler {
   async refresh(): Promise<void> {
     // Refresh current view
     await this.renderChatContent();
-    this.onRefresh?.();
+    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   switchToFriendsView(): void {
