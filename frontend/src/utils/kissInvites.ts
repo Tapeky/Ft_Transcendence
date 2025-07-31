@@ -52,12 +52,7 @@ export class KissInviteButtons {
 
     // Marquer comme configuré
     button.setAttribute('data-kiss-setup', 'true');
-    
-    // Ajouter l'icône si pas déjà présente
-    if (!button.innerHTML.includes('🎮')) {
-      button.innerHTML = `🎮 ${button.innerHTML}`;
-    }
-    
+        
     // Ajouter classes si pas déjà présentes
     if (!button.className.includes('hover:scale-110')) {
       button.className += ' hover:scale-110 transition-transform cursor-pointer';
