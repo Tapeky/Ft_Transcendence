@@ -29,7 +29,8 @@ class App {
       try {
         const { gameInviteService } = await import('./services/GameInviteService');
         const { SimpleInvitePopup } = await import('./components/SimpleInvitePopup');
-        const { kissInviteButtons } = await import('./utils/kissInvites');
+        const { ConnectionStatus } = await import('./components/ui/ConnectionStatus');
+        // const { kissInviteButtons } = await import('./utils/kissInvites');
         
         // Vérification que les services sont correctement chargés
         if (!gameInviteService) {
@@ -42,8 +43,12 @@ class App {
           new SimpleInvitePopup(invite);
         });
         
-        // Initialize auto-detection des boutons d'invitation
-        kissInviteButtons.init();
+        // Note: Auto-detection disabled - FriendItem handles invitations directly
+        // kissInviteButtons.init();
+        
+        // Initialize connection status indicator
+        const connectionStatus = new ConnectionStatus();
+        connectionStatus.show();
         
         console.log('🎮 KISS Game Invite System initialized');
         

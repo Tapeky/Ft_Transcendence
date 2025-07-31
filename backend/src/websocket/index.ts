@@ -351,6 +351,14 @@ export function setupWebSocket(server: FastifyInstance) {
                 }));
               }
               break;
+
+            case 'player_ready':
+              // 🎮 Joueur prêt à commencer la partie
+              if (userId && typeof message.gameId === 'number' && typeof message.ready === 'boolean') {
+                console.log(`🎮 Player ${userId} is ${message.ready ? 'ready' : 'not ready'} for game ${message.gameId}`);
+                GameManager.instance.setPlayerReady(message.gameId, userId, message.ready);
+              }
+              break;
             
             case 'update_input':
               if (userId && message.input
@@ -395,6 +403,22 @@ export function setupWebSocket(server: FastifyInstance) {
                   game.leftPlayer.input.copy(leftInput);
                   game.rightPlayer.input.copy(rightInput);
                 }
+              }
+              break;
+
+            case 'leave_game':
+              // Sortir proprement d'une partie en cours (pour éviter les conflits KISS)
+              if (userId) {
+                const game = gameManager.getFromPlayerId(userId);
+                if (game) {
+                  console.log(`User ${userId} leaving game ${game.id} cleanly`);
+                  gameManager.stopGame(game.id);
+                }
+                // Confirmer la sortie
+                connection.socket.send(JSON.stringify({
+                  type: 'game_left',
+                  message: 'Successfully left the game'
+                }));
               }
               break;
 

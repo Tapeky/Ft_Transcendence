@@ -2,6 +2,7 @@ import { getAvatarUrl } from '../../utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../app/Router';
 import { apiService } from '../../services/api';
+import { gameInviteService } from '../../services/GameInviteService';
 
 // FriendItem - Reproduction exacte de la version React
 // Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
@@ -108,16 +109,23 @@ export class FriendItem {
 
   private async sendGameInvite(): Promise<void> {
     try {
-      console.log(`✈️ FriendItem: Sending game invite to ${this.props.username}`);
+      console.log(`✈️ FriendItem: Sending KISS game invite to ${this.props.username}`);
       
-      // Envoyer l'invitation via l'API
-      await apiService.sendGameInvite(this.props.id);
+      // Vérifier que le service KISS est connecté
+      if (!gameInviteService.isConnected()) {
+        console.error('❌ KISS service not connected');
+        alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
+        return;
+      }
       
-      console.log('✅ Game invite sent successfully!');
+      // Envoyer l'invitation via le système KISS (WebSocket)
+      gameInviteService.sendInvite(this.props.id);
+      
+      console.log('✅ KISS Game invite sent successfully!');
       alert(`✈️ Game invite sent to ${this.props.username}!`);
       
     } catch (error) {
-      console.error('❌ Error sending game invite:', error);
+      console.error('❌ Error sending KISS game invite:', error);
       alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
     }
   }

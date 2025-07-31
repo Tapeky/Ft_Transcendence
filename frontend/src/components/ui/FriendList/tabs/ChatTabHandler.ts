@@ -3,6 +3,7 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
+import { gameInviteService } from '../../../../services/GameInviteService';
 
 export class ChatTabHandler {
   private container: Element;
@@ -128,10 +129,18 @@ export class ChatTabHandler {
     }
 
     try {
-      await apiService.sendGameInvite(friend.id);
+      // Vérifier que le service KISS est connecté
+      if (!gameInviteService.isConnected()) {
+        console.error('❌ KISS service not connected');
+        alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
+        return;
+      }
+      
+      // Send game invite via KISS system
+      gameInviteService.sendInvite(friend.id);
       alert(`✈️ Game invite sent to ${friend.username}!`);
     } catch (error) {
-      console.error('❌ Error sending game invite:', error);
+      console.error('❌ Error sending KISS game invite:', error);
       alert(`Failed to send invitation to ${friend.username}`);
     }
   }
