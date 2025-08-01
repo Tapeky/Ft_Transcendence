@@ -1,7 +1,8 @@
+import { RouteGuard } from './RouteGuard';
+
 export class Router {
   private routes: Map<string, (path?: string) => Promise<HTMLElement>> = new Map();
-  private currentPage: HTMLElement | null = null;
-  private routeGuard: any = null; // Will be set by RouteGuard
+  private routeGuard: RouteGuard | null = null;
 
   constructor() {
     this.setupRoutes();
@@ -9,12 +10,18 @@ export class Router {
     this.setupPopState();
   }
 
-  public setRouteGuard(guard: any): void {
+  public setRouteGuard(guard: RouteGuard): void {
     this.routeGuard = guard;
   }
 
+private createComponentContainer<T>(ComponentClass: new (container: HTMLElement, ...args: any[]) => T, ...args: any[]): HTMLElement {
+  const container = document.createElement('div');
+  new ComponentClass(container, ...args);
+  return container;
+}
+
   private setupRoutes(): void {
-    // Enregistrer les routes avec leurs factory functions dynamiques
+    // Normal routes
     this.routes.set('/', async () => {
       const { HomePage } = await import('../../pages/Home');
       return new HomePage().getElement();
@@ -46,11 +53,10 @@ export class Router {
       return new TournamentPage().getElement();
     });
     
-    // Dynamic route for dashboard with user ID pattern: /dashboard/123
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
-      const userId = pathSegments[2]; // /dashboard/123 -> segments[2] = "123"
+      const userId = pathSegments[2];
       
       
       if (!userId || !userId.match(/^\d+$/)) {
@@ -58,54 +64,36 @@ export class Router {
         return new NotFoundPage().getElement();
       }
       
-      // Success;
       const { Dashboard } = await import('../../features/profile/pages/Dashboard');
-      const container = document.createElement('div');
-      new Dashboard(container, userId);
-      return container;
+      return this.createComponentContainer(Dashboard, userId);
     });
     
-    // Route pour game mode selector
     this.routes.set('/game', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
       const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
       
-      
-      // Si pas de mode spécifié, afficher le sélecteur de mode
       if (!gameMode) {
         const { PongModeSelector } = await import('../../features/game/pages/PongModeSelector');
-        const container = document.createElement('div');
-        new PongModeSelector(container);
-        return container;
+        return this.createComponentContainer(PongModeSelector);
       }
       
-      // Si mode local
       if (gameMode === 'local') {
         const { Game } = await import('../../features/game/pages/Game');
-        const container = document.createElement('div');
-        new Game(container, undefined, 'local');
-        return container;
+        return this.createComponentContainer(Game, undefined, 'local');
       }
       
-      // Si mode online sans ID spécifique, afficher la sélection d'adversaire
       if (gameMode === 'online') {
         const { OnlinePlayerSelector } = await import('../../features/game/pages/OnlinePlayerSelector');
-        const container = document.createElement('div');
-        new OnlinePlayerSelector(container);
-        return container;
+        return this.createComponentContainer(OnlinePlayerSelector);
       }
       
-      // Si ID d'adversaire spécifique (mode online avec joueur)
       if (gameMode.match(/^\d+$/)) {
         const { Game } = await import('../../features/game/pages/Game');
-        const container = document.createElement('div');
         const opponentId = parseInt(gameMode);
-        new Game(container, opponentId, 'online');
-        return container;
+        return this.createComponentContainer(Game, opponentId, 'online');
       }
-      
-      // Route invalide, rediriger vers 404
+
       const { NotFoundPage } = await import('../../pages/NotFound');
       return new NotFoundPage().getElement();
     });
@@ -114,17 +102,11 @@ export class Router {
       const { NotFoundPage } = await import('../../pages/NotFound');
       return new NotFoundPage().getElement();
     });
-    
-    
   }
 
   private findRoute(path: string): ((path?: string) => Promise<HTMLElement>) | undefined {
-    // Essayer match exact d'abord
-    if (this.routes.has(path)) {
-      return this.routes.get(path);
-    }
-    
-    // Essayer match dynamique pour dashboard
+    if (this.routes.has(path)) { return this.routes.get(path); }
+
     if (path.startsWith('/dashboard/')) {
       const segments = path.split('/');
       if (segments.length === 3 && segments[2].match(/^\d+$/)) {
@@ -132,10 +114,8 @@ export class Router {
       }
     }
     
-    // Essayer match dynamique pour game (avec tous les modes)
     if (path.startsWith('/game')) {
       const segments = path.split('/');
-      // Accepter /game, /game/local, /game/online, ou /game/123
       if (segments.length === 2 || 
           (segments.length === 3 && (segments[2] === 'local' || segments[2] === 'online' || segments[2].match(/^\d+$/)))) {
         return this.routes.get('/game');
@@ -145,66 +125,45 @@ export class Router {
     return undefined;
   }
 
+  private async renderPath(path: string): Promise<void> {
+    const pageFactory = this.findRoute(path) || this.routes.get('/404')!;
+    const page = await pageFactory(path);
+    this.render(page);
+  }
+
   public async navigate(path: string, skipGuard: boolean = false): Promise<void> {
-    
-    // Check route protection if guard is available and not skipped
-    if (!skipGuard && this.routeGuard) {
-      if (!this.routeGuard.canNavigateTo(path)) {
+    if (!skipGuard && this.routeGuard)
+      if (!this.routeGuard.canNavigateTo(path))
         return;
-      }
-    }
     
     try {
-      // Trouver la page avec matching intelligent
-      const pageFactory = this.findRoute(path) || this.routes.get('/404')!;
-      
-      // Render la nouvelle page (await du dynamic import)
-      const page = await pageFactory(path);
-      this.render(page);
-      
-      // Mettre à jour l'URL du navigateur
-      if (window.location.pathname !== path) {
+      await this.renderPath(path);
+      if (window.location.pathname !== path)
         window.history.pushState(null, '', path);
-      }
     } catch (error) {
-      // Fallback vers une page d'erreur simple
       this.renderError(`Erreur de navigation: ${error}`);
     }
   }
 
   private render(page: HTMLElement): void {
     const root = document.getElementById('root');
-    if (!root) {
-      throw new Error('Root element not found');
-    }
-
-    // Nettoyer la page précédente
-    root.innerHTML = '';
-
-    // Afficher la nouvelle page
-    root.appendChild(page);
-    this.currentPage = page;
+    if (!root) { throw new Error('Root element not found'); }
     
-    // Success;
+    root.innerHTML = '';
+    root.appendChild(page);
   }
 
   private handleInitialRoute(): void {
-    // Gérer la route initiale au chargement
     const currentPath = window.location.pathname;
-    
     this.navigate(currentPath);
   }
 
   private setupPopState(): void {
-    // Gérer les boutons précédent/suivant du navigateur
     window.addEventListener('popstate', async () => {
       const currentPath = window.location.pathname;
       
       try {
-        // Navigate sans pushState pour éviter la boucle
-        const pageFactory = this.findRoute(currentPath) || this.routes.get('/404')!;
-        const page = await pageFactory(currentPath);
-        this.render(page);
+        await this.renderPath(currentPath);
       } catch (error) {
         this.renderError(`Erreur navigation historique: ${error}`);
       }
@@ -231,18 +190,8 @@ export class Router {
     `;
   }
 
-  // Méthode utilitaire pour debug
-  public getCurrentPath(): string {
-    return window.location.pathname;
-  }
-
-  public getAvailableRoutes(): string[] {
-    return Array.from(this.routes.keys());
-  }
+  public getCurrentPath(): string { return window.location.pathname; }
+  public getAvailableRoutes(): string[] { return Array.from(this.routes.keys()); } // A supprimer a la fin du projet
 }
 
-// Export singleton pour usage global
 export const router = new Router();
-
-// Rendre disponible globalement pour debug
-(window as any).router = router;
