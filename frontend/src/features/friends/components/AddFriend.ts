@@ -1,9 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { authManager } from '../../../core/auth/AuthManager';
 
-// AddFriend - Reproduction exacte de la version React
-// Input field + ADD button + Status messages (ok/ko/len/self)
-
 export class AddFriend {
   private element: HTMLElement;
   private status: string = 'ok';
@@ -13,7 +10,6 @@ export class AddFriend {
   constructor() {
     this.element = this.createElement();
     this.bindEvents();
-    
   }
 
   private createElement(): HTMLElement {
@@ -57,8 +53,6 @@ export class AddFriend {
     const nameInput = this.element.querySelector('#nameInput') as HTMLInputElement;
 
     addBtn?.addEventListener('click', () => this.addFriend());
-
-    // Enter key in input
     nameInput?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.addFriend();
@@ -74,20 +68,17 @@ export class AddFriend {
     const username = nameInput.value.trim();
     const currentUser = authManager.getCurrentUser();
 
-    // Validation: minimum 3 characters
     if (username.length < 3) {
       this.setStatus('len');
       return;
     }
 
-    // Validation: can't add yourself
     if (username === currentUser?.username) {
       this.setStatus('self');
       return;
     }
 
     try {
-      // Search user by username
       const users = await apiService.searchUsers(username);
       const foundUser = users.find(user => user.username === username);
 
@@ -96,13 +87,9 @@ export class AddFriend {
         return;
       }
 
-      // Send friend request
       await apiService.sendFriendRequest(foundUser.id);
-      
-      // Success
       this.setStatus('ok');
-      nameInput.value = ''; // Clear input
-
+      nameInput.value = '';
 
     } catch (error) {
       console.error('❌ AddFriend: Failed to send friend request:', error);
@@ -115,7 +102,6 @@ export class AddFriend {
     this.showStatus = true;
     this.updateStatusDisplay();
 
-    // Auto-hide status after 5 seconds (React behavior)
     if (this.statusTimer) {
       clearTimeout(this.statusTimer);
     }
@@ -130,7 +116,6 @@ export class AddFriend {
     const statusMessage = this.element.querySelector('#status-message');
     if (!statusMessage) return;
 
-    // Update visibility
     if (this.showStatus) {
       statusMessage.classList.remove('hidden');
       statusMessage.classList.add('block');
@@ -139,7 +124,6 @@ export class AddFriend {
       statusMessage.classList.remove('block');
     }
 
-    // Update color and text
     statusMessage.className = `${this.status === 'ok' ? 'text-green-500' : 'text-orange-500'} ${this.showStatus ? 'block' : 'hidden'} flex-1`;
     statusMessage.textContent = this.getStatusMessage();
   }
@@ -162,7 +146,6 @@ export class AddFriend {
     if (this.statusTimer) {
       clearTimeout(this.statusTimer);
     }
-    
     this.element.remove();
   }
 }

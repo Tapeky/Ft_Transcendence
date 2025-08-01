@@ -1,12 +1,3 @@
-// ============================================================================
-// GameTypes.ts - TypeScript interfaces for Pong game frontend
-// ============================================================================
-// Mirrors backend game system types for frontend-backend compatibility
-
-// ============================================================================
-// Geometry Types (from backend/src/game/Geometry.ts)
-// ============================================================================
-
 export class Vector2 {
   public constructor(public x: number, public y: number) {}
 
@@ -38,12 +29,7 @@ export class Vector2 {
   public static readonly down = new Vector2(0, 1);
 }
 
-// Alias to differentiate a vector from a point in space
 export class Point2 extends Vector2 {}
-
-// ============================================================================
-// Input Types (from backend/src/game/Input.ts)
-// ============================================================================
 
 export interface Input {
   up: boolean;
@@ -85,10 +71,6 @@ export class TwoPlayerGameInput implements TwoPlayerInput {
   }
 }
 
-// ============================================================================
-// Game State Types (from backend/src/game/Pong.ts)  
-// ============================================================================
-
 export enum PongState {
   Running = 'Running',
   Aborted = 'Aborted',
@@ -117,10 +99,6 @@ export interface GameState {
   opponentInput?: Input;
 }
 
-// ============================================================================
-// Game Constants (from backend/src/game/Pong.ts)
-// ============================================================================
-
 export const GAME_CONSTANTS = {
   arena: {
     width: 500,
@@ -129,12 +107,12 @@ export const GAME_CONSTANTS = {
   paddle: {
     width: 8,
     height: 30,
-    speed: 300 // pixels / sec (consistent with LocalGameEngine)
+    speed: 300
   },
   ball: {
     radius: 5,
-    speed: 200, // pixels / sec (consistent with LocalGameEngine)
-    maxBounceAngle: 45, // degrees (more reasonable)
+    speed: 200,
+    maxBounceAngle: 45,
     speedIncrementPerHit: 10,
     maxSpeed: 400
   },
@@ -143,10 +121,6 @@ export const GAME_CONSTANTS = {
     maxGameDurationMinutes: 10
   }
 } as const;
-
-// ============================================================================
-// Player & Match Types
-// ============================================================================
 
 export interface Player {
   id: number;
@@ -174,10 +148,6 @@ export interface GameSession {
   duration_seconds?: number;
   winner?: 'left' | 'right' | 'draw';
 }
-
-// ============================================================================
-// WebSocket Message Types
-// ============================================================================
 
 export interface WebSocketMessage {
   type: string;
@@ -226,9 +196,6 @@ export type GameMessage =
   | GameLeaveMessage 
   | GameEndMessage;
 
-// ============================================================================
-// Canvas Rendering Types
-// ============================================================================
 
 export interface RenderingContext {
   canvas: HTMLCanvasElement;
@@ -242,10 +209,6 @@ export interface RenderingContext {
 export interface DrawableEntity {
   render(ctx: RenderingContext): void;
 }
-
-// ============================================================================
-// Game Configuration Types
-// ============================================================================
 
 export interface GameConfig {
   canvasWidth: number;
@@ -266,10 +229,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   scoreColor: '#ffffff',
   frameRate: 60
 };
-
-// ============================================================================
-// Error Types
-// ============================================================================
 
 export class GameError extends Error {
   constructor(

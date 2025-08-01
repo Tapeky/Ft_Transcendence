@@ -1,11 +1,7 @@
 import { getAvatarUrl } from '../../../shared/utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../../core/app/Router';
-import { apiService } from '../../../shared/services/api';
 import { gameInviteService } from '../../invitations/services/GameInviteService';
-
-// FriendItem - Reproduction exacte de la version React
-// Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
 
 export interface FriendItemProps {
   username: string;
@@ -26,12 +22,17 @@ export class FriendItem {
     this.props = props;
     this.element = this.createElement();
     this.bindEvents();
-    
+  }
+
+  private getContainerClasses(): string {
+    const visibility = this.isVisible ? 'block' : 'hidden';
+    const zIndex = this.isOptionsOpen ? 'z-[55]' : 'z-[50]';
+    return `${visibility} ${zIndex} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`;
   }
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = `${this.isVisible ? 'block' : 'hidden'} ${this.isOptionsOpen ? 'z-[55]' : 'z-[50]'} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`;
+    container.className = this.getContainerClasses();
 
     container.innerHTML = `
       <!-- Avatar Section -->
@@ -90,33 +91,26 @@ export class FriendItem {
     const chatBtn = this.element.querySelector('#chat-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
-    // Game invite button - send game invitation
     inviteBtn?.addEventListener('click', () => {
       this.sendGameInvite();
     });
 
-    // Chat button - navigate to chat (React NavLink behavior)
     chatBtn?.addEventListener('click', () => {
       router.navigate(`/chat/${this.props.id}`);
     });
 
-    // Options button - open FriendOptions modal
     optionsBtn?.addEventListener('click', () => this.openOptions());
 
   }
 
   private async sendGameInvite(): Promise<void> {
     try {
-      
-      // Vérifier que le service KISS est connecté
       if (!gameInviteService.isConnected()) {
         alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
         return;
       }
       
-      // Envoyer l'invitation via le système KISS (WebSocket)
       gameInviteService.sendInvite(this.props.id);
-      
       alert(`✈️ Game invite sent to ${this.props.username}!`);
       
     } catch (error) {
@@ -128,7 +122,6 @@ export class FriendItem {
     this.isOptionsOpen = true;
     this.updateZIndex();
 
-    // Create FriendOptions instance (modal overlay)
     if (!this.friendOptionsInstance) {
       this.friendOptionsInstance = new FriendOptions({
         username: this.props.username,
@@ -141,9 +134,7 @@ export class FriendItem {
       });
     }
 
-    // Attach to document.body (portal pattern like React)
     document.body.appendChild(this.friendOptionsInstance.getElement());
-
   }
 
   private closeOptions(): void {
@@ -154,45 +145,61 @@ export class FriendItem {
       this.friendOptionsInstance.destroy();
       this.friendOptionsInstance = undefined;
     }
-
   }
 
   private dismissItem(): void {
-    // React behavior: setVisible(false) - hide the item
     this.isVisible = false;
     this.updateVisibility();
     
-    // Also close options if open
     if (this.isOptionsOpen) {
       this.closeOptions();
     }
-
   }
 
   private updateVisibility(): void {
-    if (this.isVisible) {
-      this.element.classList.remove('hidden');
-      this.element.classList.add('block');
-    } else {
-      this.element.classList.add('hidden');
-      this.element.classList.remove('block');
-    }
+    this.element.className = this.getContainerClasses();
   }
 
   private updateZIndex(): void {
-    // Update z-index based on options state (React className logic)
-    this.element.className = `${this.isVisible ? 'block' : 'hidden'} ${this.isOptionsOpen ? 'z-[55]' : 'z-[50]'} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`;
+    this.element.className = this.getContainerClasses();
   }
 
-  // Public method to update props (if needed)
   public updateProps(newProps: Partial<FriendItemProps>): void {
+    const hasChanged = Object.keys(newProps).some(key => 
+      this.props[key as keyof FriendItemProps] !== newProps[key as keyof FriendItemProps]
+    );
+    
+    if (!hasChanged) return;
+    
     this.props = { ...this.props, ...newProps };
     
-    // Re-render with new props
-    const newElement = this.createElement();
-    this.element.parentNode?.replaceChild(newElement, this.element);
-    this.element = newElement;
-    this.bindEvents();
+    if (newProps.displayName) {
+      const displayNameEl = this.element.querySelector('h2');
+      if (displayNameEl) displayNameEl.textContent = newProps.displayName;
+    }
+    
+    if (newProps.username) {
+      const usernameEl = this.element.querySelector('h2:nth-of-type(2)');
+      if (usernameEl) usernameEl.textContent = newProps.username;
+    }
+    
+    if (newProps.avatar !== undefined) {
+      const avatarEl = this.element.querySelector('img');
+      if (avatarEl) avatarEl.src = getAvatarUrl(newProps.avatar);
+    }
+    
+    if (newProps.is_online !== undefined) {
+      const statusEl = this.element.querySelector('.text-\\[1\\.5rem\\]');
+      if (statusEl) statusEl.textContent = newProps.is_online ? 'Online' : 'Offline';
+    }
+    
+    if (newProps.id) {
+      const inviteBtn = this.element.querySelector('#invite-btn');
+      if (inviteBtn) {
+        inviteBtn.setAttribute('data-invite-user', newProps.id.toString());
+        inviteBtn.setAttribute('data-invite-username', newProps.username || this.props.username);
+      }
+    }
   }
 
   getElement(): HTMLElement {

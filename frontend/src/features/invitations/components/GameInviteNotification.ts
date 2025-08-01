@@ -1,16 +1,5 @@
-import { apiService } from '../../services/api';
-
-// Interface pour les données d'invitation
-export interface GameInvite {
-  id: number;
-  sender_id: number;
-  receiver_id: number;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
-  created_at: string;
-  expires_at: string;
-  sender_username: string;
-  sender_avatar: string;
-}
+import { apiService } from '../../../shared/services/api';
+import { GameInvite } from '../types/GameInviteTypes';
 
 export class GameInviteNotification {
   private element: HTMLElement;
@@ -48,7 +37,7 @@ export class GameInviteNotification {
       <!-- Contenu invitation -->
       <div class="mb-4">
         <p class="text-[1.2rem] mb-2">
-          <strong>${this.invite.sender_username}</strong> wants to play!
+          <strong>${this.invite.sender_username || this.invite.fromUsername}</strong> wants to play!
         </p>
         <p class="text-[0.9rem] opacity-80">
           ⏰ Expires in ${timeLeft}
@@ -122,7 +111,7 @@ export class GameInviteNotification {
       if (declineBtn) declineBtn.disabled = true;
 
       // Envoyer la réponse
-      await apiService.respondToGameInvite(this.invite.id, action);
+      await apiService.respondToGameInvite(this.invite.id || parseInt(this.invite.inviteId), action);
       
       // Afficher le message de confirmation
       this.showConfirmation(action);
@@ -251,7 +240,7 @@ export class GameInviteNotification {
   }
 
   private getTimeLeft(): string {
-    const expiresAt = new Date(this.invite.expires_at);
+    const expiresAt = this.invite.expires_at ? new Date(this.invite.expires_at) : new Date(this.invite.expiresAt);
     const now = new Date();
     const diffMs = expiresAt.getTime() - now.getTime();
     

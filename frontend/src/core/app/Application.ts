@@ -39,6 +39,9 @@ export class Application {
   private setupCoreDependencies(): void {
     appState.setRouter(router);
     router.setRouteGuard(this.routeGuard);
+    
+    // Expose router globally for backward compatibility with game components
+    (window as any).router = router;
   }
 
   private initializeRouteProtection(): void {
@@ -80,4 +83,4 @@ export class Application {
 }
 
 export const application = Application.getInstance();
-// (window as any).application = application;
+(window as any).router = router;

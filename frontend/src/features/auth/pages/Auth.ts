@@ -1,6 +1,5 @@
 import { authManager } from '../../../core/auth/AuthManager';
 
-
 export class AuthPage {
   private element: HTMLElement;
   private currentMode: 'login' | 'register' = 'login';
@@ -16,7 +15,6 @@ export class AuthPage {
     this.bindEvents();
     this.subscribeToAuth();
     this.startAnimationCarousel();
-    
   }
 
   private createElement(): HTMLElement {

@@ -1,4 +1,5 @@
-import { gameInviteService, GameInvite } from '../services/GameInviteService';
+import { gameInviteService } from '../services/GameInviteService';
+import { GameInvite } from '../types/GameInviteTypes';
 
 const activePopups = new Set<string>();
 
@@ -8,7 +9,6 @@ export class SimpleInvitePopup {
   private autoCloseTimer?: number;
 
   constructor(private invite: GameInvite) {
-    // KISS: Prevent duplicates - simple check
     if (activePopups.has(invite.inviteId)) {
       return;
     }

@@ -1,89 +1,73 @@
-// 🎯 KISS Invite Buttons - Auto-intégration dans l'UI existante
 import { gameInviteService } from '../services/GameInviteService';
 
-export class KissInviteButtons {
-  private static instance: KissInviteButtons;
+export class InviteButtonHandler {
+  private static instance: InviteButtonHandler;
   private initialized = false;
 
-  static getInstance(): KissInviteButtons {
-    if (!KissInviteButtons.instance) {
-      KissInviteButtons.instance = new KissInviteButtons();
-    }
-    return KissInviteButtons.instance;
+  private static readonly DELAYS = {
+    INIT: 100,
+    BUTTON_FEEDBACK: 500,
+    BUTTON_RESET: 3000,
+    SCAN_DELAY: 100
+  } as const;
+
+  static getInstance(): InviteButtonHandler {
+    if (!InviteButtonHandler.instance)
+      InviteButtonHandler.instance = new InviteButtonHandler();
+    return InviteButtonHandler.instance;
   }
 
-  // 🎮 Initialiser le système d'auto-détection des boutons
   init(): void {
     if (this.initialized) return;
-    
-    
-    // Observer pour détecter les nouveaux boutons ajoutés dynamiquement
     this.setupMutationObserver();
-    
-    // Scan initial
     this.scanAndSetupButtons();
-    
     this.initialized = true;
   }
 
-  // 🔍 Scanner et configurer tous les boutons d'invitation
   private scanAndSetupButtons(): void {
-    const buttons = document.querySelectorAll('[data-invite-user]:not([data-kiss-setup])');
+    const buttons = document.querySelectorAll('[data-invite-user]:not([data-invite-setup])');
     
     buttons.forEach((button) => {
       this.setupButton(button as HTMLElement);
     });
 
-    if (buttons.length > 0) {
-    }
   }
 
-  // ⚙️ Configurer un bouton d'invitation
   private setupButton(button: HTMLElement): void {
     const userId = button.getAttribute('data-invite-user');
     const username = button.getAttribute('data-invite-username') || 'User';
     
     if (!userId || isNaN(parseInt(userId))) {
-      console.warn('🎮 KISS: Invalid user ID for invite button:', userId);
+      console.warn('🎮 InviteButtonHandler: Invalid user ID for invite button:', userId);
       return;
     }
 
-    // Marquer comme configuré
-    button.setAttribute('data-kiss-setup', 'true');
-        
-    // Ajouter classes si pas déjà présentes
-    if (!button.className.includes('hover:scale-110')) {
+    button.setAttribute('data-invite-setup', 'true');
+    if (!button.className.includes('hover:scale-110'))
       button.className += ' hover:scale-110 transition-transform cursor-pointer';
-    }
 
-    // Event listener
     button.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       
-      
-      // Désactiver temporairement le bouton
-      this.setButtonState(button, 'sending');
-      
-      // Envoyer l'invitation
-      gameInviteService.sendInvite(parseInt(userId));
-      
-      // Feedback visuel temporaire
-      setTimeout(() => {
-        this.setButtonState(button, 'sent');
-      }, 500);
-      
-      // Remettre à l'état normal après 3 secondes
-      setTimeout(() => {
-        this.setButtonState(button, 'normal');
-      }, 3000);
+      this.handleInviteClick(button, parseInt(userId));
     });
-
-    // Tooltips
     button.title = `Challenge ${username} to a Pong match!`;
   }
 
-  // 🎨 Changer l'état visuel d'un bouton
+  private handleInviteClick(button: HTMLElement, userId: number): void {
+    this.setButtonState(button, 'sending');
+    gameInviteService.sendInvite(userId);
+    
+    setTimeout(() => {
+      this.setButtonState(button, 'sent');
+    }, InviteButtonHandler.DELAYS.BUTTON_FEEDBACK);
+    
+    setTimeout(() => {
+      this.setButtonState(button, 'normal');
+    }, InviteButtonHandler.DELAYS.BUTTON_RESET);
+  }
+
   private setButtonState(button: HTMLElement, state: 'normal' | 'sending' | 'sent'): void {
     const btn = button as HTMLButtonElement;
     
@@ -108,7 +92,6 @@ export class KissInviteButtons {
     }
   }
 
-  // 👁️ Observer pour les changements DOM dynamiques
   private setupMutationObserver(): void {
     const observer = new MutationObserver((mutations) => {
       let shouldScan = false;
@@ -118,7 +101,6 @@ export class KissInviteButtons {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element;
-              // Vérifier si c'est un bouton d'invitation ou en contient
               if (element.matches('[data-invite-user]') || 
                   element.querySelector('[data-invite-user]')) {
                 shouldScan = true;
@@ -129,8 +111,7 @@ export class KissInviteButtons {
       });
       
       if (shouldScan) {
-        // Délai pour laisser le DOM se stabiliser
-        setTimeout(() => this.scanAndSetupButtons(), 100);
+        setTimeout(() => this.scanAndSetupButtons(), InviteButtonHandler.DELAYS.SCAN_DELAY);
       }
     });
 
@@ -140,7 +121,6 @@ export class KissInviteButtons {
     });
   }
 
-  // 🎯 Méthode utilitaire pour créer un bouton d'invitation
   static createInviteButton(userId: number, username: string, className?: string): HTMLButtonElement {
     const button = document.createElement('button');
     button.setAttribute('data-invite-user', userId.toString());
@@ -149,28 +129,29 @@ export class KissInviteButtons {
     button.className = className || 'btn btn-primary';
     button.innerHTML = 'Challenge';
     
-    // Le système KISS va automatiquement le configurer
     return button;
   }
 
-  // 📊 Statistiques pour debug
   getStats(): { setupButtons: number, connectedToService: boolean } {
-    const setupButtons = document.querySelectorAll('[data-kiss-setup="true"]').length;
+    const setupButtons = document.querySelectorAll('[data-invite-setup="true"]').length;
     return {
       setupButtons,
       connectedToService: gameInviteService.isConnected()
     };
   }
+
+  public static initializeWhenReady(): void {
+    const init = () => {
+      setTimeout(() => InviteButtonHandler.getInstance().init(), InviteButtonHandler.DELAYS.INIT);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  }
 }
 
-// Auto-initialization quand le DOM est prêt
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => KissInviteButtons.getInstance().init(), 100);
-  });
-} else {
-  setTimeout(() => KissInviteButtons.getInstance().init(), 100);
-}
-
-// Export pour utilisation manuelle
-export const kissInviteButtons = KissInviteButtons.getInstance();
+InviteButtonHandler.initializeWhenReady();
+export const inviteButtonHandler = InviteButtonHandler.getInstance();

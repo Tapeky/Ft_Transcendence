@@ -1,5 +1,5 @@
-// 🎯 KISS Game Invite Service - Intégré avec WebSocket existant
 import { apiService } from '../../../shared/services/api';
+import { GameInvite } from '../types/GameInviteTypes';
 
 export class GameInviteService {
   private ws: WebSocket | null = null;
@@ -18,11 +18,9 @@ export class GameInviteService {
 
   private connect(): void {
     try {
-      // Utiliser la même méthode que l'API existante
       this.ws = apiService.connectWebSocket();
       
       this.ws!.onopen = () => {
-        // KISS: Reset reconnection attempts on successful connection
         this.reconnectAttempts = 0;
         this.authenticate();
       };
@@ -49,8 +47,6 @@ export class GameInviteService {
   }
 
   private authenticate(): void {
-    
-    // KISS: Une seule méthode d'authentification - toujours localStorage en premier
     const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
     
     if (!token || !this.ws) {
@@ -67,7 +63,6 @@ export class GameInviteService {
     switch (data.type) {
       case 'auth_success':
         this.isAuthenticated = true;
-        // KISS: Ensure reconnection attempts are reset after successful auth
         this.reconnectAttempts = 0;
         break;
 
@@ -103,11 +98,8 @@ export class GameInviteService {
           this.onGameStartedCallback(data);
         }
         
-        // 🎯 Stocker les infos pour la reconnexion Game.ts
         localStorage.setItem('kiss_game_id', data.gameId.toString());
         localStorage.setItem('kiss_opponent_id', data.opponent.id.toString());
-        
-        // Navigation automatique vers le jeu
         this.navigateToGame(data.gameId);
         break;
 
@@ -124,11 +116,9 @@ export class GameInviteService {
         break;
 
       case 'pong':
-        // Heartbeat response - ignore
         break;
 
       default:
-        // Message non traité par ce service
         break;
     }
   }
@@ -148,18 +138,14 @@ export class GameInviteService {
   }
 
   private navigateToGame(gameId: number): void {
-    // Utilisation du router existant
     if ((window as any).router) {
       (window as any).router.navigate(`/game/${gameId}`);
     } else {
-      // Fallback
       window.location.href = `/game/${gameId}`;
     }
   }
 
-  // 📤 Envoyer invitation
   sendInvite(userId: number): void {
-    // KISS: Connection state validation
     if (!this.isConnected()) {
       this.connect();
       return;
@@ -171,9 +157,7 @@ export class GameInviteService {
     }));
   }
 
-  // ✅ Répondre à invitation
   respondToInvite(inviteId: string, accept: boolean): void {
-    // KISS: Connection state validation
     if (!this.isConnected()) {
       return;
     }
@@ -185,7 +169,6 @@ export class GameInviteService {
     }));
   }
 
-  // 🎧 Callbacks pour les événements
   onInviteReceived(callback: (invite: GameInvite) => void): void {
     this.onInviteReceivedCallback = callback;
   }
@@ -206,12 +189,10 @@ export class GameInviteService {
     this.onInviteSentCallback = callback;
   }
 
-  // 🔌 État de la connexion
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated;
   }
 
-  // 🧹 Cleanup
   disconnect(): void {
     if (this.ws) {
       this.ws.close();
@@ -220,7 +201,6 @@ export class GameInviteService {
     this.isAuthenticated = false;
   }
 
-  // 🔄 Force reconnection (pour éviter les conflits avec Game.ts)
   forceReconnect(): void {
     if (this.ws) {
       this.ws.close();
@@ -229,17 +209,14 @@ export class GameInviteService {
     this.isAuthenticated = false;
     this.reconnectAttempts = 0;
     
-    // Reconnection immédiate
     setTimeout(() => {
       this.connect();
     }, 500);
   }
 
-  // KISS: Basic cleanup method for singleton
   cleanup(): void {
     this.disconnect();
     
-    // Clear all callbacks
     this.onInviteReceivedCallback = undefined;
     this.onInviteDeclinedCallback = undefined;
     this.onGameStartedCallback = undefined;
@@ -250,12 +227,5 @@ export class GameInviteService {
   }
 }
 
-export interface GameInvite {
-  inviteId: string;
-  fromUserId: number;
-  fromUsername: string;
-  expiresAt: number;
-}
 
-// Export singleton
 export const gameInviteService = new GameInviteService();

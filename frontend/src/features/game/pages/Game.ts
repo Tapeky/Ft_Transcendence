@@ -260,9 +260,7 @@ export class Game {
         }
     }
 
-    private setupKeyboardListeners() {
-        
-        const keydownHandler = (e: KeyboardEvent) => {
+    private keydownHandler = (e: KeyboardEvent) => {
             let changed = false;
             
             if (this.gameMode === 'local') {
@@ -321,13 +319,12 @@ export class Game {
                     this.sendMessage('update_input', { input: this.input });
                 }
             }
-        };
+    };
 
-        const keyupHandler = (e: KeyboardEvent) => {
+    private keyupHandler = (e: KeyboardEvent) => {
             let changed = false;
             
             if (this.gameMode === 'local') {
-                // Local mode: handle keyup for both players, send to backend
                 switch(e.key.toLowerCase()) {
                     case 'w':
                         if (this.localInputLeft.up) {
@@ -362,7 +359,6 @@ export class Game {
                     });
                 }
             } else {
-                // Online mode: handle current player only
                 switch(e.key.toLowerCase()) {
                     case 'w':
                     case 'arrowup':
@@ -384,10 +380,11 @@ export class Game {
                     this.sendMessage('update_input', { input: this.input });
                 }
             }
-        };
+    };
 
-        document.addEventListener('keydown', keydownHandler);
-        document.addEventListener('keyup', keyupHandler);
+    private setupKeyboardListeners() {
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private sendMessage(type: string, data: any) {
@@ -431,7 +428,6 @@ export class Game {
 
     private render() {
         if (!this.gameState) {
-            // Show a debug message on canvas when no game state
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
             this.ctx.fillStyle = '#fff';
@@ -509,18 +505,23 @@ export class Game {
         overlay.style.fontSize = '24px';
         overlay.style.zIndex = '1000';
 
-        const backButton = document.createElement('button');
-        backButton.textContent = 'Back to Menu';
-        backButton.style.padding = '10px 20px';
-        backButton.style.fontSize = '18px';
-        backButton.style.backgroundColor = '#007bff';
-        backButton.style.color = 'white';
-        backButton.style.border = 'none';
-        backButton.style.borderRadius = '5px';
-        backButton.style.cursor = 'pointer';
-        backButton.style.marginTop = '20px';
-
-        backButton.addEventListener('click', () => {
+        overlay.innerHTML = `
+            <h2>Game Over!</h2>
+            <p>Winner: ${winner}</p>
+            <button id="back-menu-btn" style="
+                padding: 10px 20px;
+                font-size: 18px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 20px;
+            ">Back to Menu</button>
+        `;
+        
+        const backButton = overlay.querySelector('#back-menu-btn');
+        backButton?.addEventListener('click', () => {
             if (document.body.contains(overlay)) {
                 document.body.removeChild(overlay);
                 this.gameEndOverlay = null;
@@ -528,9 +529,6 @@ export class Game {
             this.destroy();
             (window as any).router?.navigate('/menu');
         });
-
-        overlay.innerHTML = `<h2>Game Over!</h2><p>Winner: ${winner}</p>`;
-        overlay.appendChild(backButton);
         document.body.appendChild(overlay);
         this.gameEndOverlay = overlay;
     }
@@ -586,8 +584,8 @@ export class Game {
             this.readyOverlay = null;
         }
 
-        document.removeEventListener('keydown', this.setupKeyboardListeners);
-        document.removeEventListener('keyup', this.setupKeyboardListeners);
+        document.removeEventListener('keydown', this.keydownHandler);
+        document.removeEventListener('keyup', this.keyupHandler);
 
         this.container.innerHTML = '';
         this.gameState = null;

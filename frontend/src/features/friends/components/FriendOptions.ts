@@ -1,6 +1,3 @@
-// FriendOptions - Reproduction EXACTE de la version React
-// Modal 500x600px avec avatar, dashboard, block/remove actions
-
 import { apiService } from '../../../shared/services/api';
 import { router } from '../../../core/app/Router';
 import { CloseBtn } from '../../../shared/components/CloseBtn';
@@ -29,23 +26,18 @@ export class FriendOptions {
   }
 
   private createElement(): HTMLElement {
-    // EXACTEMENT comme React - Overlay fullscreen avec modal 500x600
     const container = document.createElement('div');
     container.className = `${this.props.isOpen ? 'flex' : 'hidden'} fixed top-0 left-0 z-[60] bg-white bg-opacity-20 w-screen h-screen justify-center items-center text-white`;
 
-    // Modal container - DIMENSIONS EXACTES React
     const modalContent = document.createElement('div');
     modalContent.className = 'z-[65] w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
 
-    // Flex column layout - EXACTEMENT React
     const flexContainer = document.createElement('div');
     flexContainer.className = 'flex flex-col h-full z-[65]';
 
-    // CloseBtn - EXACTEMENT React position
     this.closeBtn = new CloseBtn(() => this.props.setIsOpen());
     flexContainer.appendChild(this.closeBtn.getElement());
 
-    // User info section - EXACTEMENT React layout
     const userInfoSection = document.createElement('div');
     userInfoSection.className = 'flex justify-center items-start';
     userInfoSection.innerHTML = `
@@ -73,7 +65,6 @@ export class FriendOptions {
     `;
     flexContainer.appendChild(dashboardSection);
 
-    // Game invite section - NEW
     const gameSection = document.createElement('div');
     gameSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
     gameSection.innerHTML = `
@@ -89,7 +80,6 @@ export class FriendOptions {
     `;
     flexContainer.appendChild(gameSection);
 
-    // Action buttons section - EXACTEMENT React
     const actionsSection = document.createElement('div');
     actionsSection.className = 'flex-grow flex justify-evenly items-center';
     actionsSection.innerHTML = `
@@ -109,49 +99,35 @@ export class FriendOptions {
   }
 
   private setupEventListeners(): void {
-    // Dashboard button - EXACTEMENT React navigation
     const dashboardBtn = this.element.querySelector('#dashboard-btn');
     dashboardBtn?.addEventListener('click', () => this.handleDashboard());
 
-    // Game invite button - NEW
     const inviteBtn = this.element.querySelector('#invite-btn');
     inviteBtn?.addEventListener('click', () => this.handleGameInvite());
 
-    // Remove friend button - EXACTEMENT React
     const removeBtn = this.element.querySelector('#remove-btn');
     removeBtn?.addEventListener('click', () => this.handleRemoveFriend());
 
-    // Block button - EXACTEMENT React
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
 
   }
 
   private handleDashboard(): void {
-    
-    // Navigate to dashboard - EXACTEMENT React
     router.navigate(`/dashboard/${this.props.id}`);
     this.props.setIsOpen();
   }
 
   private async handleGameInvite(): Promise<void> {
     try {
-      
-      // Vérifier que le service KISS est connecté
       if (!gameInviteService.isConnected()) {
         console.error('❌ KISS service not connected');
         alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
         return;
       }
-      
-      // Send game invite via KISS system
       gameInviteService.sendInvite(this.props.id);
-      
       alert(`🎮 Game invite sent to ${this.props.username}!`);
-      
-      // Close the modal
       this.props.setIsOpen();
-      
     } catch (error) {
       console.error('Error sending game invite:', error);
       alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
@@ -162,8 +138,6 @@ export class FriendOptions {
     try {
       
       await apiService.removeFriend(this.props.id);
-      
-      // EXACTEMENT React pattern: setDismiss PUIS setIsOpen
       this.props.setDismiss();
       this.props.setIsOpen();
       
@@ -176,8 +150,6 @@ export class FriendOptions {
     try {
       
       await apiService.blockUser(this.props.id);
-      
-      // EXACTEMENT React pattern: setDismiss PUIS setIsOpen
       this.props.setDismiss();
       this.props.setIsOpen();
       

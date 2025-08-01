@@ -19,18 +19,13 @@ export class Dashboard {
   }
 
   private async init() {
-    // DEBUG: Afficher l'état d'auth au moment du Dashboard
     const state = appState.getState();
 
     if (state.loading) {
-      // Afficher un état de chargement pendant l'initialisation
       this.showLoadingState();
-      
-      // Attendre la fin de l'initialisation
       await this.waitForAuthInitialization();
     }
 
-    // Vérifier l'authentification APRÈS initialisation
     const finalState = appState.getState();
 
     if (!finalState.isAuthenticated || !finalState.user) {
@@ -38,9 +33,6 @@ export class Dashboard {
       return;
     }
 
-    // Success;
-
-    // Charger les données
     await Promise.all([
       this.loadPlayer(),
       this.loadMatches()
@@ -52,13 +44,11 @@ export class Dashboard {
 
   private async waitForAuthInitialization(): Promise<void> {
     return new Promise((resolve) => {
-      // Si déjà initialisé, résoudre immédiatement
       if (!appState.getState().loading) {
         resolve();
         return;
       }
 
-      // Sinon, attendre le changement d'état
       const unsubscribe = appState.subscribe((state) => {
         if (!state.loading) {
           unsubscribe();
@@ -108,7 +98,7 @@ export class Dashboard {
       return;
     }
 
-    // Vérifier à nouveau l'auth après loading
+    // Check auth again after loading
     const state = appState.getState();
     if (!state.isAuthenticated || !state.user) {
       this.container.innerHTML = '';
@@ -146,7 +136,6 @@ export class Dashboard {
       </div>
     `;
 
-    // Initialiser les composants
     this.initializeComponents();
   }
 
@@ -219,21 +208,18 @@ export class Dashboard {
   }
 
   private initializeComponents() {
-    // Initialiser Header
     const headerContainer = this.container.querySelector('#header-container') as HTMLElement;
     if (headerContainer) {
       this.header = new Header(true);
       headerContainer.appendChild(this.header.getElement());
     }
 
-    // Initialiser BackBtn
     const backBtnContainer = this.container.querySelector('#back-btn-container') as HTMLElement;
     if (backBtnContainer) {
       this.backBtn = new BackBtn();
       backBtnContainer.appendChild(this.backBtn.getElement());
     }
 
-    // Ajouter les event listeners pour les matches
     this.addMatchEventListeners();
   }
 
@@ -250,7 +236,6 @@ export class Dashboard {
   }
 
   private async showMatchStats(matchId: number) {
-    // Créer le modal de statistiques
     const modal = document.createElement('div');
     modal.className = 'fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen flex justify-center items-center text-white';
     modal.innerHTML = `
@@ -272,7 +257,6 @@ export class Dashboard {
       `;
     }
 
-    // Ajouter event listener pour fermer
     modal.addEventListener('click', (e) => {
       if (e.target === modal || (e.target as HTMLElement).classList.contains('match-stats-close')) {
         document.body.removeChild(modal);

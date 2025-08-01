@@ -1,5 +1,4 @@
-// UserSwitcher - Interface de développement pour tester les fonctionnalités sociales
-// TEMPORARY: À supprimer avant la production
+// TEMPORAIRE DONC PAS BESOIN DE CLEAN MAIS A SUPPRIMER A LA FIN DU PROJET
 
 import { authManager } from '../../core/auth/AuthManager';
 import { apiService } from '../../shared/services/api';

@@ -1,6 +1,7 @@
-import { chatService } from './ChatService';
-import { apiService } from './api';
-import { GameInviteNotification, GameInvite } from '../components/ui/GameInviteNotification';
+import { chatService } from '../../friends/services/ChatService';
+import { apiService } from '../../../shared/services/api';
+import { GameInviteNotification } from '../components/GameInviteNotification';
+import { GameInvite } from '../types/GameInviteTypes';
 
 export class GameInviteManager {
   private static instance: GameInviteManager;
@@ -18,12 +19,10 @@ export class GameInviteManager {
   }
 
   private setupChatServiceListeners(): void {
-    // Écouter les invitations reçues via WebSocket
     chatService.on('game_invite_received', (data: { invite: GameInvite }) => {
       this.handleInviteReceived(data.invite);
     });
 
-    // Écouter les réponses aux invitations envoyées
     chatService.on('game_invite_response', (data: { 
       action: 'accept' | 'decline'; 
       inviteId: number; 
@@ -33,7 +32,6 @@ export class GameInviteManager {
       this.handleInviteResponse(data);
     });
 
-    // Écouter les parties qui commencent
     chatService.on('game_started', (data: { 
       gameId: number; 
       opponent: { id: number; username: string; avatar: string }; 
@@ -42,7 +40,6 @@ export class GameInviteManager {
       this.handleGameStarted(data);
     });
 
-    // Écouter les erreurs de navigation vers le jeu
     chatService.on('game_navigation_error', (data: { error: any; gameId: number }) => {
       this.handleGameNavigationError(data);
     });
@@ -52,7 +49,7 @@ export class GameInviteManager {
   private handleInviteReceived(invite: GameInvite): void {
 
     // Vérifier si l'invitation n'est pas expirée
-    const expiresAt = new Date(invite.expires_at);
+    const expiresAt = new Date(invite.expiresAt);
     const now = new Date();
     
     if (now >= expiresAt) {
@@ -60,22 +57,22 @@ export class GameInviteManager {
     }
 
     // Fermer une notification existante du même expéditeur
-    const existingNotification = this.activeNotifications.get(invite.sender_id);
+    const existingNotification = this.activeNotifications.get(invite.fromUserId);
     if (existingNotification) {
       existingNotification.destroy();
-      this.activeNotifications.delete(invite.sender_id);
+      this.activeNotifications.delete(invite.fromUserId);
     }
 
     // Créer et afficher la nouvelle notification
     const notification = new GameInviteNotification(invite, () => {
-      this.activeNotifications.delete(invite.sender_id);
+      this.activeNotifications.delete(invite.fromUserId);
     });
 
     // Ajouter au DOM
     document.body.appendChild(notification.getElement());
     
     // Garder la référence
-    this.activeNotifications.set(invite.sender_id, notification);
+    this.activeNotifications.set(invite.fromUserId, notification);
 
     // Son de notification (optionnel)
     this.playNotificationSound();
