@@ -1,6 +1,5 @@
 import { appState, AppStateData } from '../state/AppState';
 
-// Component simple pour tester les subscriptions multiples
 export class StateMonitor {
   private element: HTMLElement;
   private unsubscribe?: () => void;
