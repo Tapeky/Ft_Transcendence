@@ -87,20 +87,12 @@ export class RouteGuard {
   async logout(): Promise<void> {
     try {
       await this.authManager.logout();
-      if (appState.router) {
-        appState.router.navigate('/auth', true);
-      }
     } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
       if (appState.router) {
         appState.router.navigate('/auth', true);
       }
-    }
-  }
-
-  validateCurrentRoute(): void {
-    if (appState.router) {
-      const currentPath = appState.router.getCurrentPath();
-      this.canNavigateTo(currentPath);
     }
   }
 }
