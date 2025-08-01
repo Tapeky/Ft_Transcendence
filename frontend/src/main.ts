@@ -13,56 +13,34 @@ class App {
     }
 
     try {
-      // Initialize the application with all systems
       await application.initialize();
       
-      // Initialize dev tools (only in development)
       if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
         const { initUserSwitcher } = await import('./dev/components/UserSwitcher');
         initUserSwitcher();
-        console.log('🔧 Dev tools initialized');
       }
-      
-      // Initialize KISS Game Invite System
-      console.log('🎮 Initializing KISS Game Invite System...');
       
       try {
         const { gameInviteService, SimpleInvitePopup, ConnectionStatus } = await import('./features/invitations');
-        // const { kissInviteButtons } = await import('./utils/kissInvites');
         
-        // Vérification que les services sont correctement chargés
         if (!gameInviteService) {
           throw new Error('GameInviteService not loaded');
         }
         
-        // Setup auto-popup pour les invitations reçues
         gameInviteService.onInviteReceived((invite) => {
-          console.log('🎮 KISS: Auto-creating popup for invite from', invite.fromUsername);
           new SimpleInvitePopup(invite);
         });
         
-        // Note: Auto-detection disabled - FriendItem handles invitations directly
-        // kissInviteButtons.init();
-        
-        // Initialize connection status indicator
         const connectionStatus = new ConnectionStatus();
         connectionStatus.show();
         
-        console.log('🎮 KISS Game Invite System initialized');
-        
       } catch (error) {
         console.error('❌ Failed to initialize KISS Game Invite System:', error);
-        // Ne pas faire planter toute l'application si KISS ne se charge pas
       }
-      
-      // Success;
-      console.log('🛡️ Route guard active');
-      console.log(`📍 Current route: ${window.location.pathname}`);
       
     } catch (error) {
       console.error('❌ Failed to initialize application:', error);
       
-      // Show error page
       root.innerHTML = `
         <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626); 
                     display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
@@ -81,7 +59,6 @@ class App {
   }
 }
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   new App();
 });

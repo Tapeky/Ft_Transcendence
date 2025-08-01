@@ -8,7 +8,6 @@ export class CloseBtn {
   constructor(onClose: () => void) {
     this.onClose = onClose;
     this.element = this.createElement();
-    console.log('✕ CloseBtn: Initialized (React-like style)');
   }
 
   private createElement(): HTMLElement {
@@ -26,10 +25,8 @@ export class CloseBtn {
       </button>
     `;
 
-    // Bind click event directly
     const closeBtn = container.querySelector('#close-btn');
     closeBtn?.addEventListener('click', () => {
-      console.log('✕ CloseBtn: Closing modal');
       this.onClose();
     });
 
@@ -41,7 +38,6 @@ export class CloseBtn {
   }
 
   destroy(): void {
-    console.log('✕ CloseBtn: Destroyed');
     this.element.remove();
   }
 }

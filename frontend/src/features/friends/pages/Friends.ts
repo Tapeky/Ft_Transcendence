@@ -97,7 +97,6 @@ export class FriendsPage {
       </div>
     `;
 
-    // Bind events directly on container before returning it
     const backBtn = container.querySelector('#back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {

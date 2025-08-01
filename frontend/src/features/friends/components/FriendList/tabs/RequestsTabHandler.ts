@@ -27,7 +27,6 @@ export class RequestsTabHandler {
   }
 
   private renderRequestsContent(): void {
-    // Clear existing content
     this.container.innerHTML = '';
 
     const contentDiv = document.createElement('div');

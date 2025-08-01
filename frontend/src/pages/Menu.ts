@@ -22,7 +22,6 @@ export class MenuPage {
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
-    // Create components
     this.header = new Header(true); // userVisible = true
     this.banner = new Banner();
     this.choice = new Choice();
@@ -58,7 +57,6 @@ export class MenuPage {
   }
 
   destroy(): void {
-    // Cleanup components
     if (this.header) {
       this.header.destroy();
     }
@@ -69,7 +67,6 @@ export class MenuPage {
       this.choice.destroy();
     }
 
-    // Cleanup auth subscription
     if (this.authUnsubscribe) {
       this.authUnsubscribe();
     }

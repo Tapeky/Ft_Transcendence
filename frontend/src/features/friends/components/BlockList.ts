@@ -14,21 +14,18 @@ export class BlockList {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('🚫 BlockList: Initialized with React-like toggle logic');
   }
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'block-list-container';
 
-    // Create button separately
     this.buttonElement = document.createElement('button');
     this.buttonElement.id = 'toggle-btn';
     this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
     this.buttonElement.setAttribute('title', 'Blocked Users');
     this.buttonElement.innerHTML = '<img src="/src/img/blocklist.svg" alt="block list" />';
 
-    // Create dropdown separately
     this.dropdownElement = document.createElement('div');
     this.dropdownElement.id = 'blocked-dropdown';
     this.dropdownElement.className = `${this.isListVisible ? 'flex' : 'hidden'} bg-blue-800 border-black border-2 h-[400px] w-[350px] absolute top-[70px] left-[-350px] flex-col items-center z-[45]`;
@@ -42,7 +39,6 @@ export class BlockList {
       </div>
     `;
 
-    // Add both to container for backward compatibility
     container.appendChild(this.buttonElement);
     container.appendChild(this.dropdownElement);
 
@@ -82,7 +78,6 @@ export class BlockList {
       this.blockedUsers = data;
       this.renderBlockedUsers();
       
-      console.log('🚫 BlockList: Fetched blocked users:', data.length);
 
     } catch (error) {
       console.error('❌ BlockList: Failed to fetch blocked users:', error);
@@ -93,7 +88,6 @@ export class BlockList {
     const content = this.dropdownElement?.querySelector('#blocked-content');
     if (!content) return;
 
-    // Clear existing content
     content.innerHTML = '';
 
     if (this.blockedUsers.length === 0) {
@@ -141,7 +135,6 @@ export class BlockList {
       // Refresh the list
       await this.fetchBlockedUsers();
       
-      console.log('🚫 BlockList: User unblocked successfully');
 
     } catch (error) {
       console.error('❌ BlockList: Failed to unblock user:', error);
@@ -168,7 +161,6 @@ export class BlockList {
   }
 
   destroy(): void {
-    console.log('🚫 BlockList: Destroyed (React-like)');
     this.element.remove();
   }
 }

@@ -2,7 +2,6 @@ import { apiService } from '../../../shared/services/api';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
 
-// Types pour le frontend
 export interface Conversation {
   id: number;
   user1_id: number;
@@ -39,9 +38,6 @@ export interface ChatState {
   isLoading: boolean;
 }
 
-// ============================================================================
-// Game WebSocket Message Types
-// ============================================================================
 
 export interface GameStartMessage {
   type: 'start_game';
@@ -88,7 +84,6 @@ export class ChatService {
     isLoading: false
   };
   
-  // Game state management
   private currentGameId: number | null = null;
   private gameState: GameState | null = null;
   private isInGame = false;
@@ -98,7 +93,6 @@ export class ChatService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
 
-  // Helper method to build API URLs with correct base URL
   private getApiUrl(endpoint: string): string {
     const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
     return `${API_BASE_URL}${endpoint}`;
@@ -113,18 +107,16 @@ export class ChatService {
     return ChatService.instance;
   }
 
-  // ============ WebSocket Connection ============
 
   async connect(): Promise<void> {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      return; // Déjà connecté
+      return;
     }
 
     try {
       this.ws = apiService.connectWebSocket();
       
       this.ws!.onopen = () => {
-        console.log('🌐 ChatService: WebSocket connecté');
         this.state.isConnected = true;
         this.reconnectAttempts = 0;
         
@@ -144,7 +136,6 @@ export class ChatService {
       };
 
       this.ws!.onclose = () => {
-        console.log('🔌 ChatService: WebSocket fermé');
         this.state.isConnected = false;
         this.emit('disconnected', null);
         
@@ -187,7 +178,6 @@ export class ChatService {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    console.log(`🔄 ChatService: Tentative reconnexion ${this.reconnectAttempts}/${this.maxReconnectAttempts} dans ${delay}ms`);
     
     setTimeout(() => {
       this.connect().catch(error => {
@@ -207,11 +197,9 @@ export class ChatService {
   // ============ Message Handling ============
 
   private handleWebSocketMessage(data: any): void {
-    console.log('📨 ChatService: Message reçu:', data);
 
     switch (data.type) {
       case 'auth_success':
-        console.log('✅ ChatService: Authentification réussie');
         this.emit('authenticated', data.data);
         break;
 
@@ -234,18 +222,15 @@ export class ChatService {
         break;
 
       case 'game_invite_received':
-        console.log('🎮 ChatService: Game invite received:', data.data);
         this.emit('game_invite_received', data.data);
         break;
 
       case 'game_invite_response':
-        console.log('🎮 ChatService: Game invite response:', data.data);
         this.emit('game_invite_response', data.data);
         break;
 
       // ============ Game Messages ============
       case 'success':
-        console.log('✅ ChatService: Game success:', data.data);
         this.handleGameSuccess(data);
         break;
 
@@ -254,12 +239,10 @@ export class ChatService {
         break;
 
       case 'game_started':
-        console.log('🎮 ChatService: Game started:', data.data);
         this.handleGameStarted(data);
         break;
 
       case 'game_ended':
-        console.log('🏁 ChatService: Game ended:', data.data);
         this.handleGameEnded(data);
         break;
 
@@ -326,7 +309,6 @@ export class ChatService {
     this.currentGameId = data.data.gameId;
     this.isInGame = true;
     
-    console.log(`🎮 ChatService: Successfully joined game ${this.currentGameId}`);
     this.emit('game_joined', { gameId: this.currentGameId });
   }
 
@@ -347,7 +329,6 @@ export class ChatService {
   } }): void {
     const { gameId, opponent, playerSide } = data.data;
     
-    console.log(`🚀 ChatService: Game ${gameId} started with ${opponent.username} (playing as ${playerSide})`);
     
     // Update internal game state
     this.currentGameId = gameId;
@@ -369,7 +350,6 @@ export class ChatService {
   }
 
   private handleGameEnded(data: { data: any }): void {
-    console.log(`🏁 ChatService: Game ${this.currentGameId} has ended`);
     
     this.emit('game_ended', data.data);
     
@@ -471,11 +451,9 @@ export class ChatService {
       });
       
       const data = await response.json();
-      console.log('💬 ChatService: Response data:', data);
       
       // Handle different response structures
       const conversation = data.data?.conversation || data.conversation || data.data || data;
-      console.log('💬 ChatService: Extracted conversation:', conversation);
       
       if (!conversation) {
         throw new Error('Erreur création conversation');
@@ -520,7 +498,6 @@ export class ChatService {
     const listeners = this.listeners.get(event) || [];
     listeners.push(listener);
     this.listeners.set(event, listeners);
-    console.log(`➕ ChatService: Listener ajouté pour '${event}' - Total: ${listeners.length}`);
   }
 
   off(event: string, listener: ChatEventListener): void {
@@ -529,7 +506,6 @@ export class ChatService {
     if (index > -1) {
       listeners.splice(index, 1);
       this.listeners.set(event, listeners);
-      console.log(`➖ ChatService: Listener supprimé pour '${event}' - Total restant: ${listeners.length}`);
     } else {
       console.warn(`⚠️ ChatService: Impossible de supprimer listener pour '${event}' - listener non trouvé`);
     }
@@ -537,7 +513,6 @@ export class ChatService {
 
   private emit(event: string, data: any): void {
     const listeners = this.listeners.get(event) || [];
-    console.log(`📢 ChatService: Émission '${event}' vers ${listeners.length} listener(s)`);
     listeners.forEach(listener => {
       try {
         listener(data);
@@ -561,7 +536,6 @@ export class ChatService {
       throw new Error('Déjà dans une partie');
     }
 
-    console.log(`🎮 ChatService: Starting game with opponent ${opponentId}`);
     
     this.ws.send(JSON.stringify({
       type: 'start_game',
@@ -594,7 +568,6 @@ export class ChatService {
    */
   leaveGame(): void {
     if (this.isInGame && this.currentGameId) {
-      console.log(`🚪 ChatService: Leaving game ${this.currentGameId}`);
       
       // Emit event for UI to handle
       this.emit('game_left', { gameId: this.currentGameId });

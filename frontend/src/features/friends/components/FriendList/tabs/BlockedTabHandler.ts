@@ -27,7 +27,6 @@ export class BlockedTabHandler {
   }
 
   private renderBlockedContent(): void {
-    // Clear existing content
     this.container.innerHTML = '';
 
     const contentDiv = document.createElement('div');

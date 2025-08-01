@@ -45,12 +45,10 @@ export class NotFoundPage {
     const testButton = this.element.querySelector('#test-btn');
 
     homeButton?.addEventListener('click', () => {
-      console.log('🏠 Navigation vers accueil - (Phase 2: Router)');
         router.navigate('/');
     });
 
     testButton?.addEventListener('click', () => {
-      console.log('🧪 Navigation vers test - (Phase 2: Router)');
         router.navigate('/test');
     });
   }

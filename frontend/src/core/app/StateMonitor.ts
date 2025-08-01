@@ -53,7 +53,6 @@ export class StateMonitor {
       ">×</button>
     `;
 
-    // Bind close button
     const closeBtn = div.querySelector(`#close-monitor-${this.id}`);
     closeBtn?.addEventListener('click', () => this.destroy());
 
@@ -66,7 +65,6 @@ export class StateMonitor {
       this.updateDisplay(state);
     });
 
-    console.log(`📺 StateMonitor ${this.id}: Subscribed to state`);
   }
 
   private updateDisplay(state: AppStateData): void {
@@ -92,7 +90,6 @@ export class StateMonitor {
   }
 
   public destroy(): void {
-    console.log(`📺 StateMonitor ${this.id}: Destroying monitor`);
     
     if (this.unsubscribe) {
       this.unsubscribe();

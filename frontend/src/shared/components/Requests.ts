@@ -15,21 +15,18 @@ export class Requests {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('📮 Requests: Initialized with React-like toggle logic');
   }
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'requests-container';
 
-    // Create button separately
     this.buttonElement = document.createElement('button');
     this.buttonElement.id = 'toggle-btn';
     this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
     this.buttonElement.setAttribute('title', 'Friend Requests');
     this.buttonElement.innerHTML = '<img src="/src/img/requests.svg" alt="requests" />';
 
-    // Create dropdown separately
     this.dropdownElement = document.createElement('div');
     this.dropdownElement.id = 'requests-dropdown';
     this.dropdownElement.className = `${this.isRequestWindowVisible ? 'flex' : 'hidden'} bg-pink-800 border-black border-2 h-[400px] w-[400px] absolute top-[70px] left-[-400px] flex-col items-center z-[45]`;
@@ -43,7 +40,6 @@ export class Requests {
       </div>
     `;
 
-    // Add both to container for backward compatibility
     container.appendChild(this.buttonElement);
     container.appendChild(this.dropdownElement);
 
@@ -83,10 +79,8 @@ export class Requests {
       this.requests = data;
       this.renderRequests();
       
-      console.log('📮 Requests: Fetched friend requests:', data.length);
 
     } catch (error) {
-      console.error('❌ Requests: Failed to fetch friend requests:', error);
     }
   }
 
@@ -94,7 +88,6 @@ export class Requests {
     const content = this.dropdownElement?.querySelector('#requests-content');
     if (!content) return;
 
-    // Clear existing content
     content.innerHTML = '';
 
     if (this.requests.length === 0) {
@@ -143,7 +136,6 @@ export class Requests {
       </div>
     `;
 
-    // Bind individual request actions
     this.bindRequestActions(item, request);
 
     return item;
@@ -157,12 +149,9 @@ export class Requests {
     // Block user action
     blockBtn?.addEventListener('click', async () => {
       try {
-        console.log('Attempting to block user with ID:', request.user_id);
         await apiService.blockUser(request.user_id);
-        console.log('User blocked successfully!');
         this.dismissRequest(element);
       } catch (error) {
-        console.error('Error blocking user:', error);
         // Could show user notification here
       }
     });
@@ -171,10 +160,8 @@ export class Requests {
     rejectBtn?.addEventListener('click', async () => {
       try {
         await apiService.declineFriendRequest(request.id);
-        console.log('Request rejected!');
         this.dismissRequest(element);
       } catch (error) {
-        console.error('Error rejecting request:', error);
       }
     });
 
@@ -182,10 +169,8 @@ export class Requests {
     acceptBtn?.addEventListener('click', async () => {
       try {
         await apiService.acceptFriendRequest(request.id);
-        console.log('Request accepted!');
         this.dismissRequest(element);
       } catch (error) {
-        console.error('Error accepting request:', error);
       }
     });
   }
@@ -229,7 +214,6 @@ export class Requests {
   }
 
   destroy(): void {
-    console.log('📮 Requests: Destroyed (React-like)');
     this.element.remove();
   }
 }

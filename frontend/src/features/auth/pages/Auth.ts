@@ -1,8 +1,5 @@
 import { authManager } from '../../../core/auth/AuthManager';
-import { appState } from '../../../core/state/AppState';
 
-// AuthPage - Reproduction exacte de la version React
-// Layout 2 colonnes + Carrousel d'animations + FloatingInputs + PremiumButtons
 
 export class AuthPage {
   private element: HTMLElement;
@@ -25,10 +22,8 @@ export class AuthPage {
   private createElement(): HTMLElement {
     const div = document.createElement('div');
     div.innerHTML = `
-      <!-- Main Layout - Reproduction exacte du React -->
       <div class="min-h-screen flex items-center justify-center p-6 bg-gray-100">
         
-        <!-- Loading Overlay -->
         <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
           <div class="flex items-center justify-center min-h-screen">
             <div class="bg-white/90 backdrop-blur-md rounded-xl p-8 text-center shadow-2xl">
@@ -38,14 +33,11 @@ export class AuthPage {
           </div>
         </div>
 
-        <!-- Container Principal - 2 Colonnes comme React -->
         <div class="flex w-full max-w-[1600px] h-[800px] bg-white rounded-3xl shadow-2xl overflow-hidden">
           
-          <!-- CÔTÉ GAUCHE - Formulaire (comme React) -->
           <div class="w-full lg:w-2/5 bg-white flex items-center justify-center px-8 py-12">
             <div class="max-w-md w-full space-y-1">
               
-              <!-- Header dynamique -->
               <div class="text-center">
                 <h2 id="auth-title" class="text-3xl font-bold text-gray-900 mb-2">
                   Welcome Back!
@@ -55,18 +47,14 @@ export class AuthPage {
                 </p>
               </div>
 
-              <!-- Transition Container -->
               <div id="form-container" class="space-y-6 transition-all duration-300">
                 
-                <!-- Error Display -->
                 <div id="error-display" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   <span id="error-message"></span>
                 </div>
 
-                <!-- Login Form -->
                 <form id="login-form" class="space-y-6 auth-form active">
                   
-                  <!-- Email Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="login-email"
@@ -82,7 +70,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Password Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="login-password"
@@ -98,7 +85,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Premium Submit Button -->
                   <button 
                     type="submit" 
                     id="login-submit"
@@ -118,7 +104,6 @@ export class AuthPage {
                     </div>
                   </button>
 
-                  <!-- Séparateur OAuth -->
                   <div class="relative">
                     <div class="absolute inset-0 flex items-center">
                       <div class="w-full border-t border-gray-300"></div>
@@ -128,10 +113,8 @@ export class AuthPage {
                     </div>
                   </div>
 
-                  <!-- OAuth Buttons (comme React) -->
                   <div class="grid grid-cols-3 gap-3">
                     
-                    <!-- Google -->
                     <button
                       type="button"
                       id="google-auth"
@@ -147,7 +130,6 @@ export class AuthPage {
                       <div class="absolute inset-0 -top-20 -left-20 w-40 h-40 bg-white/20 rotate-45 translate-x-full group-hover:translate-x-[-250%] transition-transform duration-1000"></div>
                     </button>
 
-                    <!-- Meta/Facebook -->
                     <button
                       type="button"
                       class="oauth-button relative flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white transition-all duration-300 overflow-hidden group hover:border-gray-400 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
@@ -159,7 +141,6 @@ export class AuthPage {
                       <div class="absolute inset-0 -top-20 -left-20 w-40 h-40 bg-white/20 rotate-45 translate-x-full group-hover:translate-x-[-250%] transition-transform duration-1000"></div>
                     </button>
 
-                    <!-- GitHub -->
                     <button
                       type="button"
                       id="github-auth"
@@ -174,7 +155,6 @@ export class AuthPage {
 
                   </div>
 
-                  <!-- Lien Register -->
                   <div class="text-center">
                     <p class="text-sm text-gray-600">
                       Don't have an account?
@@ -190,10 +170,8 @@ export class AuthPage {
 
                 </form>
 
-                <!-- Register Form -->
                 <form id="register-form" class="space-y-6 auth-form hidden">
                   
-                  <!-- Username Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="register-username"
@@ -210,7 +188,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Email Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="register-email"
@@ -226,7 +203,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Password Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="register-password"
@@ -243,7 +219,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Display Name Floating Input -->
                   <div class="floating-input-container">
                     <input
                       id="register-display-name"
@@ -258,7 +233,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Consent Checkbox -->
                   <div class="flex items-start space-x-3">
                     <input 
                       type="checkbox" 
@@ -272,7 +246,6 @@ export class AuthPage {
                     </label>
                   </div>
 
-                  <!-- Premium Submit Button -->
                   <button 
                     type="submit" 
                     id="register-submit"
@@ -292,7 +265,6 @@ export class AuthPage {
                     </div>
                   </button>
 
-                  <!-- Lien Login -->
                   <div class="text-center">
                     <p class="text-sm text-gray-600">
                       Already have an account?
@@ -313,11 +285,9 @@ export class AuthPage {
             </div>
           </div>
 
-          <!-- CÔTÉ DROIT - Carrousel d'animations (comme React) -->
           <div class="hidden lg:flex lg:w-3/5 pl-6 pr-3 py-3 items-center justify-center">
             <div class="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl flex items-center justify-center relative overflow-hidden">
               
-              <!-- Animation Containers -->
               <div id="animation-pong" class="animation-container active">
                 ${this.createPongAnimation()}
               </div>
@@ -330,20 +300,17 @@ export class AuthPage {
                 ${this.createChatAnimation()}
               </div>
 
-              <!-- Indicateurs de carrousel -->
               <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
                 <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white scale-125" data-index="0"></button>
                 <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white/30 hover:bg-white/50" data-index="1"></button>
                 <button class="carousel-indicator w-2 h-2 rounded-full transition-all duration-300 bg-white/30 hover:bg-white/50" data-index="2"></button>
               </div>
 
-              <!-- Effets visuels d'arrière-plan -->
               <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
               <div class="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full blur-xl animate-float"></div>
               <div class="absolute bottom-20 left-20 w-24 h-24 bg-white/3 rounded-full blur-lg animate-float-delayed"></div>
               <div class="absolute top-1/2 left-1/3 w-20 h-20 bg-white/2 rounded-full blur-xl animate-float-slow"></div>
               
-              <!-- Grille de fond subtile -->
               <div class="absolute inset-0 opacity-5">
                 <div class="h-full w-full" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 50px 50px;"></div>
               </div>
@@ -354,41 +321,34 @@ export class AuthPage {
         </div>
       </div>
 
-      <!-- CSS Animations (reproduction exacte du React) -->
       ${this.createAnimationStyles()}
     `;
     return div.firstElementChild as HTMLElement;
   }
 
   private bindEvents(): void {
-    // Form switching
     const switchToRegister = this.element.querySelector('#switch-to-register');
     const switchToLogin = this.element.querySelector('#switch-to-login');
 
     switchToRegister?.addEventListener('click', () => this.switchMode('register'));
     switchToLogin?.addEventListener('click', () => this.switchMode('login'));
 
-    // Form submissions
     const loginForm = this.element.querySelector('#login-form');
     const registerForm = this.element.querySelector('#register-form');
 
     loginForm?.addEventListener('submit', (e) => this.handleLogin(e));
     registerForm?.addEventListener('submit', (e) => this.handleRegister(e));
 
-    // Floating input effects
     this.setupFloatingInputs();
 
-    // Premium button effects
     this.setupPremiumButtons();
 
-    // OAuth buttons
     const githubBtn = this.element.querySelector('#github-auth');
     const googleBtn = this.element.querySelector('#google-auth');
 
     githubBtn?.addEventListener('click', () => this.handleGitHubAuth());
     googleBtn?.addEventListener('click', () => this.handleGoogleAuth());
 
-    // Carousel indicators
     const indicators = this.element.querySelectorAll('.carousel-indicator');
     indicators.forEach((indicator, index) => {
       indicator.addEventListener('click', () => this.setAnimation(index));
@@ -400,7 +360,6 @@ export class AuthPage {
     this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
       this.updateLoadingState(authState.loading);
       
-      // Si déjà connecté, rediriger vers menu
       if (authState.isAuthenticated && authState.user) {
         import('../../../core/app/Router').then(({ router }) => {
           router.navigate('/menu');
@@ -410,7 +369,6 @@ export class AuthPage {
   }
 
   private startAnimationCarousel(): void {
-    // Carrousel automatique toutes les 15 secondes comme React
     this.animationInterval = window.setInterval(() => {
       this.currentAnimation = (this.currentAnimation + 1) % this.animations.length;
       this.updateAnimationDisplay();
@@ -423,21 +381,18 @@ export class AuthPage {
   }
 
   private updateAnimationDisplay(): void {
-    // Masquer toutes les animations
     const containers = this.element.querySelectorAll('.animation-container');
     containers.forEach(container => {
       container.classList.add('hidden');
       container.classList.remove('active');
     });
 
-    // Afficher l'animation courante
     const currentContainer = this.element.querySelector(`#animation-${this.animations[this.currentAnimation]}`);
     if (currentContainer) {
       currentContainer.classList.remove('hidden');
       currentContainer.classList.add('active');
     }
 
-    // Mettre à jour les indicateurs
     const indicators = this.element.querySelectorAll('.carousel-indicator');
     indicators.forEach((indicator, index) => {
       if (index === this.currentAnimation) {
@@ -454,7 +409,6 @@ export class AuthPage {
     this.isTransitioning = true;
     const formContainer = this.element.querySelector('#form-container');
     
-    // Animation de transition comme React
     if (formContainer) {
       formContainer.classList.add('opacity-0', 'scale-95');
     }
@@ -473,7 +427,6 @@ export class AuthPage {
   }
 
   private updateModeDisplay(): void {
-    // Configuration dynamique selon le mode (comme React)
     const authConfig = {
       login: {
         title: "Welcome Back!",
@@ -485,18 +438,15 @@ export class AuthPage {
       }
     };
 
-    // Mettre à jour le titre et sous-titre
     const title = this.element.querySelector('#auth-title');
     const subtitle = this.element.querySelector('#auth-subtitle');
     
     if (title) title.textContent = authConfig[this.currentMode].title;
     if (subtitle) subtitle.textContent = authConfig[this.currentMode].subtitle;
 
-    // Basculer les formulaires
     const loginForm = this.element.querySelector('#login-form');
     const registerForm = this.element.querySelector('#register-form');
 
-    // Clear error
     this.hideError();
 
     if (this.currentMode === 'login') {
@@ -513,7 +463,6 @@ export class AuthPage {
   }
 
   private setupFloatingInputs(): void {
-    // Reproduction exacte du comportement React FloatingInput
     const floatingInputs = this.element.querySelectorAll('.floating-input');
     
     floatingInputs.forEach(input => {
@@ -523,7 +472,6 @@ export class AuthPage {
       const updateInput = () => {
         const hasValue = inputElement.value.length > 0;
         
-        // Background change based on value (comme React)
         if (hasValue) {
           inputElement.classList.add('bg-white');
           inputElement.classList.remove('bg-transparent');
@@ -537,22 +485,17 @@ export class AuthPage {
       inputElement.addEventListener('blur', updateInput);
       inputElement.addEventListener('input', updateInput);
       
-      // Initial state
       updateInput();
     });
     
-    // Note: Le CSS gère automatiquement le floating label avec :focus et :not(:placeholder-shown)
-    // exactement comme dans le React avec les classes conditionnelles
   }
 
   private setupPremiumButtons(): void {
-    // Effet magnétique et ripple pour les boutons premium
     const premiumButtons = this.element.querySelectorAll('.premium-button');
     
     premiumButtons.forEach(button => {
       const buttonElement = button as HTMLButtonElement;
       
-      // Effet magnétique au survol
       buttonElement.addEventListener('mousemove', (e) => {
         if (buttonElement.disabled) return;
         
@@ -574,7 +517,6 @@ export class AuthPage {
         buttonElement.style.transform = 'translate(0, 0) scale(1)';
       });
       
-      // Effet ripple au clic
       buttonElement.addEventListener('click', (e) => {
         if (buttonElement.disabled) return;
         
@@ -585,7 +527,6 @@ export class AuthPage {
         
         this.ripples.push({ x, y, id });
         
-        // Créer l'élément ripple
         const ripple = document.createElement('span');
         ripple.className = 'absolute bg-white/30 rounded-full pointer-events-none animate-ripple';
         ripple.style.left = `${x}px`;
@@ -623,7 +564,6 @@ export class AuthPage {
 
     try {
       await authManager.login(credentials);
-      // Navigation vers menu
       import('../../../core/app/Router').then(({ router }) => {
         router.navigate('/menu');
       });
@@ -664,7 +604,6 @@ export class AuthPage {
 
     try {
       await authManager.register(credentials);
-      // Navigation vers menu
       import('../../../core/app/Router').then(({ router }) => {
         router.navigate('/menu');
       });
@@ -729,7 +668,6 @@ export class AuthPage {
     }
   }
 
-  // Méthodes pour créer les animations (reproduction exacte du React)
   private createPongAnimation(): string {
     return `
       <div class="relative z-10 text-center text-white px-12 animate-fade-in">
@@ -792,11 +730,9 @@ export class AuthPage {
               </div>
             </div>
             <svg class="w-full h-full" viewBox="0 0 320 240" fill="none">
-              <!-- Tournament bracket structure -->
               <line x1="160" y1="20" x2="160" y2="40" class="stroke-white/30 stroke-1 animate-tournament-final" stroke-dasharray="2,2" />
               <line x1="120" y1="40" x2="160" y2="40" class="stroke-white/40 animate-tournament-semi-1" stroke-dasharray="2,2" />
               <line x1="200" y1="40" x2="160" y2="40" class="stroke-white/40 animate-tournament-semi-2" stroke-dasharray="2,2" />
-              <!-- Players and connections -->
               <circle cx="40" cy="120" r="3" class="fill-white/60 animate-tournament-player-1" />
               <circle cx="80" cy="120" r="3" class="fill-white/60 animate-tournament-player-2" />
               <circle cx="120" cy="120" r="3" class="fill-white/60 animate-tournament-player-3" />
@@ -804,7 +740,6 @@ export class AuthPage {
               <circle cx="200" cy="120" r="3" class="fill-white/60 animate-tournament-player-5" />
               <circle cx="240" cy="120" r="3" class="fill-white/60 animate-tournament-player-6" />
               <circle cx="280" cy="120" r="3" class="fill-white/60 animate-tournament-player-7" />
-              <!-- Winner path -->
               <line x1="120" y1="120" x2="120" y2="100" class="stroke-yellow-400/80 stroke-2 animate-tournament-winner-path-1" />
               <circle cx="120" cy="120" r="4" class="fill-yellow-400 animate-tournament-winner-glow" />
             </svg>
@@ -889,60 +824,52 @@ export class AuthPage {
   private createAnimationStyles(): string {
     return `
       <style>
-        /* Floating Input Styles - Reproduction exacte du React */
         .floating-input-container {
           position: relative;
         }
         
         .floating-label {
           position: absolute;
-          left: 0.75rem; /* left-3 = 12px = 0.75rem */
-          top: 50%; /* Centré verticalement dans l'input */
-          transform: translateY(-50%); /* Pour un centrage parfait */
-          font-size: 1rem; /* text-base */
-          color: #6b7280; /* text-gray-500 */
-          transition: all 0.2s ease-in-out; /* duration-200 */
+          left: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 1rem;
+          color: #6b7280;
+          transition: all 0.2s ease-in-out;
           pointer-events: none;
           z-index: 10;
           background: transparent;
         }
         
-        /* Quand focus OU quand il y a du contenu */
         .floating-input:focus ~ .floating-label,
         .floating-input:not(:placeholder-shown) ~ .floating-label,
         .floating-input:valid ~ .floating-label {
-          top: 0.5rem; /* Remonte dans la zone de padding top */
-          transform: translateY(0); /* Annule le centrage */
-          font-size: 0.75rem; /* text-xs */
-          color: #4b5563; /* text-gray-600 */
+          top: 0.5rem;
+          transform: translateY(0);
+          font-size: 0.75rem;
+          color: #4b5563;
         }
         
-        /* Couleur spéciale quand focus */
         .floating-input:focus ~ .floating-label {
-          color: #111827; /* text-gray-900 */
+          color: #111827;
         }
         
-        /* Style de base pour les inputs flottants */
         .floating-input {
           background: transparent !important;
         }
         
-        /* Laisser le style autofill natif du navigateur (fond jaune) */
-
-        /* Améliorer la couleur du label flottant */
         .floating-label {
-          color: #9ca3af !important; /* text-gray-400 */
+          color: #9ca3af !important;
         }
         .floating-input:focus ~ .floating-label,
         .floating-input:not(:placeholder-shown) ~ .floating-label,
         .floating-input:valid ~ .floating-label {
-          color: #6b7280 !important; /* text-gray-500 */
+          color: #6b7280 !important;
         }
         .floating-input:focus ~ .floating-label {
-          color: #111827 !important; /* text-gray-900 */
+          color: #111827 !important;
         }
         
-        /* S'assurer que les labels sont bien positionnés */
         .floating-input-container .floating-label {
           position: absolute !important;
           left: 0.75rem !important;
@@ -950,7 +877,6 @@ export class AuthPage {
           z-index: 10 !important;
         }
         
-        /* Auth Form Transitions */
         .auth-form {
           transition: all 0.3s ease-in-out;
         }
@@ -963,7 +889,6 @@ export class AuthPage {
           display: block;
         }
         
-        /* Animation Container */
         .animation-container {
           position: absolute;
           inset: 0;
@@ -983,7 +908,6 @@ export class AuthPage {
           pointer-events: auto;
         }
         
-        /* Ripple Animation */
         @keyframes ripple {
           0% {
             width: 0;
@@ -1001,7 +925,6 @@ export class AuthPage {
           animation: ripple 0.6s ease-out;
         }
         
-        /* Pong Animations */
         @keyframes paddle-realistic-left {
           0%, 100% { top: 20%; }
           25% { top: 40%; }
@@ -1063,7 +986,6 @@ export class AuthPage {
           animation: score-flash 6s infinite;
         }
         
-        /* Floating animations */
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-20px); }
@@ -1091,7 +1013,6 @@ export class AuthPage {
           animation: float-slow 10s ease-in-out infinite 1s;
         }
         
-        /* Fade in animation */
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -1107,7 +1028,6 @@ export class AuthPage {
           animation: fade-in 1s ease-out;
         }
         
-        /* Chat animations */
         @keyframes chat-message-1 {
           0%, 20%, 100% { opacity: 0; transform: translateX(-20px); }
           25%, 95% { opacity: 1; transform: translateX(0); }
@@ -1154,7 +1074,6 @@ export class AuthPage {
         .animate-chat-dot-2 { animation: chat-dot-2 1.5s infinite 0.2s; }
         .animate-chat-dot-3 { animation: chat-dot-3 1.5s infinite 0.4s; }
         
-        /* Tournament animations */
         @keyframes tournament-trophy {
           0%, 100% { transform: scale(1) rotate(0deg); }
           50% { transform: scale(1.1) rotate(5deg); }

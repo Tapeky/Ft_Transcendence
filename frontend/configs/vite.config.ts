@@ -23,11 +23,6 @@ export default defineConfig({
   },
   // CSS processing configuration
   css: {
-    postcss: {
-      plugins: [
-        require('tailwindcss'),
-        require('autoprefixer'),
-      ],
-    },
+    postcss: './configs/postcss.config.cjs',
   },
 });

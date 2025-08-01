@@ -52,17 +52,8 @@ export class Router {
       const pathSegments = currentPath.split('/');
       const userId = pathSegments[2]; // /dashboard/123 -> segments[2] = "123"
       
-      console.log('🔍 Router Dashboard - Debug:', {
-        originalPath: path,
-        currentPath: currentPath,
-        pathSegments,
-        userId,
-        userIdExists: !!userId,
-        matchesPattern: userId?.match(/^\d+$/)
-      });
       
       if (!userId || !userId.match(/^\d+$/)) {
-        console.log('❌ Router: Invalid userId, loading 404');
         const { NotFoundPage } = await import('../../pages/NotFound');
         return new NotFoundPage().getElement();
       }
@@ -80,13 +71,6 @@ export class Router {
       const pathSegments = currentPath.split('/');
       const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
       
-      console.log('🎮 Router Game - Debug:', {
-        originalPath: path,
-        currentPath: currentPath,
-        pathSegments,
-        gameMode,
-        gameModeExists: !!gameMode
-      });
       
       // Si pas de mode spécifié, afficher le sélecteur de mode
       if (!gameMode) {
@@ -132,7 +116,6 @@ export class Router {
     });
     
     
-    console.log('🛣️ Router: Routes enregistrées', Array.from(this.routes.keys()));
   }
 
   private findRoute(path: string): ((path?: string) => Promise<HTMLElement>) | undefined {
@@ -163,12 +146,10 @@ export class Router {
   }
 
   public async navigate(path: string, skipGuard: boolean = false): Promise<void> {
-    console.log(`🧭 Router: Navigation vers ${path}`);
     
     // Check route protection if guard is available and not skipped
     if (!skipGuard && this.routeGuard) {
       if (!this.routeGuard.canNavigateTo(path)) {
-        console.log(`🚫 Router: Navigation bloquée vers ${path}`);
         return;
       }
     }
@@ -186,7 +167,6 @@ export class Router {
         window.history.pushState(null, '', path);
       }
     } catch (error) {
-      console.error('❌ Router: Erreur navigation:', error);
       // Fallback vers une page d'erreur simple
       this.renderError(`Erreur de navigation: ${error}`);
     }
@@ -219,7 +199,6 @@ export class Router {
     // Gérer les boutons précédent/suivant du navigateur
     window.addEventListener('popstate', async () => {
       const currentPath = window.location.pathname;
-      console.log(`⏪ Router: Popstate détecté: ${currentPath}`);
       
       try {
         // Navigate sans pushState pour éviter la boucle
@@ -227,7 +206,6 @@ export class Router {
         const page = await pageFactory(currentPath);
         this.render(page);
       } catch (error) {
-        console.error('❌ Router: Erreur popstate:', error);
         this.renderError(`Erreur navigation historique: ${error}`);
       }
     });

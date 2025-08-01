@@ -23,7 +23,6 @@ export class GameInviteNotification {
     this.element = this.createElement();
     this.setupEventListeners();
     
-    console.log('🎮 GameInviteNotification: Initialized for invite from', invite.sender_username);
   }
 
   private createElement(): HTMLElement {
@@ -109,7 +108,6 @@ export class GameInviteNotification {
 
   private async handleResponse(action: 'accept' | 'decline'): Promise<void> {
     try {
-      console.log(`🎮 GameInviteNotification: ${action}ing invite from`, this.invite.sender_username);
       
       // Show loading state immediately
       if (action === 'accept') {
@@ -136,7 +134,6 @@ export class GameInviteNotification {
       }, closeDelay);
       
     } catch (error) {
-      console.error('Error responding to game invite:', error);
       
       // Réactiver les boutons en cas d'erreur
       const acceptBtn = this.element.querySelector('#accept-btn') as HTMLButtonElement;
@@ -226,7 +223,6 @@ export class GameInviteNotification {
   }
 
   private expire(): void {
-    console.log('🎮 GameInviteNotification: Invite expired');
     
     const content = this.element.querySelector('.mb-4');
     if (content) {
@@ -250,7 +246,6 @@ export class GameInviteNotification {
   }
 
   private close(): void {
-    console.log('🎮 GameInviteNotification: Closing notification');
     this.element.remove();
     this.onClose();
   }
@@ -273,7 +268,6 @@ export class GameInviteNotification {
   }
 
   public destroy(): void {
-    console.log('🎮 GameInviteNotification: Destroyed');
     this.element.remove();
   }
 }

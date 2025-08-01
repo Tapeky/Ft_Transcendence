@@ -14,7 +14,6 @@ export class AddFriend {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('👤 AddFriend: Initialized with React-like logic');
   }
 
   private createElement(): HTMLElement {
@@ -57,7 +56,6 @@ export class AddFriend {
     const addBtn = this.element.querySelector('#add-btn');
     const nameInput = this.element.querySelector('#nameInput') as HTMLInputElement;
 
-    // Add button click
     addBtn?.addEventListener('click', () => this.addFriend());
 
     // Enter key in input
@@ -105,7 +103,6 @@ export class AddFriend {
       this.setStatus('ok');
       nameInput.value = ''; // Clear input
 
-      console.log('👤 AddFriend: Friend request sent successfully');
 
     } catch (error) {
       console.error('❌ AddFriend: Failed to send friend request:', error);
@@ -166,7 +163,6 @@ export class AddFriend {
       clearTimeout(this.statusTimer);
     }
     
-    console.log('👤 AddFriend: Destroyed (React-like)');
     this.element.remove();
   }
 }

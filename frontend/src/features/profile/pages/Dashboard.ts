@@ -21,12 +21,6 @@ export class Dashboard {
   private async init() {
     // DEBUG: Afficher l'état d'auth au moment du Dashboard
     const state = appState.getState();
-    console.log('🔍 Dashboard INIT - État auth:', {
-      loading: state.loading,
-      isAuthenticated: state.isAuthenticated,
-      user: state.user,
-      userExists: !!state.user
-    });
 
     if (state.loading) {
       // Afficher un état de chargement pendant l'initialisation
@@ -38,15 +32,8 @@ export class Dashboard {
 
     // Vérifier l'authentification APRÈS initialisation
     const finalState = appState.getState();
-    console.log('🔍 Dashboard FINAL - État auth:', {
-      loading: finalState.loading,
-      isAuthenticated: finalState.isAuthenticated,
-      user: finalState.user,
-      userExists: !!finalState.user
-    });
 
     if (!finalState.isAuthenticated || !finalState.user) {
-      console.log('❌ Dashboard: Auth check failed, navigating to /');
       appState.router?.navigate('/');
       return;
     }
@@ -190,9 +177,8 @@ export class Dashboard {
           <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
             <img src="${this.getAvatarUrl(match.player1_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
             <h1>${match.player1_username || match.player1_guest_name || 'Unknown'}</h1>
-            ${match.player1_id && match.player1_id !== currentUser?.id ? `
+            ${match.player1_username && match.player1_username !== currentUser?.username ? `
               <button 
-                data-invite-user="${match.player1_id}"
                 data-invite-username="${match.player1_username}"
                 class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
                 🎮 Rematch
@@ -205,9 +191,8 @@ export class Dashboard {
           <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
             <img src="${this.getAvatarUrl(match.player2_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
             <h1>${match.player2_username || match.player2_guest_name || 'Unknown'}</h1>
-            ${match.player2_id && match.player2_id !== currentUser?.id ? `
+            ${match.player2_username && match.player2_username !== currentUser?.username ? `
               <button 
-                data-invite-user="${match.player2_id}"
                 data-invite-username="${match.player2_username}"
                 class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
                 🎮 Rematch

@@ -12,7 +12,6 @@ export class Banner {
     this.element = this.createElement();
     this.subscribeToAuth();
     
-    console.log('🎨 Banner: Initialized with React-like design');
   }
 
   private createElement(): HTMLElement {
@@ -53,7 +52,6 @@ export class Banner {
       </ul>
     `;
 
-    // Bind events directly on the div before returning it
     const dashboardBtn = div.querySelector('#dashboard-btn');
     dashboardBtn?.addEventListener('click', () => this.navigateToDashboard());
 
@@ -116,10 +114,7 @@ export class Banner {
     
     if (userId && userId !== '') {
       router.navigate(`/dashboard/${userId}`);
-      console.log(`🎨 Banner: Navigating to dashboard for user ${userId}`);
     } else {
-      console.warn('🎨 Banner: No user ID available for dashboard navigation');
-      console.warn('🎨 Banner: Current user:', authManager.getCurrentUser());
     }
   }
 
@@ -132,7 +127,6 @@ export class Banner {
       this.authUnsubscribe();
     }
     
-    console.log('🎨 Banner: Destroyed (React-like)');
     this.element.remove();
   }
 }

@@ -58,7 +58,6 @@ export class ChatManager {
       await chatService.connect();
       this.setupChatEvents();
       this.state.initialized = true;
-      console.log('💬 ChatManager initialized');
     } catch (error) {
       console.error('❌ Failed to initialize ChatManager:', error);
       throw error;
