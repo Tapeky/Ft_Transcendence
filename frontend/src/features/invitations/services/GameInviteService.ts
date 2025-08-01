@@ -22,7 +22,6 @@ export class GameInviteService {
       this.ws = apiService.connectWebSocket();
       
       this.ws!.onopen = () => {
-        console.log('🎮 KISS: WebSocket connected');
         // KISS: Reset reconnection attempts on successful connection
         this.reconnectAttempts = 0;
         this.authenticate();
@@ -33,39 +32,31 @@ export class GameInviteService {
           const data = JSON.parse(event.data);
           this.handleMessage(data);
         } catch (error) {
-          console.error('🎮 KISS: Error parsing WebSocket message:', error);
         }
       };
       
       this.ws!.onclose = () => {
-        console.log('🎮 KISS: WebSocket disconnected');
         this.isAuthenticated = false;
         this.reconnect();
       };
       
       this.ws!.onerror = (error) => {
-        console.error('🎮 KISS: WebSocket error:', error);
       };
       
     } catch (error) {
-      console.error('🎮 KISS: Failed to connect WebSocket:', error);
       this.reconnect();
     }
   }
 
   private authenticate(): void {
-    console.log('🎮 KISS: Starting authentication...');
     
     // KISS: Une seule méthode d'authentification - toujours localStorage en premier
     const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-    console.log('🎮 KISS: Token found:', token ? `${token.substring(0, 20)}...` : 'NULL');
     
     if (!token || !this.ws) {
-      console.error('🎮 KISS: No token found or no WebSocket connection');
       return;
     }
 
-    console.log('🎮 KISS: Sending authentication');
     this.ws.send(JSON.stringify({
       type: 'auth',
       token: token
@@ -75,18 +66,15 @@ export class GameInviteService {
   private handleMessage(data: any): void {
     switch (data.type) {
       case 'auth_success':
-        console.log('🎮 KISS: Authenticated successfully');
         this.isAuthenticated = true;
         // KISS: Ensure reconnection attempts are reset after successful auth
         this.reconnectAttempts = 0;
         break;
 
       case 'auth_error':
-        console.error('🎮 KISS: Authentication failed:', data.message);
         break;
 
       case 'game_invite_received':
-        console.log('🎮 KISS: Game invite received:', data);
         if (this.onInviteReceivedCallback) {
           const invite: GameInvite = {
             inviteId: data.inviteId,
@@ -99,21 +87,18 @@ export class GameInviteService {
         break;
 
       case 'invite_sent':
-        console.log('🎮 KISS: Invite sent to:', data.toUsername);
         if (this.onInviteSentCallback) {
           this.onInviteSentCallback(data);
         }
         break;
 
       case 'invite_declined':
-        console.log('🎮 KISS: Invite declined by:', data.byUsername);
         if (this.onInviteDeclinedCallback) {
           this.onInviteDeclinedCallback(data);
         }
         break;
 
       case 'game_started':
-        console.log('🎮 KISS: Game started:', data);
         if (this.onGameStartedCallback) {
           this.onGameStartedCallback(data);
         }
@@ -127,18 +112,15 @@ export class GameInviteService {
         break;
 
       case 'invite_error':
-        console.error('🎮 KISS: Invite error:', data.message);
         if (this.onInviteErrorCallback) {
           this.onInviteErrorCallback(data.message);
         }
         break;
 
       case 'invite_expired':
-        console.log('🎮 KISS: Invite expired:', data.inviteId);
         break;
 
       case 'connected':
-        console.log('🎮 KISS: Connected to server');
         break;
 
       case 'pong':
@@ -153,14 +135,12 @@ export class GameInviteService {
 
   private reconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('🎮 KISS: Max reconnection attempts reached');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     
-    console.log(`🎮 KISS: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
     
     setTimeout(() => {
       this.connect();
@@ -181,12 +161,10 @@ export class GameInviteService {
   sendInvite(userId: number): void {
     // KISS: Connection state validation
     if (!this.isConnected()) {
-      console.error('🎮 KISS: Not connected, attempting reconnection...');
       this.connect();
       return;
     }
     
-    console.log('🎮 KISS: Sending invite to user', userId);
     this.ws!.send(JSON.stringify({
       type: 'send_game_invite',
       toUserId: userId
@@ -197,11 +175,9 @@ export class GameInviteService {
   respondToInvite(inviteId: string, accept: boolean): void {
     // KISS: Connection state validation
     if (!this.isConnected()) {
-      console.error('🎮 KISS: Not connected, cannot respond to invite');
       return;
     }
     
-    console.log('🎮 KISS: Responding to invite', inviteId, accept ? 'ACCEPT' : 'DECLINE');
     this.ws!.send(JSON.stringify({
       type: 'respond_game_invite',
       inviteId: inviteId,
@@ -246,7 +222,6 @@ export class GameInviteService {
 
   // 🔄 Force reconnection (pour éviter les conflits avec Game.ts)
   forceReconnect(): void {
-    console.log('🎮 KISS: Forcing reconnection after game ended');
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -262,7 +237,6 @@ export class GameInviteService {
 
   // KISS: Basic cleanup method for singleton
   cleanup(): void {
-    console.log('🎮 KISS: Cleaning up GameInviteService');
     this.disconnect();
     
     // Clear all callbacks

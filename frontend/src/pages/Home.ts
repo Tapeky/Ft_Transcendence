@@ -191,7 +191,6 @@ export class HomePage {
   }
 
   private setupInfoButtons(): void {
-    // Show routes button
     const showRoutesBtn = this.element.querySelector('#show-routes');
     showRoutesBtn?.addEventListener('click', () => {
       import('../core/app/Router').then(({ router }) => {
@@ -199,7 +198,6 @@ export class HomePage {
       });
     });
 
-    // Clear auth button (for testing)
     const clearAuthBtn = this.element.querySelector('#clear-auth');
     clearAuthBtn?.addEventListener('click', () => {
       import('../core/auth/AuthManager').then(({ authManager }) => {

@@ -47,18 +47,15 @@ export class GameInviteManager {
       this.handleGameNavigationError(data);
     });
 
-    console.log('🎮 GameInviteManager: Chat service listeners setup');
   }
 
   private handleInviteReceived(invite: GameInvite): void {
-    console.log('🎮 GameInviteManager: Received game invite from', invite.sender_username);
 
     // Vérifier si l'invitation n'est pas expirée
     const expiresAt = new Date(invite.expires_at);
     const now = new Date();
     
     if (now >= expiresAt) {
-      console.log('🎮 GameInviteManager: Invite already expired, ignoring');
       return;
     }
 
@@ -90,7 +87,6 @@ export class GameInviteManager {
     responderId: number;
     responderUsername: string;
   }): void {
-    console.log(`🎮 GameInviteManager: ${data.responderUsername} ${data.action}ed your game invite`);
 
     // Afficher une notification de réponse
     this.showResponseNotification(data);
@@ -140,7 +136,6 @@ export class GameInviteManager {
 
     // Si accepté, le jeu va démarrer automatiquement via le backend
     if (isAccepted) {
-      console.log('🎮 GameInviteManager: Game will start automatically with', data.responderUsername);
     }
   }
 
@@ -164,13 +159,11 @@ export class GameInviteManager {
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
       // Pas grave si le son ne marche pas
-      console.log('🎮 GameInviteManager: Could not play notification sound');
     }
   }
 
   public async loadPendingInvites(): Promise<void> {
     try {
-      console.log('🎮 GameInviteManager: Loading pending invites...');
       
       const invites = await apiService.getReceivedGameInvites();
       
@@ -178,7 +171,6 @@ export class GameInviteManager {
         this.handleInviteReceived(invite);
       }
       
-      console.log(`🎮 GameInviteManager: Loaded ${invites.length} pending invites`);
       
     } catch (error) {
       console.error('🎮 GameInviteManager: Error loading pending invites:', error);
@@ -190,7 +182,6 @@ export class GameInviteManager {
     opponent: { id: number; username: string; avatar: string }; 
     playerSide: 'left' | 'right' 
   }): void {
-    console.log(`🎮 GameInviteManager: Game ${data.gameId} started with ${data.opponent.username}`);
     
     // Clear all active invitation notifications since the game is starting
     this.clearAllNotifications();
@@ -282,7 +273,6 @@ export class GameInviteManager {
   }
 
   public clearAllNotifications(): void {
-    console.log('🎮 GameInviteManager: Clearing all notifications');
     
     this.activeNotifications.forEach((notification) => {
       notification.destroy();

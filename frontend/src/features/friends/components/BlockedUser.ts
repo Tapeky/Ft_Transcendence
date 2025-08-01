@@ -20,7 +20,6 @@ export class BlockedUser {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('🚫 BlockedUser: Initialized with React-like behavior');
   }
 
   private createElement(): HTMLElement {
@@ -58,7 +57,6 @@ export class BlockedUser {
   private async unblock(): Promise<void> {
     try {
       await apiService.unblockUser(this.props.id);
-      console.log('User unblocked !');
       this.dismiss();
 
     } catch (error) {
@@ -71,7 +69,6 @@ export class BlockedUser {
     this.isVisible = false;
     this.updateVisibility();
 
-    console.log(`🚫 BlockedUser: User ${this.props.username} dismissed`);
   }
 
   private updateVisibility(): void {
@@ -100,7 +97,6 @@ export class BlockedUser {
   }
 
   destroy(): void {
-    console.log(`🚫 BlockedUser: Destroyed for ${this.props.username} (React-like)`);
     this.element.remove();
   }
 }

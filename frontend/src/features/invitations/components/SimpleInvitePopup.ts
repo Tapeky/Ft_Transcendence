@@ -1,7 +1,5 @@
-// 🎯 KISS Invite Popup - Une seule classe, intégrée avec le système existant
 import { gameInviteService, GameInvite } from '../services/GameInviteService';
 
-// KISS: Global registry pour éviter les doublons
 const activePopups = new Set<string>();
 
 export class SimpleInvitePopup {
@@ -12,7 +10,6 @@ export class SimpleInvitePopup {
   constructor(private invite: GameInvite) {
     // KISS: Prevent duplicates - simple check
     if (activePopups.has(invite.inviteId)) {
-      console.log('🎮 KISS: Popup already active for invite', invite.inviteId);
       return;
     }
     
@@ -96,7 +93,6 @@ export class SimpleInvitePopup {
     if (this.isDestroyed) return;
 
     try {
-      console.log(`🎮 KISS Popup: ${accept ? 'Accepting' : 'Declining'} invite from`, this.invite.fromUsername);
       
       // Désactiver les boutons immédiatement
       this.disableButtons();
@@ -245,7 +241,6 @@ export class SimpleInvitePopup {
   private expire(): void {
     if (this.isDestroyed) return;
     
-    console.log('🎮 KISS Popup: Invite expired');
     
     const content = this.element.querySelector('#content');
     if (content) {
@@ -290,7 +285,6 @@ export class SimpleInvitePopup {
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
       // Pas grave si le son ne marche pas
-      console.log('🎮 KISS Popup: Could not play notification sound');
     }
   }
 
@@ -305,7 +299,6 @@ export class SimpleInvitePopup {
     // KISS: Clear all timers
     this.clearAllTimers();
     
-    console.log('🎮 KISS Popup: Closing notification');
     this.element.remove();
   }
 

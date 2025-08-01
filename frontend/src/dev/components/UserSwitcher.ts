@@ -29,7 +29,6 @@ export class UserSwitcher {
     this.element = this.createElement();
     this.bindEvents();
     this.attachToPage();
-    console.log('🔧 UserSwitcher: Dev panel initialized');
   }
 
   private createElement(): HTMLElement {
@@ -125,9 +124,7 @@ export class UserSwitcher {
 
   private async switchToUser(email: string, password: string): Promise<void> {
     try {
-      console.log(`🔧 UserSwitcher: Switching to user ${email}`);
       
-      // Show loading
       this.showStatus('Switching user...', 'loading');
 
       // Login with test user
@@ -162,7 +159,6 @@ export class UserSwitcher {
       // Extraire le nom d'utilisateur de l'email
       const username = email.split('@')[0];
       
-      console.log(`🔧 UserSwitcher: Creating user ${username}`);
       
       // Créer l'utilisateur
       await authManager.register({
@@ -245,7 +241,6 @@ export class UserSwitcher {
   }
 
   public destroy(): void {
-    console.log('🔧 UserSwitcher: Destroying dev panel');
     this.element.remove();
   }
 

@@ -70,7 +70,6 @@ export class ChatFriendsList {
       </div>
     `;
 
-    // Bind events
     const inviteBtn = item.querySelector('.invite-btn');
     inviteBtn?.addEventListener('click', () => {
       if (this.onGameInvite) {

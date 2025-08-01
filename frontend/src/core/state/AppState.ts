@@ -44,7 +44,6 @@ export class AppState {
     this.state = this.getInitialState();
     this.setupDevTools();
     
-    console.log('🗄️ AppState: Initialized', this.state);
   }
 
   public setRouter(router: any): void {
@@ -64,7 +63,6 @@ export class AppState {
 
   // Core state management methods
   public setState(updates: StateUpdater): void {
-    console.log('🔄 AppState: setState called', updates);
     
     // Save current state to history
     this.saveToHistory();
@@ -78,11 +76,6 @@ export class AppState {
       lastActivity: new Date()
     };
     
-    console.log('📊 AppState: State updated', {
-      previous: previousState,
-      current: this.state,
-      changes: updates
-    });
     
     // Notify all subscribers
     this.notifySubscribers();
@@ -93,7 +86,6 @@ export class AppState {
   }
 
   public subscribe(callback: StateSubscriber): () => void {
-    console.log('👂 AppState: New subscriber added');
     
     this.subscribers.push(callback);
     
@@ -105,20 +97,17 @@ export class AppState {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
         this.subscribers.splice(index, 1);
-        console.log('🔇 AppState: Subscriber removed');
       }
     };
   }
 
   private notifySubscribers(): void {
-    console.log(`📢 AppState: Notifying ${this.subscribers.length} subscribers`);
     
     const currentState = this.getState();
     this.subscribers.forEach((callback, index) => {
       try {
         callback(currentState);
       } catch (error) {
-        console.error(`❌ AppState: Error in subscriber ${index}:`, error);
       }
     });
   }
@@ -174,16 +163,9 @@ export class AppState {
     (window as any).getAppState = () => this.getState();
     (window as any).setAppState = (updates: StateUpdater) => this.setState(updates);
     
-    console.log('🛠️ AppState: Dev tools available via window.appState');
   }
 
   public debugInfo(): void {
-    console.group('🗄️ AppState Debug Info');
-    console.log('Current State:', this.getState());
-    console.log('Subscribers:', this.subscribers.length);
-    console.log('History:', this.stateHistory.length, 'entries');
-    console.log('Last Activity:', this.state.lastActivity);
-    console.groupEnd();
   }
 
   // Batch updates to prevent multiple notifications
@@ -195,7 +177,6 @@ export class AppState {
 
   // Reset state (useful for testing)
   public reset(): void {
-    console.log('🔄 AppState: Resetting to initial state');
     this.state = this.getInitialState();
     this.stateHistory = [];
     this.notifySubscribers();

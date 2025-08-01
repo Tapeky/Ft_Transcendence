@@ -29,7 +29,6 @@ export class ProfilePage {
 
     const user = authManager.getCurrentUser();
 
-    // Create Header component (like React)
     this.header = new Header(true);
     container.appendChild(this.header.getElement());
 
@@ -41,7 +40,6 @@ export class ProfilePage {
     const headerSection = document.createElement('div');
     headerSection.className = 'text-center text-[4rem] border-b-2 w-full flex';
 
-    // Create BackBtn component
     this.backBtn = new BackBtn();
     headerSection.appendChild(this.backBtn.getElement());
 
@@ -176,7 +174,6 @@ export class ProfilePage {
     }
 
     if (newDisplayName === currentDisplayName) {
-      console.log('Display name unchanged, no update needed');
       return;
     }
 
@@ -191,7 +188,6 @@ export class ProfilePage {
         this.header.refresh();
       }
       
-      // Show success feedback
       this.showFeedback('Display name updated successfully!', 'success');
       
     } catch (error) {
@@ -220,7 +216,6 @@ export class ProfilePage {
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
-    // Create CloseBtn component (React exact)
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
 
@@ -348,11 +343,9 @@ export class ProfilePage {
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
-    // Create CloseBtn component (React exact)
     this.avatarModalCloseBtn = new CloseBtn(() => this.closeAvatarModal());
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
 
-    // Create AvatarSelect component (React exact)
     this.avatarSelect = new AvatarSelect(() => {
       // Avatar change callback - update main avatar
       this.updateMainAvatar();
@@ -447,7 +440,6 @@ export class ProfilePage {
   private closePasswordModal(): void {
     this.showPasswordModal = false;
     
-    // Cleanup components
     if (this.passwordModalCloseBtn) {
       this.passwordModalCloseBtn.destroy();
       this.passwordModalCloseBtn = undefined;
@@ -460,7 +452,6 @@ export class ProfilePage {
   private closeAvatarModal(): void {
     this.showAvatarModal = false;
     
-    // Cleanup components
     if (this.avatarModalCloseBtn) {
       this.avatarModalCloseBtn.destroy();
       this.avatarModalCloseBtn = undefined;
@@ -500,7 +491,6 @@ export class ProfilePage {
   }
 
   private showFeedback(message: string, type: 'success' | 'error'): void {
-    // Create temporary feedback element
     const feedback = document.createElement('div');
     feedback.className = `fixed top-4 right-4 z-50 p-4 rounded-lg text-white font-medium ${
       type === 'success' ? 'bg-green-600' : 'bg-red-600'
@@ -520,7 +510,6 @@ export class ProfilePage {
   }
 
   public destroy(): void {
-    // Cleanup components
     if (this.header) {
       this.header.destroy();
     }

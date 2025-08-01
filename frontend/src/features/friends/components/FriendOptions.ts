@@ -26,7 +26,6 @@ export class FriendOptions {
     this.props = props;
     this.element = this.createElement();
     this.setupEventListeners();
-    console.log('👥 FriendOptions: Initialized for user', props.username);
   }
 
   private createElement(): HTMLElement {
@@ -129,7 +128,6 @@ export class FriendOptions {
   }
 
   private handleDashboard(): void {
-    console.log('👥 FriendOptions: Opening dashboard for', this.props.username);
     
     // Navigate to dashboard - EXACTEMENT React
     router.navigate(`/dashboard/${this.props.id}`);
@@ -138,7 +136,6 @@ export class FriendOptions {
 
   private async handleGameInvite(): Promise<void> {
     try {
-      console.log('🎮 FriendOptions: Sending KISS game invite to', this.props.username);
       
       // Vérifier que le service KISS est connecté
       if (!gameInviteService.isConnected()) {
@@ -150,7 +147,6 @@ export class FriendOptions {
       // Send game invite via KISS system
       gameInviteService.sendInvite(this.props.id);
       
-      console.log('✅ KISS Game invite sent successfully!');
       alert(`🎮 Game invite sent to ${this.props.username}!`);
       
       // Close the modal
@@ -164,10 +160,8 @@ export class FriendOptions {
 
   private async handleRemoveFriend(): Promise<void> {
     try {
-      console.log('👥 FriendOptions: Removing friend', this.props.id);
       
       await apiService.removeFriend(this.props.id);
-      console.log('Friend removed !');
       
       // EXACTEMENT React pattern: setDismiss PUIS setIsOpen
       this.props.setDismiss();
@@ -180,10 +174,8 @@ export class FriendOptions {
 
   private async handleBlock(): Promise<void> {
     try {
-      console.log('👥 FriendOptions: Attempting to block user with ID:', this.props.id);
       
       await apiService.blockUser(this.props.id);
-      console.log('User blocked successfully!');
       
       // EXACTEMENT React pattern: setDismiss PUIS setIsOpen
       this.props.setDismiss();
@@ -203,7 +195,6 @@ export class FriendOptions {
     if (this.closeBtn) {
       this.closeBtn.destroy();
     }
-    console.log('👥 FriendOptions: Destroyed (React EXACT)');
     this.element.remove();
   }
 }

@@ -2,10 +2,10 @@
   "name": "ft-transcendence-frontend",
   "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "start": "vite"
+    "dev": "vite --config configs/vite.config.ts",
+    "build": "tsc --project configs/tsconfig.json && vite build --config configs/vite.config.ts",
+    "preview": "vite preview --config configs/vite.config.ts",
+    "start": "vite --config configs/vite.config.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.4",

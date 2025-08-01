@@ -31,7 +31,6 @@ export class AvatarSelect {
 
   private async loadAvatars(): Promise<void> {
     try {
-      console.log('🎭 AvatarSelect: Loading avatars from API');
       this.avatars = await apiService.getAvatars();
       this.renderAvatars();
     } catch (error) {
@@ -50,7 +49,6 @@ export class AvatarSelect {
       return;
     }
 
-    // Clear loading and render avatars (React exact)
     container.innerHTML = '';
     
     this.avatars.forEach((avatar, index) => {
@@ -66,7 +64,6 @@ export class AvatarSelect {
       container.appendChild(avatarImg);
     });
 
-    console.log(`🎭 AvatarSelect: Rendered ${this.avatars.length} avatars`);
   }
 
   private renderError(): void {
@@ -77,7 +74,6 @@ export class AvatarSelect {
 
   private async handleAvatarClick(avatarId: string): Promise<void> {
     try {
-      console.log('🎭 AvatarSelect: Setting avatar to:', avatarId);
       
       // Call API to set avatar (React exact)
       await apiService.setAvatar(avatarId);
@@ -100,7 +96,6 @@ export class AvatarSelect {
   }
 
   private showFeedback(message: string): void {
-    // Create temporary feedback element
     const feedback = document.createElement('div');
     feedback.className = 'fixed top-4 right-4 z-50 p-4 rounded-lg text-white font-medium bg-green-600';
     feedback.textContent = message;
@@ -118,7 +113,6 @@ export class AvatarSelect {
   }
 
   destroy(): void {
-    console.log('🎭 AvatarSelect: Destroyed');
     this.element.remove();
   }
 }

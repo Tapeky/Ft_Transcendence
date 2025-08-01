@@ -26,7 +26,6 @@ export class ChatTabHandler {
     
     // ✅ Setup event listener for message updates
     this.messagesUpdatedHandler = (data) => {
-      console.log('🔵 ChatTabHandler: Messages updated for conversation', data.conversationId);
       
       // If we're in conversation view and it's the right conversation
       const chatState = this.chatManager.getState();
@@ -51,7 +50,6 @@ export class ChatTabHandler {
   }
 
   private async renderChatFriendsList(): Promise<void> {
-    // Clear existing content
     this.container.innerHTML = '';
 
     // Clean up existing chat friends list
@@ -78,7 +76,6 @@ export class ChatTabHandler {
   }
 
   private async renderChatConversation(): Promise<void> {
-    // Clear existing content
     this.container.innerHTML = '';
 
     const chatState = this.chatManager.getState();
@@ -101,7 +98,6 @@ export class ChatTabHandler {
         this.renderChatContent();
       },
       onMessageSent: (message) => {
-        console.log('Message sent in chat:', message);
       }
     });
 

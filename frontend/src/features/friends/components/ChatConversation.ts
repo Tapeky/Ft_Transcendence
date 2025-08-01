@@ -166,29 +166,21 @@ export class ChatConversation {
 
   // Public methods for external message updates
   public addMessage(message: Message): void {
-    console.log('🔍 DEBUG ChatConversation: addMessage appelé pour message ID:', message.id);
-    console.log('🔍 DEBUG ChatConversation: Messages actuels:', this.messages.length);
 
     const existingMessage = this.messages.find(m => m.id === message.id);
     if (!existingMessage) {
       this.messages.push(message);
-      console.log('✅ DEBUG ChatConversation: Message ajouté, total:', this.messages.length);
       this.renderMessages();
       this.scrollToBottom();
-      console.log('✅ DEBUG ChatConversation: Messages rendus et scrollé');
     } else {
-      console.log('⚠️ DEBUG ChatConversation: Message déjà présent, ignoré');
     }
   }
 
   public updateMessages(messages: Message[]): void {
-    console.log('🔍 DEBUG ChatConversation: updateMessages appelé avec', messages.length, 'messages');
-    console.log('🔍 DEBUG ChatConversation: Messages actuels:', this.messages.length);
     
     this.messages = messages; // Remplacer complètement les messages
     this.renderMessages();
     this.scrollToBottom();
-    console.log('✅ DEBUG ChatConversation: Messages mis à jour et rendus');
   }
 
   public updateConversation(conversation: Conversation): void {

@@ -27,7 +27,6 @@ export class FriendItem {
     this.element = this.createElement();
     this.bindEvents();
     
-    console.log('👥 FriendItem: Initialized with React-like behavior');
   }
 
   private createElement(): HTMLElement {
@@ -99,7 +98,6 @@ export class FriendItem {
     // Chat button - navigate to chat (React NavLink behavior)
     chatBtn?.addEventListener('click', () => {
       router.navigate(`/chat/${this.props.id}`);
-      console.log(`👥 FriendItem: Navigating to chat with ${this.props.username}`);
     });
 
     // Options button - open FriendOptions modal
@@ -109,11 +107,9 @@ export class FriendItem {
 
   private async sendGameInvite(): Promise<void> {
     try {
-      console.log(`✈️ FriendItem: Sending KISS game invite to ${this.props.username}`);
       
       // Vérifier que le service KISS est connecté
       if (!gameInviteService.isConnected()) {
-        console.error('❌ KISS service not connected');
         alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
         return;
       }
@@ -121,11 +117,9 @@ export class FriendItem {
       // Envoyer l'invitation via le système KISS (WebSocket)
       gameInviteService.sendInvite(this.props.id);
       
-      console.log('✅ KISS Game invite sent successfully!');
       alert(`✈️ Game invite sent to ${this.props.username}!`);
       
     } catch (error) {
-      console.error('❌ Error sending KISS game invite:', error);
       alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
     }
   }
@@ -150,7 +144,6 @@ export class FriendItem {
     // Attach to document.body (portal pattern like React)
     document.body.appendChild(this.friendOptionsInstance.getElement());
 
-    console.log(`👥 FriendItem: Options opened for ${this.props.username}`);
   }
 
   private closeOptions(): void {
@@ -162,7 +155,6 @@ export class FriendItem {
       this.friendOptionsInstance = undefined;
     }
 
-    console.log(`👥 FriendItem: Options closed for ${this.props.username}`);
   }
 
   private dismissItem(): void {
@@ -175,7 +167,6 @@ export class FriendItem {
       this.closeOptions();
     }
 
-    console.log(`👥 FriendItem: Item dismissed for ${this.props.username}`);
   }
 
   private updateVisibility(): void {
@@ -213,7 +204,6 @@ export class FriendItem {
       this.friendOptionsInstance.destroy();
     }
     
-    console.log(`👥 FriendItem: Destroyed for ${this.props.username} (React-like)`);
     this.element.remove();
   }
 }

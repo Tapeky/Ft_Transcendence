@@ -62,7 +62,6 @@ export class Choice {
     const tournamentChoice = this.element.querySelector('#tournament-choice');
     tournamentChoice?.addEventListener('click', () => this.navigateToTournament());
 
-    // Add hover sound effects (optionnel - comme dans les vraies interfaces de jeu)
     this.setupHoverEffects();
 
   }

@@ -16,7 +16,6 @@ export class KissInviteButtons {
   init(): void {
     if (this.initialized) return;
     
-    console.log('🎮 KISS: Initializing invite buttons system');
     
     // Observer pour détecter les nouveaux boutons ajoutés dynamiquement
     this.setupMutationObserver();
@@ -36,7 +35,6 @@ export class KissInviteButtons {
     });
 
     if (buttons.length > 0) {
-      console.log(`🎮 KISS: Setup ${buttons.length} invite buttons`);
     }
   }
 
@@ -63,7 +61,6 @@ export class KissInviteButtons {
       e.preventDefault();
       e.stopPropagation();
       
-      console.log(`🎮 KISS: Sending invite to user ${userId} (${username})`);
       
       // Désactiver temporairement le bouton
       this.setButtonState(button, 'sending');
