@@ -4,7 +4,7 @@ SOURCE_DIR := ./src/
 OBJ_DIR := ./obj/
 INCLUDE_DIRS := ./include/ ./cJSON
 CFLAGS := -Wall -Wextra -Werror -MMD
-CC := cc
+CC := clang
 CJSON := cJSON/libcjson.a
 
 C_FILES := main input ctx term term_components aabb best_component
