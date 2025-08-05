@@ -76,7 +76,7 @@ typedef struct
 
 #define CUR_JSON_STRUCT login_request
 
-SWITCH_DEF(login_switch,
+CHOICE_DEF(login_switch,
 	"success", success,
 	DEF_STRING("message", message)
 	DEF_OBJECT("data",
@@ -114,10 +114,10 @@ int main()
 	strcpy(ctx.in_buf, json);
 
 	login_request login_request = {0};
-	api_request_result res = do_api_request_to_switch(&ctx, "api/auth/login", &login_switch, &login_request);
+	api_request_result res = do_api_request_to_choice(&ctx, "api/auth/login", &login_switch, &login_request);
 	if (res.err)
 	{
-		fputs("do_api_request_to_switch() fail: ", stderr);
+		fputs("do_api_request_to_choice() fail: ", stderr);
 		print_api_request_result(&ctx, res, stderr);
 		curl_easy_cleanup(ctx.curl);
 		curl_global_cleanup();
