@@ -67,16 +67,25 @@ typedef struct
 	json_def to_test;
 	json_def *true_def;
 	json_def *false_def;
-}	json_switch;
+}	json_choice;
 
 // if the json field represented by `boolean_name` is true, parse `true_def`.
 // else, parse `false_def`
-#define SWITCH_DEF(name, boolean_name, boolean_field_name, true_def, false_def) \
-	json_switch name = { \
+#define CHOICE_DEF(name, boolean_name, boolean_field_name, true_def, false_def) \
+	json_choice name = { \
 		DEF_BOOL(boolean_name, boolean_field_name) \
 		(json_def[]){true_def DEF_END}, \
 		(json_def[]){false_def DEF_END}, \
 	}
+
+typedef struct
+{
+	const char	*name;
+	json_def	*def;
+}	json_switch_entry;
+
+#define X_DEF(name) \
+	
 
 /*
  parses the cJSON object, following directions from `defs`, outputting values to `out`
@@ -88,20 +97,20 @@ typedef struct
 int json_parse_from_def(cJSON *obj, const json_def *defs, void *out);
 
 /*
- parses the cJSON object, first finding the boolean field `switch_->to_test.name`,
- then parsing `switch_->true_def` if said field is true, otherwise parsing `switch_->false_def`
+ parses the cJSON object, first finding the boolean field `choice->to_test.name`,
+ then parsing `choice->true_def` if said field is true, otherwise parsing `choice->false_def`
 
  @returns 0 if either the cJSON object is invalid,
-   or the json field `switch_->to_test.name` is not a boolean,
+   or the json field `choice->to_test.name` is not a boolean,
    or there is a type mismatch,
    or not all entries specified in `defs` have been parsed
 */
-int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out);
+int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out);
 
 // mostly used for debugging, to use after a `json_parse_from_def`
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level);
 
-// mostly used for debugging, to use after a `json_parse_from_switch`
-void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream);
+// mostly used for debugging, to use after a `json_parse_from_choice`
+void json_choice_prettyprint(const json_choice *choice, const void *in, FILE *stream);
 
 #endif

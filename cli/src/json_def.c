@@ -86,23 +86,23 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 	return (parsed_count == def_count(defs));
 }
 
-int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
+int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
 {
-	assert(out && switch_);
-	assert(switch_->to_test.type == JSON_BOOL);
-	assert(switch_->to_test.name);
+	assert(out && choice);
+	assert(choice->to_test.type == JSON_BOOL);
+	assert(choice->to_test.name);
 	// cheap but works hehehehehe
 	json_def def[] = {
-		switch_->to_test,
+		choice->to_test,
 		DEF_END
 	};
 	int err = json_parse_from_def(json, def, out);
 	if (!err)
 		return (0);
-	u8 result = *((u8 *)out + switch_->to_test.offset);
+	u8 result = *((u8 *)out + choice->to_test.offset);
 	if (result)
-		return (json_parse_from_def(json, switch_->true_def, out));
-	return (json_parse_from_def(json, switch_->false_def, out));
+		return (json_parse_from_def(json, choice->true_def, out));
+	return (json_parse_from_def(json, choice->false_def, out));
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)
@@ -152,15 +152,15 @@ void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, in
 	}
 }
 
-void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream)
+void json_choice_prettyprint(const json_choice *choice, const void *in, FILE *stream)
 {
-	assert(switch_ && in);
-	assert(switch_->to_test.type == JSON_BOOL);
-	assert(switch_->to_test.name);
-	u8 result = *((u8 *)in + switch_->to_test.offset);
-	fprintf(stream, "%s = %s\n", switch_->to_test.name, result ? "true" : "false");
+	assert(choice && in);
+	assert(choice->to_test.type == JSON_BOOL);
+	assert(choice->to_test.name);
+	u8 result = *((u8 *)in + choice->to_test.offset);
+	fprintf(stream, "%s = %s\n", choice->to_test.name, result ? "true" : "false");
 	if (result)
-		json_def_prettyprint(switch_->true_def, in, stream, 0);
+		json_def_prettyprint(choice->true_def, in, stream, 0);
 	else
-		json_def_prettyprint(switch_->false_def, in, stream, 0);
+		json_def_prettyprint(choice->false_def, in, stream, 0);
 }
