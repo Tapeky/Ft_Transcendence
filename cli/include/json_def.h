@@ -1,0 +1,107 @@
+#ifndef JSON_DEF_H
+# define JSON_DEF_H
+
+# include "cJSON.h"
+# include "types.h"
+# include "bits/types/FILE.h"
+
+typedef enum
+{
+	JSON_INVALID,
+	JSON_BOOL = cJSON_False | cJSON_True,
+	JSON_INT = cJSON_Number,
+	JSON_DOUBLE = cJSON_Number | (1 << 16),
+	JSON_STRING = cJSON_String,
+	JSON_ARRAY = cJSON_Array,
+	JSON_OBJECT = cJSON_Object
+}	json_type;
+
+typedef struct json_def
+{
+	const char *const	name;
+	size_t				offset;
+	json_type			type;
+	struct json_def		*recursive_object; // if type == JSON_OBJECT
+}	json_def;
+
+# if __STDC_VERSION__ >= 201112L && !defined(JSON_DEF_DISABLE_TYPE_CHECKING)
+#  define JSON_DEF__STRINGIFY_INNER(x) #x
+#  define JSON_DEF__STRINGIFY(x) JSON_DEF__STRINGIFY_INNER(x)
+// you won't understand anything if you don't know what the 
+// `_Generic` and `_Static_assert` are. Look them up
+#  define JSON_DEF_CHECK_TYPE(field, type) _Static_assert( \
+		_Generic(((CUR_JSON_STRUCT *)0)->field, type: 1, default: 0), \
+		"Expected type `" #type "` as the type of `" JSON_DEF__STRINGIFY(CUR_JSON_STRUCT) "." #field "`" \
+	)
+// "okay, what the fuck is this ??", you may ask
+// You see, the `_Static_assert` expression is permitted wherever a statement
+// or declaration is permitted. A field definition is neither of these.
+// Therefore, we force the compiler to be inside a
+// declaration by making an anonymous structure where the _Static_assert will reside,
+// as well as the field object we want there to be.
+// The anonymous structure is wrapped in a cast so that the original field
+// can safely be defined inside brackets.
+// Note that this won't compile with a C++ compiler. No need to take care of it cuz we stay in C
+// Is this useful ? no. Was this funny to make ? hell fucking yeaaah
+#  define JSON_DEF_WRAP(assert_field, assert_type, ...) \
+	( \
+		struct {JSON_DEF_CHECK_TYPE(assert_field, assert_type); json_def __x;} \
+	) \
+	{__VA_ARGS__}.__x
+# else
+#  define JSON_DEF_WRAP(assert_field, assert_type, ...) __VA_ARGS__
+# endif
+
+# define JSON_DEF_OFFSETOF(field) (size_t)(&((CUR_JSON_STRUCT *)0)->field)
+
+#define DEF_BOOL(name, field) JSON_DEF_WRAP(field, u8, {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL}),
+#define DEF_INT(name, field) JSON_DEF_WRAP(field, int, {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL}),
+#define DEF_DOUBLE(name, field) JSON_DEF_WRAP(field, double, {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL}),
+#define DEF_STRING(name, field) JSON_DEF_WRAP(field, const char *, {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL}),
+#define DEF_ARRAY(name, field) JSON_DEF_WRAP(field, cJSON *, {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL}),
+#define DEF_OBJECT(name, def) {name, 0, JSON_OBJECT, (json_def[]){def DEF_END}},
+#define DEF_END {NULL, 0, JSON_INVALID, NULL}
+
+typedef struct
+{
+	json_def to_test;
+	json_def *true_def;
+	json_def *false_def;
+}	json_switch;
+
+// if the json field represented by `boolean_name` is true, parse `true_def`.
+// else, parse `false_def`
+#define SWITCH_DEF(name, boolean_name, boolean_field_name, true_def, false_def) \
+	json_switch name = { \
+		DEF_BOOL(boolean_name, boolean_field_name) \
+		(json_def[]){true_def DEF_END}, \
+		(json_def[]){false_def DEF_END}, \
+	}
+
+/*
+ parses the cJSON object, following directions from `defs`, outputting values to `out`
+
+ @returns 0 if either the cJSON object is invalid,
+   or there is a type mismatch,
+   or not all entries specified in `defs` have been parsed
+*/
+int json_parse_from_def(cJSON *obj, const json_def *defs, void *out);
+
+/*
+ parses the cJSON object, first finding the boolean field `switch_->to_test.name`,
+ then parsing `switch_->true_def` if said field is true, otherwise parsing `switch_->false_def`
+
+ @returns 0 if either the cJSON object is invalid,
+   or the json field `switch_->to_test.name` is not a boolean,
+   or there is a type mismatch,
+   or not all entries specified in `defs` have been parsed
+*/
+int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out);
+
+// mostly used for debugging, to use after a `json_parse_from_def`
+void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level);
+
+// mostly used for debugging, to use after a `json_parse_from_switch`
+void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream);
+
+#endif

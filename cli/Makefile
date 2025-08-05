@@ -6,8 +6,11 @@ INCLUDE_DIRS := ./include/ ./cJSON
 CFLAGS := -Wall -Wextra -Werror -MMD
 CC := clang
 CJSON := cJSON/libcjson.a
+EXT_LIBS := $(addprefix -l,	\
+	X11 m curl				\
+)
 
-C_FILES := main input ctx term term_components aabb best_component
+C_FILES := main input ctx term term_components aabb best_component json_def api api_init
 
 include Functions.mk
 
@@ -18,7 +21,7 @@ $(OBJECTS): $(OBJ_DIR)%.o : $(SOURCE_DIR)%.c
 	@$(CC) $(CFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 $(NAME): $(OBJ_DIR) $(LIBS) $(OBJECTS) $(CJSON)
-	@$(CC) $(CFLAGS) $(OBJECTS) $(LIB_FILES) $(CJSON) -lX11 -lm -o $(NAME)
+	@$(CC) $(CFLAGS) $(OBJECTS) $(LIB_FILES) $(CJSON) $(EXT_LIBS) -o $(NAME)
 
 $(CJSON):
 	@$(MAKE) -C cJSON static
