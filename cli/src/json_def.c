@@ -28,6 +28,8 @@ static size_t def_count(const json_def *defs)
 	return (cnt);
 }
 
+#define FETCH_AT_OFFSET(obj, offset, type) (type *)((u8 *)(obj) + (offset))
+
 int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 {
 	assert(out && defs);
@@ -47,22 +49,21 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 		}
 		if ((def->type & 0xFF) & (cur->type & 0xFF) || (def->type == JSON_STRING && cur->type == cJSON_NULL))
 		{
-			#define OFFSET_AS(type) (type *)((u8 *)out + def->offset)
 			switch (def->type)
 			{
 				case JSON_BOOL:
-					*OFFSET_AS(u8) = cur->type == cJSON_True;
+					*FETCH_AT_OFFSET(out, def->offset, u8) = cur->type == cJSON_True;
 					break;
 				case JSON_DOUBLE:
-					*OFFSET_AS(double) = cur->valuedouble;
+					*FETCH_AT_OFFSET(out, def->offset, double) = cur->valuedouble;
 					break;
 				case JSON_INT:
-					*OFFSET_AS(int) = cur->valueint;
+					*FETCH_AT_OFFSET(out, def->offset, int) = cur->valueint;
 					break;
 				case JSON_STRING:
-					*OFFSET_AS(const char *) = NULL;
+					*FETCH_AT_OFFSET(out, def->offset, const char *) = NULL;
 					if (cur->type == cJSON_String)
-						*OFFSET_AS(const char *) = cur->valuestring;
+						*FETCH_AT_OFFSET(out, def->offset, const char *) = cur->valuestring;
 					break;
 				case JSON_OBJECT:
 					assert(def->recursive_object);
@@ -70,7 +71,7 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 						return (0);
 					break;
 				case JSON_ARRAY:
-					*OFFSET_AS(cJSON *) = cur->child;
+					*FETCH_AT_OFFSET(out, def->offset, cJSON *) = cur->child;
 					break;
 				default:
 					fprintf(stderr, "FATAL: Invalid json_def.type value: %d\n", cur->type);
@@ -99,10 +100,40 @@ int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
 	int err = json_parse_from_def(json, def, out);
 	if (!err)
 		return (0);
-	u8 result = *((u8 *)out + choice->to_test.offset);
+	u8 result = *FETCH_AT_OFFSET(out, choice->to_test.offset, u8);
 	if (result)
 		return (json_parse_from_def(json, choice->true_def, out));
 	return (json_parse_from_def(json, choice->false_def, out));
+}
+
+int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
+{
+	assert(out && switch_);
+	assert(switch_->to_test.type == JSON_STRING);
+	assert(switch_->to_test.name);
+	// cheap but works hehehehehe
+	json_def def[] = {
+		switch_->to_test,
+		DEF_END
+	};
+	int err = json_parse_from_def(json, def, out);
+	if (!err)
+		return (0);
+	const char *key = *FETCH_AT_OFFSET(out, switch_->to_test.offset, const char *);
+	size_t i = 0;
+	json_switch_entry *cur = switch_->entries;
+	while (cur->name) // hashing ? im a lazy fuck
+	{
+		if (!strcmp(cur->name, key))
+		{
+			err = json_parse_from_def(json, &cur->def, out);
+			*FETCH_AT_OFFSET(out, switch_->match_store_offset, size_t) = i;
+			return (err);
+		}
+		cur++;
+		i++;
+	}
+	return (1);
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)
@@ -163,4 +194,15 @@ void json_choice_prettyprint(const json_choice *choice, const void *in, FILE *st
 		json_def_prettyprint(choice->true_def, in, stream, 0);
 	else
 		json_def_prettyprint(choice->false_def, in, stream, 0);
+}
+
+void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream)
+{
+	assert(switch_ && in);
+	assert(switch_->to_test.type == JSON_STRING);
+	assert(switch_->to_test.name);
+	const char *key = *FETCH_AT_OFFSET(in, switch_->to_test.offset, const char *);
+	size_t entry_index = *FETCH_AT_OFFSET(in, switch_->match_store_offset, size_t);
+	printf("Switch entry %s:\n", key);
+	json_def_prettyprint(&switch_->entries[entry_index].def, in, stream, 1);
 }
