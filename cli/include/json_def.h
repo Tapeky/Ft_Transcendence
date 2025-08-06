@@ -43,9 +43,9 @@ typedef struct json_def
 // can safely be defined inside brackets.
 // Note that this won't compile with a C++ compiler. No need to take care of it cuz we stay in C
 // Is this useful ? no. Was this funny to make ? hell fucking yeaaah
-#  define JSON_DEF_WRAP(assert_field, assert_type, ...) \
+#  define JSON_DEF_WRAP(assert_field, assert_type, expand_type, ...) \
 	( \
-		struct {JSON_DEF_CHECK_TYPE(assert_field, assert_type); json_def __x;} \
+		struct {JSON_DEF_CHECK_TYPE(assert_field, assert_type); expand_type __x;} \
 	) \
 	{__VA_ARGS__}.__x
 # else
@@ -54,11 +54,11 @@ typedef struct json_def
 
 # define JSON_DEF_OFFSETOF(field) (size_t)(&((CUR_JSON_STRUCT *)0)->field)
 
-#define DEF_BOOL(name, field) JSON_DEF_WRAP(field, u8, {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL}),
-#define DEF_INT(name, field) JSON_DEF_WRAP(field, int, {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL}),
-#define DEF_DOUBLE(name, field) JSON_DEF_WRAP(field, double, {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL}),
-#define DEF_STRING(name, field) JSON_DEF_WRAP(field, const char *, {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL}),
-#define DEF_ARRAY(name, field) JSON_DEF_WRAP(field, cJSON *, {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL}),
+#define DEF_BOOL(name, field) JSON_DEF_WRAP(field, u8, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL}),
+#define DEF_INT(name, field) JSON_DEF_WRAP(field, int, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL}),
+#define DEF_DOUBLE(name, field) JSON_DEF_WRAP(field, double, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL}),
+#define DEF_STRING(name, field) JSON_DEF_WRAP(field, const char *, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL}),
+#define DEF_ARRAY(name, field) JSON_DEF_WRAP(field, cJSON *, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL}),
 #define DEF_OBJECT(name, def) {name, 0, JSON_OBJECT, (json_def[]){def DEF_END}},
 #define DEF_END {NULL, 0, JSON_INVALID, NULL}
 
@@ -81,11 +81,29 @@ typedef struct
 typedef struct
 {
 	const char	*name;
-	json_def	*def;
+	json_def	def;
 }	json_switch_entry;
 
-#define X_DEF(name) \
-	
+typedef struct
+{
+	json_def			to_test;
+	size_t				match_store_offset; // where the index of the matched entry is stored (as a size_t)
+	json_switch_entry	*entries;
+}	json_switch;
+
+#define SWITCH_DEF(name, string_json_name, string_field_name, match_store_entry, defs) \
+	json_switch name = { \
+		DEF_STRING(string_json_name, string_field_name) \
+		/* another static assert type check hack */ \
+		JSON_DEF_WRAP(match_store_entry, size_t, size_t, JSON_DEF_OFFSETOF(match_store_entry)), \
+		(json_switch_entry[]) { \
+			defs \
+			{0} \
+		} \
+	}
+
+#define SWITCH_ENTRY(name, def) \
+	{ (name), def },
 
 /*
  parses the cJSON object, following directions from `defs`, outputting values to `out`
@@ -107,10 +125,24 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out);
 */
 int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out);
 
+/*
+ parses the cJSON object, first finding the string field `switch_->to_test.name`,
+ then parsing the `json_switch_entry` whose `name` matches with its value
+
+ @returns 0 if either the cJSON object is invalid,
+   or the json field `switch_->to_test.name` is not a string,
+   or there is a type mismatch,
+   or not all entries specified in `defs` have been parsed
+*/
+int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out);
+
 // mostly used for debugging, to use after a `json_parse_from_def`
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level);
 
 // mostly used for debugging, to use after a `json_parse_from_choice`
 void json_choice_prettyprint(const json_choice *choice, const void *in, FILE *stream);
+
+// mostly used for debugging, to use after a `json_parse_from_switch`
+void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream);
 
 #endif
