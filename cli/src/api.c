@@ -37,9 +37,11 @@ api_request_result do_api_request_to_choice(api_ctx *ctx, const char *endpoint, 
 	api_request_result res = api_request_common(ctx, endpoint);
 	if (res.err)
 		return (res);
-	if (!json_parse_from_choice(res.json_obj, choice, out))
+	json_content_error err = json_parse_from_choice(res.json_obj, choice, out);
+	if (err)
 	{
 		res.err = ERR_JSON_CONTENT;
+		res.json_content_error = err;
 		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
 		return (res);
@@ -52,9 +54,11 @@ api_request_result do_api_request_to_def(api_ctx *ctx, const char *endpoint, jso
 	api_request_result res = api_request_common(ctx, endpoint);
 	if (res.err)
 		return (res);
-	if (!json_parse_from_def(res.json_obj, def, out))
+	json_content_error err = json_parse_from_def(res.json_obj, def, out);
+	if (err)
 	{
 		res.err = ERR_JSON_CONTENT;
+		res.json_content_error = err;
 		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
 		return (res);
@@ -74,13 +78,17 @@ void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream
 			if (res.json_error_pos == -1u)
 				fputs("out of memory\n", stream);
 			else
+			{
 				fprintf(stream, "error at position %zu\n", res.json_error_pos);
+				fprintf(stream, "json content: %s\n", ctx->out_buf);
+			}
 			break;
 		case ERR_JSON_CONTENT:
-			fprintf(stderr, "json content wasn't what was expected: %s\n", ctx->out_buf);
+			fprintf(stream, "json content wasn't what was expected: %s\n", json_content_error_to_string(res.json_content_error));
+			fprintf(stream, "json content: %s\n", ctx->out_buf);
 			break;
 		default:
-			if (res.err == 0)
+			if (!res.err)
 				fputs("operation succeeded\n", stream);
 			else
 				fprintf(stream, "unknown error %d\n", res.err);

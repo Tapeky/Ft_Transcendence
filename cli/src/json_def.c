@@ -30,17 +30,18 @@ static size_t def_count(const json_def *defs)
 
 #define FETCH_AT_OFFSET(obj, offset, type) (type *)((u8 *)(obj) + (offset))
 
-int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
+json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 {
 	assert(out && defs);
 	if (!cJSON_IsObject(obj))
-		return (0);
+		return (json_content_error_INVALID_JSON);
 	size_t parsed_count = 0;
 	cJSON *cur = obj->child;
+	json_content_error recursive_error;
 	while (cur)
 	{
 		if (cJSON_IsInvalid(cur))
-			return (0);
+			return (json_content_error_INVALID_JSON);
 		const json_def *def = find_def(defs, cur->string);
 		if (!def)
 		{
@@ -67,8 +68,9 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 					break;
 				case JSON_OBJECT:
 					assert(def->recursive_object);
-					if (!json_parse_from_def(cur, def->recursive_object, out))
-						return (0);
+					recursive_error = json_parse_from_def(cur, def->recursive_object, out);
+					if (recursive_error)
+						return (recursive_error);
 					break;
 				case JSON_ARRAY:
 					*FETCH_AT_OFFSET(out, def->offset, cJSON *) = cur->child;
@@ -81,13 +83,13 @@ int json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 			parsed_count++;
 		}
 		else
-			return (0);
+			return (json_content_error_PARTIALLY_PARSED);
 		cur = cur->next;
 	}
-	return (parsed_count == def_count(defs));
+	return ((parsed_count != def_count(defs)) * json_content_error_PARTIALLY_PARSED);
 }
 
-int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
+json_content_error json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
 {
 	assert(out && choice);
 	assert(choice->to_test.type == JSON_BOOL);
@@ -97,16 +99,16 @@ int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
 		choice->to_test,
 		DEF_END
 	};
-	int err = json_parse_from_def(json, def, out);
-	if (!err)
-		return (0);
+	json_content_error err = json_parse_from_def(json, def, out);
+	if (err)
+		return (err);
 	u8 result = *FETCH_AT_OFFSET(out, choice->to_test.offset, u8);
 	if (result)
 		return (json_parse_from_def(json, choice->true_def, out));
 	return (json_parse_from_def(json, choice->false_def, out));
 }
 
-int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
+json_content_error json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
 {
 	assert(out && switch_);
 	assert(switch_->to_test.type == JSON_STRING);
@@ -116,13 +118,13 @@ int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
 		switch_->to_test,
 		DEF_END
 	};
-	int err = json_parse_from_def(json, def, out);
-	if (!err)
-		return (0);
+	json_content_error err = json_parse_from_def(json, def, out);
+	if (err)
+		return (err);
 	const char *key = *FETCH_AT_OFFSET(out, switch_->to_test.offset, const char *);
 	size_t i = 0;
 	json_switch_entry *cur = switch_->entries;
-	while (cur->name) // hashing ? im a lazy fuck
+	while (cur->name)
 	{
 		if (!strcmp(cur->name, key))
 		{
@@ -133,7 +135,7 @@ int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
 		cur++;
 		i++;
 	}
-	return (1);
+	return (json_content_error_SWITCH_NOT_MATCHED);
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)
@@ -205,4 +207,23 @@ void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *s
 	size_t entry_index = *FETCH_AT_OFFSET(in, switch_->match_store_offset, size_t);
 	printf("Switch entry %s:\n", key);
 	json_def_prettyprint(&switch_->entries[entry_index].def, in, stream, 1);
+}
+
+const char *json_content_error_to_string(json_content_error err)
+{
+	switch (err)
+	{
+		case (json_content_error_INVALID_JSON):
+			return ("Invalid JSON");
+		case (json_content_error_PARTIALLY_PARSED):
+			return ("Not all expected entries were found");
+		case (json_content_error_INCORRECT_TYPE):
+			return ("A JSON element was not of the correct type");
+		case (json_content_error_SWITCH_NOT_MATCHED):
+			return ("String to query was not in json_switch.entries");
+		default:
+			if (!err)
+				return ("No error");
+			return ("Unknown error");
+	}
 }

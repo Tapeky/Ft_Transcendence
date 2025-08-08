@@ -105,36 +105,32 @@ typedef struct
 #define SWITCH_ENTRY(name, def) \
 	{ (name), def },
 
+typedef enum
+{
+	json_content_error_INVALID_JSON = 1,
+	json_content_error_INCORRECT_TYPE,
+	json_content_error_PARTIALLY_PARSED,
+	json_content_error_SWITCH_NOT_MATCHED
+}	json_content_error;
+
+const char *json_content_error_to_string(json_content_error err);
+
 /*
  parses the cJSON object, following directions from `defs`, outputting values to `out`
-
- @returns 0 if either the cJSON object is invalid,
-   or there is a type mismatch,
-   or not all entries specified in `defs` have been parsed
 */
-int json_parse_from_def(cJSON *obj, const json_def *defs, void *out);
+json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *out);
 
 /*
  parses the cJSON object, first finding the boolean field `choice->to_test.name`,
  then parsing `choice->true_def` if said field is true, otherwise parsing `choice->false_def`
-
- @returns 0 if either the cJSON object is invalid,
-   or the json field `choice->to_test.name` is not a boolean,
-   or there is a type mismatch,
-   or not all entries specified in `defs` have been parsed
 */
-int json_parse_from_choice(cJSON *json, const json_choice *choice, void *out);
+json_content_error json_parse_from_choice(cJSON *json, const json_choice *choice, void *out);
 
 /*
  parses the cJSON object, first finding the string field `switch_->to_test.name`,
  then parsing the `json_switch_entry` whose `name` matches with its value
-
- @returns 0 if either the cJSON object is invalid,
-   or the json field `switch_->to_test.name` is not a string,
-   or there is a type mismatch,
-   or not all entries specified in `defs` have been parsed
 */
-int json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out);
+json_content_error json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out);
 
 // mostly used for debugging, to use after a `json_parse_from_def`
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level);
