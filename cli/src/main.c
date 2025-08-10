@@ -50,6 +50,7 @@
 #include <string.h>
 #include "json_def.h"
 #include "api.h"
+#include "ws.h"
 
 typedef struct
 {
@@ -68,10 +69,13 @@ typedef struct
 	const char *data_token;
 	const char *data_expiresin;
 
-	// on success == false
-	const char *error;
-	// on success == true
-	const char *message;
+	union
+	{
+		// on success == false
+		const char *error;
+		// on success == true
+		const char *message;
+	};
 }	login_request;
 
 #define CUR_JSON_STRUCT login_request
@@ -96,6 +100,25 @@ CHOICE_DEF(login_switch,
 );
 
 const char *json = "{\"email\":\"admin@transcendence.com\",\"password\":\"admin123\"}";
+
+typedef struct
+{
+	const char	*type;
+	size_t		type_idx;
+	union
+	{
+		const char *message;
+	};
+}	ws_message;
+
+#undef CUR_JSON_STRUCT
+#define CUR_JSON_STRUCT ws_message
+SWITCH_DEF(ws_message_json_def, "type", type, type_idx,
+	SWITCH_ENTRY("pong", {})
+	SWITCH_ENTRY("connected",
+		DEF_STRING("message", message)
+	)
+);
 
 int main()
 {
@@ -131,6 +154,42 @@ int main()
 	else
 	{
 		printf("error logging in with message '%s'\n", login_request.error);
+	}
+
+	ws_ctx ws;
+	if (ws_ctx_init(&ws, "ws://localhost:8000/ws"))
+	{
+		printf("websocket interface initiated\n");
+		ws_message msg;
+		ws_xfer_result res = ws_recv_to_switch(&ws, &ws_message_json_def, &msg);
+		if (res.err)
+		{
+			ws_ctx_print_xfer_result(&ws, res, 1, stderr);
+		}
+		else
+		{
+			printf("recv result: %s\n", ws.recv_buf);
+			json_switch_prettyprint(&ws_message_json_def, &msg, stderr);
+			strcpy(ws.send_buf, "{\"type\": \"ping\"}");
+			res = ws_send(&ws);
+			if (res.err)
+			{
+				ws_ctx_print_xfer_result(&ws, res, 0, stderr);
+			}
+			else
+			{
+				res = ws_recv_to_switch(&ws, &ws_message_json_def, &msg);
+				if (res.err)
+				{
+					ws_ctx_print_xfer_result(&ws, res, 1, stderr);
+				}
+				else
+				{
+					printf("recv result: %s\n", ws.recv_buf);
+				}
+			}
+		}
+		ws_ctx_deinit(&ws);
 	}
 
 	cJSON_Delete(res.json_obj);
