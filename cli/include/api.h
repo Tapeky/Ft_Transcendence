@@ -3,8 +3,7 @@
 
 # include "json_def.h"
 # include "curl/curl.h"
-
-#define JSON_BUFFER_SIZE 30000
+# include "config.h"
 
 typedef struct
 {
