@@ -39,7 +39,7 @@ int input_init(ctx *ctx);
 void input_deinit(ctx *ctx);
 void input_poll(ctx *ctx);
 
-typedef int (on_input_func)(KeySym key, int is_press);
+typedef int (on_input_func)(ctx *ctx, KeySym key, int is_press);
 
 // loops on events until on_key_event returns != 0. while input_poll is for game sequence,
 // input_loop is for ui sequence
