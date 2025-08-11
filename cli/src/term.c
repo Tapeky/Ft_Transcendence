@@ -158,15 +158,17 @@ void crefresh(int force_redraw)
 	fflush(stdout);
 }
 
-void ccomponent_add(console_component component)
+console_component *ccomponent_add(console_component component)
 {
 	assert(component.type > 0 && component.type < COMPONENT_TYPE_MAX);
 	assert(cterm_info.components_count < MAX_COMPONENT_NUMBER);
 
-	cterm_info.components[cterm_info.components_count] = component;
+	console_component *new_component = &cterm_info.components[cterm_info.components_count];
+	*new_component = component;
 	if (cterm_info.selected_component == -1u && is_selectable(&component))
 		cterm_info.selected_component = cterm_info.components_count;
 	cterm_info.components_count++;
+	return (new_component);
 }
 
 void cnext_component(direction dir)
@@ -187,11 +189,11 @@ void cursor_goto(u16 x, u16 y)
 	printf("\e[%hd;%hdH", y, x);
 }
 
-int add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden)
+console_component *add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden)
 {
 	console_component text_area, box;
 	if (!text_area_init(&text_area, x + 1, y + 1, len, hint, text_hidden))
-		return (0);
+		return (NULL);
 
 	box_init(&box,
 		x, y, len + 2, 3,
@@ -199,13 +201,12 @@ int add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden
 		'+', '+', '+', '+'
 	);
 
-	ccomponent_add(text_area);
+	console_component *result = ccomponent_add(text_area);
 	ccomponent_add(box);
-
-	return (1);
+	return (result);
 }
 
-void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param)
+console_component	*add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param)
 {
 	assert(text);
 
@@ -218,8 +219,9 @@ void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void 
 		'+', '+', '+', '+'
 	);
 
-	ccomponent_add(button);
+	console_component *result = ccomponent_add(button);
 	ccomponent_add(box);
+	return (result);
 }
 
 aabb	component_bouding_box(console_component *c)
