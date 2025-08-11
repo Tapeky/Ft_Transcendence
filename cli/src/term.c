@@ -47,6 +47,8 @@ static void winch(int sig)
 
 void cinit()
 {
+	if (cterm_info.has_initiated)
+		return ;
 	memset(&cterm_info, 0, sizeof(cterm_info));
 	cterm_info.selected_component = -1u;
 
@@ -62,10 +64,13 @@ void cinit()
 	fflush(stdout);
 	fetch_term_sz();
 	signal(SIGWINCH, winch);
+	cterm_info.has_initiated = 1;
 }
 
 void cdeinit()
 {
+	if (!cterm_info.has_initiated)
+		return ;
 	PUTS(ESC_ENABLE_CURSOR);
 	PUTS(ESC_CLEAR_SCREEN);
 	fflush(stdout);
@@ -80,6 +85,7 @@ void cdeinit()
 
 	// restore terminal attributes
 	tcsetattr(STDIN_FILENO, TCSANOW,&orig_termios);
+	cterm_info.has_initiated = 0;
 }
 
 void chandle_key_event(KeySym key, int on_press)

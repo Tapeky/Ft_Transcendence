@@ -119,6 +119,7 @@ extern float	c_pixel_ratio;
 #define MAX_COMPONENT_NUMBER 100
 typedef struct
 {
+	int					has_initiated;
 	console_component	components[MAX_COMPONENT_NUMBER];
 	size_t				components_count;
 	size_t				selected_component;
