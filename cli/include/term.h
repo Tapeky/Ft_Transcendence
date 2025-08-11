@@ -60,9 +60,9 @@ typedef struct
 	char	bottom_right;
 }	component_box;
 
-typedef struct s_component_button component_button;
+typedef struct s_console_component console_component;
 
-typedef void (button_action_func)(component_button *button, int pressed, void *param);
+typedef void (button_action_func)(console_component *button, int pressed, void *param);
 
 // basically just a label that you can select and press
 typedef struct s_component_button
