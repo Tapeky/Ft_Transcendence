@@ -133,7 +133,7 @@ extern term_info	cterm_info;
 void cinit();
 void cdeinit();
 void crefresh(int force_redraw);
-void ccomponent_add(console_component component);
+console_component *ccomponent_add(console_component component);
 void chandle_key_event(KeySym key, int on_press);
 
 typedef enum
@@ -160,8 +160,9 @@ static inline console_component *ccurrent_component()
 
 void cursor_goto(u16 x, u16 y);
 
-int		add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
-void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param);
+// CAN RETURN NULL !!
+console_component	*add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
+console_component	*add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param);
 
 // this algorithm is responsible for finding the closest component from the current
 // component and following a direction. more or less based on this answer:
