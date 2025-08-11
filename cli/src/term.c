@@ -115,7 +115,7 @@ void chandle_key_event(KeySym key, int on_press)
 		component_button *button = &cur->u.c_button;
 		button->held = on_press;
 		if (button->func)
-			button->func(button, on_press, button->func_param);
+			button->func(cur, on_press, button->func_param);
 	}
 }
 
