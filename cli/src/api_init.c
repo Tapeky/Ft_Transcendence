@@ -66,6 +66,14 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
 
 void api_ctx_deinit(api_ctx *ctx)
 {
-	curl_easy_cleanup(ctx->curl);
-	curl_slist_free_all(ctx->header_list);
+	if (ctx->curl)
+	{
+		curl_easy_cleanup(ctx->curl);
+		ctx->curl = NULL;
+	}
+	if (ctx->header_list)
+	{
+		curl_slist_free_all(ctx->header_list);
+		ctx->header_list = NULL;
+	}
 }

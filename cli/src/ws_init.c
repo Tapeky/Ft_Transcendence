@@ -26,6 +26,9 @@ int ws_ctx_init(ws_ctx *ctx, const char *url)
 
 void ws_ctx_deinit(ws_ctx *ctx)
 {
-	curl_easy_cleanup(ctx->curl);
-	ctx->curl = NULL;
+	if (ctx->curl)
+	{
+		curl_easy_cleanup(ctx->curl);
+		ctx->curl = NULL;
+	}
 }
