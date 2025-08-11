@@ -94,7 +94,7 @@ void input_loop(ctx *ctx, on_input_func on_key_event)
 				}
 			}
 			KeySym keysym = XkbKeycodeToKeysym(ctx->dpy, event.xkey.keycode, 0, event.xkey.state & ShiftMask);
-			if (on_key_event(keysym, event.type == KeyPress))
+			if (on_key_event(ctx, keysym, event.type == KeyPress))
 				break;
 		}
 	}
