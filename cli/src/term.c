@@ -115,7 +115,7 @@ void chandle_key_event(KeySym key, int on_press)
 		component_button *button = &cur->u.c_button;
 		button->held = on_press;
 		if (button->func)
-			button->func(on_press);
+			button->func(button, on_press, button->func_param);
 	}
 }
 
@@ -205,12 +205,12 @@ int add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden
 	return (1);
 }
 
-void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func)
+void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param)
 {
 	assert(text);
 
 	console_component button, box;
-	button_init(&button, x + 1, y + 1, text, func);
+	button_init(&button, x + 1, y + 1, text, func, param);
 
 	box_init(&box,
 		x, y, strlen(text) + 2, 3,
