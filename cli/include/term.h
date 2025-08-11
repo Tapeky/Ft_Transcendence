@@ -60,14 +60,17 @@ typedef struct
 	char	bottom_right;
 }	component_box;
 
-typedef void (button_action_func)(int pressed);
+typedef struct s_component_button component_button;
+
+typedef void (button_action_func)(component_button *button, int pressed, void *param);
 
 // basically just a label that you can select and press
-typedef struct
+typedef struct s_component_button
 {
 	char				*str;
 	size_t				str_len;
 	button_action_func	*func;
+	void				*func_param;
 	int					held;
 }	component_button;
 
@@ -107,7 +110,7 @@ void	box_init(console_component *c,
 
 void	box_draw(console_component *c);
 
-void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func);
+void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func, void *param);
 void	button_draw(console_component *c);
 
 aabb	component_bouding_box(console_component *c);
@@ -158,7 +161,7 @@ static inline console_component *ccurrent_component()
 void cursor_goto(u16 x, u16 y);
 
 int		add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
-void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func);
+void	add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param);
 
 // this algorithm is responsible for finding the closest component from the current
 // component and following a direction. more or less based on this answer:

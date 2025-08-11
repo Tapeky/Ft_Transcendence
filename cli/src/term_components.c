@@ -202,13 +202,14 @@ void	box_draw(console_component *c)
 	}
 }
 
-void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func)
+void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func, void *param)
 {
 	BASE_INIT(BUTTON, c, x, y);
 	component_button *self = &c->u.c_button;
 	self->str = text;
 	self->str_len = strlen(text);
 	self->func = func;
+	self->func_param = param;
 	self->held = 0;
 }
 
