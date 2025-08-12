@@ -10,7 +10,7 @@ EXT_LIBS := $(addprefix -l,	\
 	X11 m curl				\
 )
 
-C_FILES := main input ctx term term_components aabb best_component json_def api api_init ws ws_init
+C_FILES := main input ctx term term_components aabb best_component json_def api api_init ws ws_init soft_fail
 
 include Functions.mk
 
