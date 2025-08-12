@@ -40,7 +40,7 @@ int	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, con
 	component_text_area *self = &c->u.c_text_area;
 	memset(self, 0, sizeof(*self));
 	self->len = max_text_size;
-	self->buf = malloc(max_text_size);
+	self->buf = calloc(max_text_size + 1, 1);
 	self->hint = hint;
 	self->hint_len = hint ? strlen(hint) : 0;
 	self->text_hidden = text_hidden;
@@ -119,6 +119,7 @@ void	text_area_addc(console_component *c, char chr)
 	if (self->cursor < self->len)
 	{
 		self->buf[self->cursor++] = chr;
+		self->buf[self->cursor] = '\0';
 		mark_dirty(c, 0);
 	}
 }
@@ -130,6 +131,7 @@ void	text_area_back(console_component *c)
 	if (self->cursor)
 	{
 		self->cursor--;
+		self->buf[self->cursor] = '\0';
 		mark_dirty(c, 0);
 	}
 }
