@@ -80,6 +80,12 @@ void cdeinit()
 		console_component *c = &cterm_info.components[i];
 		if (c->type == TEXT_AREA)
 			free(c->u.c_text_area.buf);
+		else if (c->type == LABEL)
+		{
+			component_label *label = &c->u.c_label;
+			if (label->str && label->str_is_allocated)
+				free((void *)label->str);
+		}
 	}
 	memset(&cterm_info, 0, sizeof(cterm_info));
 

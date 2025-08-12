@@ -30,8 +30,9 @@ typedef enum
 
 typedef struct
 {
-	char	*str;
-	size_t	str_len;
+	const char	*str;
+	size_t		str_len;
+	int			str_is_allocated;
 }	component_label;
 
 typedef struct
@@ -94,8 +95,9 @@ typedef struct s_console_component
 
 void	mark_dirty(console_component *c, int full_redraw);
 
-void	label_init(console_component *c, u16 x, u16 y, char *content);
+void	label_init(console_component *c, u16 x, u16 y, const char *content, int str_is_allocated);
 void	label_draw(console_component *c);
+void	label_update_text(console_component *c, const char *new_content, int str_is_allocated);
 
 int		text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden);
 void	text_area_draw(console_component *c, int force_redraw);

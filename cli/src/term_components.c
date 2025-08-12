@@ -17,20 +17,40 @@ void mark_dirty(console_component *c, int full_redraw)
 	(c)->y = y; \
 } while (0)
 
-void label_init(console_component *c, u16 x, u16 y, char *content)
+void label_init(console_component *c, u16 x, u16 y, const char *content, int str_is_allocated)
 {
 	BASE_INIT(LABEL, c, x, y);
-	c->u.c_label.str = content;
-	c->u.c_label.str_len = strlen(content);
+	component_label *self = &c->u.c_label;
+	self->str = NULL;
+	label_update_text(c, content, str_is_allocated);
 }
 
 void label_draw(console_component *c)
 {
 	cursor_goto(c->x, c->y);
 
-	char *content = c->u.c_label.str;
+	const char *content = c->u.c_label.str;
 	if (content)
 		PUTS(content);
+}
+
+void	label_update_text(console_component *c, const char *new_content, int str_is_allocated)
+{
+	component_label *self = &c->u.c_label;
+	if (self->str && self->str_is_allocated)
+		free((void *)self->str);
+	if (!new_content)
+	{
+		self->str = "";
+		self->str_len = 0;
+	}
+	else
+	{
+		self->str = new_content;
+		self->str_len = strlen(new_content);
+	}
+	self->str_is_allocated = str_is_allocated;
+	c->is_dirty = 1;
 }
 
 int	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden)
