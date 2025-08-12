@@ -1,4 +1,5 @@
 #include "term.h"
+#include "soft_fail.h"
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -53,18 +54,17 @@ void	label_update_text(console_component *c, const char *new_content, int str_is
 	c->is_dirty = 1;
 }
 
-int	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden)
+void	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden)
 {
 	BASE_INIT(TEXT_AREA, c, x, y);
 
 	component_text_area *self = &c->u.c_text_area;
 	memset(self, 0, sizeof(*self));
 	self->len = max_text_size;
-	self->buf = calloc(max_text_size + 1, 1);
+	self->buf = xcalloc(max_text_size + 1, 1);
 	self->hint = hint;
 	self->hint_len = hint ? strlen(hint) : 0;
 	self->text_hidden = text_hidden;
-	return (!!self->buf);
 }
 
 static void putcn(char c, size_t n)

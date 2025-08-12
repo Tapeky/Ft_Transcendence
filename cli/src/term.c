@@ -198,8 +198,7 @@ void cursor_goto(u16 x, u16 y)
 console_component *add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden)
 {
 	console_component text_area, box;
-	if (!text_area_init(&text_area, x + 1, y + 1, len, hint, text_hidden))
-		return (NULL);
+	text_area_init(&text_area, x + 1, y + 1, len, hint, text_hidden);
 
 	box_init(&box,
 		x, y, len + 2, 3,
