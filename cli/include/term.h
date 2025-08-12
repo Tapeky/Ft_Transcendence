@@ -99,7 +99,7 @@ void	label_init(console_component *c, u16 x, u16 y, const char *content, int str
 void	label_draw(console_component *c);
 void	label_update_text(console_component *c, const char *new_content, int str_is_allocated);
 
-int		text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden);
+void	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden);
 void	text_area_draw(console_component *c, int force_redraw);
 void	text_area_addc(console_component *c, char chr);
 void	text_area_back(console_component *c);
@@ -162,7 +162,6 @@ static inline console_component *ccurrent_component()
 
 void cursor_goto(u16 x, u16 y);
 
-// CAN RETURN NULL !!
 console_component	*add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden);
 console_component	*add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param);
 

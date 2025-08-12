@@ -1,199 +1,82 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "ctx.h"
-#include "term.h"
-
-// int on_key_event(KeySym key, int on_press)
-// {
-// 	chandle_key_event(key, on_press);
-// 	return (key == XK_Escape);
-// }
-
-// void handle_button(int press)
-// {
-// 	dprintf(2, "BUTTON PRESS: %d\n", press);
-// }
-
-// int main()
-// {
-// 	ctx ctx = {0};
-// 	const char *err = ctx_init(&ctx);
-// 	if (err)
-// 	{
-// 		dprintf(STDERR_FILENO, "ctx_init fail: %s\n", err);
-// 		return (EXIT_FAILURE);
-// 	}
-// 	cinit();
-
-// 	console_component label1;
-// 	label_init(&label1, 2, 2, "USERNAME");
-
-// 	console_component label2;
-// 	label_init(&label2, 2, 6, "PASSWORD");
-
-// 	add_pretty_textarea(3, 3, 32, "...", 0);
-// 	add_pretty_textarea(3, 7, 32, "...", 1);
-// 	add_pretty_button(3, 15, " LOGIN ", handle_button);
-
-// 	ccomponent_add(label1);
-// 	ccomponent_add(label2);
-// 	crefresh(0);
-
-// 	input_loop(&ctx, on_key_event);
-// 	ctx_deinit(&ctx);
-// 	cdeinit();
-// 	return (EXIT_SUCCESS);
-// }
-
 #include <curl/curl.h>
 #include <string.h>
 #include "json_def.h"
 #include "api.h"
 #include "ws.h"
+#include "soft_fail.h"
+#include "json_defs.h"
+#include "ctx.h"
+#include "term.h"
 
-typedef struct
+ctx g_ctx = {0};
+
+int on_key_event(ctx *ctx, KeySym key, int on_press)
 {
-	int id;
-	const char *username;
-	const char *email;
-	const char *display_name;
-	const char *avatar_url;
-	u8 is_online;
-}	userdef;
+	(void)ctx;
+	chandle_key_event(key, on_press);
+	return (key == XK_Escape);
+}
 
-typedef struct
+void handle_button(console_component *button, int press, void *param)
 {
-	u8 success;
-	userdef user;
-	const char *data_token;
-	const char *data_expiresin;
-
-	union
+	ctx *ctx = param;
+	if (press && ctx->login_button == button)
 	{
-		// on success == false
-		const char *error;
-		// on success == true
-		const char *message;
-	};
-}	login_request;
-
-#define CUR_JSON_STRUCT login_request
-
-CHOICE_DEF(login_switch,
-	"success", success,
-	DEF_STRING("message", message)
-	DEF_OBJECT("data",
-		DEF_OBJECT("user", 
-			DEF_INT("id", user.id)
-			DEF_STRING("username", user.username)
-			DEF_STRING("email", user.email)
-			DEF_STRING("display_name", user.display_name)
-			DEF_STRING("avatar_url", user.avatar_url)
-			DEF_BOOL("is_online", user.is_online)
-		)
-		DEF_STRING("expires_in", data_expiresin)
-		DEF_STRING("token", data_token)
-	)
-	,
-	DEF_STRING("error", error)
-);
-
-const char *json = "{\"email\":\"admin@transcendence.com\",\"password\":\"admin123\"}";
-
-typedef struct
-{
-	const char	*type;
-	size_t		type_idx;
-	union
-	{
-		const char *message;
-	};
-}	ws_message;
-
-#undef CUR_JSON_STRUCT
-#define CUR_JSON_STRUCT ws_message
-SWITCH_DEF(ws_message_json_def, "type", type, type_idx,
-	SWITCH_ENTRY("pong", {})
-	SWITCH_ENTRY("connected",
-		DEF_STRING("message", message)
-	)
-);
-
-int main()
-{
-	CURLcode err = curl_global_init(CURL_GLOBAL_ALL);
-	if (err)
-	{
-		fprintf(stderr, "curl_global_init() fail: %s\n", curl_easy_strerror(err));
-		return (EXIT_FAILURE);
-	}
-	api_ctx ctx;
-	if (!api_ctx_init(&ctx, "http://localhost:8000/"))
-	{
-		curl_global_cleanup();
-		return (EXIT_FAILURE);
-	}
-	strcpy(ctx.in_buf, json);
-
-	login_request login_request = {0};
-	api_request_result res = do_api_request_to_choice(&ctx, "api/auth/login", &login_switch, &login_request);
-	if (res.err)
-	{
-		fputs("do_api_request_to_choice() fail: ", stderr);
-		print_api_request_result(&ctx, res, stderr);
-		curl_easy_cleanup(ctx.curl);
-		curl_global_cleanup();
-		return (EXIT_FAILURE);
-	}
-	
-	if (login_request.success)
-	{
-		printf("managed to log in with message '%s'\ntoken is %s\ndisplay name is %s\n", login_request.message, login_request.data_token, login_request.user.display_name);
-	}
-	else
-	{
-		printf("error logging in with message '%s'\n", login_request.error);
-	}
-
-	ws_ctx ws;
-	if (ws_ctx_init(&ws, "ws://localhost:8000/ws"))
-	{
-		printf("websocket interface initiated\n");
-		ws_message msg;
-		ws_xfer_result res = ws_recv_to_switch(&ws, &ws_message_json_def, &msg);
-		if (res.err)
+		REQ_API_LOGIN(
+			ctx->api_ctx.in_buf,
+			ctx->username_field->u.c_text_area.buf,
+			ctx->password_field->u.c_text_area.buf
+		);
+		api_login_request req;
+		cJSON *json;
+		assert_api_request_success(do_api_request_to_choice(&ctx->api_ctx, "api/auth/login", &api_login_def, &req), &json);
+		if (req.success)
 		{
-			ws_ctx_print_xfer_result(&ws, res, 1, stderr);
+			label_update_text(ctx->login_error_label, xstrdup(req.message), 1);
 		}
 		else
 		{
-			printf("recv result: %s\n", ws.recv_buf);
-			json_switch_prettyprint(&ws_message_json_def, &msg, stderr);
-			strcpy(ws.send_buf, "{\"type\": \"ping\"}");
-			res = ws_send(&ws);
-			if (res.err)
-			{
-				ws_ctx_print_xfer_result(&ws, res, 0, stderr);
-			}
-			else
-			{
-				res = ws_recv_to_switch(&ws, &ws_message_json_def, &msg);
-				if (res.err)
-				{
-					ws_ctx_print_xfer_result(&ws, res, 1, stderr);
-				}
-				else
-				{
-					printf("recv result: %s\n", ws.recv_buf);
-				}
-			}
+			label_update_text(ctx->login_error_label, xstrdup(req.error), 1);
 		}
-		ws_ctx_deinit(&ws);
+		crefresh(0);
+		cJSON_Delete(json);
 	}
+}
 
-	cJSON_Delete(res.json_obj);
-	api_ctx_deinit(&ctx);
-	curl_global_cleanup();
+
+int main()
+{
+	ctx *ctx = &g_ctx;
+	if (!ctx_init(ctx, "http://localhost:8000/", "ws://localhost:8000/ws"))
+	{
+		dprintf(STDERR_FILENO, "ctx_init fail\n");
+		return (EXIT_FAILURE);
+	}
+	cinit();
+
+	console_component label1;
+	label_init(&label1, 2, 2, "USERNAME", 0);
+
+	console_component label2;
+	label_init(&label2, 2, 6, "PASSWORD", 0);
+
+	ctx->username_field = add_pretty_textarea(3, 3, 32, "...", 0);
+	ctx->password_field = add_pretty_textarea(3, 7, 32, "...", 1);
+	ctx->login_button = add_pretty_button(3, 15, " LOGIN ", handle_button, ctx);
+
+	console_component label3;
+	label_init(&label3, 2, 18, NULL, 0);
+
+	ccomponent_add(label1);
+	ccomponent_add(label2);
+	ctx->login_error_label = ccomponent_add(label3);
+	crefresh(0);
+
+	input_loop(ctx, on_key_event);
+	ctx_deinit(&g_ctx);
+	cdeinit();
 	return (EXIT_SUCCESS);
 }

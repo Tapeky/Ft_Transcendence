@@ -30,11 +30,11 @@ typedef struct
 		// on success == true
 		const char *message;
 	};
-}	login_request;
+}	api_login_request;
 
-#define CUR_JSON_STRUCT login_request
+#define CUR_JSON_STRUCT api_login_request
 
-CHOICE_DEF(login_switch,
+CHOICE_DEF(api_login_def,
 	"success", success,
 	DEF_STRING("message", message)
 	DEF_OBJECT("data",
