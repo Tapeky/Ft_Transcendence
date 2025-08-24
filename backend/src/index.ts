@@ -181,7 +181,7 @@ async function start() {
         try {
           await dbManager.cleanupExpiredTokens();
         } catch (error) {
-          server.log.error('Erreur lors du nettoyage des tokens:', error);
+          server.log.error('Erreur lors du nettoyage des tokens:', error as Error);
         }
       }, 60 * 60 * 1000);
     }
@@ -200,13 +200,13 @@ async function start() {
           server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
         }
       } catch (error) {
-        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error);
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error as Error);
       }
     }, 5 * 60 * 1000);
 
     GameManager.instance.registerLoop();
   } catch (err) {
-    server.log.error('❌ Erreur de démarrage du serveur:', err);
+    server.log.error('❌ Erreur de démarrage du serveur:', err as Error);
     process.exit(1);
   }
 }
