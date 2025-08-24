@@ -29,7 +29,7 @@ export async function authenticateToken(
       email: user.email
     };
     
-  } catch (error) {
+  } catch (error: unknown) {
     return reply.status(401).send({
       success: false,
       error: 'Token d\'authentification invalide'
@@ -57,7 +57,7 @@ export function setupMiddleware(server: FastifyInstance) {
     if (methodsToValidate.includes(request.method) && request.body) {
       try {
         validateInputLengths(request.body);
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(400).send({
           success: false,
           error: 'Validation des données échouée',
