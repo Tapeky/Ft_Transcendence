@@ -11,7 +11,10 @@ import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
 import { GameManager } from './websocket/game_manager';
+import { VaultService } from './vault/vault';
 
+
+const vaultService = VaultService.getInstance();
 // Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
@@ -37,6 +40,9 @@ const server = Fastify({
 
 async function start() {
   try {
+    await vaultService.initialize().catch(err => {
+      console.error('❌ Impossible de charger les secrets depuis Vault:', err);
+    });
     // 1. Configuration de la base de données
     console.log('🔌 Connexion à la base de données...');
     const dbManager = DatabaseManager.getInstance();
