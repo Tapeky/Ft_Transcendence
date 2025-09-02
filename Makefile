@@ -9,8 +9,6 @@ help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 setup: ## Configuration initiale du projet
-	@echo "🔧 Configuration initiale..."
-	@if [ ! -f $(ENV_FILE) ]; then cp .env.example .env; echo "✅ .env créé depuis .env.example"; fi
 	@mkdir -p db ssl logs
 	@echo "✅ Dossiers créés"
 
