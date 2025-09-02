@@ -41,7 +41,7 @@ class WebSocketManager {
     if (user) {
       try {
         user.socket.socket.send(JSON.stringify(message));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Erreur envoi message à ${userId}:`, error);
         this.removeUser(userId);
       }
@@ -106,7 +106,7 @@ export function setupWebSocket(server: FastifyInstance) {
                     message: 'Utilisateur non trouvé'
                   }));
                 }
-              } catch (error) {
+              } catch (error: unknown) {
                 connection.socket.send(JSON.stringify({
                   type: 'auth_error',
                   message: 'Token invalide'
@@ -209,7 +209,7 @@ export function setupWebSocket(server: FastifyInstance) {
                 message: 'Type de message non reconnu'
               }));
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Erreur traitement message WebSocket:', error);
           connection.socket.send(JSON.stringify({
             type: 'error',
@@ -227,7 +227,7 @@ export function setupWebSocket(server: FastifyInstance) {
             const db = DatabaseManager.getInstance().getDb();
             const userRepo = new UserRepository(db);
             await userRepo.updateOnlineStatus(userId, false);
-          } catch (error) {
+          } catch (error: unknown) {
             console.error('Erreur mise à jour statut hors ligne:', error);
           }
           
