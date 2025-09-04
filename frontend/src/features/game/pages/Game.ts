@@ -42,6 +42,7 @@ export class Game {
         this.setupCanvas();
         this.setupUI();
         this.initializeGame();
+        this.registerWithInviteService();
     }
 
     private setupCanvas() {
@@ -206,6 +207,19 @@ export class Game {
                     case 'err_unknown_id':
                     case 'err_user_offline':
                     case 'err_not_in_game':
+                        // Handle "not in game" error - could mean game ended
+                        if (message.type === 'err_not_in_game') {
+                            if (this.gameEnded) {
+                                console.log('🎮 Game already ended, ignoring "not in game" error');
+                                break;
+                            } else {
+                                // Mark game as ended if we get this error during active play
+                                this.gameEnded = true;
+                                this.stopGameLoop();
+                                console.log('🎮 Received "not in game" error - marking game as ended');
+                                break;
+                            }
+                        }
                         console.error('❌ Game error:', message.message);
                         this.showError(message.message);
                         break;
@@ -252,11 +266,27 @@ export class Game {
         }
     }
 
+    private async registerWithInviteService() {
+        try {
+            const { gameInviteService } = await import('../../invitations');
+            if (gameInviteService) {
+                // S'enregistrer comme handler externe pour les invitations
+                gameInviteService.setExternalWebSocketHandler((message: any) => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify(message));
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('🎮 Error registering with invite service:', error);
+        }
+    }
+
     private async ensureKissReconnection() {
         try {
             const { gameInviteService } = await import('../../invitations');
             if (gameInviteService) {
-                gameInviteService.forceReconnect();
+                gameInviteService.removeExternalWebSocketHandler();
             }
         } catch (error) {
             console.error('🎮 KISS: Error forcing reconnection:', error);

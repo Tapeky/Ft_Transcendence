@@ -2,7 +2,7 @@ import { getAvatarUrl } from '../../../shared/utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../../core/app/Router';
 import { apiService } from '../../../shared/services/api';
-import { gameInviteService } from '../../invitations/services/GameInviteService';
+import { gameInviteService, kissInviteButtons } from '../../invitations';
 
 // FriendItem - Reproduction exacte de la version React
 // Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
@@ -90,10 +90,7 @@ export class FriendItem {
     const chatBtn = this.element.querySelector('#chat-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
-    // Game invite button - send game invitation
-    inviteBtn?.addEventListener('click', () => {
-      this.sendGameInvite();
-    });
+    // Game invite button - handled by KISS system via data-invite-user attribute
 
     // Chat button - navigate to chat (React NavLink behavior)
     chatBtn?.addEventListener('click', () => {
@@ -105,24 +102,6 @@ export class FriendItem {
 
   }
 
-  private async sendGameInvite(): Promise<void> {
-    try {
-      
-      // Vérifier que le service KISS est connecté
-      if (!gameInviteService.isConnected()) {
-        alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
-        return;
-      }
-      
-      // Envoyer l'invitation via le système KISS (WebSocket)
-      gameInviteService.sendInvite(this.props.id);
-      
-      alert(`✈️ Game invite sent to ${this.props.username}!`);
-      
-    } catch (error) {
-      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
-    }
-  }
 
   private openOptions(): void {
     this.isOptionsOpen = true;
