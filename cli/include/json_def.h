@@ -24,41 +24,13 @@ typedef struct json_def
 	struct json_def		*recursive_object; // if type == JSON_OBJECT
 }	json_def;
 
-# if __STDC_VERSION__ >= 201112L && !defined(JSON_DEF_DISABLE_TYPE_CHECKING)
-#  define JSON_DEF__STRINGIFY_INNER(x) #x
-#  define JSON_DEF__STRINGIFY(x) JSON_DEF__STRINGIFY_INNER(x)
-// you won't understand anything if you don't know what the 
-// `_Generic` and `_Static_assert` are. Look them up
-#  define JSON_DEF_CHECK_TYPE(field, type) _Static_assert( \
-		_Generic(((CUR_JSON_STRUCT *)0)->field, type: 1, default: 0), \
-		"Expected type `" #type "` as the type of `" JSON_DEF__STRINGIFY(CUR_JSON_STRUCT) "." #field "`" \
-	)
-// "okay, what the fuck is this ??", you may ask
-// You see, the `_Static_assert` expression is permitted wherever a statement
-// or declaration is permitted. A field definition is neither of these.
-// Therefore, we force the compiler to be inside a
-// declaration by making an anonymous structure where the _Static_assert will reside,
-// as well as the field object we want there to be.
-// The anonymous structure is wrapped in a cast so that the original field
-// can safely be defined inside brackets.
-// Note that this won't compile with a C++ compiler. No need to take care of it cuz we stay in C
-// Is this useful ? no. Was this funny to make ? hell fucking yeaaah
-#  define JSON_DEF_WRAP(assert_field, assert_type, expand_type, ...) \
-	( \
-		struct {JSON_DEF_CHECK_TYPE(assert_field, assert_type); expand_type __x;} \
-	) \
-	{__VA_ARGS__}.__x
-# else
-#  define JSON_DEF_WRAP(assert_field, assert_type, ...) __VA_ARGS__
-# endif
-
 # define JSON_DEF_OFFSETOF(field) (size_t)(&((CUR_JSON_STRUCT *)0)->field)
 
-#define DEF_BOOL(name, field) JSON_DEF_WRAP(field, u8, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL}),
-#define DEF_INT(name, field) JSON_DEF_WRAP(field, int, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL}),
-#define DEF_DOUBLE(name, field) JSON_DEF_WRAP(field, double, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL}),
-#define DEF_STRING(name, field) JSON_DEF_WRAP(field, const char *, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL}),
-#define DEF_ARRAY(name, field) JSON_DEF_WRAP(field, cJSON *, json_def, {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL}),
+#define DEF_BOOL(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL},
+#define DEF_INT(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL},
+#define DEF_DOUBLE(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL},
+#define DEF_STRING(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL},
+#define DEF_ARRAY(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL},
 #define DEF_OBJECT(name, def) {name, 0, JSON_OBJECT, (json_def[]){def DEF_END}},
 #define DEF_END {NULL, 0, JSON_INVALID, NULL}
 
@@ -94,8 +66,7 @@ typedef struct
 #define SWITCH_DEF(name, string_json_name, string_field_name, match_store_entry, defs) \
 	json_switch name = { \
 		DEF_STRING(string_json_name, string_field_name) \
-		/* another static assert type check hack */ \
-		JSON_DEF_WRAP(match_store_entry, size_t, size_t, JSON_DEF_OFFSETOF(match_store_entry)), \
+		JSON_DEF_OFFSETOF(match_store_entry), \
 		(json_switch_entry[]) { \
 			defs \
 			{0} \

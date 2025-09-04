@@ -160,7 +160,7 @@ void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, in
 				fprintf(stream, "%d\n", *OFFSET_AS(int));
 				break;
 			case JSON_STRING:
-				fprintf(stream, "%s\n", *OFFSET_AS(const char * _Nullable));
+				fprintf(stream, "%s\n", *OFFSET_AS(const char *));
 				break;
 			case JSON_OBJECT:
 				assert(cur->recursive_object);
