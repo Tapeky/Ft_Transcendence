@@ -13,7 +13,6 @@ export class RouteGuard {
       '/menu',
       '/profile',
       '/tournament',
-      '/chat',
       '/game'
     ];
     
