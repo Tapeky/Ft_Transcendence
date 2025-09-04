@@ -25,6 +25,7 @@ export class Game {
     private gameId?: number;
     private isReady: boolean = false;
     private readyOverlay: HTMLElement | null = null;
+    private gameEnded: boolean = false;
 
     // Constants
     private readonly ARENA_WIDTH = 500;
@@ -168,9 +169,10 @@ export class Game {
                         this.gameState = message.data;
                         
                         // Defensive: Check for game end conditions in case backend doesn't send game_end
-                        if (this.gameState && (this.gameState.leftScore >= 5 || this.gameState.rightScore >= 5)) {
+                        if (this.gameState && (this.gameState.leftScore >= 5 || this.gameState.rightScore >= 5) && !this.gameEnded) {
                             setTimeout(() => {
-                                if (this.animationId) {
+                                if (this.animationId && !this.gameEnded) {
+                                    this.gameEnded = true;
                                     this.stopGameLoop();
                                     const winner = this.gameState!.leftScore >= 5 ? 'Left Player' : 'Right Player';
                                     this.showGameEnd(winner);
@@ -180,6 +182,7 @@ export class Game {
                         break;
 
                     case 'game_end':
+                        this.gameEnded = true;
                         this.stopGameLoop();
                         this.showGameEnd(message.data.winner);
                         break;
@@ -561,7 +564,10 @@ export class Game {
         
         if (this.ws) {
             if (this.ws.readyState === WebSocket.OPEN) {
-                this.sendMessage('leave_game', {});
+                // Only send leave_game if the game hasn't ended yet
+                if (!this.gameEnded) {
+                    this.sendMessage('leave_game', {});
+                }
                 
                 setTimeout(() => {
                     if (this.ws) {
