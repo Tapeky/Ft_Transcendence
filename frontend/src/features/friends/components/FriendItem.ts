@@ -65,11 +65,6 @@ export class FriendItem {
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
 
-          <!-- Chat Button -->
-          <button id="chat-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-            <img src="/src/img/chat.svg" alt="chat" />
-          </button>
-
           <!-- Options Button -->
           <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
             <img src="/src/img/plus.svg" alt="more" />
@@ -87,15 +82,9 @@ export class FriendItem {
 
   private bindEvents(): void {
     const inviteBtn = this.element.querySelector('#invite-btn');
-    const chatBtn = this.element.querySelector('#chat-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
     // Game invite button - handled by KISS system via data-invite-user attribute
-
-    // Chat button - navigate to chat (React NavLink behavior)
-    chatBtn?.addEventListener('click', () => {
-      router.navigate(`/chat/${this.props.id}`);
-    });
 
     // Options button - open FriendOptions modal
     optionsBtn?.addEventListener('click', () => this.openOptions());
