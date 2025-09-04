@@ -11,9 +11,19 @@ export class GameInviteService {
   private isAuthenticated = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private externalWsHandler?: (message: any) => void;
 
   constructor() {
-    this.connect();
+    // Démarrage différé pour éviter les conflits avec Game.ts
+    setTimeout(() => this.initializeIfNeeded(), 1000);
+  }
+  
+  // Nouvelle méthode pour vérifier si on doit créer notre propre connexion
+  private initializeIfNeeded(): void {
+    // Si on est pas en jeu (pas de /game dans l'URL) ou si aucune connexion externe n'est disponible
+    if (!window.location.pathname.includes('/game')) {
+      this.connect();
+    }
   }
 
   private connect(): void {
@@ -159,30 +169,46 @@ export class GameInviteService {
 
   // 📤 Envoyer invitation
   sendInvite(userId: number): void {
+    const message = {
+      type: 'send_game_invite',
+      toUserId: userId
+    };
+    
+    // Utiliser la connexion externe si disponible, sinon notre propre connexion
+    if (this.externalWsHandler) {
+      this.externalWsHandler(message);
+      return;
+    }
+    
     // KISS: Connection state validation
     if (!this.isConnected()) {
       this.connect();
       return;
     }
     
-    this.ws!.send(JSON.stringify({
-      type: 'send_game_invite',
-      toUserId: userId
-    }));
+    this.ws!.send(JSON.stringify(message));
   }
 
   // ✅ Répondre à invitation
   respondToInvite(inviteId: string, accept: boolean): void {
+    const message = {
+      type: 'respond_game_invite',
+      inviteId: inviteId,
+      accept: accept
+    };
+    
+    // Utiliser la connexion externe si disponible, sinon notre propre connexion
+    if (this.externalWsHandler) {
+      this.externalWsHandler(message);
+      return;
+    }
+    
     // KISS: Connection state validation
     if (!this.isConnected()) {
       return;
     }
     
-    this.ws!.send(JSON.stringify({
-      type: 'respond_game_invite',
-      inviteId: inviteId,
-      accept: accept
-    }));
+    this.ws!.send(JSON.stringify(message));
   }
 
   // 🎧 Callbacks pour les événements
@@ -208,7 +234,27 @@ export class GameInviteService {
 
   // 🔌 État de la connexion
   isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated;
+    return (this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated) || !!this.externalWsHandler;
+  }
+  
+  // 🔗 Utiliser une connexion WebSocket externe (pour Game.ts)
+  setExternalWebSocketHandler(handler: (message: any) => void): void {
+    this.externalWsHandler = handler;
+    // Fermer notre propre connexion si on en avait une
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+      this.isAuthenticated = false;
+    }
+  }
+  
+  // 🔓 Supprimer le handler externe
+  removeExternalWebSocketHandler(): void {
+    this.externalWsHandler = undefined;
+    // Redémarrer notre propre connexion si nécessaire
+    if (!window.location.pathname.includes('/game')) {
+      setTimeout(() => this.connect(), 500);
+    }
   }
 
   // 🧹 Cleanup
