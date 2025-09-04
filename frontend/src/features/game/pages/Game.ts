@@ -260,9 +260,7 @@ export class Game {
         }
     }
 
-    private setupKeyboardListeners() {
-        
-        const keydownHandler = (e: KeyboardEvent) => {
+    private keydownHandler = (e: KeyboardEvent) => {
             let changed = false;
             
             if (this.gameMode === 'local') {
@@ -323,7 +321,7 @@ export class Game {
             }
         };
 
-        const keyupHandler = (e: KeyboardEvent) => {
+    private keyupHandler = (e: KeyboardEvent) => {
             let changed = false;
             
             if (this.gameMode === 'local') {
@@ -386,8 +384,9 @@ export class Game {
             }
         };
 
-        document.addEventListener('keydown', keydownHandler);
-        document.addEventListener('keyup', keyupHandler);
+    private setupKeyboardListeners() {
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
     }
 
     private sendMessage(type: string, data: any) {
@@ -586,8 +585,8 @@ export class Game {
             this.readyOverlay = null;
         }
 
-        document.removeEventListener('keydown', this.setupKeyboardListeners);
-        document.removeEventListener('keyup', this.setupKeyboardListeners);
+        document.removeEventListener('keydown', this.keydownHandler);
+        document.removeEventListener('keyup', this.keyupHandler);
 
         this.container.innerHTML = '';
         this.gameState = null;

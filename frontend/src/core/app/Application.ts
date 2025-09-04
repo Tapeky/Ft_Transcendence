@@ -80,4 +80,5 @@ export class Application {
 }
 
 export const application = Application.getInstance();
-// (window as any).application = application;
+(window as any).router = router;
+(window as any).application = application;
