@@ -43,6 +43,8 @@ async function start() {
     await vaultService.initialize().catch(err => {
       console.error('❌ Impossible de charger les secrets depuis Vault:', err);
     });
+    await vaultService.getOAuthSecrets(); // Ensure secrets are loaded
+    await vaultService.getJwtSecret(); // Ensure JWT secret is loaded
     // 1. Configuration de la base de données
     console.log('🔌 Connexion à la base de données...');
     const dbManager = DatabaseManager.getInstance();
