@@ -63,3 +63,6 @@ db-migrate-github: ## Lance la migration GitHub
 
 db-seed: ## Lance le seeding de la DB
 	docker-compose exec backend npm run db:seed
+
+db-clean-tournaments: ## Supprime tous les tournois
+	docker-compose exec backend npm run db:clean-tournaments

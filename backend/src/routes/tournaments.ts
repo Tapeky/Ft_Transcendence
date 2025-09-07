@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { authenticateToken, validateInput } from '../middleware';
+import { authenticateToken, validateInput, validateAlias } from '../middleware';
 import { DatabaseManager } from '../database/DatabaseManager';
+import { TournamentManager } from '../websocket/TournamentManager';
 
 interface CreateTournamentBody {
   name: string;
@@ -93,33 +94,27 @@ export async function tournamentRoutes(server: FastifyInstance) {
     ]
   }, async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
     try {
+      const tournamentManager = TournamentManager.getInstance();
       const { name, description, max_players = 8 } = request.body;
       const userId = (request as any).user.id;
 
-      const result = await db.execute(`
-        INSERT INTO tournaments (name, description, max_players, created_by)
-        VALUES (?, ?, ?, ?)
-      `, [name, description, max_players, userId]);
-
-      const tournamentId = result.lastID;
-
-      const tournament = await db.query(`
-        SELECT t.*, u.username as creator_username
-        FROM tournaments t
-        LEFT JOIN users u ON t.created_by = u.id
-        WHERE t.id = ?
-      `, [tournamentId]);
+      const tournament = await tournamentManager.createTournament(
+        name,
+        description,
+        max_players,
+        userId
+      );
 
       reply.status(201).send({
         success: true,
-        data: tournament[0],
-        message: 'Tournoi créé avec succès'
+        data: tournament,
+        message: 'Tournoi créé avec succès (alias réinitialisés)'
       });
-    } catch (error) {
+    } catch (error: any) {
       request.log.error('Erreur création tournoi:', error);
       reply.status(500).send({
         success: false,
-        error: 'Erreur lors de la création du tournoi'
+        error: error.message || 'Erreur lors de la création du tournoi'
       });
     }
   });
@@ -132,7 +127,8 @@ export async function tournamentRoutes(server: FastifyInstance) {
         body: {
           alias: { required: true, type: 'string', minLength: 2, maxLength: 50 }
         }
-      })
+      }),
+      validateAlias
     ]
   }, async (request: FastifyRequest<{ Params: JoinTournamentParams; Body: JoinTournamentBody }>, reply: FastifyReply) => {
     try {
@@ -263,78 +259,8 @@ export async function tournamentRoutes(server: FastifyInstance) {
     }
   });
 
-  // PUT /api/tournaments/:id/start - Démarrer un tournoi
-  server.put<{ Params: TournamentParams }>('/:id/start', {
-    preHandler: [authenticateToken]
-  }, async (request: FastifyRequest<{ Params: TournamentParams }>, reply: FastifyReply) => {
-    try {
-      const tournamentId = parseInt(request.params.id);
-      const userId = (request as any).user.id;
-
-      const tournament = await db.query(`
-        SELECT * FROM tournaments WHERE id = ? AND created_by = ?
-      `, [tournamentId, userId]);
-
-      if (!tournament.length) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Tournoi non trouvé ou vous n\'êtes pas le créateur'
-        });
-      }
-
-      if (tournament[0].status !== 'open') {
-        return reply.status(400).send({
-          success: false,
-          error: 'Le tournoi ne peut pas être démarré'
-        });
-      }
-
-      const participants = await db.query(`
-        SELECT * FROM tournament_participants WHERE tournament_id = ?
-      `, [tournamentId]);
-
-      if (participants.length < 2) {
-        return reply.status(400).send({
-          success: false,
-          error: 'Il faut au moins 2 participants pour démarrer'
-        });
-      }
-
-      const bracketData: any = {
-        participants: participants.map(p => ({ id: p.user_id, position: p.id })),
-        rounds: []
-      };
-
-      try {
-        const matches = await createTournamentMatches(tournamentId, participants);
-        bracketData.rounds = [{ matches: matches.map(m => ({ id: (m as any).lastID })) }];
-      } catch (matchError) {
-        request.log.error('Erreur création matches:', matchError);
-        return reply.status(500).send({
-          success: false,
-          error: 'Erreur lors de la création des matches'
-        });
-      }
-
-      await db.execute(`
-        UPDATE tournaments 
-        SET status = 'running', started_at = CURRENT_TIMESTAMP, bracket_data = ?
-        WHERE id = ?
-      `, [JSON.stringify(bracketData), tournamentId]);
-
-      reply.send({
-        success: true,
-        message: 'Tournoi démarré avec succès',
-        data: { bracket_data: bracketData }
-      });
-    } catch (error) {
-      request.log.error('Erreur démarrage tournoi:', error);
-      reply.status(500).send({
-        success: false,
-        error: 'Erreur lors du démarrage du tournoi'
-      });
-    }
-  });
+  // Note: Route PUT /:id/start déplacée vers tournaments-new-endpoints.ts
+  // pour utiliser le TournamentManager complet avec reset d'alias
 
   // GET /api/tournaments/:id/matches - Matches d'un tournoi avec alias
   server.get<{ Params: TournamentParams }>('/:id/matches', async (request: FastifyRequest<{ Params: TournamentParams }>, reply: FastifyReply) => {

@@ -85,4 +85,4 @@ export function setupMiddleware(server: FastifyInstance) {
   });
 }
 
-export { validateInput, validateDisplayname, validateInputLengths, VALIDATION_LIMITS } from './validation';
+export { validateInput, validateDisplayname, validateAlias, validateInputLengths, VALIDATION_LIMITS } from './validation';
