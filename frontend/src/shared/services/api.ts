@@ -643,6 +643,33 @@ class ApiService {
 		return response.data?.invites || [];
 	}
 
+	// HTTP Methods for Tournament Service compatibility
+	async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+		return this.request<T>(endpoint, { method: 'GET' });
+	}
+
+	async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+		return this.request<T>(endpoint, {
+			method: 'POST',
+			body: data ? JSON.stringify(data) : undefined
+		});
+	}
+
+	async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+		return this.request<T>(endpoint, {
+			method: 'PUT',
+			body: data ? JSON.stringify(data) : undefined
+		});
+	}
+
+	async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+		return this.request<T>(endpoint, { method: 'DELETE' });
+	}
+
+
 }
 
 export const apiService = new ApiService();
+
+// Export also as 'api' for backward compatibility and tournament service
+export const api = apiService;

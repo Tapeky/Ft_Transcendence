@@ -123,6 +123,45 @@ export async function validateDisplayname(
   return;
 }
 
+export async function validateAlias(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const data = request.body;
+  if (!data || typeof data !== 'object')
+    return reply.status(400).send({error: "Invalid request body"});
+
+  const dataObj = data as any;
+  if (!dataObj.alias || typeof dataObj.alias !== 'string')
+    return reply.status(400).send({error: "alias is required and must be a string"});
+  
+  const alias = dataObj.alias.trim();
+
+  if (alias.length === 0) {
+    return reply.status(400).send({
+      success: false,
+      error: 'L\'alias ne peut pas être vide'
+    });
+  }
+
+  if (alias.length > 50) {
+    return reply.status(400).send({
+      success: false,
+      error: 'L\'alias ne peut pas dépasser 50 caractères'
+    });
+  }
+
+  // Correction de la regex : échapper le tiret
+  if (!/^[a-zA-Z0-9_\-]+$/.test(alias)) {
+    return reply.status(400).send({
+      success: false,
+      error: 'L\'alias ne peut contenir que des lettres, chiffres, underscores et tirets'
+    });
+  }
+  
+  return;
+}
+
 function validateObject(obj: any, schema: any): void {
   for (const [key, rules] of Object.entries(schema)) {
     const value = obj?.[key];

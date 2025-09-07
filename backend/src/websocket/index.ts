@@ -10,6 +10,7 @@ import { DirectMessageData } from '../types/chat';
 import { Pong } from '../game/Pong';
 import { error } from 'console';
 import { simpleGameInvites } from './SimpleGameInvites';
+import { TournamentManager, TournamentEvent } from './TournamentManager';
 
 interface ConnectedUser {
   id: number;
@@ -419,6 +420,110 @@ export function setupWebSocket(server: FastifyInstance) {
                   type: 'game_left',
                   message: 'Successfully left the game'
                 }));
+              }
+              break;
+
+            // NOUVELLES COMMANDES TOURNOIS - Respect des exigences du sujet
+            case 'tournament_subscribe':
+              // S'abonner aux événements d'un tournoi
+              if (userId && typeof message.tournamentId === 'number') {
+                const tournamentManager = TournamentManager.getInstance();
+                
+                tournamentManager.subscribeTournamentEvents(message.tournamentId, (event: TournamentEvent) => {
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_event',
+                    data: event
+                  }));
+                });
+
+                connection.socket.send(JSON.stringify({
+                  type: 'tournament_subscribed',
+                  tournamentId: message.tournamentId,
+                  message: 'Abonné aux événements du tournoi'
+                }));
+              }
+              break;
+
+            case 'tournament_start':
+              // Démarrer un tournoi (créateur uniquement)
+              if (userId && typeof message.tournamentId === 'number') {
+                try {
+                  const tournamentManager = TournamentManager.getInstance();
+                  const bracket = await tournamentManager.startTournament(message.tournamentId, userId);
+                  
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_started',
+                    data: {
+                      tournamentId: message.tournamentId,
+                      bracket,
+                      nextMatch: bracket.nextMatch
+                    }
+                  }));
+                } catch (error: any) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_error',
+                    error: error.message
+                  }));
+                }
+              }
+              break;
+
+            case 'tournament_get_next_match':
+              // Demander le prochain match (exigence sujet: "announce the next match")
+              if (userId && typeof message.tournamentId === 'number') {
+                try {
+                  const tournamentManager = TournamentManager.getInstance();
+                  const nextMatch = await tournamentManager.announceNextMatch(message.tournamentId);
+                  
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_next_match',
+                    data: {
+                      tournamentId: message.tournamentId,
+                      nextMatch,
+                      announcement: nextMatch 
+                        ? `🎮 Prochain match: ${nextMatch.player1?.alias} vs ${nextMatch.player2?.alias || 'BYE'}`
+                        : 'Aucun match suivant'
+                    }
+                  }));
+                } catch (error: any) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_error',
+                    error: error.message
+                  }));
+                }
+              }
+              break;
+
+            case 'tournament_match_result':
+              // Mettre à jour le résultat d'un match de tournoi
+              if (userId && typeof message.matchId === 'number' && 
+                  typeof message.winnerId === 'number' &&
+                  typeof message.player1Score === 'number' &&
+                  typeof message.player2Score === 'number') {
+                
+                try {
+                  const tournamentManager = TournamentManager.getInstance();
+                  await tournamentManager.updateMatchResult(
+                    message.matchId,
+                    message.winnerId,
+                    message.player1Score,
+                    message.player2Score
+                  );
+                  
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_match_updated',
+                    data: {
+                      matchId: message.matchId,
+                      winnerId: message.winnerId,
+                      message: 'Résultat mis à jour, progression automatique effectuée'
+                    }
+                  }));
+                } catch (error: any) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_error',
+                    error: error.message
+                  }));
+                }
               }
               break;
 

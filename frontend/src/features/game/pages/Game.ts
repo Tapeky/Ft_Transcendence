@@ -526,6 +526,11 @@ export class Game {
         if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
             return;
         }
+
+        // Vérifier si c'est un match de tournoi
+        const tournamentMatchInfo = this.getTournamentMatchInfo();
+        const isTournamentMatch = tournamentMatchInfo !== null;
+
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
         overlay.style.top = '0';
@@ -541,30 +546,121 @@ export class Game {
         overlay.style.fontSize = '24px';
         overlay.style.zIndex = '1000';
 
+        // Message différent pour les tournois
+        let gameOverMessage = `<h2>Game Over!</h2><p>Winner: ${winner}</p>`;
+        if (isTournamentMatch) {
+            gameOverMessage = `
+                <h2>🏆 Match de Tournoi Terminé!</h2>
+                <p>Winner: ${winner}</p>
+                <p class="tournament-info">Scores: ${this.gameState?.leftScore || 0} - ${this.gameState?.rightScore || 0}</p>
+                <p class="tournament-saving">💾 Sauvegarde automatique du résultat...</p>
+            `;
+        }
+
         const backButton = document.createElement('button');
-        backButton.textContent = 'Back to Menu';
         backButton.style.padding = '10px 20px';
         backButton.style.fontSize = '18px';
-        backButton.style.backgroundColor = '#007bff';
         backButton.style.color = 'white';
         backButton.style.border = 'none';
         backButton.style.borderRadius = '5px';
         backButton.style.cursor = 'pointer';
         backButton.style.marginTop = '20px';
 
-        backButton.addEventListener('click', () => {
-            if (document.body.contains(overlay)) {
-                document.body.removeChild(overlay);
-                this.gameEndOverlay = null;
-            }
-            this.destroy();
-            (window as any).router?.navigate('/menu');
-        });
+        if (isTournamentMatch) {
+            backButton.textContent = 'Retour au Tournoi';
+            backButton.style.backgroundColor = '#28a745'; // Vert pour tournoi
+            
+            backButton.addEventListener('click', async () => {
+                // Sauvegarder automatiquement le résultat du match
+                await this.saveTournamentMatchResult(tournamentMatchInfo!, winner);
+                
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                    this.gameEndOverlay = null;
+                }
+                this.destroy();
+                
+                // Retourner au tournoi
+                (window as any).router?.navigate(tournamentMatchInfo!.returnUrl);
+            });
+        } else {
+            backButton.textContent = 'Back to Menu';
+            backButton.style.backgroundColor = '#007bff';
+            
+            backButton.addEventListener('click', () => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                    this.gameEndOverlay = null;
+                }
+                this.destroy();
+                (window as any).router?.navigate('/menu');
+            });
+        }
 
-        overlay.innerHTML = `<h2>Game Over!</h2><p>Winner: ${winner}</p>`;
+        overlay.innerHTML = gameOverMessage;
         overlay.appendChild(backButton);
         document.body.appendChild(overlay);
         this.gameEndOverlay = overlay;
+
+        // Auto-sauvegarder pour les tournois après un délai
+        if (isTournamentMatch) {
+            setTimeout(async () => {
+                await this.saveTournamentMatchResult(tournamentMatchInfo!, winner);
+            }, 2000);
+        }
+    }
+
+    private getTournamentMatchInfo(): any {
+        try {
+            const storedInfo = localStorage.getItem('tournament_match_info');
+            if (storedInfo) {
+                const matchInfo = JSON.parse(storedInfo);
+                // Vérifier que l'info n'est pas trop ancienne (1 heure max)
+                const oneHour = 60 * 60 * 1000;
+                if (Date.now() - matchInfo.timestamp < oneHour) {
+                    return matchInfo;
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lecture info match tournoi:', error);
+        }
+        return null;
+    }
+
+    private async saveTournamentMatchResult(matchInfo: any, winner: string): Promise<void> {
+        try {
+            console.log('💾 Sauvegarde du résultat du match de tournoi...', {
+                matchId: matchInfo.matchId,
+                winner,
+                scores: {
+                    left: this.gameState?.leftScore || 0,
+                    right: this.gameState?.rightScore || 0
+                }
+            });
+
+            // Import de l'API pour sauvegarder le résultat
+            const { api } = await import('../../../shared/services/api');
+            
+            // Déterminer l'ID du gagnant (simplifié pour l'instant)
+            // TODO: Améliorer la détection du winner ID basée sur les positions
+            const winnerId = matchInfo.opponentId; // Placeholder
+            
+            // Appel API pour mettre à jour le résultat
+            await api.put(`/tournaments/matches/${matchInfo.matchId}/result`, {
+                winnerId,
+                player1Score: this.gameState?.leftScore || 0,
+                player2Score: this.gameState?.rightScore || 0
+            });
+
+            console.log('✅ Résultat sauvegardé avec succès');
+            
+            // Nettoyer les informations stockées
+            localStorage.removeItem('tournament_match_info');
+
+        } catch (error) {
+            console.error('❌ Erreur sauvegarde résultat tournoi:', error);
+            // On garde les informations au cas où l'utilisateur voudrait réessayer
+        }
     }
 
 
