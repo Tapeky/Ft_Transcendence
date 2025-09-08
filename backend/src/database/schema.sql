@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
     description TEXT,
     max_players INTEGER NOT NULL DEFAULT 8,
     current_players INTEGER DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'open', -- open, running, completed, cancelled
+    status VARCHAR(20) DEFAULT 'waiting', -- waiting, ready, running, completed, cancelled
     bracket_data TEXT, -- JSON pour stocker la structure du bracket
     winner_id INTEGER,
     created_by INTEGER NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS matches (
     player1_score INTEGER DEFAULT 0,
     player2_score INTEGER DEFAULT 0,
     winner_id INTEGER,
-    status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, playing, completed, cancelled
+    status VARCHAR(20) DEFAULT 'scheduled', -- scheduled, in_progress, completed, cancelled, bye
     game_type VARCHAR(50) DEFAULT 'pong', -- pong, autre_jeu
     match_data TEXT, -- JSON pour données spécifiques au match
     started_at DATETIME,

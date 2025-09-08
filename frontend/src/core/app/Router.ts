@@ -53,6 +53,11 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       return new TournamentPage().getElement();
     });
     
+    this.routes.set('/local-tournament', async () => {
+      const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
+      return new LocalTournament().getElement();
+    });
+    
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
@@ -72,6 +77,15 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
       const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
+      
+      // Check for query parameters (e.g., /game?mode=local-tournament&...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      
+      if (mode === 'local-tournament') {
+        const { Game } = await import('../../features/game/pages/Game');
+        return this.createComponentContainer(Game, undefined, 'local-tournament');
+      }
       
       if (!gameMode) {
         const { PongModeSelector } = await import('../../features/game/pages/PongModeSelector');

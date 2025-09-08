@@ -1,41 +1,24 @@
 import { DatabaseManager } from '../database/DatabaseManager';
 import { Tournament, TournamentParticipant, Match } from '../types/database';
+import { BracketEngine, TournamentBracket, BracketMatch, TournamentPlayer, BracketRound } from '../game/BracketEngine';
+import { tournamentInvites } from './TournamentInvites';
 
-interface BracketRound {
-  round: number;
-  matches: BracketMatch[];
-}
-
-interface BracketMatch {
-  id: number;
-  player1: TournamentPlayer | null;
-  player2: TournamentPlayer | null;
-  winner?: TournamentPlayer;
-  status: 'scheduled' | 'in_progress' | 'completed';
-  nextMatchId?: number;
-}
-
-interface TournamentPlayer {
-  id: number;
-  user_id: number;
-  alias: string;
-  username: string;
-}
-
-interface TournamentBracket {
-  rounds: BracketRound[];
-  participants: TournamentPlayer[];
-  currentRound: number;
-  nextMatch: BracketMatch | null;
-}
+// Note: BracketRound, BracketMatch, TournamentPlayer, TournamentBracket are now imported from BracketEngine
 
 export class TournamentManager {
   private static instance: TournamentManager;
   private db: DatabaseManager;
+  private bracketEngine: BracketEngine;
   private tournamentSubscribers: Map<number, Set<(event: TournamentEvent) => void>> = new Map();
 
   private constructor() {
     this.db = DatabaseManager.getInstance();
+    this.bracketEngine = new BracketEngine();
+  }
+
+  // 🔗 Initialiser la référence WebSocket pour les invitations de tournoi
+  initializeTournamentInvites(wsManager: any): void {
+    tournamentInvites.setWebSocketManager(wsManager);
   }
 
   public static getInstance(): TournamentManager {
@@ -107,8 +90,8 @@ export class TournamentManager {
       throw new Error('Il faut au moins 2 participants pour démarrer');
     }
 
-    // Générer la structure complète des brackets
-    const bracket = await this.generateTournamentBracket(tournamentId, participants);
+    // Générer la structure complète des brackets avec le nouveau BracketEngine
+    const bracket = this.bracketEngine.generateBracket(tournamentId, participants);
     
     // Mettre à jour le tournoi
     await this.db.execute(`
@@ -117,73 +100,47 @@ export class TournamentManager {
       WHERE id = ?
     `, [JSON.stringify(bracket), tournamentId]);
 
-    // Créer tous les matches du premier round
-    await this.createRoundMatches(tournamentId, bracket.rounds[0]);
+    // Créer tous les matches du premier round dans la base de données
+    await this.createBracketMatches(tournamentId, bracket);
 
-    // Annoncer le premier match (exigence du sujet)
-    await this.announceNextMatch(tournamentId);
+    // 🏆 NOUVEAU: Envoyer automatiquement les invitations du premier round
+    await this.sendRoundInvitations(tournamentId, 1);
 
     console.log(`🚀 Tournoi ${tournamentId} démarré avec ${participants.length} participants`);
     this.notifyTournamentEvent(tournamentId, {
       type: 'tournament_started',
       tournamentId,
       bracket,
-      nextMatch: bracket.nextMatch
+      message: 'Tournoi démarré ! Les invitations de match ont été envoyées.'
     });
 
     return bracket;
   }
 
   /**
-   * Génère la structure complète des brackets pour toutes les rounds
+   * Create database matches for bracket
    */
-  private async generateTournamentBracket(
-    tournamentId: number, 
-    participants: TournamentPlayer[]
-  ): Promise<TournamentBracket> {
-    // Mélanger les participants pour l'équité
-    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+  private async createBracketMatches(tournamentId: number, bracket: TournamentBracket): Promise<void> {
+    // Create matches for first round only initially
+    const firstRound = bracket.rounds[0];
     
-    // Calculer le nombre de rounds nécessaires
-    const totalRounds = Math.ceil(Math.log2(participants.length));
-    const rounds: BracketRound[] = [];
-
-    // Générer chaque round
-    let currentParticipants = shuffledParticipants;
-    
-    for (let roundNum = 1; roundNum <= totalRounds; roundNum++) {
-      const roundMatches: BracketMatch[] = [];
-      
-      // Créer les matches de ce round
-      for (let i = 0; i < currentParticipants.length; i += 2) {
-        const player1 = currentParticipants[i];
-        const player2 = i + 1 < currentParticipants.length ? currentParticipants[i + 1] : null;
-        
-        roundMatches.push({
-          id: 0, // Sera mis à jour lors de la création en DB
-          player1,
-          player2,
-          status: roundNum === 1 ? 'scheduled' : 'scheduled',
-          nextMatchId: roundNum < totalRounds ? Math.floor(i / 2) : undefined
-        });
+    for (const match of firstRound.matches) {
+      if (match.player1) {
+        await this.db.execute(`
+          INSERT INTO matches (
+            tournament_id, player1_id, player2_id, status, game_type, round
+          ) VALUES (?, ?, ?, ?, 'pong', ?)
+        `, [
+          tournamentId,
+          match.player1.user_id,
+          match.player2?.user_id || null,
+          match.status,
+          match.round
+        ]);
       }
-
-      rounds.push({
-        round: roundNum,
-        matches: roundMatches
-      });
-
-      // Préparer les participants pour le round suivant (vainqueurs)
-      currentParticipants = roundMatches.map(() => null as any).filter(Boolean);
     }
-
-    return {
-      rounds,
-      participants: shuffledParticipants,
-      currentRound: 1,
-      nextMatch: rounds[0]?.matches[0] || null
-    };
   }
+
 
   /**
    * Crée les matches d'un round en base de données
@@ -252,19 +209,23 @@ export class TournamentManager {
     const match = matches[0];
     return {
       id: match.id,
+      round: match.round || 1,
+      position: match.position || 0,
       player1: match.player1_id ? {
-        id: match.id,
+        id: match.player1_id,
         user_id: match.player1_id,
         alias: match.player1_alias,
         username: match.player1_username
       } : null,
       player2: match.player2_id ? {
-        id: match.id,
+        id: match.player2_id,
         user_id: match.player2_id,
         alias: match.player2_alias,
         username: match.player2_username
       } : null,
-      status: match.status
+      status: match.status,
+      player1_score: match.player1_score || 0,
+      player2_score: match.player2_score || 0
     };
   }
 
@@ -310,8 +271,8 @@ export class TournamentManager {
     // Vérifier si le tournoi est terminé
     await this.checkTournamentCompletion(tournamentId);
 
-    // Annoncer le prochain match
-    await this.announceNextMatch(tournamentId);
+    // 🏆 NOUVEAU: Envoyer automatiquement les invitations du round suivant s'il y en a
+    await this.checkAndSendNextRoundInvitations(tournamentId);
   }
 
   /**
@@ -456,14 +417,69 @@ export class TournamentManager {
       subscribers.forEach(callback => callback(event));
     }
   }
+
+  // 🏆 NOUVEAU: Envoyer les invitations pour un round spécifique
+  private async sendRoundInvitations(tournamentId: number, round: number): Promise<void> {
+    try {
+      const matches = await this.db.query(`
+        SELECT id FROM matches 
+        WHERE tournament_id = ? AND round = ? AND status = 'scheduled'
+        AND player1_id IS NOT NULL AND player2_id IS NOT NULL
+      `, [tournamentId, round]);
+
+      console.log(`🏆 Sending invitations for ${matches.length} matches in round ${round}`);
+
+      for (const match of matches) {
+        await tournamentInvites.sendTournamentMatchInvitation(tournamentId, match.id);
+        // Petit délai pour éviter le spam
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (error) {
+      console.error(`Error sending round ${round} invitations:`, error);
+    }
+  }
+
+  // 🏆 NOUVEAU: Vérifier et envoyer les invitations du round suivant
+  private async checkAndSendNextRoundInvitations(tournamentId: number): Promise<void> {
+    try {
+      // Trouver le round où il y a des matches prêts (avec 2 joueurs et status scheduled)
+      const nextRoundMatches = await this.db.query(`
+        SELECT round, COUNT(*) as ready_matches FROM matches 
+        WHERE tournament_id = ? AND status = 'scheduled'
+        AND player1_id IS NOT NULL AND player2_id IS NOT NULL
+        GROUP BY round
+        ORDER BY round ASC
+      `, [tournamentId]);
+
+      if (nextRoundMatches.length > 0) {
+        const nextRound = nextRoundMatches[0].round;
+        console.log(`🏆 Found ${nextRoundMatches[0].ready_matches} ready matches in round ${nextRound}`);
+        
+        // Envoyer les invitations pour ce round
+        await this.sendRoundInvitations(tournamentId, nextRound);
+        
+        // Notifier les participants
+        this.notifyTournamentEvent(tournamentId, {
+          type: 'next_round_ready',
+          tournamentId,
+          round: nextRound,
+          message: `Round ${nextRound} est prêt ! Invitations envoyées.`
+        });
+      }
+    } catch (error) {
+      console.error('Error checking next round invitations:', error);
+    }
+  }
 }
 
 export interface TournamentEvent {
-  type: 'tournament_started' | 'next_match_announced' | 'match_completed' | 'tournament_completed';
+  type: 'tournament_started' | 'next_match_announced' | 'match_completed' | 'tournament_completed' | 'next_round_ready';
   tournamentId: number;
   bracket?: TournamentBracket;
   match?: BracketMatch;
   nextMatch?: BracketMatch | null;
   winnerId?: number;
   announcement?: string;
+  message?: string;
+  round?: number;
 }

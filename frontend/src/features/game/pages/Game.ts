@@ -17,7 +17,7 @@ export class Game {
     private localInputRight = { up: false, down: false };
     private animationId: number | null = null;
     private container: HTMLElement;
-    private gameMode: 'local' | 'online';
+    private gameMode: 'local' | 'online' | 'local-tournament';
     private opponentId?: number;
     private gameEndOverlay: HTMLElement | null = null;
     
@@ -34,7 +34,7 @@ export class Game {
     private readonly PADDLE_HEIGHT = 30;
     private readonly BALL_RADIUS = 5;
 
-    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' = 'online') {
+    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' | 'local-tournament' = 'online') {
         this.container = container;
         this.gameMode = gameMode;
         this.opponentId = opponentId;
@@ -85,6 +85,12 @@ export class Game {
     }
 
     private async initializeGame() {
+        // Handle local tournament mode differently
+        if (this.gameMode === 'local-tournament') {
+            this.setupLocalTournamentGame();
+            return;
+        }
+
         const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
         
         if (!token) {
@@ -93,6 +99,250 @@ export class Game {
         }
 
         this.connectWebSocket(token);
+    }
+
+    private setupLocalTournamentGame() {
+        // Get tournament info from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        const matchId = urlParams.get('matchId');
+        
+        if (!tournamentId || !matchId) {
+            this.showError('Missing tournament information');
+            return;
+        }
+
+        // Initialize local game state
+        this.gameState = {
+            leftPaddle: { pos: { x: 20, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            rightPaddle: { pos: { x: this.ARENA_WIDTH - 20 - this.PADDLE_WIDTH, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            ball: { pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, direction: { x: 2, y: 1 } },
+            state: 1, // Game active
+            leftScore: 0,
+            rightScore: 0
+        };
+
+        this.setupKeyboardListeners();
+        this.showLocalTournamentOverlay(tournamentId, matchId);
+        this.startLocalGame();
+    }
+
+    private showLocalTournamentOverlay(tournamentId: string, matchId: string) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center;
+            z-index: 1000; color: white; text-align: center; font-family: Arial, sans-serif;
+        `;
+        
+        overlay.innerHTML = `
+            <div style="background: #333; padding: 40px; border-radius: 10px; max-width: 500px;">
+                <h2 style="color: #ffd700; margin-bottom: 20px;">🏆 Tournament Match</h2>
+                <p style="margin-bottom: 30px;">Press SPACE when both players are ready to start the match!</p>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                    <div style="flex: 1; padding: 0 20px;">
+                        <h3>Player 1 (Left)</h3>
+                        <p style="color: #ccc;">W/S Keys</p>
+                    </div>
+                    <div style="flex: 1; padding: 0 20px;">
+                        <h3>Player 2 (Right)</h3>
+                        <p style="color: #ccc;">↑/↓ Arrow Keys</p>
+                    </div>
+                </div>
+                <button id="start-tournament-match" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    Start Match (SPACE)
+                </button>
+            </div>
+        `;
+        
+        const startButton = overlay.querySelector('#start-tournament-match') as HTMLButtonElement;
+        const startMatch = () => {
+            document.body.removeChild(overlay);
+            this.render();
+        };
+        
+        startButton.addEventListener('click', startMatch);
+        
+        // Also listen for spacebar
+        const spaceHandler = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                document.removeEventListener('keydown', spaceHandler);
+                startMatch();
+            }
+        };
+        
+        document.addEventListener('keydown', spaceHandler);
+        document.body.appendChild(overlay);
+    }
+
+    private startLocalGame() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+        this.localTournamentLoop();
+    }
+
+    private localTournamentLoop() {
+        if (!this.gameState || this.gameEnded) return;
+
+        // Update paddle positions based on input
+        this.updateLocalPaddles();
+        
+        // Update ball position and handle collisions
+        this.updateLocalBall();
+
+        // Check for win condition
+        if (this.gameState.leftScore >= 11 || this.gameState.rightScore >= 11) {
+            if (!this.gameEnded) {
+                this.gameEnded = true;
+                const winner = this.gameState.leftScore >= 11 ? 'left' : 'right';
+                this.showLocalTournamentEnd(winner);
+                return;
+            }
+        }
+
+        this.render();
+        this.animationId = requestAnimationFrame(() => this.localTournamentLoop());
+    }
+
+    private updateLocalPaddles() {
+        if (!this.gameState) return;
+
+        const speed = 3;
+
+        // Left paddle
+        if (this.localInputLeft.up && this.gameState.leftPaddle.pos.y > 0) {
+            this.gameState.leftPaddle.pos.y -= speed;
+        }
+        if (this.localInputLeft.down && this.gameState.leftPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+            this.gameState.leftPaddle.pos.y += speed;
+        }
+
+        // Right paddle
+        if (this.localInputRight.up && this.gameState.rightPaddle.pos.y > 0) {
+            this.gameState.rightPaddle.pos.y -= speed;
+        }
+        if (this.localInputRight.down && this.gameState.rightPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+            this.gameState.rightPaddle.pos.y += speed;
+        }
+    }
+
+    private updateLocalBall() {
+        if (!this.gameState) return;
+
+        const ball = this.gameState.ball;
+        
+        // Move ball
+        ball.pos.x += ball.direction.x;
+        ball.pos.y += ball.direction.y;
+
+        // Top/bottom bounce
+        if (ball.pos.y <= this.BALL_RADIUS || ball.pos.y >= this.ARENA_HEIGHT - this.BALL_RADIUS) {
+            ball.direction.y = -ball.direction.y;
+        }
+
+        // Left paddle collision
+        if (ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH + this.BALL_RADIUS &&
+            ball.pos.y >= this.gameState.leftPaddle.pos.y &&
+            ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT &&
+            ball.direction.x < 0) {
+            ball.direction.x = Math.abs(ball.direction.x);
+        }
+
+        // Right paddle collision
+        if (ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
+            ball.pos.y >= this.gameState.rightPaddle.pos.y &&
+            ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT &&
+            ball.direction.x > 0) {
+            ball.direction.x = -Math.abs(ball.direction.x);
+        }
+
+        // Score left
+        if (ball.pos.x <= 0) {
+            this.gameState.rightScore++;
+            this.resetBall();
+        }
+
+        // Score right
+        if (ball.pos.x >= this.ARENA_WIDTH) {
+            this.gameState.leftScore++;
+            this.resetBall();
+        }
+    }
+
+    private resetBall() {
+        if (!this.gameState) return;
+        
+        this.gameState.ball.pos.x = this.ARENA_WIDTH / 2;
+        this.gameState.ball.pos.y = this.ARENA_HEIGHT / 2;
+        
+        // Random direction
+        this.gameState.ball.direction.x = Math.random() > 0.5 ? 2 : -2;
+        this.gameState.ball.direction.y = (Math.random() - 0.5) * 2;
+    }
+
+    private async showLocalTournamentEnd(winner: 'left' | 'right') {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('tournamentId');
+        const matchId = urlParams.get('matchId');
+
+        if (!this.gameState || !tournamentId || !matchId) return;
+
+        const winnerId = winner === 'left' ? 1 : 2; // This would need to be mapped to actual player IDs
+        const leftScore = this.gameState.leftScore;
+        const rightScore = this.gameState.rightScore;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center;
+            z-index: 1000; color: white; text-align: center; font-family: Arial, sans-serif;
+        `;
+        
+        const winnerText = winner === 'left' ? 'Player 1 (Left)' : 'Player 2 (Right)';
+        
+        overlay.innerHTML = `
+            <div style="background: #333; padding: 40px; border-radius: 10px; max-width: 500px;">
+                <h2 style="color: #ffd700; margin-bottom: 20px;">🏆 Match Complete!</h2>
+                <h3 style="color: #28a745; margin-bottom: 30px;">Winner: ${winnerText}</h3>
+                <div style="font-size: 2em; margin: 20px 0; color: #ffd700;">
+                    ${leftScore} - ${rightScore}
+                </div>
+                <div style="margin: 30px 0;">
+                    <button id="save-result" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; margin-right: 10px;">
+                        Save Result & Continue Tournament
+                    </button>
+                    <button id="back-to-tournament" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                        Back to Tournament
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const saveButton = overlay.querySelector('#save-result') as HTMLButtonElement;
+        const backButton = overlay.querySelector('#back-to-tournament') as HTMLButtonElement;
+
+        saveButton.addEventListener('click', async () => {
+            try {
+                // This would need to be implemented with proper player ID mapping
+                // For now, just navigate back
+                window.location.href = '/local-tournament';
+            } catch (error) {
+                console.error('Failed to save result:', error);
+                alert('Failed to save match result');
+            }
+        });
+
+        backButton.addEventListener('click', () => {
+            window.location.href = '/local-tournament';
+        });
+
+        document.body.appendChild(overlay);
     }
 
     private connectWebSocket(token: string) {
@@ -296,7 +546,7 @@ export class Game {
     private keydownHandler = (e: KeyboardEvent) => {
             let changed = false;
             
-            if (this.gameMode === 'local') {
+            if (this.gameMode === 'local' || this.gameMode === 'local-tournament') {
                 switch(e.key.toLowerCase()) {
                     case 'w':
                         if (!this.localInputLeft.up) {
@@ -324,7 +574,7 @@ export class Game {
                         break;
                 }
                 
-                if (changed) {
+                if (changed && this.gameMode === 'local') {
                     this.sendMessage('update_local_input', { 
                         leftInput: this.localInputLeft, 
                         rightInput: this.localInputRight 
@@ -357,7 +607,7 @@ export class Game {
     private keyupHandler = (e: KeyboardEvent) => {
             let changed = false;
             
-            if (this.gameMode === 'local') {
+            if (this.gameMode === 'local' || this.gameMode === 'local-tournament') {
                 // Local mode: handle keyup for both players, send to backend
                 switch(e.key.toLowerCase()) {
                     case 'w':
@@ -386,7 +636,7 @@ export class Game {
                         break;
                 }
                 
-                if (changed) {
+                if (changed && this.gameMode === 'local') {
                     this.sendMessage('update_local_input', { 
                         leftInput: this.localInputLeft, 
                         rightInput: this.localInputRight 
