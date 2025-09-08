@@ -14,6 +14,7 @@ export class TournamentPage {
     this.tournamentService = TournamentService.getInstance();
     this.element = this.createElement();
     this.loadTournaments();
+    // Note: Le WebSocket est maintenant géré par le service global d'invitations de tournoi
   }
 
   private createElement(): HTMLElement {
@@ -50,9 +51,14 @@ export class TournamentPage {
             <div class="mb-6">
               <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold">Tournaments</h2>
-                <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors">
-                  Create Tournament
-                </button>
+                <div class="flex gap-3">
+                  <button id="local-tournament-btn" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                    🏠 Local Tournament
+                  </button>
+                  <button id="create-tournament-btn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                    Create Tournament
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -371,6 +377,14 @@ export class TournamentPage {
   }
 
   private setupTournamentEventListeners(): void {
+    // Event listener pour le tournoi local
+    const localTournamentBtn = this.element.querySelector('#local-tournament-btn');
+    if (localTournamentBtn) {
+      localTournamentBtn.addEventListener('click', () => {
+        router.navigate('/local-tournament');
+      });
+    }
+
     // Event listener pour créer un tournoi
     const createBtn = this.element.querySelector('#create-tournament-btn');
     if (createBtn) {
@@ -1197,11 +1211,11 @@ export class TournamentPage {
       // Optionnel: Marquer le match comme "en cours" via API
       // await this.updateMatchStatus(matchId, 'in_progress');
       
-      this.showSuccessMessage('Lancement du match...');
+      // Note: Avec le nouveau système d'invitations automatiques, les joueurs reçoivent
+      // automatiquement des invitations quand c'est leur tour de jouer.
+      // Cette méthode pourrait ne plus être nécessaire à l'avenir.
       
-      // Naviguer vers le jeu avec l'ID de l'adversaire
-      // Le routeur va créer : new Game(container, opponentId, 'online')
-      router.navigate(`/game/${opponentId}`);
+      this.showSuccessMessage('Les invitations sont maintenant automatiques ! Attendez votre invitation de match.');
       
     } catch (error) {
       console.error('Erreur lors du lancement du match:', error);
@@ -1218,4 +1232,7 @@ export class TournamentPage {
       console.error('Erreur mise à jour statut match:', error);
     }
   }
+
+  // Note: La méthode initializeWebSocket a été supprimée car le WebSocket 
+  // est maintenant géré par le TournamentInviteService global
 }

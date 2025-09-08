@@ -10,6 +10,7 @@ import { friendRoutes } from './friends';
 import { avatarsRoutes } from './avatars';
 import { chatRoutes } from './chat';
 import gameInviteRoutes from './game-invites';
+import { localTournamentRoutes } from './local-tournament';
 
 export async function setupRoutes(server: FastifyInstance) {
   // Préfixe API
@@ -41,6 +42,9 @@ export async function setupRoutes(server: FastifyInstance) {
 
     // Routes game invites
     await server.register(gameInviteRoutes, { prefix: '/game-invites' });
+
+    // Routes local tournament
+    await server.register(localTournamentRoutes, { prefix: '/local-tournament' });
     
   }, { prefix: '/api' });
 }

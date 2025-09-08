@@ -14,6 +14,8 @@
     "db:seed": "ts-node src/scripts/seed.ts",
     "db:stats": "ts-node src/scripts/db-stats.ts",
     "db:clean-tournaments": "ts-node src/scripts/clean-tournaments.ts",
+    "test:tournament-flow": "ts-node src/scripts/test-tournament-flow.ts",
+    "test:tournament-invites": "ts-node src/scripts/test-tournament-invites.ts",
     "clean": "rm -rf dist/",
     "lint": "echo \"Linting à configurer\"",
     "type-check": "tsc --noEmit"

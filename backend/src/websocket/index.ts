@@ -11,6 +11,7 @@ import { Pong } from '../game/Pong';
 import { error } from 'console';
 import { simpleGameInvites } from './SimpleGameInvites';
 import { TournamentManager, TournamentEvent } from './TournamentManager';
+import { tournamentInvites } from './TournamentInvites';
 
 interface ConnectedUser {
   id: number;
@@ -76,6 +77,10 @@ export function setupWebSocket(server: FastifyInstance) {
   
   // 🔗 Connecter le système KISS au WebSocketManager principal
   simpleGameInvites.setWebSocketManager(wsManager);
+  
+  // 🏆 Connecter le système d'invitations de tournoi
+  const tournamentManager = TournamentManager.getInstance();
+  tournamentManager.initializeTournamentInvites(wsManager);
   
   // Démarrer la boucle de jeu du GameManager
   gameManager.registerLoop();
@@ -494,6 +499,87 @@ export function setupWebSocket(server: FastifyInstance) {
               }
               break;
 
+            case 'join_tournament_match':
+              // Rejoindre un match de tournoi spécifique
+              if (userId && typeof message.matchId === 'number') {
+                try {
+                  // Vérifier que l'utilisateur fait partie de ce match
+                  const db = DatabaseManager.getInstance();
+                  const match = await db.queryOne(`
+                    SELECT m.*, t.id as tournament_id, t.name as tournament_name
+                    FROM matches m 
+                    JOIN tournaments t ON t.id = m.tournament_id
+                    WHERE m.id = ? AND (m.player1_id = ? OR m.player2_id = ?)
+                  `, [message.matchId, userId, userId]);
+
+                  if (!match) {
+                    connection.socket.send(JSON.stringify({
+                      type: 'tournament_error',
+                      error: 'Vous ne faites pas partie de ce match'
+                    }));
+                    break;
+                  }
+
+                  if (match.status !== 'scheduled') {
+                    connection.socket.send(JSON.stringify({
+                      type: 'tournament_error', 
+                      error: 'Ce match n\'est plus disponible'
+                    }));
+                    break;
+                  }
+
+                  // Pour les matches de tournoi, on ne vérifie PAS GameManager
+                  // car les tournois ont leur propre logique de gestion des matches
+                  
+                  // Récupérer l'adversaire
+                  const opponentId = match.player1_id === userId ? match.player2_id : match.player1_id;
+                  const opponent = wsManager.getUser(opponentId);
+                  
+                  if (!opponent) {
+                    connection.socket.send(JSON.stringify({
+                      type: 'tournament_error',
+                      error: 'Votre adversaire n\'est pas en ligne'
+                    }));
+                    break;
+                  }
+
+                  // Démarrer le match de tournoi
+                  const gameId = gameManager.startGame(userId, opponentId, connection.socket, opponent.socket);
+                  
+                  // Marquer le match comme en cours
+                  await db.execute(`
+                    UPDATE matches SET status = 'in_progress', started_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?
+                  `, [message.matchId]);
+
+                  // Notifier les deux joueurs
+                  const gameData = {
+                    gameId,
+                    matchId: message.matchId,
+                    tournamentId: match.tournament_id,
+                    tournamentName: match.tournament_name,
+                    isPlayer1: match.player1_id === userId
+                  };
+
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_match_started',
+                    data: gameData
+                  }));
+
+                  opponent.socket.socket.send(JSON.stringify({
+                    type: 'tournament_match_started',
+                    data: { ...gameData, isPlayer1: match.player1_id === opponentId }
+                  }));
+
+                } catch (error: any) {
+                  connection.socket.send(JSON.stringify({
+                    type: 'tournament_error',
+                    error: error.message
+                  }));
+                }
+              }
+              break;
+
             case 'tournament_match_result':
               // Mettre à jour le résultat d'un match de tournoi
               if (userId && typeof message.matchId === 'number' && 
@@ -531,6 +617,12 @@ export function setupWebSocket(server: FastifyInstance) {
               // Essayer de traiter avec le système KISS d'invitations
               if (userId && simpleGameInvites.handleMessage(userId, message)) {
                 // Message traité par le système KISS
+                break;
+              }
+              
+              // 🏆 Essayer de traiter avec le système d'invitations de tournoi
+              if (userId && tournamentInvites.handleMessage(userId, message)) {
+                // Message traité par le système d'invitations de tournoi
                 break;
               }
               
