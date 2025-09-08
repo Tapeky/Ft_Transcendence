@@ -2,8 +2,7 @@
 import { FastifyInstance } from 'fastify';
 import { authRoutes } from './auth';
 import { userRoutes } from './users';
-import { tournamentRoutes } from './tournaments';
-import { extendedTournamentRoutes } from './tournaments-new-endpoints';
+// Online tournament routes removed for local tournament system
 import { matchRoutes } from './matches';
 import { profileRoutes } from './profile';
 import { friendRoutes } from './friends';
@@ -21,9 +20,7 @@ export async function setupRoutes(server: FastifyInstance) {
     // Routes utilisateurs
     await server.register(userRoutes, { prefix: '/users' });
     
-    // Routes tournois
-    await server.register(tournamentRoutes, { prefix: '/tournaments' });
-    await server.register(extendedTournamentRoutes, { prefix: '/tournaments' });
+    // Online tournament routes removed - using local tournaments only
     
     // Routes matches
     await server.register(matchRoutes, { prefix: '/matches' });

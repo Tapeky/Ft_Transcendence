@@ -10,8 +10,7 @@ import { DirectMessageData } from '../types/chat';
 import { Pong } from '../game/Pong';
 import { error } from 'console';
 import { simpleGameInvites } from './SimpleGameInvites';
-import { TournamentManager, TournamentEvent } from './TournamentManager';
-import { tournamentInvites } from './TournamentInvites';
+// Tournament management removed for local tournament refactor
 
 interface ConnectedUser {
   id: number;
@@ -78,9 +77,7 @@ export function setupWebSocket(server: FastifyInstance) {
   // 🔗 Connecter le système KISS au WebSocketManager principal
   simpleGameInvites.setWebSocketManager(wsManager);
   
-  // 🏆 Connecter le système d'invitations de tournoi
-  const tournamentManager = TournamentManager.getInstance();
-  tournamentManager.initializeTournamentInvites(wsManager);
+  // 🏆 Tournament system removed - using local tournaments only
   
   // Démarrer la boucle de jeu du GameManager
   gameManager.registerLoop();
@@ -429,189 +426,7 @@ export function setupWebSocket(server: FastifyInstance) {
               break;
 
             // NOUVELLES COMMANDES TOURNOIS - Respect des exigences du sujet
-            case 'tournament_subscribe':
-              // S'abonner aux événements d'un tournoi
-              if (userId && typeof message.tournamentId === 'number') {
-                const tournamentManager = TournamentManager.getInstance();
-                
-                tournamentManager.subscribeTournamentEvents(message.tournamentId, (event: TournamentEvent) => {
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_event',
-                    data: event
-                  }));
-                });
-
-                connection.socket.send(JSON.stringify({
-                  type: 'tournament_subscribed',
-                  tournamentId: message.tournamentId,
-                  message: 'Abonné aux événements du tournoi'
-                }));
-              }
-              break;
-
-            case 'tournament_start':
-              // Démarrer un tournoi (créateur uniquement)
-              if (userId && typeof message.tournamentId === 'number') {
-                try {
-                  const tournamentManager = TournamentManager.getInstance();
-                  const bracket = await tournamentManager.startTournament(message.tournamentId, userId);
-                  
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_started',
-                    data: {
-                      tournamentId: message.tournamentId,
-                      bracket,
-                      nextMatch: bracket.nextMatch
-                    }
-                  }));
-                } catch (error: any) {
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_error',
-                    error: error.message
-                  }));
-                }
-              }
-              break;
-
-            case 'tournament_get_next_match':
-              // Demander le prochain match (exigence sujet: "announce the next match")
-              if (userId && typeof message.tournamentId === 'number') {
-                try {
-                  const tournamentManager = TournamentManager.getInstance();
-                  const nextMatch = await tournamentManager.announceNextMatch(message.tournamentId);
-                  
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_next_match',
-                    data: {
-                      tournamentId: message.tournamentId,
-                      nextMatch,
-                      announcement: nextMatch 
-                        ? `🎮 Prochain match: ${nextMatch.player1?.alias} vs ${nextMatch.player2?.alias || 'BYE'}`
-                        : 'Aucun match suivant'
-                    }
-                  }));
-                } catch (error: any) {
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_error',
-                    error: error.message
-                  }));
-                }
-              }
-              break;
-
-            case 'join_tournament_match':
-              // Rejoindre un match de tournoi spécifique
-              if (userId && typeof message.matchId === 'number') {
-                try {
-                  // Vérifier que l'utilisateur fait partie de ce match
-                  const db = DatabaseManager.getInstance();
-                  const match = await db.queryOne(`
-                    SELECT m.*, t.id as tournament_id, t.name as tournament_name
-                    FROM matches m 
-                    JOIN tournaments t ON t.id = m.tournament_id
-                    WHERE m.id = ? AND (m.player1_id = ? OR m.player2_id = ?)
-                  `, [message.matchId, userId, userId]);
-
-                  if (!match) {
-                    connection.socket.send(JSON.stringify({
-                      type: 'tournament_error',
-                      error: 'Vous ne faites pas partie de ce match'
-                    }));
-                    break;
-                  }
-
-                  if (match.status !== 'scheduled') {
-                    connection.socket.send(JSON.stringify({
-                      type: 'tournament_error', 
-                      error: 'Ce match n\'est plus disponible'
-                    }));
-                    break;
-                  }
-
-                  // Pour les matches de tournoi, on ne vérifie PAS GameManager
-                  // car les tournois ont leur propre logique de gestion des matches
-                  
-                  // Récupérer l'adversaire
-                  const opponentId = match.player1_id === userId ? match.player2_id : match.player1_id;
-                  const opponent = wsManager.getUser(opponentId);
-                  
-                  if (!opponent) {
-                    connection.socket.send(JSON.stringify({
-                      type: 'tournament_error',
-                      error: 'Votre adversaire n\'est pas en ligne'
-                    }));
-                    break;
-                  }
-
-                  // Démarrer le match de tournoi
-                  const gameId = gameManager.startGame(userId, opponentId, connection.socket, opponent.socket);
-                  
-                  // Marquer le match comme en cours
-                  await db.execute(`
-                    UPDATE matches SET status = 'in_progress', started_at = CURRENT_TIMESTAMP 
-                    WHERE id = ?
-                  `, [message.matchId]);
-
-                  // Notifier les deux joueurs
-                  const gameData = {
-                    gameId,
-                    matchId: message.matchId,
-                    tournamentId: match.tournament_id,
-                    tournamentName: match.tournament_name,
-                    isPlayer1: match.player1_id === userId
-                  };
-
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_match_started',
-                    data: gameData
-                  }));
-
-                  opponent.socket.socket.send(JSON.stringify({
-                    type: 'tournament_match_started',
-                    data: { ...gameData, isPlayer1: match.player1_id === opponentId }
-                  }));
-
-                } catch (error: any) {
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_error',
-                    error: error.message
-                  }));
-                }
-              }
-              break;
-
-            case 'tournament_match_result':
-              // Mettre à jour le résultat d'un match de tournoi
-              if (userId && typeof message.matchId === 'number' && 
-                  typeof message.winnerId === 'number' &&
-                  typeof message.player1Score === 'number' &&
-                  typeof message.player2Score === 'number') {
-                
-                try {
-                  const tournamentManager = TournamentManager.getInstance();
-                  await tournamentManager.updateMatchResult(
-                    message.matchId,
-                    message.winnerId,
-                    message.player1Score,
-                    message.player2Score
-                  );
-                  
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_match_updated',
-                    data: {
-                      matchId: message.matchId,
-                      winnerId: message.winnerId,
-                      message: 'Résultat mis à jour, progression automatique effectuée'
-                    }
-                  }));
-                } catch (error: any) {
-                  connection.socket.send(JSON.stringify({
-                    type: 'tournament_error',
-                    error: error.message
-                  }));
-                }
-              }
-              break;
+            // Online tournament cases removed - using local tournaments only
 
             default:
               // Essayer de traiter avec le système KISS d'invitations
@@ -620,11 +435,7 @@ export function setupWebSocket(server: FastifyInstance) {
                 break;
               }
               
-              // 🏆 Essayer de traiter avec le système d'invitations de tournoi
-              if (userId && tournamentInvites.handleMessage(userId, message)) {
-                // Message traité par le système d'invitations de tournoi
-                break;
-              }
+              // Tournament invites system removed for local tournaments
               
               connection.socket.send(JSON.stringify({
                 type: 'error',
