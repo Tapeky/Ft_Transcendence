@@ -48,15 +48,6 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       return new FriendsPage().getElement();
     });
     
-    this.routes.set('/tournament', async () => {
-      const { TournamentPage } = await import('../../features/tournament/pages/Tournament');
-      return new TournamentPage().getElement();
-    });
-    
-    this.routes.set('/local-tournament', async () => {
-      const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
-      return new LocalTournament().getElement();
-    });
     
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
@@ -82,10 +73,15 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get('mode');
       
-      if (mode === 'local-tournament') {
-        const { Game } = await import('../../features/game/pages/Game');
-        return this.createComponentContainer(Game, undefined, 'local-tournament');
-      }
+      console.log('🔍 Router /game debug:', { 
+        currentPath, 
+        pathSegments, 
+        gameMode, 
+        search: window.location.search, 
+        mode,
+        href: window.location.href 
+      });
+      
       
       if (!gameMode) {
         const { PongModeSelector } = await import('../../features/game/pages/PongModeSelector');
@@ -151,9 +147,11 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
         return;
     
     try {
-      await this.renderPath(path);
-      if (window.location.pathname !== path)
+      // Update URL first so renderPath can access correct window.location
+      if (window.location.pathname + window.location.search !== path)
         window.history.pushState(null, '', path);
+      
+      await this.renderPath(path);
     } catch (error) {
       this.renderError(`Erreur de navigation: ${error}`);
     }

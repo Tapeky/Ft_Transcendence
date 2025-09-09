@@ -13,6 +13,19 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     historyApiFallback: true, // SPA routing: redirect unknown routes to index.html
+    // API proxy configuration - forward API requests to backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
+        changeOrigin: true,
+      }
+    },
     // HTTPS configuration (conditional)
     ...(process.env.ENABLE_HTTPS === 'true' && {
       https: {
