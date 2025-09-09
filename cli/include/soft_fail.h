@@ -5,13 +5,21 @@
 // as well as allocation functions that clean and exit on fail
 
 # include "cJSON.h"
-# include "ws.h"
-# include "api.h"
+# include "ctx.h"
+# include "term.h"
+# include <stdlib.h>
+
+extern ctx g_ctx;
+
+# define DO_CLEANUP(error_message_expr) \
+	do { \
+		cdeinit(); \
+		error_message_expr; \
+		ctx_deinit(&g_ctx); \
+		exit(EXIT_FAILURE); \
+	} while (0)
 
 __attribute__((noreturn)) void clean_and_fail(const char *fmt, ...);
-
-void assert_api_request_success(api_request_result res, cJSON **store);
-void assert_ws_xfer_success(ws_xfer_result res, int is_recv, cJSON **store);
 
 void *xmalloc(size_t n);
 char *xstrdup(const char *str);
