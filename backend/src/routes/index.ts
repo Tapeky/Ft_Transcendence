@@ -2,14 +2,13 @@
 import { FastifyInstance } from 'fastify';
 import { authRoutes } from './auth';
 import { userRoutes } from './users';
-// Online tournament routes removed for local tournament system
+// Core application routes
 import { matchRoutes } from './matches';
 import { profileRoutes } from './profile';
 import { friendRoutes } from './friends';
 import { avatarsRoutes } from './avatars';
 import { chatRoutes } from './chat';
 import gameInviteRoutes from './game-invites';
-import { localTournamentRoutes } from './local-tournament';
 
 export async function setupRoutes(server: FastifyInstance) {
   // Préfixe API
@@ -20,7 +19,6 @@ export async function setupRoutes(server: FastifyInstance) {
     // Routes utilisateurs
     await server.register(userRoutes, { prefix: '/users' });
     
-    // Online tournament routes removed - using local tournaments only
     
     // Routes matches
     await server.register(matchRoutes, { prefix: '/matches' });
@@ -40,8 +38,6 @@ export async function setupRoutes(server: FastifyInstance) {
     // Routes game invites
     await server.register(gameInviteRoutes, { prefix: '/game-invites' });
 
-    // Routes local tournament
-    await server.register(localTournamentRoutes, { prefix: '/local-tournament' });
     
   }, { prefix: '/api' });
 }

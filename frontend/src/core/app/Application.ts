@@ -2,7 +2,6 @@ import { appState } from '../state/AppState';
 import { router } from './Router';
 import { AuthManager } from '../../core/auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
-import { tournamentInviteService } from '../../features/invitations/services/TournamentInviteService';
 
 export class Application {
   private static instance: Application;
@@ -31,7 +30,6 @@ export class Application {
       this.setupCoreDependencies();
       this.initializeRouteProtection();
       this.setupErrorHandling();
-      this.initializeTournamentInvites();
       this.isInitialized = true;
     } catch (error) {
       throw error;
@@ -47,31 +45,6 @@ export class Application {
     this.routeGuard.initialize();
   }
 
-  private initializeTournamentInvites(): void {
-    // Suivre les changements d'authentification
-    let isCurrentlyAuthenticated = appState.getState().isAuthenticated;
-    
-    appState.subscribe((state) => {
-      // Détecter les changements d'authentification
-      if (state.isAuthenticated !== isCurrentlyAuthenticated) {
-        isCurrentlyAuthenticated = state.isAuthenticated;
-        
-        if (state.isAuthenticated) {
-          console.log('🏆 User authenticated - initializing tournament invite service...');
-          tournamentInviteService.initializeWebSocket();
-        } else {
-          console.log('🏆 User logged out - destroying tournament invite service...');
-          tournamentInviteService.destroy();
-        }
-      }
-    });
-
-    // Si déjà authentifié, initialiser immédiatement
-    if (isCurrentlyAuthenticated) {
-      console.log('🏆 User already authenticated - initializing tournament invite service...');
-      tournamentInviteService.initializeWebSocket();
-    }
-  }
 
   private setupErrorHandling(): void {
     window.addEventListener('error', (event) => {

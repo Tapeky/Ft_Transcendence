@@ -17,7 +17,7 @@ export class Game {
     private localInputRight = { up: false, down: false };
     private animationId: number | null = null;
     private container: HTMLElement;
-    private gameMode: 'local' | 'online' | 'local-tournament';
+    private gameMode: 'local' | 'online';
     private opponentId?: number;
     private gameEndOverlay: HTMLElement | null = null;
     
@@ -26,192 +26,139 @@ export class Game {
     private isReady: boolean = false;
     private readyOverlay: HTMLElement | null = null;
     private gameEnded: boolean = false;
+    private lastFrameTime: number = 0;
+    private readonly TARGET_FPS = 60; // 60fps for faster gameplay
 
-    // Constants
-    private readonly ARENA_WIDTH = 500;
-    private readonly ARENA_HEIGHT = 200; 
-    private readonly PADDLE_WIDTH = 8;
+    // AI configuration for local games
+    private aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+
+    // Game constants
+    private readonly ARENA_WIDTH = 400;
+    private readonly ARENA_HEIGHT = 300;
+    private readonly PADDLE_WIDTH = 5;
     private readonly PADDLE_HEIGHT = 30;
     private readonly BALL_RADIUS = 5;
 
-    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' | 'local-tournament' = 'online') {
+    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' = 'online') {
+        console.log('🎮 Game constructor called with:', { container, opponentId, gameMode });
         this.container = container;
         this.gameMode = gameMode;
         this.opponentId = opponentId;
         
-        this.setupCanvas();
-        this.setupUI();
+        this.initCanvas();
         this.initializeGame();
-        this.registerWithInviteService();
     }
 
-    private setupCanvas() {
+    private initCanvas(): void {
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.ARENA_WIDTH;
         this.canvas.height = this.ARENA_HEIGHT;
-        this.canvas.style.border = '1px solid #fff';
+        this.canvas.style.border = '2px solid #fff';
         this.canvas.style.backgroundColor = '#000';
+        this.canvas.style.display = 'block';
+        this.canvas.style.margin = '0 auto';
         
-        this.ctx = this.canvas.getContext('2d')!;
-        this.ctx.fillStyle = '#fff';
-    }
-
-    private setupUI() {
-        this.container.innerHTML = '';
-        this.container.style.backgroundColor = '#222';
-        this.container.style.color = '#fff';
-        this.container.style.fontFamily = 'Arial, sans-serif';
-        this.container.style.display = 'flex';
-        this.container.style.flexDirection = 'column';
-        this.container.style.alignItems = 'center';
-        this.container.style.justifyContent = 'center';
-        this.container.style.minHeight = '100vh';
-        this.container.style.margin = '0';
-
-        const title = document.createElement('h1');
-        title.textContent = 'Pong Game';
-        title.style.marginBottom = '20px';
-
-        const instructions = document.createElement('div');
-        instructions.innerHTML = this.gameMode === 'local' 
-            ? `<p>Player 1: W/S | Player 2: ↑/↓</p><p>Mode: LOCAL (server-side)</p>`
-            : `<p>Use W/S or ↑/↓ keys to move</p><p>Mode: ONLINE</p>`;
-        instructions.style.textAlign = 'center';
-        instructions.style.marginBottom = '20px';
-
-        this.container.appendChild(title);
-        this.container.appendChild(instructions);
+        const ctx = this.canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
+        this.ctx = ctx;
+        
         this.container.appendChild(this.canvas);
+
+        // Add instructions
+        const instructions = document.createElement('div');
+        if (this.gameMode === 'local') {
+            instructions.innerHTML = `<p>Player 1: W/S | Player 2: ↑/↓</p><p>Mode: LOCAL</p>`;
+        } else {
+            instructions.innerHTML = `<p>Use W/S or ↑/↓ keys to move</p><p>Mode: ONLINE</p>`;
+        }
+        instructions.style.textAlign = 'center';
+        instructions.style.color = 'white';
+        instructions.style.marginTop = '10px';
+        this.container.appendChild(instructions);
     }
 
     private async initializeGame() {
-        // Handle local tournament mode differently
-        if (this.gameMode === 'local-tournament') {
-            this.setupLocalTournamentGame();
+        if (this.gameMode === 'local') {
+            this.setupLocalGame();
             return;
         }
 
-        const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-        
+        // Get user token for online game
+        const token = localStorage.getItem('token');
         if (!token) {
-            this.showError('No authentication token found');
+            this.showError('Authentication required for online games');
             return;
         }
 
         this.connectWebSocket(token);
     }
 
-    private setupLocalTournamentGame() {
-        // Get tournament info from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const tournamentId = urlParams.get('tournamentId');
-        const matchId = urlParams.get('matchId');
-        
-        if (!tournamentId || !matchId) {
-            this.showError('Missing tournament information');
-            return;
-        }
-
+    private setupLocalGame() {
         // Initialize local game state
         this.gameState = {
-            leftPaddle: { pos: { x: 20, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
-            rightPaddle: { pos: { x: this.ARENA_WIDTH - 20 - this.PADDLE_WIDTH, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
-            ball: { pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, direction: { x: 2, y: 1 } },
-            state: 1, // Game active
+            leftPaddle: { pos: { x: 10, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            rightPaddle: { pos: { x: this.ARENA_WIDTH - 15, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            ball: { 
+                pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, 
+                direction: { x: 3, y: 2 } 
+            },
+            state: 1,
             leftScore: 0,
             rightScore: 0
         };
 
         this.setupKeyboardListeners();
-        this.showLocalTournamentOverlay(tournamentId, matchId);
         this.startLocalGame();
     }
 
-    private showLocalTournamentOverlay(tournamentId: string, matchId: string) {
-        const overlay = document.createElement('div');
-        overlay.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center;
-            z-index: 1000; color: white; text-align: center; font-family: Arial, sans-serif;
-        `;
-        
-        overlay.innerHTML = `
-            <div style="background: #333; padding: 40px; border-radius: 10px; max-width: 500px;">
-                <h2 style="color: #ffd700; margin-bottom: 20px;">🏆 Tournament Match</h2>
-                <p style="margin-bottom: 30px;">Press SPACE when both players are ready to start the match!</p>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-                    <div style="flex: 1; padding: 0 20px;">
-                        <h3>Player 1 (Left)</h3>
-                        <p style="color: #ccc;">W/S Keys</p>
-                    </div>
-                    <div style="flex: 1; padding: 0 20px;">
-                        <h3>Player 2 (Right)</h3>
-                        <p style="color: #ccc;">↑/↓ Arrow Keys</p>
-                    </div>
-                </div>
-                <button id="start-tournament-match" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                    Start Match (SPACE)
-                </button>
-            </div>
-        `;
-        
-        const startButton = overlay.querySelector('#start-tournament-match') as HTMLButtonElement;
-        const startMatch = () => {
-            document.body.removeChild(overlay);
-            this.render();
-        };
-        
-        startButton.addEventListener('click', startMatch);
-        
-        // Also listen for spacebar
-        const spaceHandler = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                document.removeEventListener('keydown', spaceHandler);
-                startMatch();
-            }
-        };
-        
-        document.addEventListener('keydown', spaceHandler);
-        document.body.appendChild(overlay);
-    }
-
     private startLocalGame() {
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-        }
-        this.localTournamentLoop();
+        this.render();
+        
+        // Initialize frame timing
+        this.lastFrameTime = performance.now();
+        this.localGameLoop();
     }
 
-    private localTournamentLoop() {
+    private localGameLoop() {
         if (!this.gameState || this.gameEnded) return;
 
-        // Update paddle positions based on input
-        this.updateLocalPaddles();
-        
-        // Update ball position and handle collisions
-        this.updateLocalBall();
+        const currentTime = performance.now();
+        const deltaTime = currentTime - this.lastFrameTime;
 
-        // Check for win condition
-        if (this.gameState.leftScore >= 11 || this.gameState.rightScore >= 11) {
-            if (!this.gameEnded) {
-                this.gameEnded = true;
-                const winner = this.gameState.leftScore >= 11 ? 'left' : 'right';
-                this.showLocalTournamentEnd(winner);
-                return;
+        // Target 60 FPS (16.67ms per frame)
+        if (deltaTime >= (1000 / this.TARGET_FPS)) {
+            this.updateLocalGame();
+            this.render();
+            
+            // Check for game end (first to 11 points)
+            if (this.gameState.leftScore >= 11 || this.gameState.rightScore >= 11) {
+                if (!this.gameEnded) {
+                    this.gameEnded = true;
+                    const winner = this.gameState.leftScore >= 11 ? 'Player 1' : 'Player 2';
+                    this.showGameEnd(winner);
+                    return;
+                }
             }
+            
+            this.lastFrameTime = currentTime;
         }
+        
+        this.animationId = requestAnimationFrame(() => this.localGameLoop());
+    }
 
-        this.render();
-        this.animationId = requestAnimationFrame(() => this.localTournamentLoop());
+    private updateLocalGame() {
+        if (!this.gameState) return;
+
+        this.updateLocalPaddles();
+        this.updateBall();
     }
 
     private updateLocalPaddles() {
         if (!this.gameState) return;
 
-        const speed = 3;
+        const speed = 5;
 
-        // Left paddle
+        // Left paddle (Player 1 - W/S keys)
         if (this.localInputLeft.up && this.gameState.leftPaddle.pos.y > 0) {
             this.gameState.leftPaddle.pos.y -= speed;
         }
@@ -219,7 +166,7 @@ export class Game {
             this.gameState.leftPaddle.pos.y += speed;
         }
 
-        // Right paddle
+        // Right paddle (Player 2 - Arrow keys or AI)
         if (this.localInputRight.up && this.gameState.rightPaddle.pos.y > 0) {
             this.gameState.rightPaddle.pos.y -= speed;
         }
@@ -228,7 +175,7 @@ export class Game {
         }
     }
 
-    private updateLocalBall() {
+    private updateBall() {
         if (!this.gameState) return;
 
         const ball = this.gameState.ball;
@@ -237,35 +184,32 @@ export class Game {
         ball.pos.x += ball.direction.x;
         ball.pos.y += ball.direction.y;
 
-        // Top/bottom bounce
+        // Ball collision with top/bottom walls
         if (ball.pos.y <= this.BALL_RADIUS || ball.pos.y >= this.ARENA_HEIGHT - this.BALL_RADIUS) {
             ball.direction.y = -ball.direction.y;
         }
 
-        // Left paddle collision
-        if (ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH + this.BALL_RADIUS &&
+        // Ball collision with left paddle
+        if (ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH &&
             ball.pos.y >= this.gameState.leftPaddle.pos.y &&
-            ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT &&
-            ball.direction.x < 0) {
+            ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT) {
             ball.direction.x = Math.abs(ball.direction.x);
+            this.gameState.leftPaddle.hitCount++;
         }
 
-        // Right paddle collision
+        // Ball collision with right paddle
         if (ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
             ball.pos.y >= this.gameState.rightPaddle.pos.y &&
-            ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT &&
-            ball.direction.x > 0) {
+            ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT) {
             ball.direction.x = -Math.abs(ball.direction.x);
+            this.gameState.rightPaddle.hitCount++;
         }
 
-        // Score left
-        if (ball.pos.x <= 0) {
+        // Ball out of bounds - scoring
+        if (ball.pos.x < 0) {
             this.gameState.rightScore++;
             this.resetBall();
-        }
-
-        // Score right
-        if (ball.pos.x >= this.ARENA_WIDTH) {
+        } else if (ball.pos.x > this.ARENA_WIDTH) {
             this.gameState.leftScore++;
             this.resetBall();
         }
@@ -278,25 +222,179 @@ export class Game {
         this.gameState.ball.pos.y = this.ARENA_HEIGHT / 2;
         
         // Random direction
-        this.gameState.ball.direction.x = Math.random() > 0.5 ? 2 : -2;
-        this.gameState.ball.direction.y = (Math.random() - 0.5) * 2;
+        this.gameState.ball.direction.x = Math.random() > 0.5 ? 3 : -3;
+        this.gameState.ball.direction.y = (Math.random() - 0.5) * 4;
     }
 
-    private async showLocalTournamentEnd(winner: 'left' | 'right') {
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
+    private setupKeyboardListeners(): void {
+        document.addEventListener('keydown', this.keydownHandler);
+        document.addEventListener('keyup', this.keyupHandler);
+    }
+
+    private keydownHandler = (e: KeyboardEvent) => {
+        if (this.gameMode === 'local') {
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    this.localInputLeft.up = true;
+                    break;
+                case 's':
+                    this.localInputLeft.down = true;
+                    break;
+                case 'arrowup':
+                    this.localInputRight.up = true;
+                    break;
+                case 'arrowdown':
+                    this.localInputRight.down = true;
+                    break;
+            }
+        } else {
+            // Online game controls
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    if (!this.input.up) {
+                        this.input.up = true;
+                        this.sendInput();
+                    }
+                    break;
+                case 's':
+                case 'arrowdown':
+                    if (!this.input.down) {
+                        this.input.down = true;
+                        this.sendInput();
+                    }
+                    break;
+            }
         }
+    }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const tournamentId = urlParams.get('tournamentId');
-        const matchId = urlParams.get('matchId');
+    private keyupHandler = (e: KeyboardEvent) => {
+        if (this.gameMode === 'local') {
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    this.localInputLeft.up = false;
+                    break;
+                case 's':
+                    this.localInputLeft.down = false;
+                    break;
+                case 'arrowup':
+                    this.localInputRight.up = false;
+                    break;
+                case 'arrowdown':
+                    this.localInputRight.down = false;
+                    break;
+            }
+        } else {
+            // Online game controls
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    if (this.input.up) {
+                        this.input.up = false;
+                        this.sendInput();
+                    }
+                    break;
+                case 's':
+                case 'arrowdown':
+                    if (this.input.down) {
+                        this.input.down = false;
+                        this.sendInput();
+                    }
+                    break;
+            }
+        }
+    }
 
-        if (!this.gameState || !tournamentId || !matchId) return;
+    private connectWebSocket(token: string): void {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/game?token=${token}`;
+        
+        if (this.opponentId) {
+            // Add opponent ID for direct invites
+        }
+        
+        this.ws = new WebSocket(wsUrl);
+        
+        this.ws.onopen = () => {
+            console.log('✅ WebSocket connected');
+            this.showReadyOverlay();
+        };
+        
+        this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleWebSocketMessage(data);
+        };
+        
+        this.ws.onclose = (event) => {
+            console.log('❌ WebSocket closed:', event.code, event.reason);
+            this.handleWebSocketClose();
+        };
+        
+        this.ws.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+            this.showError('Connection error. Please try again.');
+        };
+    }
 
-        const winnerId = winner === 'left' ? 1 : 2; // This would need to be mapped to actual player IDs
-        const leftScore = this.gameState.leftScore;
-        const rightScore = this.gameState.rightScore;
+    private handleWebSocketMessage(data: any): void {
+        switch (data.type) {
+            case 'gameState':
+                this.gameState = data.state;
+                this.render();
+                break;
+                
+            case 'gameStart':
+                console.log('🎮 Game started!');
+                if (this.readyOverlay && document.body.contains(this.readyOverlay)) {
+                    document.body.removeChild(this.readyOverlay);
+                    this.readyOverlay = null;
+                }
+                break;
+                
+            case 'gameEnd':
+                console.log('🏁 Game ended:', data);
+                this.showGameEnd(data.winner || 'Unknown');
+                break;
+                
+            case 'waiting':
+                console.log('⏳ Waiting for opponent...');
+                break;
+                
+            case 'error':
+                console.error('❌ Game error:', data.message);
+                this.showError(data.message);
+                break;
+                
+            default:
+                console.log('📦 Unknown message type:', data.type);
+        }
+    }
 
+    private handleWebSocketClose(): void {
+        if (this.gameState && !this.gameEnded) {
+            this.showError('Connection lost. Game ended.');
+        }
+    }
+
+    private sendInput(): void {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'input',
+                input: this.input
+            }));
+        }
+    }
+
+    private sendReady(): void {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'ready'
+            }));
+            this.isReady = true;
+        }
+    }
+
+    private showReadyOverlay(): void {
         const overlay = document.createElement('div');
         overlay.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -304,482 +402,52 @@ export class Game {
             z-index: 1000; color: white; text-align: center; font-family: Arial, sans-serif;
         `;
         
-        const winnerText = winner === 'left' ? 'Player 1 (Left)' : 'Player 2 (Right)';
-        
         overlay.innerHTML = `
-            <div style="background: #333; padding: 40px; border-radius: 10px; max-width: 500px;">
-                <h2 style="color: #ffd700; margin-bottom: 20px;">🏆 Match Complete!</h2>
-                <h3 style="color: #28a745; margin-bottom: 30px;">Winner: ${winnerText}</h3>
-                <div style="font-size: 2em; margin: 20px 0; color: #ffd700;">
-                    ${leftScore} - ${rightScore}
-                </div>
-                <div style="margin: 30px 0;">
-                    <button id="save-result" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; margin-right: 10px;">
-                        Save Result & Continue Tournament
-                    </button>
-                    <button id="back-to-tournament" style="background: #6c757d; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                        Back to Tournament
-                    </button>
-                </div>
+            <div style="background: #333; padding: 40px; border-radius: 10px;">
+                <h2 style="margin-bottom: 20px;">Ready to Play?</h2>
+                <p style="margin-bottom: 30px;">Press SPACE when you're ready!</p>
+                <button id="ready-btn" style="background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    Ready (SPACE)
+                </button>
             </div>
         `;
-
-        const saveButton = overlay.querySelector('#save-result') as HTMLButtonElement;
-        const backButton = overlay.querySelector('#back-to-tournament') as HTMLButtonElement;
-
-        saveButton.addEventListener('click', async () => {
-            try {
-                // This would need to be implemented with proper player ID mapping
-                // For now, just navigate back
-                window.location.href = '/local-tournament';
-            } catch (error) {
-                console.error('Failed to save result:', error);
-                alert('Failed to save match result');
+        
+        const readyBtn = overlay.querySelector('#ready-btn') as HTMLButtonElement;
+        const markReady = () => {
+            this.sendReady();
+            readyBtn.textContent = 'Waiting for opponent...';
+            readyBtn.disabled = true;
+            readyBtn.style.backgroundColor = '#6c757d';
+        };
+        
+        readyBtn.addEventListener('click', markReady);
+        
+        const spaceHandler = (e: KeyboardEvent) => {
+            if (e.code === 'Space' && !this.isReady) {
+                e.preventDefault();
+                markReady();
             }
-        });
-
-        backButton.addEventListener('click', () => {
-            window.location.href = '/local-tournament';
-        });
-
+        };
+        
+        document.addEventListener('keydown', spaceHandler);
+        
+        // Cleanup function
+        const cleanup = () => {
+            document.removeEventListener('keydown', spaceHandler);
+            if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+            }
+        };
+        
+        // Store cleanup reference
+        (overlay as any).cleanup = cleanup;
+        
         document.body.appendChild(overlay);
+        this.readyOverlay = overlay;
     }
 
-    private connectWebSocket(token: string) {
-        this.ws = new WebSocket('wss://localhost:8000/ws');
-        
-        this.setupWebSocketListeners(token);
-        this.setupKeyboardListeners();
-    }
-
-    private setupWebSocketListeners(token: string) {
-        if (!this.ws) {
-            return;
-        }
-
-        this.ws.onopen = () => {
-            this.sendMessage('auth', { token });
-        };
-
-        this.ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                
-                switch(message.type) {
-                    case 'auth_success':
-                        // 🎯 KISS: Check if coming from accepted invitation
-                        const existingGameId = localStorage.getItem('kiss_game_id');
-                        const existingOpponentId = localStorage.getItem('kiss_opponent_id');
-                        
-                        if (existingGameId && existingOpponentId) {
-                            this.sendMessage('join_existing_game', { 
-                                gameId: parseInt(existingGameId),
-                                opponentId: parseInt(existingOpponentId)
-                            });
-                            localStorage.removeItem('kiss_game_id');
-                            localStorage.removeItem('kiss_opponent_id');
-                        } else if (this.gameMode === 'local') {
-                            this.sendMessage('start_local_game', {});
-                        } else {
-                            this.sendMessage('start_game', { opponentId: this.opponentId });
-                        }
-                        break;
-
-                    case 'auth_error':
-                        console.error('❌ Authentication failed:', message.message);
-                        this.showError('Authentication failed: ' + message.message);
-                        break;
-
-                    case 'connected':
-                        break;
-
-                    case 'success':
-                        this.gameId = message.data.gameId;
-                        
-                        if (this.gameMode === 'online') {
-                            this.showReadyScreen();
-                        } else {
-                            this.startGameLoop();
-                        }
-                        break;
-
-                    case 'ready_status':
-                        this.updateReadyStatus(message.data);
-                        break;
-
-                    case 'countdown':
-                        this.showCountdown(message.data.count);
-                        break;
-
-                    case 'game_start':
-                        this.hideReadyScreen();
-                        this.startGameLoop();
-                        break;
-
-                    case 'game_state':
-                        this.gameState = message.data;
-                        
-                        // Defensive: Check for game end conditions in case backend doesn't send game_end
-                        if (this.gameState && (this.gameState.leftScore >= 5 || this.gameState.rightScore >= 5) && !this.gameEnded) {
-                            setTimeout(() => {
-                                if (this.animationId && !this.gameEnded) {
-                                    this.gameEnded = true;
-                                    this.stopGameLoop();
-                                    const winner = this.gameState!.leftScore >= 5 ? 'Left Player' : 'Right Player';
-                                    this.showGameEnd(winner);
-                                }
-                            }, 100);
-                        }
-                        break;
-
-                    case 'game_end':
-                        this.gameEnded = true;
-                        this.stopGameLoop();
-                        this.showGameEnd(message.data.winner);
-                        break;
-
-                    case 'game_left':
-                        break;
-
-                    case 'game_invite_received':
-                        this.forwardToKissService(message);
-                        break;
-
-                    case 'invite_sent':
-                    case 'invite_declined':
-                    case 'invite_error':
-                    case 'invite_expired':
-                        this.forwardToKissService(message);
-                        break;
-
-                    case 'err_self':
-                    case 'err_game_started':
-                    case 'err_unknown_id':
-                    case 'err_user_offline':
-                    case 'err_not_in_game':
-                        // Handle "not in game" error - could mean game ended
-                        if (message.type === 'err_not_in_game') {
-                            if (this.gameEnded) {
-                                console.log('🎮 Game already ended, ignoring "not in game" error');
-                                break;
-                            } else {
-                                // Mark game as ended if we get this error during active play
-                                this.gameEnded = true;
-                                this.stopGameLoop();
-                                console.log('🎮 Received "not in game" error - marking game as ended');
-                                break;
-                            }
-                        }
-                        console.error('❌ Game error:', message.message);
-                        this.showError(message.message);
-                        break;
-
-                    case 'error':
-                        console.error('❌ Server error:', message.message);
-                        this.showError(message.message);
-                        break;
-
-                    default:
-                        if (process.env.NODE_ENV === 'development') {
-                        }
-                }
-            } catch (error) {
-                console.error('❌ Failed to parse WebSocket message:', error);
-            }
-        };
-
-        this.ws.onclose = (event) => {
-            if (process.env.NODE_ENV === 'development') {
-            }
-            this.stopGameLoop();
-        };
-
-        this.ws.onerror = (error) => {
-            console.error('❌ WebSocket error:', error);
-            this.showError('Connection error');
-        };
-
-    }
-
-    private async forwardToKissService(message: any) {
-        try {
-            const { gameInviteService } = await import('../../invitations');
-            
-            if (!gameInviteService || !message?.type) {
-                return;
-            }
-            
-            (gameInviteService as any).handleMessage(message);
-            
-        } catch (error) {
-            console.error('🎮 KISS: Error forwarding message to GameInviteService:', error);
-        }
-    }
-
-    private async registerWithInviteService() {
-        try {
-            const { gameInviteService } = await import('../../invitations');
-            if (gameInviteService) {
-                // S'enregistrer comme handler externe pour les invitations
-                gameInviteService.setExternalWebSocketHandler((message: any) => {
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify(message));
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('🎮 Error registering with invite service:', error);
-        }
-    }
-
-    private async ensureKissReconnection() {
-        try {
-            const { gameInviteService } = await import('../../invitations');
-            if (gameInviteService) {
-                gameInviteService.removeExternalWebSocketHandler();
-            }
-        } catch (error) {
-            console.error('🎮 KISS: Error forcing reconnection:', error);
-        }
-    }
-
-    private keydownHandler = (e: KeyboardEvent) => {
-            let changed = false;
-            
-            if (this.gameMode === 'local' || this.gameMode === 'local-tournament') {
-                switch(e.key.toLowerCase()) {
-                    case 'w':
-                        if (!this.localInputLeft.up) {
-                            this.localInputLeft.up = true;
-                            changed = true;
-                        }
-                        break;
-                    case 's':
-                        if (!this.localInputLeft.down) {
-                            this.localInputLeft.down = true;
-                            changed = true;
-                        }
-                        break;
-                    case 'arrowup':
-                        if (!this.localInputRight.up) {
-                            this.localInputRight.up = true;
-                            changed = true;
-                        }
-                        break;
-                    case 'arrowdown':
-                        if (!this.localInputRight.down) {
-                            this.localInputRight.down = true;
-                            changed = true;
-                        }
-                        break;
-                }
-                
-                if (changed && this.gameMode === 'local') {
-                    this.sendMessage('update_local_input', { 
-                        leftInput: this.localInputLeft, 
-                        rightInput: this.localInputRight 
-                    });
-                }
-            } else {
-                switch(e.key.toLowerCase()) {
-                    case 'w':
-                    case 'arrowup':
-                        if (!this.input.up) {
-                            this.input.up = true;
-                            changed = true;
-                        }
-                        break;
-                    case 's':
-                    case 'arrowdown':
-                        if (!this.input.down) {
-                            this.input.down = true;
-                            changed = true;
-                        }
-                        break;
-                }
-                
-                if (changed) {
-                    this.sendMessage('update_input', { input: this.input });
-                }
-            }
-        };
-
-    private keyupHandler = (e: KeyboardEvent) => {
-            let changed = false;
-            
-            if (this.gameMode === 'local' || this.gameMode === 'local-tournament') {
-                // Local mode: handle keyup for both players, send to backend
-                switch(e.key.toLowerCase()) {
-                    case 'w':
-                        if (this.localInputLeft.up) {
-                            this.localInputLeft.up = false;
-                            changed = true;
-                        }
-                        break;
-                    case 's':
-                        if (this.localInputLeft.down) {
-                            this.localInputLeft.down = false;
-                            changed = true;
-                        }
-                        break;
-                    case 'arrowup':
-                        if (this.localInputRight.up) {
-                            this.localInputRight.up = false;
-                            changed = true;
-                        }
-                        break;
-                    case 'arrowdown':
-                        if (this.localInputRight.down) {
-                            this.localInputRight.down = false;
-                            changed = true;
-                        }
-                        break;
-                }
-                
-                if (changed && this.gameMode === 'local') {
-                    this.sendMessage('update_local_input', { 
-                        leftInput: this.localInputLeft, 
-                        rightInput: this.localInputRight 
-                    });
-                }
-            } else {
-                // Online mode: handle current player only
-                switch(e.key.toLowerCase()) {
-                    case 'w':
-                    case 'arrowup':
-                        if (this.input.up) {
-                            this.input.up = false;
-                            changed = true;
-                        }
-                        break;
-                    case 's':
-                    case 'arrowdown':
-                        if (this.input.down) {
-                            this.input.down = false;
-                            changed = true;
-                        }
-                        break;
-                }
-                
-                if (changed) {
-                    this.sendMessage('update_input', { input: this.input });
-                }
-            }
-        };
-
-    private setupKeyboardListeners() {
-        document.addEventListener('keydown', this.keydownHandler);
-        document.addEventListener('keyup', this.keyupHandler);
-    }
-
-    private sendMessage(type: string, data: any) {
-        const message = { type, ...data };
-        
-        if (!this.ws) {
-            console.error('❌ Cannot send message: WebSocket is null');
-            return;
-        }
-        
-        if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify(message));
-        } else if (process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ Cannot send message: WebSocket not open (state:', this.ws.readyState, ')');
-        }
-    }
-
-    private startGameLoop() {
-        if (this.animationId) {
-            return;
-        }
-        
-        const gameLoop = () => {
-            if (!this.animationId) {
-                return;
-            }
-            
-            this.render();
-            this.animationId = requestAnimationFrame(gameLoop);
-        };
-        
-        this.animationId = requestAnimationFrame(gameLoop);
-    }
-
-    private stopGameLoop() {
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-            this.animationId = null;
-        }
-    }
-
-    private render() {
-        if (!this.gameState) {
-            // Show a debug message on canvas when no game state
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '16px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('Waiting for game state...', this.ARENA_WIDTH / 2, this.ARENA_HEIGHT / 2);
-            this.ctx.textAlign = 'start';
-            return;
-        }
-
-        this.ctx.fillStyle = '#000';
-        this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
-        this.ctx.fillStyle = '#fff';
-
-        this.ctx.setLineDash([5, 5]);
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.ARENA_WIDTH / 2, 0);
-        this.ctx.lineTo(this.ARENA_WIDTH / 2, this.ARENA_HEIGHT);
-        this.ctx.stroke();
-        this.ctx.setLineDash([]);
-
-        this.ctx.fillRect(
-            this.gameState.leftPaddle.pos.x,
-            this.gameState.leftPaddle.pos.y,
-            this.PADDLE_WIDTH,
-            this.PADDLE_HEIGHT
-        );
-
-        this.ctx.fillRect(
-            this.gameState.rightPaddle.pos.x - this.PADDLE_WIDTH,
-            this.gameState.rightPaddle.pos.y,
-            this.PADDLE_WIDTH,
-            this.PADDLE_HEIGHT
-        );
-
-        this.ctx.beginPath();
-        this.ctx.arc(
-            this.gameState.ball.pos.x,
-            this.gameState.ball.pos.y,
-            this.BALL_RADIUS,
-            0,
-            2 * Math.PI
-        );
-        this.ctx.fill();
-
-        this.ctx.font = '24px Arial';
-        this.ctx.fillText(
-            (this.gameState.leftScore || 0).toString(),
-            this.ARENA_WIDTH / 4,
-            30
-        );
-        this.ctx.fillText(
-            (this.gameState.rightScore || 0).toString(),
-            (3 * this.ARENA_WIDTH) / 4,
-            30
-        );
-    }
-
-    private showGameEnd(winner: string) {
-        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
-            return;
-        }
-
-        // Vérifier si c'est un match de tournoi
-        const tournamentMatchInfo = this.getTournamentMatchInfo();
-        const isTournamentMatch = tournamentMatchInfo !== null;
+    private showGameEnd(winner: string): void {
+        if (this.gameEndOverlay) return;
 
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
@@ -789,289 +457,144 @@ export class Game {
         overlay.style.height = '100%';
         overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
         overlay.style.display = 'flex';
-        overlay.style.flexDirection = 'column';
         overlay.style.alignItems = 'center';
         overlay.style.justifyContent = 'center';
-        overlay.style.color = '#fff';
-        overlay.style.fontSize = '24px';
         overlay.style.zIndex = '1000';
+        overlay.style.color = 'white';
+        overlay.style.textAlign = 'center';
+        overlay.style.fontFamily = 'Arial, sans-serif';
 
-        // Message différent pour les tournois
-        let gameOverMessage = `<h2>Game Over!</h2><p>Winner: ${winner}</p>`;
-        if (isTournamentMatch) {
-            gameOverMessage = `
-                <h2>🏆 Match de Tournoi Terminé!</h2>
+        overlay.innerHTML = `
+            <div style="background: #333; padding: 40px; border-radius: 10px;">
+                <h2>Game Over!</h2>
                 <p>Winner: ${winner}</p>
-                <p class="tournament-info">Scores: ${this.gameState?.leftScore || 0} - ${this.gameState?.rightScore || 0}</p>
-                <p class="tournament-saving">💾 Sauvegarde automatique du résultat...</p>
-            `;
-        }
+                <p>Final Score: ${this.gameState?.leftScore || 0} - ${this.gameState?.rightScore || 0}</p>
+            </div>
+        `;
 
         const backButton = document.createElement('button');
-        backButton.style.padding = '10px 20px';
-        backButton.style.fontSize = '18px';
+        backButton.textContent = 'Back to Menu';
+        backButton.style.backgroundColor = '#007bff';
         backButton.style.color = 'white';
         backButton.style.border = 'none';
+        backButton.style.padding = '10px 20px';
         backButton.style.borderRadius = '5px';
+        backButton.style.fontSize = '16px';
         backButton.style.cursor = 'pointer';
         backButton.style.marginTop = '20px';
 
-        if (isTournamentMatch) {
-            backButton.textContent = 'Retour au Tournoi';
-            backButton.style.backgroundColor = '#28a745'; // Vert pour tournoi
-            
-            backButton.addEventListener('click', async () => {
-                // Sauvegarder automatiquement le résultat du match
-                await this.saveTournamentMatchResult(tournamentMatchInfo!, winner);
-                
-                if (document.body.contains(overlay)) {
-                    document.body.removeChild(overlay);
-                    this.gameEndOverlay = null;
-                }
-                this.destroy();
-                
-                // Retourner au tournoi
-                (window as any).router?.navigate(tournamentMatchInfo!.returnUrl);
-            });
-        } else {
-            backButton.textContent = 'Back to Menu';
-            backButton.style.backgroundColor = '#007bff';
-            
-            backButton.addEventListener('click', () => {
-                if (document.body.contains(overlay)) {
-                    document.body.removeChild(overlay);
-                    this.gameEndOverlay = null;
-                }
-                this.destroy();
-                (window as any).router?.navigate('/menu');
-            });
-        }
+        backButton.addEventListener('click', () => {
+            if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+            }
+            this.destroy();
+            (window as any).router?.navigate('/menu');
+        });
 
-        overlay.innerHTML = gameOverMessage;
-        overlay.appendChild(backButton);
+        overlay.firstElementChild!.appendChild(backButton);
         document.body.appendChild(overlay);
         this.gameEndOverlay = overlay;
-
-        // Auto-sauvegarder pour les tournois après un délai
-        if (isTournamentMatch) {
-            setTimeout(async () => {
-                await this.saveTournamentMatchResult(tournamentMatchInfo!, winner);
-            }, 2000);
-        }
     }
 
-    private getTournamentMatchInfo(): any {
-        try {
-            const storedInfo = localStorage.getItem('tournament_match_info');
-            if (storedInfo) {
-                const matchInfo = JSON.parse(storedInfo);
-                // Vérifier que l'info n'est pas trop ancienne (1 heure max)
-                const oneHour = 60 * 60 * 1000;
-                if (Date.now() - matchInfo.timestamp < oneHour) {
-                    return matchInfo;
-                }
-            }
-        } catch (error) {
-            console.error('Erreur lecture info match tournoi:', error);
-        }
-        return null;
-    }
-
-    private async saveTournamentMatchResult(matchInfo: any, winner: string): Promise<void> {
-        try {
-            console.log('💾 Sauvegarde du résultat du match de tournoi...', {
-                matchId: matchInfo.matchId,
-                winner,
-                scores: {
-                    left: this.gameState?.leftScore || 0,
-                    right: this.gameState?.rightScore || 0
-                }
-            });
-
-            // Import de l'API pour sauvegarder le résultat
-            const { api } = await import('../../../shared/services/api');
-            
-            // Déterminer l'ID du gagnant (simplifié pour l'instant)
-            // TODO: Améliorer la détection du winner ID basée sur les positions
-            const winnerId = matchInfo.opponentId; // Placeholder
-            
-            // Appel API pour mettre à jour le résultat
-            await api.put(`/tournaments/matches/${matchInfo.matchId}/result`, {
-                winnerId,
-                player1Score: this.gameState?.leftScore || 0,
-                player2Score: this.gameState?.rightScore || 0
-            });
-
-            console.log('✅ Résultat sauvegardé avec succès');
-            
-            // Nettoyer les informations stockées
-            localStorage.removeItem('tournament_match_info');
-
-        } catch (error) {
-            console.error('❌ Erreur sauvegarde résultat tournoi:', error);
-            // On garde les informations au cas où l'utilisateur voudrait réessayer
-        }
-    }
-
-
-    private showError(message: string) {
-        const errorDiv = document.createElement('div');
-        errorDiv.style.position = 'fixed';
-        errorDiv.style.top = '20px';
-        errorDiv.style.right = '20px';
-        errorDiv.style.backgroundColor = '#ff4444';
-        errorDiv.style.color = '#fff';
-        errorDiv.style.padding = '10px 20px';
-        errorDiv.style.borderRadius = '5px';
-        errorDiv.style.zIndex = '1000';
-        errorDiv.textContent = message;
-
-        document.body.appendChild(errorDiv);
-
-        setTimeout(() => {
-            if (document.body.contains(errorDiv)) {
-                document.body.removeChild(errorDiv);
-            }
-        }, 5000);
-    }
-
-    public destroy() {
-        this.stopGameLoop();
+    private showError(message: string): void {
+        // Clear canvas and show error message
+        this.ctx.clearRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.font = '20px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Error: ' + message, this.ARENA_WIDTH / 2, this.ARENA_HEIGHT / 2);
         
-        if (this.ws) {
-            if (this.ws.readyState === WebSocket.OPEN) {
-                // Only send leave_game if the game hasn't ended yet
-                if (!this.gameEnded) {
-                    this.sendMessage('leave_game', {});
-                }
-                
-                setTimeout(() => {
-                    if (this.ws) {
-                        this.ws.close();
-                        this.ws = null;
-                    }
-                    this.ensureKissReconnection();
-                }, 200);
-            } else {
-                this.ws = null;
-            }
-        }
+        setTimeout(() => {
+            (window as any).router?.navigate('/menu');
+        }, 3000);
+    }
 
-        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
-            document.body.removeChild(this.gameEndOverlay);
-            this.gameEndOverlay = null;
-        }
+    private render(): void {
+        if (!this.gameState || !this.ctx) return;
 
-        if (this.readyOverlay && document.body.contains(this.readyOverlay)) {
-            document.body.removeChild(this.readyOverlay);
-            this.readyOverlay = null;
-        }
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
 
+        // Draw center line
+        this.ctx.setLineDash([5, 15]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.ARENA_WIDTH / 2, 0);
+        this.ctx.lineTo(this.ARENA_WIDTH / 2, this.ARENA_HEIGHT);
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        // Draw paddles
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fillRect(
+            this.gameState.leftPaddle.pos.x,
+            this.gameState.leftPaddle.pos.y,
+            this.PADDLE_WIDTH,
+            this.PADDLE_HEIGHT
+        );
+        this.ctx.fillRect(
+            this.gameState.rightPaddle.pos.x,
+            this.gameState.rightPaddle.pos.y,
+            this.PADDLE_WIDTH,
+            this.PADDLE_HEIGHT
+        );
+
+        // Draw ball
+        this.ctx.beginPath();
+        this.ctx.arc(
+            this.gameState.ball.pos.x,
+            this.gameState.ball.pos.y,
+            this.BALL_RADIUS,
+            0,
+            Math.PI * 2
+        );
+        this.ctx.fill();
+
+        // Draw scores
+        this.ctx.font = '20px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(
+            this.gameState.leftScore.toString(),
+            this.ARENA_WIDTH / 4,
+            30
+        );
+        this.ctx.fillText(
+            this.gameState.rightScore.toString(),
+            (3 * this.ARENA_WIDTH) / 4,
+            30
+        );
+    }
+
+    public destroy(): void {
+        // Remove event listeners
         document.removeEventListener('keydown', this.keydownHandler);
         document.removeEventListener('keyup', this.keyupHandler);
 
-        this.container.innerHTML = '';
-        this.gameState = null;
-    }
+        // Cancel animation frame
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
 
-    // 🎮 Ready System Methods
-    private showReadyScreen(): void {
-        if (this.readyOverlay) return;
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white font-iceland';
-        
-        overlay.innerHTML = `
-            <div class="bg-gradient-to-b from-blue-900 to-purple-900 p-8 rounded-lg border-4 border-white text-center">
-                <h1 class="text-4xl mb-6">🎮 Game Ready Check</h1>
-                <div class="mb-6">
-                    <p class="text-xl mb-4">Waiting for both players to be ready...</p>
-                    <div id="ready-status" class="text-lg">
-                        <div>You: <span id="your-status" class="text-red-400">Not Ready</span></div>
-                        <div>Opponent: <span id="opponent-status" class="text-red-400">Not Ready</span></div>
-                    </div>
-                </div>
-                <button id="ready-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors">
-                    Click when READY!
-                </button>
-            </div>
-        `;
+        // Close WebSocket
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
 
-        // Event listener pour le bouton ready
-        const readyBtn = overlay.querySelector('#ready-btn') as HTMLButtonElement;
-        readyBtn?.addEventListener('click', () => {
-            this.toggleReady();
-        });
-
-        document.body.appendChild(overlay);
-        this.readyOverlay = overlay;
-    }
-
-    private hideReadyScreen(): void {
+        // Remove overlays
         if (this.readyOverlay && document.body.contains(this.readyOverlay)) {
             document.body.removeChild(this.readyOverlay);
-            this.readyOverlay = null;
         }
-    }
-
-    private toggleReady(): void {
-        this.isReady = !this.isReady;
         
-        if (this.gameId) {
-            this.sendMessage('player_ready', {
-                gameId: this.gameId,
-                ready: this.isReady
-            });
+        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
+            document.body.removeChild(this.gameEndOverlay);
         }
 
-        this.updateReadyButton();
+        // Clear container
+        this.container.innerHTML = '';
     }
 
-    private updateReadyStatus(data: any): void {
-        if (!this.readyOverlay) return;
-
-        const yourStatus = this.readyOverlay.querySelector('#your-status');
-        const opponentStatus = this.readyOverlay.querySelector('#opponent-status');
-
-        if (yourStatus) {
-            yourStatus.textContent = this.isReady ? 'Ready' : 'Not Ready';
-            yourStatus.className = this.isReady ? 'text-green-400' : 'text-red-400';
-        }
-
-        if (opponentStatus) {
-            // Simple: si on est tous les deux ready, ou si l'autre est ready mais pas nous
-            const bothReady = data.leftPlayerReady && data.rightPlayerReady;
-            const opponentReady = bothReady || ((data.leftPlayerReady || data.rightPlayerReady) && !this.isReady);
-            
-            opponentStatus.textContent = opponentReady ? 'Ready' : 'Not Ready';
-            opponentStatus.className = opponentReady ? 'text-green-400' : 'text-red-400';
-        }
-    }
-
-    private updateReadyButton(): void {
-        if (!this.readyOverlay) return;
-
-        const readyBtn = this.readyOverlay.querySelector('#ready-btn') as HTMLButtonElement;
-        if (readyBtn) {
-            if (this.isReady) {
-                readyBtn.textContent = 'Ready! (Click to cancel)';
-                readyBtn.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors';
-            } else {
-                readyBtn.textContent = 'Click when READY!';
-                readyBtn.className = 'bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-xl border-2 border-white transition-colors';
-            }
-        }
-    }
-
-    private showCountdown(count: number): void {
-        if (!this.readyOverlay) return;
-        
-        const overlay = this.readyOverlay;
-        overlay.innerHTML = `
-            <div class="bg-gradient-to-b from-red-900 to-orange-900 p-12 rounded-lg border-4 border-white text-center">
-                <h1 class="text-6xl mb-4 animate-pulse">${count}</h1>
-                <p class="text-2xl">Game starting...</p>
-            </div>
-        `;
+    public getElement(): HTMLElement {
+        return this.container;
     }
 }

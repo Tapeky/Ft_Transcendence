@@ -68,25 +68,6 @@ export interface FriendRequest {
 	is_online: boolean;
 }
 
-export interface Tournament {
-	id: number;
-	name: string;
-	description: string;
-	max_players: number;
-	current_players: number;
-	status: string;
-	created_by: number;
-	creator_username: string;
-	created_at: string;
-}
-
-export interface TournamentParticipant {
-	id: number;
-	alias: string;
-	username: string;
-	display_name: string;
-	joined_at: string;
-}
 
 export interface Match {
 	id: number;
@@ -100,7 +81,6 @@ export interface Match {
 	player2_score: number;
 	winner_id?: number;
 	game_type: string;
-	tournament_name?: string;
 	created_at: string;
 	status: string;
 }
@@ -443,59 +423,6 @@ class ApiService {
 		return response.data!;
 	}
 
-	// Tournaments
-	async getTournaments(): Promise<Tournament[]> {
-		const response = await this.request<Tournament[]>('/api/tournaments');
-		return response.data!;
-	}
-
-	async createTournament(data: { name: string; description?: string; max_players?: number }): Promise<Tournament> {
-		const response = await this.request<Tournament>('/api/tournaments', {
-			method: 'POST',
-			body: JSON.stringify(data),
-		});
-		return response.data!;
-	}
-
-	async joinTournament(tournamentId: number, alias: string): Promise<void> {
-		await this.request(`/api/tournaments/${tournamentId}/join`, {
-			method: 'POST',
-			body: JSON.stringify({ alias }),
-		});
-	}
-
-	async getTournamentBracket(tournamentId: number): Promise<{
-		tournament: Tournament;
-		participants: TournamentParticipant[];
-		matches: Match[];
-		bracket_data: any;
-	}> {
-		const response = await this.request<{
-			tournament: Tournament;
-			participants: TournamentParticipant[];
-			matches: Match[];
-			bracket_data: any;
-		}>(`/api/tournaments/${tournamentId}/bracket`);
-		return response.data!;
-	}
-
-	async startTournament(tournamentId: number): Promise<{ bracket_data: any }> {
-		const response = await this.request<{ bracket_data: any }>(`/api/tournaments/${tournamentId}/start`, {
-			method: 'PUT',
-		});
-		return response.data!;
-	}
-
-	async getTournamentMatches(tournamentId: number): Promise<{
-		tournament: Tournament;
-		matches: Match[];
-	}> {
-		const response = await this.request<{
-			tournament: Tournament;
-			matches: Match[];
-		}>(`/api/tournaments/${tournamentId}/matches`);
-		return response.data!;
-	}
 
 	// Matches
 	async recordMatch(data: {
@@ -508,7 +435,6 @@ class ApiService {
 		winner_id?: number;
 		game_type?: string;
 		max_score?: number;
-		tournament_id?: number;
 		duration_seconds?: number;
 		player1_touched_ball?: number;
 		player1_missed_ball?: number;
@@ -525,7 +451,6 @@ class ApiService {
 
 	async getMatches(params?: {
 		player_id?: number;
-		tournament_id?: number;
 		game_type?: string;
 		limit?: number;
 		offset?: number;
@@ -534,7 +459,6 @@ class ApiService {
 	}): Promise<{ data: Match[]; pagination: { limit: number; offset: number; total: number } }> {
 		const searchParams = new URLSearchParams();
 		if (params?.player_id) searchParams.append('player_id', params.player_id.toString());
-		if (params?.tournament_id) searchParams.append('tournament_id', params.tournament_id.toString());
 		if (params?.game_type) searchParams.append('game_type', params.game_type);
 		if (params?.limit) searchParams.append('limit', params.limit.toString());
 		if (params?.offset) searchParams.append('offset', params.offset.toString());
@@ -643,7 +567,7 @@ class ApiService {
 		return response.data?.invites || [];
 	}
 
-	// HTTP Methods for Tournament Service compatibility
+	// HTTP Methods for service compatibility
 	async get<T>(endpoint: string): Promise<ApiResponse<T>> {
 		return this.request<T>(endpoint, { method: 'GET' });
 	}
@@ -671,5 +595,5 @@ class ApiService {
 
 export const apiService = new ApiService();
 
-// Export also as 'api' for backward compatibility and tournament service
+// Export also as 'api' for backward compatibility
 export const api = apiService;

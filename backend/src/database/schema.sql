@@ -44,44 +44,11 @@ CREATE TABLE IF NOT EXISTS friendships (
     UNIQUE(user_id, friend_id)
 );
 
--- Table des tournois
-CREATE TABLE IF NOT EXISTS tournaments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    max_players INTEGER NOT NULL DEFAULT 8,
-    current_players INTEGER DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'waiting', -- waiting, ready, running, completed, cancelled
-    bracket_data TEXT, -- JSON pour stocker la structure du bracket
-    winner_id INTEGER,
-    created_by INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    started_at DATETIME,
-    completed_at DATETIME,
-    
-    FOREIGN KEY (winner_id) REFERENCES users(id),
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Table des participants aux tournois avec alias
-CREATE TABLE IF NOT EXISTS tournament_participants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    alias VARCHAR(50) NOT NULL, -- Alias obligatoire pour le tournoi
-    position INTEGER, -- position finale dans le tournoi
-    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(tournament_id, user_id), -- Un seul alias par joueur par tournoi
-    UNIQUE(tournament_id, alias) -- Pas de doublons d'alias dans un tournoi
-);
 
 -- Table des matches
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER, -- NULL si match hors tournoi
+    -- tournament_id removed - matches are independent
     player1_id INTEGER, -- NULL si joueur invité
     player2_id INTEGER, -- NULL si joueur invité
     player1_guest_name VARCHAR(100), -- Nom du joueur invité
@@ -110,7 +77,6 @@ CREATE TABLE IF NOT EXISTS matches (
     player2_touched_ball_in_row INTEGER DEFAULT 0,
     player2_missed_ball_in_row INTEGER DEFAULT 0,
     
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
     FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -123,7 +89,6 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- Index pour les performances des matches
-CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_matches_players ON matches(player1_id, player2_id);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 
@@ -249,7 +214,7 @@ CREATE TABLE IF NOT EXISTS messages (
     conversation_id INTEGER NOT NULL,
     sender_id INTEGER NOT NULL,
     content TEXT NOT NULL,
-    type VARCHAR(20) DEFAULT 'text', -- 'text', 'game_invite', 'tournament_notification'
+    type VARCHAR(20) DEFAULT 'text', -- 'text', 'game_invite', 'system_notification'
     metadata TEXT, -- JSON pour invitations/notifications
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     

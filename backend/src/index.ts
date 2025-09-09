@@ -117,7 +117,7 @@ async function start() {
           health: '/health',
           auth: '/api/auth/*',
           users: '/api/users/*',
-          tournaments: '/api/tournaments/*',
+          local_tournaments: '/api/local-tournament/*',
           matches: '/api/matches/*',
           websocket: '/ws'
         }

@@ -5,6 +5,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    runtime: runc
     ports:
       - "${FRONTEND_PORT}:3000"
     volumes:
@@ -25,6 +26,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    runtime: runc
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:

@@ -1,7 +1,7 @@
 import { router } from '../../core/app/Router';
 
 // Choice - Reproduction exacte de la version React  
-// 2 boutons Pong et Tournament avec animations hover et backgrounds GIF
+// 2 boutons Pong et Profile avec animations hover et backgrounds GIF
 
 export class Choice {
   private element: HTMLElement;
@@ -36,16 +36,16 @@ export class Choice {
         CHOOSE YOUR MODE
       </div>
 
-      <!-- Section Droite - TOURNAMENT -->
+      <!-- Section Droite - PROFILE -->
       <div class="flex-1 flex items-center justify-start">
         <div 
-          id="tournament-choice" 
+          id="profile-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
-                 text-[4rem] bg-[url('./img/tournament.gif')] bg-cover bg-center 
+                 text-[4rem] bg-[url('./img/city.png')] bg-cover bg-center 
                  flex justify-center items-center hover:scale-125 transition duration-500 cursor-pointer"
-          data-route="/tournament"
+          data-route="/profile"
         >
-          TOURNAMENT
+          PROFILE
         </div>
       </div>
     `;
@@ -58,9 +58,9 @@ export class Choice {
     const pongChoice = this.element.querySelector('#pong-choice');
     pongChoice?.addEventListener('click', () => this.navigateToGame());
 
-    // Tournament choice navigation  
-    const tournamentChoice = this.element.querySelector('#tournament-choice');
-    tournamentChoice?.addEventListener('click', () => this.navigateToTournament());
+    // Profile choice navigation  
+    const profileChoice = this.element.querySelector('#profile-choice');
+    profileChoice?.addEventListener('click', () => this.navigateToProfile());
 
     this.setupHoverEffects();
 
@@ -85,8 +85,8 @@ export class Choice {
     router.navigate('/game');
   }
 
-  private navigateToTournament(): void {
-    router.navigate('/tournament');
+  private navigateToProfile(): void {
+    router.navigate('/profile');
   }
 
   getElement(): HTMLElement {
