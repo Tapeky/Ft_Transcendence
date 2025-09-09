@@ -72,6 +72,8 @@ void input_poll(ctx *ctx)
 	ctx->input.pressed.n &= ~ctx->input.just_released.n; // clear all bits whose inputs were just released
 }
 
+#define KEY_BACKSPACE 0x16
+
 void input_loop(ctx *ctx, on_input_func on_key_event)
 {
 	XEvent event;
@@ -80,7 +82,7 @@ void input_loop(ctx *ctx, on_input_func on_key_event)
 		XNextEvent(ctx->dpy, &event);
 		if (event.type == KeyPress || event.type == KeyRelease)
 		{
-			if (event.type == KeyRelease && XPending(ctx->dpy))
+			if (event.type == KeyRelease && event.xkey.keycode != KEY_BACKSPACE && XPending(ctx->dpy))
 			{
 				// check for auto-repeating key and remove it
 				XEvent next_event;
