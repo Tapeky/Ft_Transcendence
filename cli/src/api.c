@@ -1,5 +1,28 @@
 #include "api.h"
+#include "soft_fail.h"
+#include "ctx.h"
 #include <string.h>
+
+typedef enum
+{
+	ERR_CURL = 1,
+	ERR_JSON_PARSE,
+	ERR_JSON_CONTENT
+}	api_request_error;
+
+typedef struct
+{
+	api_request_error err;
+	union
+	{
+		CURLcode			 curl_code;
+		size_t 				json_error_pos;
+		json_content_error	json_content_error;
+		cJSON *json_obj; // courtesy of the caller to call cJSON_Delete
+	};
+}	api_request_result;
+
+static void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream);
 
 // does the CURL request and returns a JSON object if succeeded
 static api_request_result api_request_common(api_ctx *ctx, const char *endpoint)
@@ -32,11 +55,11 @@ static api_request_result api_request_common(api_ctx *ctx, const char *endpoint)
 	return (result);
 }
 
-api_request_result do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice *choice, void *out)
+cJSON *do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice *choice, void *out)
 {
 	api_request_result res = api_request_common(ctx, endpoint);
 	if (res.err)
-		return (res);
+		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	json_content_error err = json_parse_from_choice(res.json_obj, choice, out);
 	if (err)
 	{
@@ -44,16 +67,16 @@ api_request_result do_api_request_to_choice(api_ctx *ctx, const char *endpoint, 
 		res.json_content_error = err;
 		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
-		return (res);
+		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	}
-	return (res);
+	return (res.json_obj);
 }
 
-api_request_result do_api_request_to_def(api_ctx *ctx, const char *endpoint, json_def *def, void *out)
+cJSON *do_api_request_to_def(api_ctx *ctx, const char *endpoint, json_def *def, void *out)
 {
 	api_request_result res = api_request_common(ctx, endpoint);
 	if (res.err)
-		return (res);
+		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	json_content_error err = json_parse_from_def(res.json_obj, def, out);
 	if (err)
 	{
@@ -61,12 +84,12 @@ api_request_result do_api_request_to_def(api_ctx *ctx, const char *endpoint, jso
 		res.json_content_error = err;
 		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
-		return (res);
+		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	}
-	return (res);
+	return (res.json_obj);
 }
 
-void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream)
+static void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream)
 {
 	switch (res.err)
 	{

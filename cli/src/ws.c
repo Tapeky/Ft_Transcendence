@@ -1,7 +1,32 @@
 #include "ws.h"
+#include "soft_fail.h"
 #include <sys/poll.h>
 #include <errno.h>
 #include <string.h>
+
+typedef enum
+{
+	ws_xfer_error_CURL = 1,
+	ws_xfer_error_POLL,
+	ws_xfer_error_TOO_BIG,
+	ws_xfer_error_JSON_PARSE,
+	ws_xfer_error_JSON_CONTENT,
+}	ws_xfer_error;
+
+typedef struct
+{
+	ws_xfer_error err;
+	union
+	{
+		CURLcode			curl_code;
+		int					poll_errno;
+		size_t				json_error_pos;
+		json_content_error	json_content_error;
+		cJSON				*json_obj; // courtesy of the caller to call cJSON_Delete
+	};
+}	ws_xfer_result;
+
+static void ws_ctx_print_xfer_result(ws_ctx *ctx, ws_xfer_result res, int is_recv, FILE *stream);
 
 static ws_xfer_result ws_recv_common(ws_ctx *ctx)
 {
@@ -44,11 +69,11 @@ static ws_xfer_result ws_recv_common(ws_ctx *ctx)
 	return (res);
 }
 
-ws_xfer_result ws_recv_to_switch(ws_ctx *ctx, json_switch *switch_, void *out)
+cJSON *ws_recv_to_switch(ws_ctx *ctx, json_switch *switch_, void *out)
 {
 	ws_xfer_result res = ws_recv_common(ctx);
 	if (res.err)
-		return (res);
+		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 1, stderr));
 	json_content_error content_err = json_parse_from_switch(res.json_obj, switch_, out);
 	if (content_err)
 	{
@@ -56,12 +81,12 @@ ws_xfer_result ws_recv_to_switch(ws_ctx *ctx, json_switch *switch_, void *out)
 		res.json_content_error = content_err;
 		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
-		return (res);
+		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 1, stderr));
 	}
-	return (res);
+	return (res.json_obj);
 }
 
-ws_xfer_result ws_send(ws_ctx *ctx)
+cJSON *ws_send(ws_ctx *ctx)
 {
 	ws_xfer_result res = {0};
 	struct pollfd pollfd = {.events = POLLOUT, .fd = ctx->sock, .revents = 0};
@@ -70,7 +95,7 @@ ws_xfer_result ws_send(ws_ctx *ctx)
 	{
 		res.err = ws_xfer_error_POLL;
 		res.poll_errno = errno;
-		return (res);
+		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 0, stderr));
 	}
 	size_t offset = 0;
 	size_t to_send = strnlen(ctx->send_buf, JSON_BUFFER_SIZE);
@@ -91,12 +116,12 @@ ws_xfer_result ws_send(ws_ctx *ctx)
 	{
 		res.err = ws_xfer_error_CURL;
 		res.curl_code = err;
-		return (res);
+		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 0, stderr));
 	}
-	return (res);
+	return (res.json_obj);
 }
 
-void ws_ctx_print_xfer_result(ws_ctx *ctx, ws_xfer_result res, int is_recv, FILE *stream)
+static void ws_ctx_print_xfer_result(ws_ctx *ctx, ws_xfer_result res, int is_recv, FILE *stream)
 {
 	const char *xfer_type = is_recv ? "recv" : "send";
 	fprintf(stream, "ws_ctx_%s fail: ", xfer_type);

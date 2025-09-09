@@ -32,7 +32,7 @@ void handle_button(console_component *button, int press, void *param)
 		);
 		api_login_request req;
 		cJSON *json;
-		assert_api_request_success(do_api_request_to_choice(&ctx->api_ctx, "api/auth/login", &api_login_def, &req), &json);
+		json = do_api_request_to_choice(&ctx->api_ctx, "api/auth/login", &api_login_def, &req);
 		if (req.success)
 		{
 			label_update_text(ctx->login_error_label, xstrdup(req.message), 1);

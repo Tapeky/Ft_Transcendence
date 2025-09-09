@@ -25,29 +25,8 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url);
 
 void api_ctx_deinit(api_ctx *ctx);
 
-typedef enum
-{
-	ERR_CURL = 1,
-	ERR_JSON_PARSE,
-	ERR_JSON_CONTENT
-}	api_request_error;
+cJSON *do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice *choice, void *out);
 
-typedef struct
-{
-	api_request_error err;
-	union
-	{
-		CURLcode			 curl_code;
-		size_t 				json_error_pos;
-		json_content_error	json_content_error;
-		cJSON *json_obj; // courtesy of the caller to call cJSON_Delete
-	};
-}	api_request_result;
-
-api_request_result do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice *choice, void *out);
-
-api_request_result do_api_request_to_def(api_ctx *ctx, const char *endpoint, json_def *def, void *out);
-
-void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream);
+cJSON *do_api_request_to_def(api_ctx *ctx, const char *endpoint, json_def *def, void *out);
 
 #endif
