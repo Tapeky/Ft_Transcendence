@@ -89,6 +89,10 @@ export class Choice {
     router.navigate('/tournament');
   }
 
+  private navigateToHistory(): void {
+    router.navigate('/tournament-history');
+  }
+
   getElement(): HTMLElement {
     return this.element;
   }

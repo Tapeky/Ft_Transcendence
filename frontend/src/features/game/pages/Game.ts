@@ -157,11 +157,11 @@ export class Game {
             this.updateLocalGame();
             this.render();
             
-            // Check for game end (first to 11 points)
-            if (this.gameState.leftScore >= 11 || this.gameState.rightScore >= 11) {
+            // Check for game end (first to 3 points)
+            if (this.gameState.leftScore >= 3 || this.gameState.rightScore >= 3) {
                 if (!this.gameEnded) {
                     this.gameEnded = true;
-                    const winner = this.gameState.leftScore >= 11 ? 'Player 1' : 'Player 2';
+                    const winner = this.gameState.leftScore >= 3 ? 'Player 1' : 'Player 2';
                     this.showGameEnd(winner);
                     return;
                 }
@@ -547,7 +547,12 @@ export class Game {
                     document.body.removeChild(overlay);
                 }
                 this.destroy();
-                (window as any).router?.navigate('/tournament');
+                // Navigate back to the specific tournament using its ID
+                if (this.tournamentContext) {
+                    window.location.href = `/tournament?id=${this.tournamentContext.tournamentId}`;
+                } else {
+                    (window as any).router?.navigate('/tournament');
+                }
             });
 
             buttonContainer.appendChild(continueButton);

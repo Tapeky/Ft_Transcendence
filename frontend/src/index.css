@@ -807,6 +807,11 @@
   20%, 40%, 60%, 80% { transform: translateX(2px); }
 }
 
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+
 @layer utilities {
   .animate-slide-down {
     animation: slide-down 0.3s ease-out;
@@ -818,5 +823,9 @@
   
   .error-shake {
     animation: shake 0.5s ease-in-out;
+  }
+
+  .animate-fadeOut {
+    animation: fadeOut 0.3s ease;
   }
 }

@@ -19,7 +19,7 @@ const paddleSize = {
 const ballRadius = 5;
 const ballSpeed = 300; // units / sec
 const ballMaxBounceAngle = 75;
-const winningScore = 5; // First to 5 points wins
+const winningScore = 3; // First to 3 points wins
 
 export class Paddle {
 	public rect: Rectangle;
