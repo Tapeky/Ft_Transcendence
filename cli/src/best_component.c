@@ -68,15 +68,15 @@ static float max_distance_squared(direction dir)
 	float max_dist = 0;
 	console_component *cur1, *cur2;
 	float cur1_x, cur1_y, cur2_x, cur2_y;
-	for (size_t i = 0; i < cterm_info.components_count; i++)
+	for (size_t i = 0; i < cur_term_window->components_count; i++)
 	{
-		cur1 = &cterm_info.components[i];
+		cur1 = &cur_term_window->components[i];
 		if (!is_selectable(cur1))
 			continue;
 		get_box_edge(dir, component_bouding_box(cur1), &cur1_x, &cur1_y);
-		for (size_t j = 0; j < cterm_info.components_count; j++)
+		for (size_t j = 0; j < cur_term_window->components_count; j++)
 		{
-			cur2 = &cterm_info.components[j];
+			cur2 = &cur_term_window->components[j];
 			if (j != i && is_selectable(cur2))
 			{
 				get_box_edge(opposite_dir, component_bouding_box(cur2), &cur2_x, &cur2_y);
@@ -102,10 +102,10 @@ size_t find_best_component(direction dir)
 
 	size_t closest_component_idx = -1u;
 	float closest_component_weight = FLT_MAX;
-	for (size_t i = 0; i < cterm_info.components_count; i++)
+	for (size_t i = 0; i < cur_term_window->components_count; i++)
 	{
-		console_component *target = &cterm_info.components[i];
-		if (i == cterm_info.selected_component || !is_selectable(target))
+		console_component *target = &cur_term_window->components[i];
+		if (i == cur_term_window->selected_component || !is_selectable(target))
 			continue;
 		get_box_edge(opp_dir, component_bouding_box(target), &target_edge_x, &target_edge_y);
 		float weight = calculate_weight(

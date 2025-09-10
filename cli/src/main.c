@@ -36,6 +36,7 @@ void handle_button(console_component *button, int press, void *param)
 		if (req.success)
 		{
 			label_update_text(ctx->login_error_label, xstrdup(req.message), 1);
+			cswitch_window(term_window_type_OTHER);
 		}
 		else
 		{
