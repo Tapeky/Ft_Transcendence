@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "aabb.h"
+#include "config.h"
 #include <X11/X.h>
 #include <stdio.h>
 
@@ -128,15 +129,18 @@ typedef struct
 	console_component	components[MAX_COMPONENT_NUMBER];
 	size_t				components_count;
 	size_t				selected_component;
-}	term_info;
+}	term_window;
 
-extern term_info	cterm_info;
+extern term_window		term_windows[term_window_type__MAX];
+extern term_window		*cur_term_window;
+extern term_window_type	cur_term_window_type;
 
 void cinit();
 void cdeinit();
 void crefresh(int force_redraw);
 console_component *ccomponent_add(console_component component);
 void chandle_key_event(KeySym key, int on_press);
+void cswitch_window(term_window_type window_type);
 
 typedef enum
 {
@@ -155,9 +159,9 @@ static inline int is_selectable(console_component *component)
 
 static inline console_component *ccurrent_component()
 {
-	if (cterm_info.selected_component == -1u)
+	if (cur_term_window->selected_component == -1u)
 		return (NULL);
-	return (&cterm_info.components[cterm_info.selected_component]);
+	return (&cur_term_window->components[cur_term_window->selected_component]);
 }
 
 void cursor_goto(u16 x, u16 y);

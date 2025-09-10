@@ -9,12 +9,15 @@
 #include <unistd.h>
 #include <assert.h>
 
-u16 		c_y = 0;
-u16 		c_x = 0;
-float		c_pixel_ratio = 1;
-term_info	cterm_info;
+u16 				c_y = 0;
+u16 				c_x = 0;
+float				c_pixel_ratio = 1;
+term_window			term_windows[term_window_type__MAX] = {0};
+term_window			*cur_term_window = NULL;
+term_window_type	cur_term_window_type;
 
-struct termios orig_termios;
+static int has_initiated = 0;
+static struct termios orig_termios;
 
 static void fetch_term_sz()
 {
@@ -45,13 +48,13 @@ static void winch(int sig)
 	fetch_term_sz();
 }
 
+static void cinit_window(term_window_type window_type);
+
 void cinit()
 {
-	if (cterm_info.has_initiated)
+	if (has_initiated)
 		return ;
-	memset(&cterm_info, 0, sizeof(cterm_info));
-	cterm_info.selected_component = -1u;
-
+	
 	// set the terminal in raw mode
 	tcgetattr(STDIN_FILENO, &orig_termios);
 	struct termios raw_info;
@@ -64,34 +67,45 @@ void cinit()
 	fflush(stdout);
 	fetch_term_sz();
 	signal(SIGWINCH, winch);
-	cterm_info.has_initiated = 1;
+
+	cur_term_window_type = (term_window_type)0;
+	cinit_window(cur_term_window_type);
+	cur_term_window = &term_windows[cur_term_window_type];
+	has_initiated = 1;
 }
 
 void cdeinit()
 {
-	if (!cterm_info.has_initiated)
+	if (!has_initiated)
 		return ;
 	PUTS(ESC_ENABLE_CURSOR);
 	PUTS(ESC_CLEAR_SCREEN);
 	fflush(stdout);
 	signal(SIGWINCH, SIG_DFL);
-	for (size_t i = 0; i < cterm_info.components_count; i++)
+	for (size_t i = 0; i < term_window_type__MAX; i++)
 	{
-		console_component *c = &cterm_info.components[i];
-		if (c->type == TEXT_AREA)
-			free(c->u.c_text_area.buf);
-		else if (c->type == LABEL)
+		term_window *win = &term_windows[i];
+		if (!win->has_initiated)
+			continue ;
+		for (size_t j = 0; j < win->components_count; j++)
 		{
-			component_label *label = &c->u.c_label;
-			if (label->str && label->str_is_allocated)
-				free((void *)label->str);
+			console_component *c = &win->components[j];
+			if (c->type == TEXT_AREA)
+				free(c->u.c_text_area.buf);
+			else if (c->type == LABEL)
+			{
+				component_label *label = &c->u.c_label;
+				if (label->str && label->str_is_allocated)
+					free((void *)label->str);
+			}
 		}
 	}
-	memset(&cterm_info, 0, sizeof(cterm_info));
+	memset(term_windows, 0, sizeof(term_windows));
+	cur_term_window = NULL;
 
 	// restore terminal attributes
-	tcsetattr(STDIN_FILENO, TCSANOW,&orig_termios);
-	cterm_info.has_initiated = 0;
+	tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+	has_initiated = 0;
 }
 
 void chandle_key_event(KeySym key, int on_press)
@@ -130,12 +144,12 @@ void crefresh(int force_redraw)
 	if (force_redraw)
 		PUTS(ESC_CLEAR_SCREEN);
 
-	for (size_t i = 0; i < cterm_info.components_count; i++)
+	for (size_t i = 0; i < cur_term_window->components_count; i++)
 	{
-		console_component *c = &cterm_info.components[i];
+		console_component *c = &cur_term_window->components[i];
 		if (c->is_dirty || force_redraw)
 		{
-			if (i == cterm_info.selected_component)
+			if (i == cur_term_window->selected_component)
 				PUTS(ESC_MAGENTA_BACKGROUND ESC_BOLD);
 			switch (c->type)
 			{
@@ -155,7 +169,7 @@ void crefresh(int force_redraw)
 					fprintf(stderr, "Invalid component type %d\n", c->type);
 					abort();
 			}
-			if (i == cterm_info.selected_component)
+			if (i == cur_term_window->selected_component)
 				PUTS(ESC_RESET_ATTR);
 			c->is_dirty = 0;
 		}
@@ -164,29 +178,52 @@ void crefresh(int force_redraw)
 	fflush(stdout);
 }
 
+static void cinit_window(term_window_type window_type)
+{
+	assert(window_type >= 0 && window_type < term_window_type__MAX);
+	term_window *win = &term_windows[window_type];
+	if (!win->has_initiated)
+	{
+		memset(win, 0, sizeof(*win));
+		win->selected_component = -1u;
+	}
+	win->has_initiated = 1;
+}
+
+void cswitch_window(term_window_type window_type)
+{
+	assert(window_type >= 0 && window_type < term_window_type__MAX);
+	term_window *win = &term_windows[window_type];
+	if (!win->has_initiated)
+		cinit_window(window_type);
+	cur_term_window = win;
+	cur_term_window_type = window_type;
+	crefresh(1);
+}
+
 console_component *ccomponent_add(console_component component)
 {
 	assert(component.type > 0 && component.type < COMPONENT_TYPE_MAX);
-	assert(cterm_info.components_count < MAX_COMPONENT_NUMBER);
+	assert(cur_term_window->components_count < MAX_COMPONENT_NUMBER);
 
-	console_component *new_component = &cterm_info.components[cterm_info.components_count];
+	console_component *new_component = &cur_term_window->components[cur_term_window->components_count];
 	*new_component = component;
-	if (cterm_info.selected_component == -1u && is_selectable(&component))
-		cterm_info.selected_component = cterm_info.components_count;
-	cterm_info.components_count++;
+	if (cur_term_window->selected_component == -1u && is_selectable(&component))
+		cur_term_window->selected_component = cur_term_window->components_count;
+	cur_term_window->components_count++;
 	return (new_component);
 }
 
 void cnext_component(direction dir)
 {
-	if (!cterm_info.components_count)
+	if (!cur_term_window->components_count)
 		return ;
 	size_t new_selected = find_best_component(dir);
 	if (new_selected != -1u)
 	{
 		mark_dirty(ccurrent_component(), 1);
-		mark_dirty(&cterm_info.components[new_selected], 1);
-		cterm_info.selected_component = new_selected;
+		mark_dirty(&cur_term_window->components[new_selected], 1);
+		cur_term_window->selected_component = new_selected;
 	}
 }
 
