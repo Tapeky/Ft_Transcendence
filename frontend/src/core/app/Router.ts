@@ -52,6 +52,11 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
       return new LocalTournament().getElement();
     });
+
+    this.routes.set('/tournament-history', async () => {
+      const { TournamentHistory } = await import('../../features/tournament/pages/TournamentHistory');
+      return new TournamentHistory().getElement();
+    });
     
     
     this.routes.set('/dashboard', async (path?: string) => {

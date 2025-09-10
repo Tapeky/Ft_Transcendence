@@ -1,12 +1,18 @@
 import { TournamentStateManager, TournamentSystemState } from '../managers/TournamentStateManager';
 import { Tournament, TournamentSize } from '../types/tournament';
 import { router } from '../../../core/app/Router';
+import { Header } from '../../../shared/components/Header';
+import { Banner } from '../../../shared/components/Banner';
+import { authManager } from '../../../core/auth/AuthManager';
 
 export class LocalTournament {
   private element: HTMLElement;
   private stateManager: TournamentStateManager;
   private unsubscribe?: () => void;
   private currentState: TournamentSystemState | null = null;
+  private header?: Header;
+  private banner?: Banner;
+  private authUnsubscribe?: () => void;
 
   constructor() {
     this.element = this.createElement();
@@ -14,6 +20,7 @@ export class LocalTournament {
     
     // Set up subscription after element is created
     this.setupStateSubscription();
+    this.subscribeToAuth();
     
     // Initialize after everything is set up - use setTimeout to ensure DOM is ready
     setTimeout(() => {
@@ -38,6 +45,7 @@ export class LocalTournament {
     if (tournamentResultJson) {
       try {
         const result = JSON.parse(tournamentResultJson);
+        console.log('🔧 Tournament result from sessionStorage:', result);
         sessionStorage.removeItem('tournamentMatchResult'); // Clear after reading
         
         // Load tournament if not already loaded
@@ -45,14 +53,22 @@ export class LocalTournament {
           await this.stateManager.loadTournament(result.tournamentId);
         }
 
-        // Submit the match result
-        const gameResult = {
+        // Submit the match result directly to the service
+        const matchResult = {
+          matchId: result.matchId,
           player1Score: result.player1Score,
           player2Score: result.player2Score,
           winnerAlias: result.winnerAlias
         };
 
-        await this.stateManager.completeMatch(gameResult);
+        console.log('🔧 Sending match result to API:', { tournamentId: result.tournamentId, matchResult });
+
+        // Import TournamentService dynamically to avoid circular imports
+        const { TournamentService } = await import('../services/TournamentService');
+        await TournamentService.submitMatchResult(result.tournamentId, matchResult);
+        
+        // Refresh tournament state to get updated bracket
+        await this.stateManager.refreshTournamentState();
       } catch (error) {
         console.error('Failed to process tournament result:', error);
         this.showError('Failed to process match result');
@@ -67,46 +83,76 @@ export class LocalTournament {
     });
   }
 
+  private subscribeToAuth(): void {
+    // Subscribe to auth changes like Menu page
+    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+      if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
+        router.navigate('/');
+      }
+    });
+
+    // Initial verification
+    if (!authManager.isAuthenticated() || !authManager.getCurrentUser()) {
+      router.navigate('/');
+    }
+  }
+
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'tournament-container w-full min-h-screen bg-gray-900 text-white p-6';
-    
-    container.innerHTML = `
-      <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
+    container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
+
+    this.header = new Header(true); // userVisible = true
+    this.banner = new Banner();
+
+    // Main content area
+    const mainContent = document.createElement('div');
+    mainContent.className = 'tournament-main flex-grow bg-gradient-to-r from-blue-800 to-red-700';
+    mainContent.id = 'tournament-content-wrapper';
+
+    mainContent.innerHTML = `
+      <div class="p-8 max-w-6xl mx-auto">
+        <!-- Page Header -->
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
           <div>
-            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-              Local Tournament
-            </h1>
-            <p class="text-gray-400 mt-2">Compete in single-elimination tournaments</p>
+            <h1 class="text-5xl font-bold text-white text-shadow-lg">🏆 Local Tournament</h1>
+            <p class="text-white/80 mt-2 text-xl">Compete in single-elimination tournaments</p>
           </div>
-          <button 
-            id="back-button" 
-            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-          >
-            ← Back to Menu
-          </button>
+          <div class="flex gap-3">
+            <button 
+              id="history-button" 
+              class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105 flex items-center gap-2"
+            >
+              📊 Historique
+            </button>
+            <button 
+              id="back-button" 
+              class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105"
+            >
+              ← Retour au menu
+            </button>
+          </div>
         </div>
 
         <!-- Loading State -->
         <div id="loading-state" class="hidden">
-          <div class="flex items-center justify-center py-16">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <span class="ml-4 text-xl">Loading...</span>
+          <div class="flex items-center justify-center min-h-[400px] text-white">
+            <div class="text-center bg-white/10 rounded-2xl p-12 backdrop-blur-sm border border-white/20">
+              <div class="loading-spinner border-4 border-white/30 border-t-white rounded-full w-12 h-12 animate-spin mx-auto"></div>
+              <p class="mt-5 text-xl text-white/80">Chargement...</p>
+            </div>
           </div>
         </div>
 
         <!-- Error State -->
         <div id="error-state" class="hidden">
-          <div class="bg-red-900/50 border border-red-500 rounded-lg p-6 mb-6">
+          <div class="bg-red-600/20 border border-red-400 rounded-2xl p-6 mb-6 backdrop-blur-sm">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-red-300 text-lg font-semibold">Error</h3>
+                <h3 class="text-red-300 text-lg font-semibold">❌ Erreur</h3>
                 <p id="error-message" class="text-red-200 mt-2"></p>
               </div>
-              <button id="clear-error" class="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg">
-                Clear
+              <button id="clear-error" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition duration-300 transform hover:scale-105">
+                Effacer
               </button>
             </div>
           </div>
@@ -118,6 +164,11 @@ export class LocalTournament {
         </div>
       </div>
     `;
+
+    // Assemble the page (matching Menu.ts structure)
+    container.appendChild(this.header.getElement());
+    container.appendChild(this.banner.getElement());
+    container.appendChild(mainContent);
 
     // Defer event binding to ensure DOM is ready
     setTimeout(() => {
@@ -137,13 +188,17 @@ export class LocalTournament {
       return;
     }
 
-    // Use event delegation for back button to ensure it works even if DOM changes
+    // Use event delegation for buttons to ensure it works even if DOM changes
     this.element.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (target.id === 'back-button' || target.closest('#back-button')) {
         e.preventDefault();
         console.log('Back button clicked - navigating to /menu');
         router.navigate('/menu');
+      } else if (target.id === 'history-button' || target.closest('#history-button')) {
+        e.preventDefault();
+        console.log('History button clicked - navigating to /tournament-history');
+        router.navigate('/tournament-history');
       }
     });
 
@@ -647,6 +702,9 @@ export class LocalTournament {
     const bracketContainer = this.element.querySelector('#bracket-display');
     if (!bracketContainer) return;
 
+    // 🔧 DEBUG: Log bracket data to see undefined aliases
+    console.log('🔧 Rendering bracket:', JSON.stringify(bracket, null, 2));
+
     // Simple bracket rendering - could be enhanced with better visuals
     const bracketHTML = bracket.rounds.map((round: any, roundIndex: number) => `
       <div class="bracket-round mb-8">
@@ -657,10 +715,10 @@ export class LocalTournament {
               <div class="flex justify-between items-center">
                 <div class="flex-1">
                   <div class="player ${match.winnerAlias === match.player1Alias ? 'text-green-400 font-bold' : ''}">
-                    ${match.player1Alias} <span class="float-right">${match.player1Score}</span>
+                    ${match.player1Alias || 'Player 1'} <span class="float-right">${match.player1Score || 0}</span>
                   </div>
                   <div class="player ${match.winnerAlias === match.player2Alias ? 'text-green-400 font-bold' : ''}">
-                    ${match.player2Alias} <span class="float-right">${match.player2Score}</span>
+                    ${match.player2Alias || 'Player 2'} <span class="float-right">${match.player2Score || 0}</span>
                   </div>
                 </div>
                 <div class="ml-4 text-sm">
@@ -745,7 +803,7 @@ export class LocalTournament {
     const tournament = state.tournament;
     if (!tournament) return;
 
-    const winner = tournament.winnerId;
+    const winner = tournament.winnerAlias;
     const stats = this.stateManager.getTournamentStatistics();
 
     container.innerHTML = `

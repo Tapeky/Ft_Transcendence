@@ -274,4 +274,64 @@ export class TournamentService {
     if (tournament.status !== 'completed') return null;
     return tournament.winnerId || null;
   }
+
+  /**
+   * Get tournament history
+   */
+  static async getHistory(): Promise<Tournament[]> {
+    const response = await api.get<{
+      success: boolean;
+      data: {
+        tournaments: Tournament[];
+        total: number;
+      };
+      error?: string;
+    }>(`${this.BASE_URL}/history`);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get tournament history');
+    }
+    
+    // Convert date strings back to Date objects
+    return response.data.tournaments.map(tournament => ({
+      ...tournament,
+      createdAt: new Date(tournament.createdAt),
+      startedAt: tournament.startedAt ? new Date(tournament.startedAt) : undefined,
+      completedAt: tournament.completedAt ? new Date(tournament.completedAt) : undefined,
+      players: tournament.players.map(player => ({
+        ...player,
+        joinedAt: new Date(player.joinedAt)
+      })),
+      bracket: tournament.bracket ? {
+        ...tournament.bracket,
+        rounds: tournament.bracket.rounds.map(round => 
+          round.map(match => ({
+            ...match,
+            startedAt: match.startedAt ? new Date(match.startedAt) : undefined,
+            completedAt: match.completedAt ? new Date(match.completedAt) : undefined
+          }))
+        )
+      } : undefined
+    }));
+  }
+
+  /**
+   * Clear all tournament history (completed tournaments only)
+   */
+  static async clearHistory(): Promise<{ message: string; deletedCount: number }> {
+    const response = await api.delete<{
+      success: boolean;
+      data: {
+        message: string;
+        deletedCount: number;
+      };
+      error?: string;
+    }>(`${this.BASE_URL}/history`);
+    
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to clear tournament history');
+    }
+    
+    return response.data;
+  }
 }
