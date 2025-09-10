@@ -7,6 +7,15 @@ interface GameState {
     rightScore: number;
 }
 
+interface TournamentGameContext {
+    tournamentId: string;
+    matchId: string;
+    player1Alias: string;
+    player2Alias: string;
+    round: number;
+    matchNumber: number;
+}
+
 export class Game {
     private canvas!: HTMLCanvasElement;
     private ctx!: CanvasRenderingContext2D;
@@ -17,9 +26,10 @@ export class Game {
     private localInputRight = { up: false, down: false };
     private animationId: number | null = null;
     private container: HTMLElement;
-    private gameMode: 'local' | 'online';
+    private gameMode: 'local' | 'online' | 'tournament';
     private opponentId?: number;
     private gameEndOverlay: HTMLElement | null = null;
+    private tournamentContext?: TournamentGameContext;
     
     // Ready system
     private gameId?: number;
@@ -39,11 +49,17 @@ export class Game {
     private readonly PADDLE_HEIGHT = 30;
     private readonly BALL_RADIUS = 5;
 
-    constructor(container: HTMLElement, opponentId?: number, gameMode: 'local' | 'online' = 'online') {
-        console.log('🎮 Game constructor called with:', { container, opponentId, gameMode });
+    constructor(
+        container: HTMLElement, 
+        opponentId?: number, 
+        gameMode: 'local' | 'online' | 'tournament' = 'online',
+        tournamentContext?: TournamentGameContext
+    ) {
+        console.log('🎮 Game constructor called with:', { container, opponentId, gameMode, tournamentContext });
         this.container = container;
         this.gameMode = gameMode;
         this.opponentId = opponentId;
+        this.tournamentContext = tournamentContext;
         
         this.initCanvas();
         this.initializeGame();
@@ -68,6 +84,17 @@ export class Game {
         const instructions = document.createElement('div');
         if (this.gameMode === 'local') {
             instructions.innerHTML = `<p>Player 1: W/S | Player 2: ↑/↓</p><p>Mode: LOCAL</p>`;
+        } else if (this.gameMode === 'tournament') {
+            if (this.tournamentContext) {
+                instructions.innerHTML = `
+                    <p>${this.tournamentContext.player1Alias} vs ${this.tournamentContext.player2Alias}</p>
+                    <p>Round ${this.tournamentContext.round} • Match ${this.tournamentContext.matchNumber}</p>
+                    <p>Player 1: W/S | Player 2: ↑/↓</p>
+                    <p>Mode: TOURNAMENT</p>
+                `;
+            } else {
+                instructions.innerHTML = `<p>Player 1: W/S | Player 2: ↑/↓</p><p>Mode: TOURNAMENT</p>`;
+            }
         } else {
             instructions.innerHTML = `<p>Use W/S or ↑/↓ keys to move</p><p>Mode: ONLINE</p>`;
         }
@@ -78,7 +105,7 @@ export class Game {
     }
 
     private async initializeGame() {
-        if (this.gameMode === 'local') {
+        if (this.gameMode === 'local' || this.gameMode === 'tournament') {
             this.setupLocalGame();
             return;
         }
@@ -232,7 +259,7 @@ export class Game {
     }
 
     private keydownHandler = (e: KeyboardEvent) => {
-        if (this.gameMode === 'local') {
+        if (this.gameMode === 'local' || this.gameMode === 'tournament') {
             switch(e.key.toLowerCase()) {
                 case 'w':
                     this.localInputLeft.up = true;
@@ -269,7 +296,7 @@ export class Game {
     }
 
     private keyupHandler = (e: KeyboardEvent) => {
-        if (this.gameMode === 'local') {
+        if (this.gameMode === 'local' || this.gameMode === 'tournament') {
             switch(e.key.toLowerCase()) {
                 case 'w':
                     this.localInputLeft.up = false;
@@ -464,36 +491,117 @@ export class Game {
         overlay.style.textAlign = 'center';
         overlay.style.fontFamily = 'Arial, sans-serif';
 
-        overlay.innerHTML = `
-            <div style="background: #333; padding: 40px; border-radius: 10px;">
-                <h2>Game Over!</h2>
-                <p>Winner: ${winner}</p>
-                <p>Final Score: ${this.gameState?.leftScore || 0} - ${this.gameState?.rightScore || 0}</p>
-            </div>
-        `;
+        const leftScore = this.gameState?.leftScore || 0;
+        const rightScore = this.gameState?.rightScore || 0;
 
-        const backButton = document.createElement('button');
-        backButton.textContent = 'Back to Menu';
-        backButton.style.backgroundColor = '#007bff';
-        backButton.style.color = 'white';
-        backButton.style.border = 'none';
-        backButton.style.padding = '10px 20px';
-        backButton.style.borderRadius = '5px';
-        backButton.style.fontSize = '16px';
-        backButton.style.cursor = 'pointer';
-        backButton.style.marginTop = '20px';
+        if (this.gameMode === 'tournament' && this.tournamentContext) {
+            // Tournament mode - show match result
+            const winnerAlias = leftScore > rightScore ? this.tournamentContext.player1Alias : this.tournamentContext.player2Alias;
+            
+            overlay.innerHTML = `
+                <div style="background: #333; padding: 40px; border-radius: 10px;">
+                    <h2>Match Complete!</h2>
+                    <p style="font-size: 24px; margin: 20px 0; color: #4ade80;">🏆 Winner: ${winnerAlias}</p>
+                    <p>Final Score: ${leftScore} - ${rightScore}</p>
+                    <div style="margin: 20px 0; padding: 15px; background: #444; border-radius: 5px;">
+                        <p style="margin: 5px 0;">${this.tournamentContext.player1Alias}: ${leftScore}</p>
+                        <p style="margin: 5px 0;">${this.tournamentContext.player2Alias}: ${rightScore}</p>
+                    </div>
+                    <p style="font-size: 14px; color: #888;">Round ${this.tournamentContext.round} • Match ${this.tournamentContext.matchNumber}</p>
+                </div>
+            `;
+        } else {
+            // Regular game mode
+            overlay.innerHTML = `
+                <div style="background: #333; padding: 40px; border-radius: 10px;">
+                    <h2>Game Over!</h2>
+                    <p>Winner: ${winner}</p>
+                    <p>Final Score: ${leftScore} - ${rightScore}</p>
+                </div>
+            `;
+        }
 
-        backButton.addEventListener('click', () => {
-            if (document.body.contains(overlay)) {
-                document.body.removeChild(overlay);
-            }
-            this.destroy();
-            (window as any).router?.navigate('/menu');
-        });
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '20px';
 
-        overlay.firstElementChild!.appendChild(backButton);
+        if (this.gameMode === 'tournament') {
+            // Tournament mode - continue to next match or back to tournament
+            const continueButton = document.createElement('button');
+            continueButton.textContent = 'Continue Tournament';
+            continueButton.style.cssText = `
+                background-color: #10b981; color: white; border: none; padding: 12px 24px;
+                border-radius: 5px; font-size: 16px; cursor: pointer; margin: 0 10px;
+            `;
+            continueButton.addEventListener('click', () => {
+                this.handleTournamentMatchComplete();
+            });
+
+            const backButton = document.createElement('button');
+            backButton.textContent = 'Back to Tournament';
+            backButton.style.cssText = `
+                background-color: #6b7280; color: white; border: none; padding: 12px 24px;
+                border-radius: 5px; font-size: 16px; cursor: pointer; margin: 0 10px;
+            `;
+            backButton.addEventListener('click', () => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+                this.destroy();
+                (window as any).router?.navigate('/tournament');
+            });
+
+            buttonContainer.appendChild(continueButton);
+            buttonContainer.appendChild(backButton);
+        } else {
+            // Regular mode - back to menu
+            const backButton = document.createElement('button');
+            backButton.textContent = 'Back to Menu';
+            backButton.style.cssText = `
+                background-color: #007bff; color: white; border: none; padding: 12px 24px;
+                border-radius: 5px; font-size: 16px; cursor: pointer;
+            `;
+            backButton.addEventListener('click', () => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+                this.destroy();
+                (window as any).router?.navigate('/menu');
+            });
+
+            buttonContainer.appendChild(backButton);
+        }
+
+        overlay.firstElementChild!.appendChild(buttonContainer);
         document.body.appendChild(overlay);
         this.gameEndOverlay = overlay;
+    }
+
+    private handleTournamentMatchComplete(): void {
+        if (!this.tournamentContext || !this.gameState) return;
+
+        const leftScore = this.gameState.leftScore;
+        const rightScore = this.gameState.rightScore;
+        const winnerAlias = leftScore > rightScore ? 
+            this.tournamentContext.player1Alias : 
+            this.tournamentContext.player2Alias;
+
+        // Store tournament result in sessionStorage for the tournament system to handle
+        const matchResult = {
+            tournamentId: this.tournamentContext.tournamentId,
+            matchId: this.tournamentContext.matchId,
+            player1Score: leftScore,
+            player2Score: rightScore,
+            winnerAlias: winnerAlias
+        };
+
+        sessionStorage.setItem('tournamentMatchResult', JSON.stringify(matchResult));
+
+        // Close overlay and navigate back to tournament
+        if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
+            document.body.removeChild(this.gameEndOverlay);
+        }
+        this.destroy();
+        window.location.href = '/tournament';
     }
 
     private showError(message: string): void {
