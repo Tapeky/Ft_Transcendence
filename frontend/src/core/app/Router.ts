@@ -48,6 +48,11 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       return new FriendsPage().getElement();
     });
     
+    this.routes.set('/tournament', async () => {
+      const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
+      return new LocalTournament().getElement();
+    });
+    
     
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
@@ -66,7 +71,9 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
     
     this.routes.set('/game', async (path?: string) => {
       const currentPath = path || window.location.pathname;
-      const pathSegments = currentPath.split('/');
+      // Extract pathname without query parameters
+      const pathname = currentPath.split('?')[0];
+      const pathSegments = pathname.split('/');
       const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
       
       // Check for query parameters (e.g., /game?mode=local-tournament&...)
@@ -75,6 +82,7 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       
       console.log('🔍 Router /game debug:', { 
         currentPath, 
+        pathname,
         pathSegments, 
         gameMode, 
         search: window.location.search, 
@@ -91,6 +99,27 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       if (gameMode === 'local') {
         const { Game } = await import('../../features/game/pages/Game');
         return this.createComponentContainer(Game, undefined, 'local');
+      }
+      
+      if (gameMode === 'tournament') {
+        // Handle tournament game mode with context
+        const tournamentContextParam = urlParams.get('tournamentContext');
+        console.log('🔍 Tournament context param:', tournamentContextParam);
+        let tournamentContext = undefined;
+        
+        if (tournamentContextParam) {
+          try {
+            tournamentContext = JSON.parse(decodeURIComponent(tournamentContextParam));
+            console.log('✅ Parsed tournament context:', tournamentContext);
+          } catch (e) {
+            console.error('❌ Failed to parse tournament context:', e);
+          }
+        } else {
+          console.warn('⚠️ No tournamentContext parameter found in URL');
+        }
+        
+        const { Game } = await import('../../features/game/pages/Game');
+        return this.createComponentContainer(Game, undefined, 'tournament', tournamentContext);
       }
       
       if (gameMode === 'online') {
@@ -118,16 +147,20 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
     if (this.routes.has(path)) { return this.routes.get(path); }
 
     if (path.startsWith('/dashboard/')) {
-      const segments = path.split('/');
+      // Extract pathname without query parameters
+      const pathname = path.split('?')[0];
+      const segments = pathname.split('/');
       if (segments.length === 3 && segments[2].match(/^\d+$/)) {
         return this.routes.get('/dashboard');
       }
     }
     
     if (path.startsWith('/game')) {
-      const segments = path.split('/');
-      if (segments.length === 2 || 
-          (segments.length === 3 && (segments[2] === 'local' || segments[2] === 'online' || segments[2].match(/^\d+$/)))) {
+      // Extract pathname without query parameters
+      const pathname = path.split('?')[0];
+      const segments = pathname.split('/');
+      if (segments.length >= 2 && 
+          (segments.length === 2 || segments[2] === 'local' || segments[2] === 'online' || segments[2] === 'tournament' || segments[2].match(/^\d+$/))) {
         return this.routes.get('/game');
       }
     }
@@ -166,13 +199,13 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
   }
 
   private handleInitialRoute(): void {
-    const currentPath = window.location.pathname;
+    const currentPath = window.location.pathname + window.location.search;
     this.navigate(currentPath);
   }
 
   private setupPopState(): void {
     window.addEventListener('popstate', async () => {
-      const currentPath = window.location.pathname;
+      const currentPath = window.location.pathname + window.location.search;
       
       try {
         await this.renderPath(currentPath);

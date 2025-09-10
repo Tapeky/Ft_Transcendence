@@ -44,6 +44,53 @@ CREATE TABLE IF NOT EXISTS friendships (
     UNIQUE(user_id, friend_id)
 );
 
+-- Tournament System Tables
+CREATE TABLE IF NOT EXISTS tournaments (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    max_players INTEGER NOT NULL CHECK (max_players IN (4, 8, 16)),
+    current_players INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'registration' CHECK (status IN ('registration', 'ready', 'in_progress', 'completed', 'cancelled')),
+    winner_alias VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    started_at DATETIME,
+    completed_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS tournament_players (
+    id VARCHAR(36) PRIMARY KEY,
+    tournament_id VARCHAR(36) NOT NULL,
+    alias VARCHAR(50) NOT NULL,
+    position INTEGER, -- Final tournament position
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    UNIQUE(tournament_id, alias) -- Unique alias per tournament
+);
+
+CREATE TABLE IF NOT EXISTS tournament_matches (
+    id VARCHAR(36) PRIMARY KEY,
+    tournament_id VARCHAR(36) NOT NULL,
+    round INTEGER NOT NULL,
+    match_number INTEGER NOT NULL,
+    player1_alias VARCHAR(50) NOT NULL,
+    player2_alias VARCHAR(50) NOT NULL,
+    player1_score INTEGER DEFAULT 0,
+    player2_score INTEGER DEFAULT 0,
+    winner_alias VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+    started_at DATETIME,
+    completed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE
+);
+
+-- Tournament indexes
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+CREATE INDEX IF NOT EXISTS idx_tournament_players_tournament ON tournament_players(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_matches_tournament ON tournament_matches(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_matches_status ON tournament_matches(status);
 
 -- Table des matches
 CREATE TABLE IF NOT EXISTS matches (

@@ -36,16 +36,16 @@ export class Choice {
         CHOOSE YOUR MODE
       </div>
 
-      <!-- Section Droite - PROFILE -->
+      <!-- Section Droite - TOURNAMENT -->
       <div class="flex-1 flex items-center justify-start">
         <div 
-          id="profile-choice" 
+          id="tournament-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
                  text-[4rem] bg-[url('./img/city.png')] bg-cover bg-center 
                  flex justify-center items-center hover:scale-125 transition duration-500 cursor-pointer"
-          data-route="/profile"
+          data-route="/tournament"
         >
-          PROFILE
+          TOURNAMENT
         </div>
       </div>
     `;
@@ -58,9 +58,9 @@ export class Choice {
     const pongChoice = this.element.querySelector('#pong-choice');
     pongChoice?.addEventListener('click', () => this.navigateToGame());
 
-    // Profile choice navigation  
-    const profileChoice = this.element.querySelector('#profile-choice');
-    profileChoice?.addEventListener('click', () => this.navigateToProfile());
+    // Tournament choice navigation  
+    const tournamentChoice = this.element.querySelector('#tournament-choice');
+    tournamentChoice?.addEventListener('click', () => this.navigateToTournament());
 
     this.setupHoverEffects();
 
@@ -85,8 +85,8 @@ export class Choice {
     router.navigate('/game');
   }
 
-  private navigateToProfile(): void {
-    router.navigate('/profile');
+  private navigateToTournament(): void {
+    router.navigate('/tournament');
   }
 
   getElement(): HTMLElement {
