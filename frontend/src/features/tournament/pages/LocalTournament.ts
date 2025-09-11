@@ -104,55 +104,51 @@ export class LocalTournament {
     this.header = new Header(true); // userVisible = true
     this.banner = new Banner();
 
-    // Main content area
-    const mainContent = document.createElement('div');
-    mainContent.className = 'tournament-main flex-grow bg-gradient-to-r from-blue-800 to-red-700';
+    // Main content area with Menu.ts gradient background
+    const mainContent = document.createElement('main');
+    mainContent.className = 'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700';
     mainContent.id = 'tournament-content-wrapper';
 
     mainContent.innerHTML = `
-      <div class="p-8 max-w-6xl mx-auto">
-        <!-- Page Header -->
-        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
-          <div>
-            <h1 class="text-5xl font-bold text-white text-shadow-lg">🏆 Local Tournament</h1>
-            <p class="text-white/80 mt-2 text-xl">Compete in single-elimination tournaments</p>
-          </div>
-          <div class="flex gap-3">
-            <button 
-              id="history-button" 
-              class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105 flex items-center gap-2"
-            >
-              📊 Historique
-            </button>
-            <button 
-              id="back-button" 
-              class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105"
-            >
-              ← Retour au menu
-            </button>
+      <div class="w-full p-8">
+        <!-- Tournament Navigation Bar -->
+        <div class="bg-black/20 backdrop-blur-sm rounded-lg mb-6 p-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+              <button id="back-button" class="text-white border-white border-2 px-4 py-2 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
+                ← Back to Menu
+              </button>
+              <h1 class="text-2xl font-bold text-white font-iceland">Local Tournament</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+              <button 
+                id="history-button" 
+                class="text-white border-white border-2 px-4 py-2 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg"
+              >
+                📊 History
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Loading State -->
         <div id="loading-state" class="hidden">
-          <div class="flex items-center justify-center min-h-[400px] text-white">
-            <div class="text-center bg-white/10 rounded-2xl p-12 backdrop-blur-sm border border-white/20">
-              <div class="loading-spinner border-4 border-white/30 border-t-white rounded-full w-12 h-12 animate-spin mx-auto"></div>
-              <p class="mt-5 text-xl text-white/80">Chargement...</p>
-            </div>
+          <div class="bg-black/30 backdrop-blur-sm rounded-lg p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-white font-iceland text-lg">Loading...</p>
           </div>
         </div>
 
         <!-- Error State -->
         <div id="error-state" class="hidden">
-          <div class="bg-red-600/20 border border-red-400 rounded-2xl p-6 mb-6 backdrop-blur-sm">
+          <div class="bg-red-600/30 backdrop-blur-sm border border-red-400 rounded-lg p-6 mb-6">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-red-300 text-lg font-semibold">❌ Erreur</h3>
-                <p id="error-message" class="text-red-200 mt-2"></p>
+                <h3 class="text-red-200 text-lg font-semibold font-iceland">❌ Error</h3>
+                <p id="error-message" class="text-red-100 mt-2 font-iceland"></p>
               </div>
-              <button id="clear-error" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition duration-300 transform hover:scale-105">
-                Effacer
+              <button id="clear-error" class="text-white border-white border-2 px-4 py-2 rounded hover:bg-white hover:text-black transition-colors font-iceland">
+                Clear
               </button>
             </div>
           </div>
@@ -165,7 +161,7 @@ export class LocalTournament {
       </div>
     `;
 
-    // Assemble the page (matching Menu.ts structure)
+    // Assemble the page exactly like Menu.ts
     container.appendChild(this.header.getElement());
     container.appendChild(this.banner.getElement());
     container.appendChild(mainContent);
@@ -287,30 +283,32 @@ export class LocalTournament {
 
   private renderLobbyView(container: Element): void {
     container.innerHTML = `
-      <div class="max-w-2xl mx-auto">
-        <!-- Local Tournament Setup -->
-        <div class="bg-gray-800 rounded-xl p-8 border border-gray-700">
-          <h2 class="text-3xl font-bold mb-6 text-center text-blue-400">Local Tournament Setup</h2>
+      <div class="mb-6 text-center">
+        <h2 class="text-4xl font-bold text-white font-iceland">Tournament Setup</h2>
+      </div>
+
+      <!-- Tournament Setup Form -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
           <form id="local-tournament-form">
-            <div class="space-y-6">
+            <div class="space-y-8">
               <!-- Tournament Info -->
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-medium mb-2">Tournament Name</label>
+                  <label class="block text-xl font-medium mb-3 text-white font-iceland">Tournament Name</label>
                   <input 
                     type="text" 
                     id="tournament-name" 
-                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tournament name"
+                    class="w-full px-4 py-3 bg-black/20 border border-white rounded text-white font-iceland text-lg placeholder-gray-300 focus:ring-2 focus:ring-white"
+                    placeholder="Enter tournament name"
                     required
                     maxlength="50"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium mb-2">Players</label>
+                  <label class="block text-xl font-medium mb-3 text-white font-iceland">Number of Players</label>
                   <select 
                     id="max-players" 
-                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full px-4 py-3 bg-black/20 border border-white rounded text-white font-iceland text-lg focus:ring-2 focus:ring-white"
                   >
                     <option value="4">4 Players</option>
                     <option value="8" selected>8 Players</option>
@@ -321,22 +319,21 @@ export class LocalTournament {
 
               <!-- Players Section -->
               <div>
-                <label class="block text-sm font-medium mb-4">Player Names</label>
-                <div id="players-container" class="grid grid-cols-2 gap-3">
+                <label class="block text-xl font-medium mb-4 text-white font-iceland">Player Names</label>
+                <div id="players-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <!-- Player inputs will be generated dynamically -->
                 </div>
               </div>
 
               <button 
                 type="submit" 
-                class="w-full px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-lg transition-colors"
+                class="w-full text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold"
               >
-                �️ Create Tournament
+                Create Tournament
               </button>
             </div>
           </form>
         </div>
-      </div>
     `;
 
     this.generatePlayerInputs(8); // Default 8 players
@@ -357,7 +354,7 @@ export class LocalTournament {
           type="text" 
           id="player-${i}" 
           placeholder="Player ${i}"
-          class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+          class="w-full px-4 py-3 bg-black/20 border border-white rounded text-white font-iceland text-lg placeholder-gray-300 focus:ring-2 focus:ring-white"
           required
           maxlength="20"
         />
@@ -489,76 +486,78 @@ export class LocalTournament {
       Math.round((state.registration.tournament.currentPlayers / state.registration.tournament.maxPlayers) * 100) : 0;
 
     container.innerHTML = `
-      <div class="max-w-2xl mx-auto">
-        <div class="bg-gray-800 rounded-xl p-8 border border-gray-700">
-          <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold mb-2">${tournament.name}</h2>
-            <p class="text-gray-400">Tournament Registration</p>
+      <div class="mb-6 text-center">
+        <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
+      </div>
+
+      <!-- Tournament Registration -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
+        <div class="text-center mb-6">
+          <p class="text-white text-2xl font-iceland">Tournament Registration</p>
             <div class="mt-4">
-              <div class="text-sm text-gray-400 mb-2">Tournament ID: 
-                <span class="text-blue-400 font-mono">${tournament.id}</span>
-                <button id="copy-id" class="ml-2 text-xs bg-gray-700 px-2 py-1 rounded hover:bg-gray-600">Copy</button>
+              <div class="text-lg text-white mb-2 font-iceland">Tournament ID: 
+                <span class="text-blue-300 font-mono">${tournament.id}</span>
+                <button id="copy-id" class="ml-3 text-white border-white border-2 px-3 py-1 rounded hover:bg-white hover:text-black transition-colors font-iceland">Copy</button>
               </div>
             </div>
           </div>
 
           <!-- Progress Bar -->
           <div class="mb-8">
-            <div class="flex justify-between text-sm mb-2">
+            <div class="flex justify-between text-xl mb-3 text-white font-iceland">
               <span>Players Registered</span>
               <span>${tournament.currentPlayers}/${tournament.maxPlayers}</span>
             </div>
-            <div class="w-full bg-gray-700 rounded-full h-3">
-              <div class="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500" 
+            <div class="w-full bg-black/50 border border-white rounded-full h-4">
+              <div class="bg-gradient-to-r from-blue-400 to-green-400 h-4 rounded-full transition-all duration-500" 
                    style="width: ${progress}%"></div>
             </div>
           </div>
 
           <!-- Players List -->
           <div class="mb-8">
-            <h3 class="text-xl font-semibold mb-4">Registered Players</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <h3 class="text-2xl font-semibold mb-6 text-white font-iceland">Registered Players</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               ${tournament.players.map((player, index) => `
-                <div class="bg-gray-700 rounded-lg p-3 text-center">
-                  <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold">
+                <div class="bg-black/30 border border-white rounded-lg p-4 text-center">
+                  <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold font-iceland text-lg">
                     ${index + 1}
                   </div>
-                  <div class="text-sm font-medium">${player.alias}</div>
+                  <div class="text-lg font-medium text-white font-iceland">${player.alias}</div>
                 </div>
               `).join('')}
               ${Array.from({ length: tournament.maxPlayers - tournament.currentPlayers }, (_, index) => `
-                <div class="bg-gray-700/50 rounded-lg p-3 text-center border-2 border-dashed border-gray-600">
-                  <div class="w-8 h-8 bg-gray-600 rounded-full mx-auto mb-2 flex items-center justify-center text-gray-400">
+                <div class="bg-black/10 rounded-lg p-4 text-center border-2 border-dashed border-white/50">
+                  <div class="w-10 h-10 bg-gray-600 rounded-full mx-auto mb-3 flex items-center justify-center text-gray-400 font-iceland text-lg">
                     ${tournament.currentPlayers + index + 1}
                   </div>
-                  <div class="text-sm text-gray-400">Waiting...</div>
+                  <div class="text-lg text-gray-300 font-iceland">Waiting...</div>
                 </div>
               `).join('')}
             </div>
           </div>
 
           <!-- Actions -->
-          <div class="flex gap-4">
+          <div class="flex gap-6">
             ${tournament.status === 'ready' ? `
               <div class="flex-1">
-                <div class="mb-3 text-center text-green-400 text-sm">
+                <div class="mb-4 text-center text-green-300 text-xl font-iceland">
                   ✅ Tournament ready! Click to start the bracket and begin matches.
                 </div>
-                <button id="start-tournament" class="w-full px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg font-medium transition-colors">
-                  🏆 Start Tournament
+                <button id="start-tournament" class="w-full text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold">
+                  Start Tournament
                 </button>
               </div>
             ` : `
-              <div class="flex-1 px-6 py-3 bg-gray-600 rounded-lg font-medium text-center text-gray-300">
+              <div class="flex-1 px-8 py-4 bg-black/20 border border-white rounded font-iceland text-xl text-center text-white">
                 Waiting for ${tournament.maxPlayers - tournament.currentPlayers} more players
               </div>
             `}
-            <button id="refresh-tournament" class="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors">
+            <button id="refresh-tournament" class="text-white border-white border-2 px-6 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
               Refresh
             </button>
           </div>
         </div>
-      </div>
     `;
 
     this.bindRegistrationEvents();
@@ -641,18 +640,21 @@ export class LocalTournament {
     });
     
     if (!tournament) {
-      container.innerHTML = '<div class="text-center text-gray-400">No tournament loaded</div>';
+      container.innerHTML = '<div class="text-center text-white text-2xl font-iceland">No tournament loaded</div>';
       return;
     }
     
     if (!tournament.bracket) {
       container.innerHTML = `
-        <div class="text-center">
-          <h2 class="text-3xl font-bold mb-2">${tournament.name}</h2>
-          <p class="text-gray-400 mb-4">Tournament Status: ${tournament.status}</p>
-          <div class="bg-yellow-600/20 border border-yellow-600 rounded-lg p-4">
-            <p class="text-yellow-400">Bracket not yet generated. Tournament may still be initializing...</p>
-            <button id="refresh-bracket" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+        <div class="mb-6 text-center">
+          <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
+          <p class="text-white text-xl font-iceland mt-2">Tournament Status: ${tournament.status}</p>
+        </div>
+        
+        <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
+          <div class="bg-yellow-600/30 border border-yellow-400 rounded-lg p-6 text-center">
+            <p class="text-yellow-300 mb-6 text-xl font-iceland">Bracket not yet generated. Tournament may still be initializing...</p>
+            <button id="refresh-bracket" class="text-white border-white border-2 px-6 py-3 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
               Refresh Bracket
             </button>
           </div>
@@ -663,33 +665,31 @@ export class LocalTournament {
     }
 
     container.innerHTML = `
-      <div>
-        <div class="text-center mb-8">
-          <h2 class="text-3xl font-bold mb-2">${tournament.name}</h2>
-          <p class="text-gray-400">Tournament Bracket</p>
-        </div>
+      <div class="mb-6 text-center">
+        <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
+        <p class="text-white text-2xl font-iceland mt-2">Tournament Bracket</p>
+      </div>
 
-        <!-- Tournament Progress -->
-        <div class="bg-gray-800 rounded-xl p-6 mb-8">
-          <div class="text-center mb-4">
-            <div class="text-2xl font-bold text-blue-400">Round ${tournament.bracket.currentRound}</div>
-          </div>
-          <div class="text-center">
-            ${tournament.status === 'in_progress' || tournament.status === 'running' ? `
-              <button id="start-next-match" class="px-8 py-4 bg-green-600 hover:bg-green-500 rounded-lg font-bold text-xl transition-colors">
-                Start Next Match
-              </button>
-            ` : tournament.status === 'completed' ? `
-              <div class="text-2xl font-bold text-gold-400">🏆 Tournament Complete! 🏆</div>
-            ` : ''}
-          </div>
+      <!-- Tournament Progress -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-6 mb-6">
+        <div class="text-center mb-6">
+          <div class="text-3xl font-bold text-blue-300 font-iceland">Round ${tournament.bracket.currentRound}</div>
         </div>
+        <div class="text-center">
+          ${tournament.status === 'in_progress' || tournament.status === 'running' ? `
+            <button id="start-next-match" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold">
+              Start Next Match
+            </button>
+          ` : tournament.status === 'completed' ? `
+            <div class="text-3xl font-bold text-yellow-300 font-iceland">Tournament Complete!</div>
+          ` : ''}
+        </div>
+      </div>
 
-        <!-- Bracket Display -->
-        <div class="bg-gray-800 rounded-xl p-6">
-          <div id="bracket-display" class="overflow-x-auto">
-            <!-- Bracket will be rendered here -->
-          </div>
+      <!-- Bracket Display -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
+        <div id="bracket-display" class="overflow-x-auto">
+          <!-- Bracket will be rendered here -->
         </div>
       </div>
     `;
@@ -705,23 +705,23 @@ export class LocalTournament {
     // 🔧 DEBUG: Log bracket data to see undefined aliases
     console.log('🔧 Rendering bracket:', JSON.stringify(bracket, null, 2));
 
-    // Simple bracket rendering - could be enhanced with better visuals
+    // Simple bracket rendering with Menu.ts styling
     const bracketHTML = bracket.rounds.map((round: any, roundIndex: number) => `
-      <div class="bracket-round mb-8">
-        <h3 class="text-xl font-bold mb-4 text-center">Round ${roundIndex + 1}</h3>
-        <div class="grid gap-4 ${round.length <= 2 ? 'max-w-md mx-auto' : ''}">
+      <div class="bracket-round mb-10">
+        <h3 class="text-2xl font-bold mb-6 text-center text-white font-iceland">Round ${roundIndex + 1}</h3>
+        <div class="grid gap-6 ${round.length <= 2 ? 'max-w-lg mx-auto' : ''}">
           ${round.map((match: any) => `
-            <div class="match bg-gray-700 rounded-lg p-4 ${match.status === 'in_progress' ? 'border-2 border-blue-500' : ''}">
+            <div class="match bg-black/20 border border-white rounded-lg p-6 ${match.status === 'in_progress' ? 'border-2 border-blue-300' : ''}">
               <div class="flex justify-between items-center">
                 <div class="flex-1">
-                  <div class="player ${match.winnerAlias === match.player1Alias ? 'text-green-400 font-bold' : ''}">
-                    ${match.player1Alias || 'Player 1'} <span class="float-right">${match.player1Score || 0}</span>
+                  <div class="player text-lg font-iceland ${match.winnerAlias === match.player1Alias ? 'text-green-300 font-bold' : 'text-white'}">
+                    ${match.player1Alias || 'Player 1'} <span class="float-right text-xl">${match.player1Score || 0}</span>
                   </div>
-                  <div class="player ${match.winnerAlias === match.player2Alias ? 'text-green-400 font-bold' : ''}">
-                    ${match.player2Alias || 'Player 2'} <span class="float-right">${match.player2Score || 0}</span>
+                  <div class="player text-lg font-iceland ${match.winnerAlias === match.player2Alias ? 'text-green-300 font-bold' : 'text-white'}">
+                    ${match.player2Alias || 'Player 2'} <span class="float-right text-xl">${match.player2Score || 0}</span>
                   </div>
                 </div>
-                <div class="ml-4 text-sm">
+                <div class="ml-6 text-2xl">
                   ${match.status === 'completed' ? '✓' : 
                     match.status === 'in_progress' ? '▶' : 
                     match.player1Alias !== 'TBD' && match.player2Alias !== 'TBD' ? '⏳' : '⏸'}
@@ -775,18 +775,18 @@ export class LocalTournament {
 
     container.innerHTML = `
       <div class="text-center">
-        <h2 class="text-4xl font-bold mb-8">${matchInfo.roundName}</h2>
-        <div class="bg-gray-800 rounded-xl p-8 max-w-2xl mx-auto">
-          <div class="text-2xl font-bold mb-8">
-            ${matchInfo.player1Alias} <span class="text-gray-400">vs</span> ${matchInfo.player2Alias}
+        <h2 class="text-5xl font-bold mb-12 text-white font-iceland">${matchInfo.roundName}</h2>
+        <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-xl p-12 max-w-3xl mx-auto">
+          <div class="text-3xl font-bold mb-12 text-white font-iceland">
+            ${matchInfo.player1Alias} <span class="text-blue-300">vs</span> ${matchInfo.player2Alias}
           </div>
           
-          <div class="mb-8">
-            <p class="text-gray-400 mb-4">Match will start automatically...</p>
-            <div class="animate-pulse text-6xl">⚡</div>
+          <div class="mb-12">
+            <p class="text-white mb-6 text-xl font-iceland">Match will start automatically...</p>
+            <div class="animate-pulse text-8xl">⚡</div>
           </div>
 
-          <div class="text-sm text-gray-400">
+          <div class="text-lg text-white font-iceland">
             Match ${matchInfo.matchNumber} • Round ${matchInfo.round}
           </div>
         </div>
@@ -807,35 +807,40 @@ export class LocalTournament {
     const stats = this.stateManager.getTournamentStatistics();
 
     container.innerHTML = `
-      <div class="text-center max-w-2xl mx-auto">
-        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl p-8 mb-8">
-          <div class="text-6xl mb-4">🏆</div>
-          <h2 class="text-4xl font-bold text-black mb-2">Tournament Complete!</h2>
-          <div class="text-2xl text-black font-semibold">Winner: ${winner}</div>
-        </div>
+      <div class="mb-6 text-center">
+        <h2 class="text-4xl font-bold text-white font-iceland">Tournament Results</h2>
+      </div>
 
-        <div class="bg-gray-800 rounded-xl p-8">
-          <h3 class="text-2xl font-bold mb-6">Tournament Statistics</h3>
-          <div class="grid grid-cols-2 gap-6">
-            <div class="text-center">
-              <div class="text-3xl font-bold text-blue-400">${stats?.totalPlayers || 0}</div>
-              <div class="text-sm text-gray-400">Total Players</div>
-            </div>
-            <div class="text-center">
-              <div class="text-3xl font-bold text-green-400">${stats?.completedMatches || 0}</div>
-              <div class="text-sm text-gray-400">Matches Played</div>
-            </div>
+      <!-- Winner Announcement -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-12 text-center mb-8">
+        <div class="text-8xl mb-6">🏆</div>
+        <h3 class="text-3xl font-bold mb-4 text-white font-iceland">Tournament Complete!</h3>
+        <div class="text-2xl text-yellow-300 font-semibold font-iceland">Winner: ${winner}</div>
+      </div>
+
+      <!-- Tournament Statistics -->
+      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8 mb-8">
+        <h3 class="text-2xl font-bold mb-6 text-white font-iceland text-center">Tournament Statistics</h3>
+        <div class="grid grid-cols-2 gap-8">
+          <div class="text-center">
+            <div class="text-4xl font-bold text-blue-300 font-iceland">${stats?.totalPlayers || 0}</div>
+            <div class="text-xl text-white font-iceland">Total Players</div>
+          </div>
+          <div class="text-center">
+            <div class="text-4xl font-bold text-green-300 font-iceland">${stats?.completedMatches || 0}</div>
+            <div class="text-xl text-white font-iceland">Matches Played</div>
           </div>
         </div>
+      </div>
 
-        <div class="mt-8">
-          <button id="new-tournament" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors mr-4">
-            New Tournament
-          </button>
-          <button id="view-bracket" class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors">
-            View Bracket
-          </button>
-        </div>
+      <!-- Actions -->
+      <div class="flex gap-6 justify-center">
+        <button id="new-tournament" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
+          New Tournament
+        </button>
+        <button id="view-bracket" class="text-white border-white border-2 px-6 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
+          View Bracket
+        </button>
       </div>
     `;
 
