@@ -75,71 +75,8 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
     });
     
     this.routes.set('/game', async (path?: string) => {
-      const currentPath = path || window.location.pathname;
-      // Extract pathname without query parameters
-      const pathname = currentPath.split('?')[0];
-      const pathSegments = pathname.split('/');
-      const gameMode = pathSegments[2]; // /game/local or /game/online or /game/123
-      
-      // Check for query parameters (e.g., /game?mode=local-tournament&...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const mode = urlParams.get('mode');
-      
-      console.log('🔍 Router /game debug:', { 
-        currentPath, 
-        pathname,
-        pathSegments, 
-        gameMode, 
-        search: window.location.search, 
-        mode,
-        href: window.location.href 
-      });
-      
-      
-      if (!gameMode) {
-        const { PongModeSelector } = await import('../../features/game/pages/PongModeSelector');
-        return this.createComponentContainer(PongModeSelector);
-      }
-      
-      if (gameMode === 'local') {
-        const { Game } = await import('../../features/game/pages/Game');
-        return this.createComponentContainer(Game, undefined, 'local');
-      }
-      
-      if (gameMode === 'tournament') {
-        // Handle tournament game mode with context
-        const tournamentContextParam = urlParams.get('tournamentContext');
-        console.log('🔍 Tournament context param:', tournamentContextParam);
-        let tournamentContext = undefined;
-        
-        if (tournamentContextParam) {
-          try {
-            tournamentContext = JSON.parse(decodeURIComponent(tournamentContextParam));
-            console.log('✅ Parsed tournament context:', tournamentContext);
-          } catch (e) {
-            console.error('❌ Failed to parse tournament context:', e);
-          }
-        } else {
-          console.warn('⚠️ No tournamentContext parameter found in URL');
-        }
-        
-        const { Game } = await import('../../features/game/pages/Game');
-        return this.createComponentContainer(Game, undefined, 'tournament', tournamentContext);
-      }
-      
-      if (gameMode === 'online') {
-        const { OnlinePlayerSelector } = await import('../../features/game/pages/OnlinePlayerSelector');
-        return this.createComponentContainer(OnlinePlayerSelector);
-      }
-      
-      if (gameMode.match(/^\d+$/)) {
-        const { Game } = await import('../../features/game/pages/Game');
-        const opponentId = parseInt(gameMode);
-        return this.createComponentContainer(Game, opponentId, 'online');
-      }
-
-      const { NotFoundPage } = await import('../../pages/NotFound');
-      return new NotFoundPage().getElement();
+      const { GamePage } = await import('../../pages/Game');
+      return new GamePage().getElement();
     });
     
     this.routes.set('/404', async () => {
@@ -161,13 +98,7 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
     }
     
     if (path.startsWith('/game')) {
-      // Extract pathname without query parameters
-      const pathname = path.split('?')[0];
-      const segments = pathname.split('/');
-      if (segments.length >= 2 && 
-          (segments.length === 2 || segments[2] === 'local' || segments[2] === 'online' || segments[2] === 'tournament' || segments[2].match(/^\d+$/))) {
-        return this.routes.get('/game');
-      }
+      return this.routes.get('/game');
     }
     
     return undefined;
