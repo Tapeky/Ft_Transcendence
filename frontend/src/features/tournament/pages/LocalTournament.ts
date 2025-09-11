@@ -878,7 +878,7 @@ export class LocalTournament {
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
       console.log('🚀 Redirecting to game with context:', gameContext);
       // Force page reload instead of SPA navigation to fix HTTPS routing issue
-      window.location.href = `/game/tournament?tournamentContext=${contextParam}`;
+      window.location.href = `/game?tournamentContext=${contextParam}`;
     }
   }
 
