@@ -113,6 +113,59 @@ export class TournamentStateManager {
   }
 
   /**
+   * Resume an existing tournament by ID
+   */
+  async resumeTournament(tournamentId: string): Promise<Tournament> {
+    this.updateUIState({ isLoading: true, error: undefined });
+
+    try {
+      const tournament = await TournamentService.getTournamentState(tournamentId);
+      
+      this.tournament = tournament;
+      this.initializeMatchOrchestrator(tournament.id);
+      
+      // Determine current view based on tournament status
+      let currentView: TournamentUIState['currentView'] = 'lobby';
+      
+      switch (tournament.status) {
+        case 'registration':
+          currentView = 'registration';
+          break;
+        case 'ready':
+          // Si ready mais pas de bracket, rester en registration pour permettre de start
+          currentView = tournament.bracket ? 'bracket' : 'registration';
+          break;
+        case 'in_progress':
+        case 'running':
+          currentView = 'bracket'; // Could be 'game' if match is active
+          break;
+        case 'completed':
+          currentView = 'results';
+          break;
+        default:
+          currentView = 'lobby';
+      }
+
+      this.updateUIState({
+        currentView,
+        isLoading: false,
+        error: undefined
+      });
+
+      this.notifyListeners();
+      return tournament;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resume tournament';
+      this.updateUIState({
+        isLoading: false,
+        error: errorMessage
+      });
+      this.notifyListeners();
+      throw error;
+    }
+  }
+
+  /**
    * Create a new tournament
    */
   async createTournament(name: string, maxPlayers: 4 | 8 | 16): Promise<Tournament> {

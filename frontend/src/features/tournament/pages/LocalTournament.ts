@@ -24,8 +24,28 @@ export class LocalTournament {
     
     // Initialize after everything is set up - use setTimeout to ensure DOM is ready
     setTimeout(() => {
-      this.initialize();
+      this.checkForExistingTournament();
     }, 0);
+  }
+
+  private async checkForExistingTournament(): Promise<void> {
+    // Check if there's a tournament ID in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('id');
+    
+    if (tournamentId) {
+      try {
+        console.log('🔄 Attempting to resume tournament:', tournamentId);
+        await this.stateManager.resumeTournament(tournamentId);
+      } catch (error) {
+        console.error('Failed to resume tournament:', error);
+        this.updateErrorState('Impossible de reprendre ce tournoi. Il a peut-être été supprimé ou est terminé.');
+        // Fall back to normal initialization
+        await this.initialize();
+      }
+    } else {
+      await this.initialize();
+    }
   }
 
   private async initialize(): Promise<void> {

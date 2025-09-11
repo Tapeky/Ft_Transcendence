@@ -309,6 +309,15 @@ export class TournamentHistory {
                 <span class="font-medium text-white/80 text-sm">${completedDate}</span>
               </div>
             </div>
+          ` : tournament.status !== 'cancelled' ? `
+            <div class="bg-blue-600/30 p-3 rounded-lg border-l-4 border-blue-400">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-blue-200">⚡ Tournoi actif</span>
+                <button class="resume-tournament-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 transform hover:scale-105" data-tournament-id="${tournament.id}">
+                  🎮 Reprendre
+                </button>
+              </div>
+            </div>
           ` : ''}
         </div>
         
@@ -420,14 +429,30 @@ export class TournamentHistory {
       });
     }
 
-    // Tournament cards click to view details
+    // Resume tournament buttons
+    const resumeBtns = mainContent.querySelectorAll('.resume-tournament-btn');
+    resumeBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        const tournamentId = btn.getAttribute('data-tournament-id');
+        if (tournamentId) {
+          // Navigate to tournament page with ID to resume
+          router.navigate(`/tournament?id=${tournamentId}`);
+        }
+      });
+    });
+
+    // Tournament cards click to view details (only for completed tournaments)
     const tournamentCards = mainContent.querySelectorAll('[data-tournament-id]');
     tournamentCards.forEach(card => {
       card.addEventListener('click', () => {
         const tournamentId = card.getAttribute('data-tournament-id');
         if (tournamentId) {
-          // Navigate to tournament details (for now, just go to main tournament page)
-          router.navigate(`/tournament?id=${tournamentId}`);
+          // Only allow viewing details for completed tournaments
+          const tournament = this.tournaments.find(t => t.id === tournamentId);
+          if (tournament && tournament.status === 'completed') {
+            router.navigate(`/tournament?id=${tournamentId}`);
+          }
         }
       });
     });
