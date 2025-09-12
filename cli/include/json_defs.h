@@ -12,7 +12,7 @@ typedef struct
 	const char *username;
 	const char *email;
 	const char *display_name;
-	const char *avatar_url;
+	NULLABLE(const char *, avatar_url);
 	u8 is_online;
 }	userdef;
 
@@ -32,7 +32,7 @@ typedef struct
 	};
 }	api_login_request;
 
-#define CUR_JSON_STRUCT api_login_request
+# define CUR_JSON_STRUCT api_login_request
 
 CHOICE_DEF(api_login_def,
 	"success", success,
@@ -43,7 +43,7 @@ CHOICE_DEF(api_login_def,
 			DEF_STRING("username", user.username)
 			DEF_STRING("email", user.email)
 			DEF_STRING("display_name", user.display_name)
-			DEF_STRING("avatar_url", user.avatar_url)
+			DEF_STRING_N("avatar_url", user.avatar_url)
 			DEF_BOOL("is_online", user.is_online)
 		)
 		DEF_STRING("expires_in", data_expiresin)

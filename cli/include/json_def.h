@@ -9,11 +9,17 @@ typedef enum
 {
 	JSON_INVALID,
 	JSON_BOOL = cJSON_False | cJSON_True,
+	JSON_BOOL_N = JSON_BOOL | cJSON_NULL,
 	JSON_INT = cJSON_Number,
-	JSON_DOUBLE = cJSON_Number | (1 << 16),
+	JSON_INT_N = JSON_INT | cJSON_NULL,
+	JSON_DOUBLE = cJSON_Number | (1 << 8),
+	JSON_DOUBLE_N = JSON_DOUBLE | cJSON_NULL,
 	JSON_STRING = cJSON_String,
+	JSON_STRING_N = JSON_STRING | cJSON_NULL,
 	JSON_ARRAY = cJSON_Array,
-	JSON_OBJECT = cJSON_Object
+	JSON_ARRAY_N = JSON_ARRAY | cJSON_NULL,
+	JSON_OBJECT = cJSON_Object,
+	JSON_OBJECT_N = JSON_OBJECT | cJSON_NULL
 }	json_type;
 
 typedef struct json_def
@@ -24,15 +30,24 @@ typedef struct json_def
 	struct json_def		*recursive_object; // if type == JSON_OBJECT
 }	json_def;
 
+
 # define JSON_DEF_OFFSETOF(field) (size_t)(&((CUR_JSON_STRUCT *)0)->field)
 
-#define DEF_BOOL(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL},
-#define DEF_INT(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL},
-#define DEF_DOUBLE(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL},
-#define DEF_STRING(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL},
-#define DEF_ARRAY(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL},
-#define DEF_OBJECT(name, def) {name, 0, JSON_OBJECT, (json_def[]){def DEF_END}},
-#define DEF_END {NULL, 0, JSON_INVALID, NULL}
+# define DEF_BOOL(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_BOOL, NULL},
+# define DEF_BOOL_N(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_BOOL_N, NULL},
+# define DEF_INT(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_INT, NULL},
+# define DEF_INT_N(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_INT_N, NULL},
+# define DEF_DOUBLE(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE, NULL},
+# define DEF_DOUBLE_N(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_DOUBLE_N, NULL},
+# define DEF_STRING(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_STRING, NULL},
+# define DEF_STRING_N(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_STRING_N, NULL},
+# define DEF_ARRAY(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY, NULL},
+# define DEF_ARRAY_N(name, field) {name, JSON_DEF_OFFSETOF(field), JSON_ARRAY_N, NULL},
+# define DEF_OBJECT(name, def) {name, 0, JSON_OBJECT, (json_def[]){def DEF_END}},
+# define DEF_OBJECT_N(name, def) {name, 0, JSON_OBJECT_N, (json_def[]){def DEF_END}},
+# define DEF_END {NULL, 0, JSON_INVALID, NULL}
+
+# define NULLABLE(type, field) struct { u8 is_null; type value; } __attribute__((packed)) field; 
 
 typedef struct
 {
