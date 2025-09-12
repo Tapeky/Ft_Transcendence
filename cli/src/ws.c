@@ -20,9 +20,12 @@ typedef struct
 	{
 		CURLcode			curl_code;
 		int					poll_errno;
-		size_t				json_error_pos;
-		json_content_error	json_content_error;
-		cJSON				*json_obj; // courtesy of the caller to call cJSON_Delete
+		struct
+		{
+			size_t				json_error_pos;
+			json_content_error	json_content_error;
+			cJSON				*json_obj;
+		};
 	};
 }	ws_xfer_result;
 

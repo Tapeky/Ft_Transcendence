@@ -15,10 +15,13 @@ typedef struct
 	api_request_error err;
 	union
 	{
-		CURLcode			 curl_code;
+		CURLcode	curl_code;
+		struct
+		{
 		size_t 				json_error_pos;
 		json_content_error	json_content_error;
-		cJSON *json_obj; // courtesy of the caller to call cJSON_Delete
+			cJSON				*json_obj;
+		};
 	};
 }	api_request_result;
 
