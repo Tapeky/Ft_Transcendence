@@ -190,7 +190,7 @@ static void cinit_window(term_window_type window_type)
 	win->has_initiated = 1;
 }
 
-void cswitch_window(term_window_type window_type)
+void cswitch_window(term_window_type window_type, int refresh)
 {
 	assert(window_type >= 0 && window_type < term_window_type__MAX);
 	term_window *win = &term_windows[window_type];
@@ -198,7 +198,8 @@ void cswitch_window(term_window_type window_type)
 		cinit_window(window_type);
 	cur_term_window = win;
 	cur_term_window_type = window_type;
-	crefresh(1);
+	if (refresh)
+		crefresh(1);
 }
 
 console_component *ccomponent_add(console_component component)

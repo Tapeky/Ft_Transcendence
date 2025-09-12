@@ -35,8 +35,7 @@ void handle_button(console_component *button, int press, void *param)
 		json = do_api_request_to_choice(&ctx->api_ctx, "api/auth/login", &api_login_def, &req);
 		if (req.success)
 		{
-			label_update_text(ctx->login_error_label, xstrdup(req.message), 1);
-			cswitch_window(term_window_type_OTHER);
+			cswitch_window(term_window_type_OTHER, 1);
 		}
 		else
 		{
@@ -47,6 +46,32 @@ void handle_button(console_component *button, int press, void *param)
 	}
 }
 
+static void init_windows(ctx *ctx)
+{
+	console_component label;
+
+	cswitch_window(term_window_type_LOGIN, 0);
+	{
+		label_init(&label, 2, 2, "USERNAME", 0);
+		ccomponent_add(label);
+
+		label_init(&label, 2, 6, "PASSWORD", 0);
+		ccomponent_add(label);
+
+		ctx->username_field = add_pretty_textarea(3, 3, 32, "...", 0);
+		ctx->password_field = add_pretty_textarea(3, 7, 32, "...", 1);
+		ctx->login_button = add_pretty_button(3, 15, " LOGIN ", handle_button, ctx);
+
+		label_init(&label, 2, 18, NULL, 0);
+		ctx->login_error_label = ccomponent_add(label);
+	}
+
+	cswitch_window(term_window_type_OTHER, 0);
+	{
+		label_init(&label, 1, 1, "LOGIN SUCCESSFUL", 0);
+		ccomponent_add(label);
+	}
+}
 
 int main()
 {
@@ -58,23 +83,8 @@ int main()
 	}
 	cinit();
 
-	console_component label1;
-	label_init(&label1, 2, 2, "USERNAME", 0);
-
-	console_component label2;
-	label_init(&label2, 2, 6, "PASSWORD", 0);
-
-	ctx->username_field = add_pretty_textarea(3, 3, 32, "...", 0);
-	ctx->password_field = add_pretty_textarea(3, 7, 32, "...", 1);
-	ctx->login_button = add_pretty_button(3, 15, " LOGIN ", handle_button, ctx);
-
-	console_component label3;
-	label_init(&label3, 2, 18, NULL, 0);
-
-	ccomponent_add(label1);
-	ccomponent_add(label2);
-	ctx->login_error_label = ccomponent_add(label3);
-	crefresh(0);
+	init_windows(ctx);
+	cswitch_window(term_window_type_LOGIN, 1);
 
 	input_loop(ctx, on_key_event);
 	ctx_deinit(&g_ctx);
