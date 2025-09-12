@@ -2,6 +2,7 @@
 #include "soft_fail.h"
 #include "ctx.h"
 #include <string.h>
+#include <assert.h>
 
 typedef enum
 {
@@ -18,8 +19,8 @@ typedef struct
 		CURLcode	curl_code;
 		struct
 		{
-		size_t 				json_error_pos;
-		json_content_error	json_content_error;
+			size_t 				json_error_pos;
+			json_content_error	json_content_error;
 			cJSON				*json_obj;
 		};
 	};
@@ -28,12 +29,16 @@ typedef struct
 static void print_api_request_result(api_ctx *ctx, api_request_result res, FILE *stream);
 
 // does the CURL request and returns a JSON object if succeeded
-static api_request_result api_request_common(api_ctx *ctx, const char *endpoint)
+static api_request_result api_request_common(api_ctx *ctx, const char *endpoint, request_type request_type)
 {
+	assert(request_type == POST || request_type == GET);
+	curl_easy_setopt(ctx->curl, CURLOPT_POST, request_type == POST);
 	// ctx->api_url_buf was defined by api_ctx_init as the base url. strcpying `endpoint`
 	// to its end will always concatenate both strings, overriding the precedent endpoint
 	strcpy(ctx->api_url_buf + ctx->api_url_base_len, endpoint);
 	curl_easy_setopt(ctx->curl, CURLOPT_URL, ctx->api_url_buf);
+	ctx->out_buf_cursor = 0;
+	ctx->in_buf_cursor = 0;
 
 	api_request_result result = {0};
 	CURLcode curl_err = curl_easy_perform(ctx->curl);
@@ -58,9 +63,14 @@ static api_request_result api_request_common(api_ctx *ctx, const char *endpoint)
 	return (result);
 }
 
-cJSON *do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice *choice, void *out)
+cJSON *do_api_request_to_choice(
+	api_ctx *ctx,
+	const char *endpoint,
+	request_type request_type,
+	json_choice *choice,
+	void *out)
 {
-	api_request_result res = api_request_common(ctx, endpoint);
+	api_request_result res = api_request_common(ctx, endpoint, request_type);
 	if (res.err)
 		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	json_content_error err = json_parse_from_choice(res.json_obj, choice, out);
@@ -75,9 +85,14 @@ cJSON *do_api_request_to_choice(api_ctx *ctx, const char *endpoint, json_choice 
 	return (res.json_obj);
 }
 
-cJSON *do_api_request_to_def(api_ctx *ctx, const char *endpoint, json_def *def, void *out)
+cJSON *do_api_request_to_def(
+	api_ctx *ctx,
+	const char *endpoint,
+	request_type request_type,
+	json_def *def,
+	void *out)
 {
-	api_request_result res = api_request_common(ctx, endpoint);
+	api_request_result res = api_request_common(ctx, endpoint, request_type);
 	if (res.err)
 		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	json_content_error err = json_parse_from_def(res.json_obj, def, out);
