@@ -140,7 +140,7 @@ void cdeinit();
 void crefresh(int force_redraw);
 console_component *ccomponent_add(console_component component);
 void chandle_key_event(KeySym key, int on_press);
-void cswitch_window(term_window_type window_type);
+void cswitch_window(term_window_type window_type, int refresh);
 
 typedef enum
 {
