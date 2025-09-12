@@ -44,7 +44,6 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
 	}
     curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, api_ctx_writer);
     curl_easy_setopt(easy, CURLOPT_WRITEDATA, (void *)ctx);
-	curl_easy_setopt(easy, CURLOPT_POST, 1L);
 	curl_easy_setopt(easy, CURLOPT_POSTFIELDS, ctx->in_buf);
 	
 	struct curl_slist *list = NULL;
