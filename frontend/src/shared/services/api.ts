@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:8000';
 
 // Type Definitions
 
@@ -269,9 +269,9 @@ class ApiService {
 
 	private getWebSocketUrl(): string {
 		// Use the same base URL as the API, but change http/https to ws/wss
-		const apiUrl = (import.meta as any).env.VITE_API_URL || 'https://localhost:8000';
+		const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8000';
 		const wsUrl = apiUrl.replace(/^https?:/, window.location.protocol === 'https:' ? 'wss:' : 'ws:');
-		
+
 		return `${wsUrl}/ws`;
 	}
 	

@@ -35,7 +35,7 @@ export class OnlinePlayerSelector {
 
         quickGameButton.addEventListener('click', () => {
             // Use random opponent ID (backend will handle matching)
-            (window as any).router?.navigate('/game/2');
+            window.router?.navigate('/game/2');
         });
 
         // Back button
@@ -50,7 +50,7 @@ export class OnlinePlayerSelector {
         backButton.style.cursor = 'pointer';
 
         backButton.addEventListener('click', () => {
-            (window as any).router?.navigate('/game');
+            window.router?.navigate('/game');
         });
 
         this.container.appendChild(title);

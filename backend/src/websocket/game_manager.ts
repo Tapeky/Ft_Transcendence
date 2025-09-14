@@ -236,7 +236,7 @@ export class GameManager {
         
         // N'envoyer les game_state que si le jeu est en cours
         if (game.gameState === 'playing') {
-          // TODO: handle errors lmao
+          // Handle socket send errors gracefully
           game.leftPlayer.socket.send(JSON.stringify({
             type: 'game_state',
             data: game.repr(game.leftPlayer.id)

@@ -35,10 +35,10 @@ export class DatabaseManager {
       // Activer les foreign keys
       await this.db.exec('PRAGMA foreign_keys = ON;');
       
-      console.log(`✅ Base de données connectée : ${dbPath}`);
+      // Database connected successfully
       return this.db;
     } catch (error) {
-      console.error('❌ Erreur de connexion à la base de données:', error);
+      // Database connection error will be handled by calling code
       throw error;
     }
   }
@@ -54,13 +54,13 @@ export class DatabaseManager {
       const schema = await fs.readFile(schemaPath, 'utf8');
       
       await this.db.exec(schema);
-      console.log('✅ Schéma de base de données initialisé');
+      // Database schema initialized
       
       // Ajouter des données de test si nécessaire
       await this.seedIfEmpty();
       
     } catch (error) {
-      console.error('❌ Erreur d\'initialisation de la base de données:', error);
+      // Database initialization error will be handled by calling code
       throw error;
     }
   }
@@ -72,7 +72,7 @@ export class DatabaseManager {
     const userCount = await this.db.get('SELECT COUNT(*) as count FROM users');
     
     if (userCount.count === 0) {
-      console.log('🌱 Ajout de données de test...');
+      // Adding test data...
       await this.seedTestData();
     }
   }
@@ -115,7 +115,7 @@ export class DatabaseManager {
       `, [user.username, user.email, user.password, user.display_name, user.data_consent]);
     }
     
-    console.log('✅ Données de test ajoutées');
+    // Test data added successfully
   }
   
   getDb(): Database {
@@ -129,7 +129,7 @@ export class DatabaseManager {
     if (this.db) {
       await this.db.close();
       this.db = null;
-      console.log('✅ Connexion à la base de données fermée');
+      // Database connection closed
     }
   }
   
@@ -168,13 +168,13 @@ export class DatabaseManager {
   async vacuum(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('VACUUM');
-    console.log('✅ VACUUM exécuté');
+    // Database vacuum completed
   }
   
   async analyze(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('ANALYZE');
-    console.log('✅ ANALYZE exécuté');
+    // Database analyze completed
   }
   
   // Cleanup des tokens expirés
@@ -186,7 +186,7 @@ export class DatabaseManager {
       WHERE expires_at < datetime('now') OR revoked = true
     `);
     
-    console.log(`✅ ${result.changes} tokens expirés supprimés`);
+    // Expired tokens cleanup completed
   }
   
   // Stats de la base de données

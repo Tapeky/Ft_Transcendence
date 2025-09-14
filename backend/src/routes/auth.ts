@@ -611,7 +611,7 @@ export async function authRoutes(server: FastifyInstance) {
         user = await userRepo.create({
           username: githubUser.login,
           email: primaryEmail,
-          password: Math.random().toString(36), // Mot de passe temporaire
+          password: require('crypto').randomBytes(32).toString('hex'), // Secure random password
           display_name: githubUser.name || githubUser.login,
           avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4',
           data_consent: true
@@ -773,7 +773,7 @@ export async function authRoutes(server: FastifyInstance) {
           user = await userRepo.create({
             username: googleUser.email.split('@')[0], // Utiliser la partie avant @ comme username
             email: googleUser.email,
-            password: Math.random().toString(36), // Mot de passe temporaire
+            password: require('crypto').randomBytes(32).toString('hex'), // Secure random password
             display_name: googleUser.name || googleUser.email.split('@')[0],
             avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4',
             google_id: googleUser.id,

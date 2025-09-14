@@ -159,8 +159,8 @@ export class GameInviteService {
 
   private navigateToGame(gameId: number): void {
     // Utilisation du router existant
-    if ((window as any).router) {
-      (window as any).router.navigate(`/game/${gameId}`);
+    if (window.router) {
+      window.router.navigate(`/game/${gameId}`);
     } else {
       // Fallback
       window.location.href = `/game/${gameId}`;
