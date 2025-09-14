@@ -16,21 +16,21 @@ export class PongGame {
   public constructor(public readonly id: number, public readonly leftPlayer: PongPlayer, public readonly rightPlayer: PongPlayer) { }
 
   public hasPlayer(id: number) {
-    return id == this.leftPlayer.id || id == this.rightPlayer.id;
+    return id === this.leftPlayer.id || id === this.rightPlayer.id;
   }
 
   public getPlayerThrow(playerId: number) {
-    if (playerId == this.leftPlayer.id)
+    if (playerId === this.leftPlayer.id)
       return this.leftPlayer;
-    else if (playerId == this.rightPlayer.id)
+    else if (playerId === this.rightPlayer.id)
       return this.rightPlayer;
     throw Error(`unknown player id ${playerId} in game ${this.id}`);
   }
 
   public getPlayer(playerId: number) {
-    if (playerId == this.leftPlayer.id)
+    if (playerId === this.leftPlayer.id)
       return this.leftPlayer;
-    else if (playerId == this.rightPlayer.id)
+    else if (playerId === this.rightPlayer.id)
       return this.rightPlayer;
     return undefined;
   }
@@ -43,7 +43,7 @@ export class PongGame {
     const player = this.getPlayer(playerId);
     if (player) {
       player.isReady = ready;
-      console.log(`🎮 Player ${playerId} is ${ready ? 'ready' : 'not ready'} in game ${this.id}`);
+      // Player ready status updated
       
       // Notifier tous les joueurs du changement de statut
       this.broadcastReadyStatus();
@@ -78,7 +78,7 @@ export class PongGame {
     this.gameState = 'countdown';
     let countdown = 3;
     
-    console.log(`🎮 Starting countdown for game ${this.id}`);
+    // Starting game countdown
     
     const sendCountdown = () => {
       const countdownMessage = {
@@ -90,7 +90,7 @@ export class PongGame {
         this.leftPlayer.socket.send(JSON.stringify(countdownMessage));
         this.rightPlayer.socket.send(JSON.stringify(countdownMessage));
       } catch (error) {
-        console.error('Error sending countdown:', error);
+        // Error sending countdown message
       }
 
       countdown--;

@@ -55,7 +55,7 @@ export class TournamentService {
         ...response.data.player,
         joinedAt: new Date(response.data.player.joinedAt)
       },
-      tournament: response.data.tournament as any
+      tournament: response.data.tournament
     };
   }
 

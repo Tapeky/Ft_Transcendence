@@ -42,7 +42,7 @@ const server = Fastify({
 async function start() {
   try {
     // 1. Configuration de la base de données
-    console.log('🔌 Connexion à la base de données...');
+    // Connecting to database...
     const dbManager = DatabaseManager.getInstance();
     const dbPath = path.join(process.env.DB_PATH || './db', process.env.DB_NAME || 'ft_transcendence.db');
     await dbManager.connect(dbPath);
@@ -50,7 +50,7 @@ async function start() {
     await dbManager.cleanupExpiredTokens();
     
     // 2. Plugins Fastify
-    console.log('🔧 Configuration des plugins...');
+    // Configuring plugins...
     
     // CORS
     const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
@@ -87,16 +87,16 @@ async function start() {
     });
     
     // 3. Middleware global
-    console.log('🔒 Configuration des middlewares...');
+    // Configuring middleware...
     setupMiddleware(server);
     
     // 4. WebSocket handlers
-    console.log('🌐 Configuration des WebSockets...');
+    // Configuring WebSockets...
     const wsManager = setupWebSocket(server);
     (server as any).websocketManager = wsManager;
     
     // 5. Routes
-    console.log('🛣️ Configuration des routes...');
+    // Configuring routes...
     setupRoutes(server);
     
     // 6. Routes de santé et monitoring
@@ -172,14 +172,17 @@ async function start() {
     const protocol = ENABLE_HTTPS ? 'https' : 'http';
     const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
     
-    console.log(`
+    // Server started successfully - logging only for development
+    if (NODE_ENV === 'development') {
+      console.log(`
 🚀 Serveur ft_transcendence démarré !
 📍 URL: ${protocol}://localhost:${PORT}
 🌍 Environnement: ${NODE_ENV}
 🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
 📊 Health check: ${protocol}://localhost:${PORT}/health
 📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
-    `);
+      `);
+    }
     
     if (NODE_ENV === 'production') {
       setInterval(async () => {
@@ -211,22 +214,22 @@ async function start() {
 
     GameManager.instance.registerLoop();
   } catch (err) {
-    console.error('❌ Erreur de démarrage du serveur:', err);
+    // Server startup error - always log critical errors
     server.log.error('❌ Erreur de démarrage du serveur:', err);
     process.exit(1);
   }
 }
 
 async function gracefulShutdown(signal: string) {
-  console.log(`\n🛑 Signal ${signal} reçu, arrêt du serveur...`);
+  // Graceful shutdown signal received
   
   try {
     await server.close();
     await DatabaseManager.getInstance().close();
-    console.log('✅ Serveur arrêté proprement');
+    // Server shutdown completed
     process.exit(0);
   } catch (error) {
-    console.error('❌ Erreur lors de l\'arrêt:', error);
+    // Shutdown error
     process.exit(1);
   }
 }
@@ -235,12 +238,12 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  server.log.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  server.log.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 

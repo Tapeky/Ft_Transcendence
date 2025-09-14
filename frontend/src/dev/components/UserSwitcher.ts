@@ -143,8 +143,9 @@ export class UserSwitcher {
       console.error('🔧 UserSwitcher: Switch failed:', error);
       
       // Si l'utilisateur n'existe pas, essaie de le créer
-      if ((error as any)?.message?.includes('Invalid credentials') || 
-          (error as any)?.message?.includes('User not found')) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Invalid credentials') ||
+          errorMessage.includes('User not found')) {
         
         this.showStatus('User not found, creating...', 'loading');
         await this.createAndLoginUser(email, password);

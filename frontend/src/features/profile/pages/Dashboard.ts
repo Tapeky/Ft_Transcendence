@@ -19,7 +19,6 @@ export class Dashboard {
   }
 
   private async init() {
-    // DEBUG: Afficher l'état d'auth au moment du Dashboard
     const state = appState.getState();
 
     if (state.loading) {
