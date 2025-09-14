@@ -41,6 +41,8 @@ export interface Tournament {
   players: TournamentPlayer[];
   bracket?: TournamentBracket;
   winnerId?: string;
+  winnerAlias?: string;
+  matches?: TournamentMatch[];
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;

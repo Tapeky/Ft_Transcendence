@@ -1,6 +1,11 @@
 // Ultra Simple Matchmaking Service - Frontend
 import { WebSocketManager } from '../../invitations/core/WebSocketManager';
 
+// Interface for WebSocket access
+interface IWebSocketManager {
+  ws: WebSocket | null;
+}
+
 export interface MatchmakingStatus {
   isSearching: boolean;
   position?: number;
@@ -105,7 +110,7 @@ export class MatchmakingService {
     console.log('🚀 [MATCHMAKING-FRONTEND] Sending direct WebSocket message:', JSON.stringify(message));
     
     // Obtenir la connexion WebSocket brute depuis le WebSocketManager
-    const wsManager = this.wsManager as any;
+    const wsManager = this.wsManager as IWebSocketManager;
     if (wsManager.ws && wsManager.ws.readyState === WebSocket.OPEN) {
       try {
         wsManager.ws.send(JSON.stringify(message));

@@ -33,7 +33,7 @@ interface GameCleanupHandler {
  * - Maintains separation of concerns
  */
 export class WebSocketGameBridge {
-  private static instance: WebSocketGameBridge;
+  private static instance: WebSocketGameBridge | undefined;
   private gameHandler: GameMessageHandler | null = null;
   private cleanupHandler: GameCleanupHandler | null = null;
   private activeGameId: number | null = null;
@@ -356,7 +356,7 @@ export class WebSocketGameBridge {
     this.messageQueue.length = 0;
     
     // Reset static instance
-    WebSocketGameBridge.instance = undefined as any;
+    WebSocketGameBridge.instance = undefined;
   }
 }
 

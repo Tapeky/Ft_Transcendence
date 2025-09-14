@@ -275,7 +275,7 @@ export class TournamentHistory {
     const statusIcon = this.getStatusIcon(tournament.status);
     const statusColorClass = this.getStatusColorClass(tournament.status);
     const completedDate = tournament.completedAt ? new Date(tournament.completedAt).toLocaleString('fr-FR') : 'Non terminé';
-    const winner = tournament.winnerAlias || (tournament as any).winnerAlias;
+    const winner = tournament.winnerAlias;
 
     return `
       <div class="bg-gradient-to-br from-purple-900 to-blue-800 rounded-2xl p-6 border-2 border-white/20 backdrop-blur-sm cursor-pointer transition duration-300 transform hover:scale-105 hover:shadow-2xl text-white" data-tournament-id="${tournament.id}">
@@ -332,18 +332,18 @@ export class TournamentHistory {
           </div>
         ` : ''}
         
-        ${(tournament as any).matches && (tournament as any).matches.length > 0 ? `
+        ${tournament.matches && tournament.matches.length > 0 ? `
           <div class="mt-4">
-            <h4 class="font-bold text-white/90 mb-2">Matchs (${(tournament as any).matches.length}):</h4>
+            <h4 class="font-bold text-white/90 mb-2">Matchs (${tournament.matches.length}):</h4>
             <div class="space-y-1 text-sm text-white/80">
-              ${(tournament as any).matches.slice(0, 3).map((match: any) => `
+              ${tournament.matches.slice(0, 3).map((match) => `
                 <div class="border-b border-white/10 pb-1">
-                  ${match.player1Alias} vs ${match.player2Alias} 
+                  ${match.player1Alias} vs ${match.player2Alias}
                   ${match.status === 'completed' ? `<span class="font-bold text-white">(${match.player1Score}-${match.player2Score})</span>` : `<span class="text-yellow-300">(${match.status})</span>`}
                 </div>
               `).join('')}
-              ${(tournament as any).matches.length > 3 ? `
-                <div class="text-white/60 text-xs">... et ${(tournament as any).matches.length - 3} autres matchs</div>
+              ${tournament.matches.length > 3 ? `
+                <div class="text-white/60 text-xs">... et ${tournament.matches.length - 3} autres matchs</div>
               ` : ''}
             </div>
           </div>
