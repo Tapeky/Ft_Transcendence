@@ -268,7 +268,7 @@ export class SimpleInvitePopup {
   private playNotificationSound(): void {
     try {
       // Son simple avec Web Audio API
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       

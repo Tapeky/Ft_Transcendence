@@ -15,7 +15,11 @@ import { GameManager } from './websocket/game_manager';
 // Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('❌ JWT_SECRET environment variable is required');
+  process.exit(1);
+}
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
 
@@ -59,7 +63,7 @@ async function start() {
     
     // JWT
     await server.register(jwt, {
-      secret: JWT_SECRET,
+      secret: JWT_SECRET as string,
       sign: {
         expiresIn: process.env.JWT_EXPIRES_IN || '24h'
       }

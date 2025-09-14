@@ -1,4 +1,5 @@
 import { Router } from '../app/Router';
+import { logger } from '../../shared/services/logger';
 
 export interface User {
   id: number;
@@ -94,7 +95,7 @@ export class AppState {
       try {
         callback(currentState);
       } catch (error) {
-        console.error(`Error in subscriber ${index}:`, error);
+        logger.error(`Error in subscriber ${index}`, 'AppState', error);
       }
     });
   }

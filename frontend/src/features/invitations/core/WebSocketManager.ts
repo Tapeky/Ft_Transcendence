@@ -342,8 +342,8 @@ export class WebSocketManager {
   private navigateToGame(gameId: number): void {
     try {
       // Essayer le router SPA d'abord
-      if ((window as any).router && typeof (window as any).router.navigate === 'function') {
-        (window as any).router.navigate(`/game/${gameId}`);
+      if (window.router && typeof window.router.navigate === 'function') {
+        window.router.navigate(`/game/${gameId}`);
       } else {
         // Fallback avec confirmation
         if (confirm(`Game ready! Navigate to /game/${gameId}?`)) {

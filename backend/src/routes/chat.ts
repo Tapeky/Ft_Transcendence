@@ -155,7 +155,7 @@ export async function chatRoutes(server: FastifyInstance) {
         data: {
           messages,
           pagination: {
-            total: messages.length, // TODO: implémenter count total
+            total: messages.length, // Note: Implement proper total count for pagination
             page,
             limit,
             hasMore: messages.length === limit
