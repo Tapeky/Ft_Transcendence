@@ -99,11 +99,11 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 					}
 					break;
 				case JSON_ARRAY:
-					*FETCH_AT_OFFSET(out, def->offset, cJSON *, 0) = cur->child;
+					*FETCH_AT_OFFSET(out, def->offset, cJSON *, 0) = cur;
 					break;
 				case JSON_ARRAY_N:
 					if (cur->type != cJSON_NULL)
-						*FETCH_AT_OFFSET(out, def->offset, cJSON *, 1) = cur->child;
+						*FETCH_AT_OFFSET(out, def->offset, cJSON *, 1) = cur;
 					break;
 				default:
 					fprintf(stderr, "FATAL: Invalid json_def.type value: %d\n", cur->type);
@@ -112,7 +112,7 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 			parsed_count++;
 		}
 		else
-			return (json_content_error_PARTIALLY_PARSED);
+			return (json_content_error_INCORRECT_TYPE);
 		cur = cur->next;
 	}
 	return ((parsed_count != def_count(defs)) * json_content_error_PARTIALLY_PARSED);
