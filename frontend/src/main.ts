@@ -1,6 +1,5 @@
 import './index.css';
 import { application } from './core/app/Application';
-import { logger } from './shared/services/logger';
 
 class App {
   constructor() {
@@ -36,11 +35,11 @@ class App {
         connectionStatus.show();
         
       } catch (error) {
-        logger.error('Failed to initialize KISS Game Invite System', 'App', error);
+        console.error('Failed to initialize KISS Game Invite System:', error);
       }
       
     } catch (error) {
-      logger.error('Failed to initialize application', 'App', error);
+      console.error('Failed to initialize application:', error);
       
       root.innerHTML = `
         <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626); 
