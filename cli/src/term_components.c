@@ -11,9 +11,34 @@ void mark_dirty(console_component *c, int full_redraw)
 		c->u.c_text_area.has_to_do_full_redraw = 1;
 }
 
+void	component_hide(console_component *c)
+{
+	if (!c->is_hidden)
+	{
+		c->is_hidden = 1;
+		c->is_dirty = 1;
+	}
+}
+
+void	component_show(console_component *c)
+{
+	if (c->is_hidden)
+	{
+		c->is_hidden = 0;
+		c->is_dirty = 1;
+	}
+}
+
+void	component_toggle_visibility(console_component *c)
+{
+	c->is_hidden = !c->is_hidden;
+	c->is_dirty = 1;
+}
+
 #define BASE_INIT(t, c, x, y) do { \
 	(c)->type = t; \
 	(c)->is_dirty = 1; \
+	(c)->is_hidden = 0; \
 	(c)->x = x; \
 	(c)->y = y; \
 } while (0)

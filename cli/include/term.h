@@ -82,6 +82,7 @@ typedef struct s_console_component
 	u16				x;
 	u16				y;
 	u8				is_dirty;
+	u8				is_hidden;
 	union
 	{
 		component_label 	c_label;
@@ -95,6 +96,9 @@ typedef struct s_console_component
 #define PUTC(c) fputc(c, stdout)
 
 void	mark_dirty(console_component *c, int full_redraw);
+void	component_hide(console_component *c);
+void	component_show(console_component *c);
+void	component_toggle_visibility(console_component *c);
 
 void	label_init(console_component *c, u16 x, u16 y, const char *content, int str_is_allocated);
 void	label_draw(console_component *c);

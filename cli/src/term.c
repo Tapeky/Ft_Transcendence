@@ -147,7 +147,7 @@ void crefresh(int force_redraw)
 	for (size_t i = 0; i < cur_term_window->components_count; i++)
 	{
 		console_component *c = &cur_term_window->components[i];
-		if (c->is_dirty || force_redraw)
+		if (!c->is_hidden && (c->is_dirty || force_redraw))
 		{
 			if (i == cur_term_window->selected_component)
 				PUTS(ESC_MAGENTA_BACKGROUND ESC_BOLD);
