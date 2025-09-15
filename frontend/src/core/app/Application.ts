@@ -2,7 +2,6 @@ import { appState } from '../state/AppState';
 import { router } from './Router';
 import { AuthManager } from '../../core/auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
-import { logger } from '../../shared/services/logger';
 
 export class Application {
   private static instance: Application;
@@ -58,7 +57,7 @@ export class Application {
   }
 
   private handleGlobalError(error: any): void {
-    logger.error('Global error occurred', 'Application', error);
+    console.error('Global error occurred:', error);
   }
 
   public getSystemStatus(): {

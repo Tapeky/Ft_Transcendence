@@ -1,8 +1,6 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:8000';
 
-// Import logger
-import { logger } from './logger';
 
 // Type Definitions
 
@@ -155,13 +153,10 @@ class ApiService {
 					error.message.includes('incorrect');
 					
 				if (!isValidationError) {
-					logger.error('Unexpected API error', 'API', {
-						message: error.message,
-						name: error.name
-					});
+					console.error('Unexpected API error:', error.message, error.name);
 				}
 			} else {
-				logger.error('Non-standard API error', 'API', String(error));
+				console.error('Non-standard API error:', String(error));
 			}
 			throw error;
 		}
@@ -217,9 +212,9 @@ class ApiService {
 		} catch (error) {
 			// Properly log logout errors without accessing undefined properties
 			if (error instanceof Error) {
-				logger.error('Logout backend error', 'API', error.message);
+				console.error('Logout backend error:', error.message);
 			} else {
-				logger.error('Logout backend error', 'API', String(error));
+				console.error('Logout backend error:', String(error));
 			}
 		} finally {
 			this.clearToken();
@@ -255,7 +250,7 @@ class ApiService {
 		}
 
 		if (error) {
-			logger.error('Auth callback error', 'API', String(error));
+			console.error('Auth callback error:', String(error));
 			// Nettoyer l'URL
 			window.history.replaceState({}, document.title, window.location.pathname);
 			if (error === 'google_auth_failed') {
