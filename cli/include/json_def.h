@@ -118,7 +118,7 @@ typedef struct json_def
 		cJSON *_json_;									\
 		FOR_EACH(STRUCT_CONSTRUCTOR, name, __VA_ARGS__)	\
 	}	name;											\
-	json_def GLUE(name, _def)[] = {						\
+	static json_def GLUE(name, _def)[] = {						\
 		FOR_EACH(DEF_CONSTRUCTOR, name, __VA_ARGS__)	\
 		DEF_END											\
 	}
