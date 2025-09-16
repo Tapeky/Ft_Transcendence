@@ -1,4 +1,5 @@
 #include "json_def.h"
+#include "soft_fail.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,12 +29,39 @@ static size_t def_count(const json_def *defs)
 	return (cnt);
 }
 
+json_content_error parse_array(cJSON *base, const json_def *def, void *out)
+{
+	json_content_error error;
+	size_t *size_ptr = (size_t *)((u8 *)out + def->offset);
+	void **ptr_loc = (void **)((u8 *)out + def->offset + sizeof(size_t));
+
+	int sz = cJSON_GetArraySize(base);
+
+	void *ptr = xmalloc(sz * def->element_len);
+	*ptr_loc = ptr;
+	cJSON *elem;
+	cJSON_ArrayForEach(elem, base)
+	{
+		error = json_parse_from_def(elem, def->recursive_object, ptr);
+		if (error)
+		{
+			free(ptr);
+			*ptr_loc = NULL;
+			return error;
+		}
+		ptr += def->element_len;
+	}
+	*size_ptr = sz;
+	return (0);
+}
+
 #define FETCH_IS_NULL_AT_OFFSET(obj, offset) ((u8 *)(obj) + (offset))
 #define FETCH_AT_OFFSET(obj, offset, type, is_nullable) (type *)((u8 *)(obj) + (offset) + ((is_nullable) * sizeof(u8)))
 
 json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *out)
 {
 	assert(out && defs);
+	*(cJSON **)out = NULL;
 	if (!cJSON_IsObject(obj))
 		return (json_content_error_INVALID_JSON);
 	size_t parsed_count = 0;
@@ -85,7 +113,7 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 					break;
 				case JSON_OBJECT:
 					assert(def->recursive_object);
-					recursive_error = json_parse_from_def(cur, def->recursive_object, out);
+					recursive_error = json_parse_from_def(cur, def->recursive_object, out + def->offset);
 					if (recursive_error)
 						return (recursive_error);
 					break;
@@ -93,18 +121,24 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 					assert(def->recursive_object);
 					if (cur->type != cJSON_NULL)
 					{
-						recursive_error = json_parse_from_def(cur, def->recursive_object, out);
+						recursive_error = json_parse_from_def(cur, def->recursive_object, out + def->offset);
 						if (recursive_error)
 							return (recursive_error);
 					}
 					break;
 				case JSON_ARRAY:
-					*FETCH_AT_OFFSET(out, def->offset, cJSON *, 0) = cur;
+					recursive_error = parse_array(cur, def, out);
+					if (recursive_error)
+						return recursive_error;
 					break;
-				case JSON_ARRAY_N:
-					if (cur->type != cJSON_NULL)
-						*FETCH_AT_OFFSET(out, def->offset, cJSON *, 1) = cur;
-					break;
+				// case JSON_ARRAY_N:
+				// 	if (cur->type != cJSON_NULL)
+				// 	{
+				// 		recursive_error = parse_array(cur, def, out);
+				// 		if (recursive_error)
+				// 			return recursive_error;
+				// 	}
+				// 	break;
 				default:
 					fprintf(stderr, "FATAL: Invalid json_def.type value: %d\n", cur->type);
 					abort();
@@ -115,56 +149,70 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 			return (json_content_error_INCORRECT_TYPE);
 		cur = cur->next;
 	}
-	return ((parsed_count != def_count(defs)) * json_content_error_PARTIALLY_PARSED);
+	if (parsed_count != def_count(defs))
+		return (json_content_error_PARTIALLY_PARSED);
+	*(cJSON **)out = obj;
+	return (0);
 }
 
-json_content_error json_parse_from_choice(cJSON *json, const json_choice *choice, void *out)
+void json_parse_from_def_force(cJSON *obj, const json_def *defs, void *out)
 {
-	assert(out && choice);
-	assert(choice->to_test.type == JSON_BOOL);
-	assert(choice->to_test.name);
-	// cheap but works hehehehehe
-	json_def def[] = {
-		choice->to_test,
-		DEF_END
-	};
-	json_content_error err = json_parse_from_def(json, def, out);
+	json_content_error err = json_parse_from_def(obj, defs, out);
 	if (err)
-		return (err);
-	u8 result = *FETCH_AT_OFFSET(out, choice->to_test.offset, u8, 0);
-	if (result)
-		return (json_parse_from_def(json, choice->true_def, out));
-	return (json_parse_from_def(json, choice->false_def, out));
+	{
+		cJSON_Delete(obj);
+		clean_and_fail("%s\n", json_content_error_to_string(err));
+	}
 }
 
-json_content_error json_parse_from_switch(cJSON *json, const json_switch *switch_, void *out)
+static void json_clean_obj_rec(const json_def *defs, void *in);
+
+static void json_clean_array(const json_def *def, void *in)
 {
-	assert(out && switch_);
-	assert(switch_->to_test.type == JSON_STRING);
-	assert(switch_->to_test.name);
-	// cheap but works hehehehehe
-	json_def def[] = {
-		switch_->to_test,
-		DEF_END
-	};
-	json_content_error err = json_parse_from_def(json, def, out);
-	if (err)
-		return (err);
-	const char *key = *FETCH_AT_OFFSET(out, switch_->to_test.offset, const char *, 0);
-	size_t i = 0;
-	json_switch_entry *cur = switch_->entries;
+	size_t *size_ptr = (size_t *)((u8 *)in + def->offset);
+	void **ptr_loc = (void **)((u8 *)in + def->offset + sizeof(size_t));
+
+	size_t size = *size_ptr; 
+	void *ptr = *ptr_loc;
+	for (size_t i = 0; i < size; i++)
+	{
+		json_clean_obj_rec(def->recursive_object, ptr);
+		ptr += def->element_len;
+	}
+	free(*ptr_loc);
+	*ptr_loc = NULL;
+}
+
+static void json_clean_obj_rec(const json_def *defs, void *in)
+{
+	const json_def *cur = defs;
 	while (cur->name)
 	{
-		if (!strcmp(cur->name, key))
+		switch (cur->type)
 		{
-			err = json_parse_from_def(json, &cur->def, out);
-			*FETCH_AT_OFFSET(out, switch_->match_store_offset, size_t, 0) = i;
-			return (err);
+			case JSON_ARRAY:
+				json_clean_array(cur, in);
+				break;
+			case JSON_OBJECT:
+				json_clean_obj_rec(cur->recursive_object, in + cur->offset);
+				break;
+			case JSON_OBJECT_N:
+				if (!*FETCH_IS_NULL_AT_OFFSET(in, cur->offset))
+					json_clean_obj_rec(cur->recursive_object, in + cur->offset + sizeof(u8));
+				break;
+			default:
+				break;
 		}
 		cur++;
-		i++;
 	}
-	return (json_content_error_SWITCH_NOT_MATCHED);
+}
+
+void json_clean_obj(void *in, const json_def *defs)
+{
+	cJSON *json = *(cJSON **)in;
+	json_clean_obj_rec(defs, in);
+	if (json)
+		cJSON_Delete(json);
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)
@@ -198,7 +246,7 @@ void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, in
 				case JSON_OBJECT:
 					assert(cur->recursive_object);
 					fputs("{\n", stream);
-					json_def_prettyprint(cur->recursive_object, in, stream, level + 1);
+					json_def_prettyprint(cur->recursive_object, in + cur->offset, stream, level + 1);
 					break;
 				case JSON_ARRAY:
 					fputs("[]\n", stream); // sybau
@@ -219,30 +267,6 @@ void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, in
 	}
 }
 
-void json_choice_prettyprint(const json_choice *choice, const void *in, FILE *stream)
-{
-	assert(choice && in);
-	assert(choice->to_test.type == JSON_BOOL);
-	assert(choice->to_test.name);
-	u8 result = *((u8 *)in + choice->to_test.offset);
-	fprintf(stream, "%s = %s\n", choice->to_test.name, result ? "true" : "false");
-	if (result)
-		json_def_prettyprint(choice->true_def, in, stream, 0);
-	else
-		json_def_prettyprint(choice->false_def, in, stream, 0);
-}
-
-void json_switch_prettyprint(const json_switch *switch_, const void *in, FILE *stream)
-{
-	assert(switch_ && in);
-	assert(switch_->to_test.type == JSON_STRING);
-	assert(switch_->to_test.name);
-	const char *key = *FETCH_AT_OFFSET(in, switch_->to_test.offset, const char *, 0);
-	size_t entry_index = *FETCH_AT_OFFSET(in, switch_->match_store_offset, size_t, 0);
-	printf("Switch entry %s:\n", key);
-	json_def_prettyprint(&switch_->entries[entry_index].def, in, stream, 1);
-}
-
 const char *json_content_error_to_string(json_content_error err)
 {
 	switch (err)
@@ -253,8 +277,6 @@ const char *json_content_error_to_string(json_content_error err)
 			return ("Not all expected entries were found");
 		case (json_content_error_INCORRECT_TYPE):
 			return ("A JSON element was not of the correct type");
-		case (json_content_error_SWITCH_NOT_MATCHED):
-			return ("String to query was not in json_switch.entries");
 		default:
 			if (!err)
 				return ("No error");

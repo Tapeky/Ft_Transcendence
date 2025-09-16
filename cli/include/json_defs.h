@@ -6,84 +6,55 @@
 
 /* API */
 
-typedef struct
-{
-	int id;
-	const char *username;
-	const char *email;
-	const char *display_name;
-	NULLABLE(const char *, avatar_url);
-	u8 is_online;
-}	userdef;
-
-typedef struct
-{
-	u8 success;
-	userdef user;
-	const char *data_token;
-	const char *data_expiresin;
-
-	union
-	{
-		// on success == false
-		const char *error;
-		// on success == true
-		const char *message;
-	};
-}	api_login_request;
-
-# define CUR_JSON_STRUCT api_login_request
-
-CHOICE_DEF(api_login_def,
-	"success", success,
-	DEF_STRING("message", message)
-	DEF_OBJECT("data",
-		DEF_OBJECT("user", 
-			DEF_INT("id", user.id)
-			DEF_STRING("username", user.username)
-			DEF_STRING("email", user.email)
-			DEF_STRING("display_name", user.display_name)
-			DEF_STRING_N("avatar_url", user.avatar_url)
-			DEF_BOOL("is_online", user.is_online)
-		)
-		DEF_STRING("expires_in", data_expiresin)
-		DEF_STRING("token", data_token)
-	)
-	,
-	DEF_STRING("error", error)
+DEFINE_JSON(userdef,
+	(INT, id),
+	(STRING, username),
+	(STRING, email),
+	(STRING, display_name),
+	(STRING_N, avatar_url),
+	(BOOL, is_online),
 );
 
-typedef struct
-{
-	const char	*type;
-	size_t		type_idx;
-	union
-	{
-		const char *message;
-	};
-}	ws_message;
+DEFINE_JSON(login_data,
+	(OBJECT, user, userdef),
+	(STRING, expires_in),
+	(STRING, token)
+);
+
+DEFINE_JSON(login,
+	(OBJECT, data, login_data)
+);
+
+DEFINE_JSON(bracket_data);
+
+DEFINE_JSON(tournament,
+	(INT, id),
+	(STRING, name),
+	(STRING, description),
+	(INT, max_players),
+	(INT, current_players),
+	(STRING, status),
+	(OBJECT_N, bracket_data, bracket_data),
+	(INT_N, winner_id),
+	(STRING, creator_username),
+	(STRING, created_at),
+);
+
+DEFINE_JSON(tournaments,
+	(ARRAY, data, tournament)
+);
 
 /* WEBSOCKETS */
 
-#undef CUR_JSON_STRUCT
-#define CUR_JSON_STRUCT ws_message
-
-SWITCH_DEF(ws_message_json_def, "type", type, type_idx,
-	SWITCH_ENTRY("pong", {})
-	SWITCH_ENTRY("connected",
-		DEF_STRING("message", message)
-	)
-);
-
 /* REQUESTS */
-#define FILL_REQUEST__OFFSET_OF(struct, field) \
+# define FILL_REQUEST__OFFSET_OF(struct, field) \
 	(size_t)&(((struct *)0)->field)
-#define FILL_REQUEST(buf, fmt, ...) \
+# define FILL_REQUEST(buf, fmt, ...) \
 	snprintf( \
 		buf, sizeof(buf), fmt, ## __VA_ARGS__ \
 	)
 
-#define REQ_API_LOGIN(buf, username, password) \
+# define REQ_API_LOGIN(buf, username, password) \
 	FILL_REQUEST(buf, "{\"email\":\"%s\",\"password\":\"%s\"}", username, password)
 
 #endif

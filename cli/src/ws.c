@@ -72,24 +72,15 @@ static ws_xfer_result ws_recv_common(ws_ctx *ctx)
 	return (res);
 }
 
-cJSON *ws_recv_to_switch(ws_ctx *ctx, json_switch *switch_, void *out)
+cJSON *ws_recv(ws_ctx *ctx)
 {
 	ws_xfer_result res = ws_recv_common(ctx);
 	if (res.err)
 		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 1, stderr));
-	json_content_error content_err = json_parse_from_switch(res.json_obj, switch_, out);
-	if (content_err)
-	{
-		res.err = ws_xfer_error_JSON_CONTENT;
-		res.json_content_error = content_err;
-		cJSON_Delete(res.json_obj);
-		res.json_obj = NULL;
-		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 1, stderr));
-	}
 	return (res.json_obj);
 }
 
-cJSON *ws_send(ws_ctx *ctx)
+void ws_send(ws_ctx *ctx)
 {
 	ws_xfer_result res = {0};
 	struct pollfd pollfd = {.events = POLLOUT, .fd = ctx->sock, .revents = 0};
@@ -121,7 +112,6 @@ cJSON *ws_send(ws_ctx *ctx)
 		res.curl_code = err;
 		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 0, stderr));
 	}
-	return (res.json_obj);
 }
 
 static void ws_ctx_print_xfer_result(ws_ctx *ctx, ws_xfer_result res, int is_recv, FILE *stream)
