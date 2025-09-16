@@ -6,6 +6,7 @@
 # include "api.h"
 # include "term.h"
 # include "ws.h"
+# include "json_defs.h"
 
 typedef struct s_ctx
 {
@@ -14,6 +15,7 @@ typedef struct s_ctx
 	input_state	input;
 	ws_ctx		ws_ctx;
 	api_ctx		api_ctx;
+	login		user_login;
 
 	struct
 	{

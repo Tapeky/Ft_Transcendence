@@ -40,14 +40,10 @@ void handle_button(console_component *button, int press, void *param)
 		}
 		else
 		{
-			login login_request;
-			json_parse_from_def_force(json, login_def, &login_request);
+			json_parse_from_def_force(json, login_def, &ctx->user_login);
 			
-			if (!api_ctx_append_token(&ctx->api_ctx, login_request.data.token))
-			{
-				json_clean_obj(&login_request, login_def);
+			if (!api_ctx_append_token(&ctx->api_ctx, ctx->user_login.data.token))
 				clean_and_fail("api_ctx_append_token() fail\n");
-			}
 
 			tournaments tournaments;
 			do_api_request_to_def(&ctx->api_ctx, "api/tournaments", GET, tournaments_def, &tournaments);
@@ -60,7 +56,6 @@ void handle_button(console_component *button, int press, void *param)
 				ccomponent_add(label);
 			}
 			json_clean_obj(&tournaments, tournaments_def);
-			json_clean_obj(&login_request, login_def);
 			crefresh(1);
 		}
 	}
