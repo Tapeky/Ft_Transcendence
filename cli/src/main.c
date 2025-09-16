@@ -30,19 +30,39 @@ void handle_button(console_component *button, int press, void *param)
 			ctx->username_field->u.c_text_area.buf,
 			ctx->password_field->u.c_text_area.buf
 		);
-		api_login_request req;
 		cJSON *json;
-		json = do_api_request_to_choice(&ctx->api_ctx, "api/auth/login", &api_login_def, &req);
-		if (req.success)
+		json = do_api_request(&ctx->api_ctx, "api/auth/login", POST);
+		if (cJSON_GetObjectItem(json, "success")->type == cJSON_False)
 		{
-			cswitch_window(term_window_type_OTHER, 1);
+			label_update_text(ctx->login_error_label, xstrdup(cJSON_GetObjectItem(json, "error")->valuestring), 1);
+			cJSON_Delete(json);
+			crefresh(0);
 		}
 		else
 		{
-			label_update_text(ctx->login_error_label, xstrdup(req.error), 1);
+			login login_request;
+			json_parse_from_def_force(json, login_def, &login_request);
+			
+			if (!api_ctx_append_token(&ctx->api_ctx, login_request.data.token))
+			{
+				json_clean_obj(&login_request, login_def);
+				clean_and_fail("api_ctx_append_token() fail\n");
+			}
+
+			tournaments tournaments;
+			do_api_request_to_def(&ctx->api_ctx, "api/tournaments", GET, tournaments_def, &tournaments);
+			cswitch_window(term_window_type_OTHER, 1);
+			console_component label;
+			for (size_t i = 0; i < tournaments.data.size; i++)
+			{
+				tournament *t = &tournaments.data.arr[i];
+				label_init(&label, 2, i + 2, xstrdup(t->name), 1);
+				ccomponent_add(label);
+			}
+			json_clean_obj(&tournaments, tournaments_def);
+			json_clean_obj(&login_request, login_def);
+			crefresh(1);
 		}
-		crefresh(0);
-		cJSON_Delete(json);
 	}
 }
 
@@ -68,8 +88,7 @@ static void init_windows(ctx *ctx)
 
 	cswitch_window(term_window_type_OTHER, 0);
 	{
-		label_init(&label, 1, 1, "LOGIN SUCCESSFUL", 0);
-		ccomponent_add(label);
+		
 	}
 }
 

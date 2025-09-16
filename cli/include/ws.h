@@ -17,8 +17,8 @@ int ws_ctx_init(ws_ctx *ctx, const char *url);
 
 void ws_ctx_deinit(ws_ctx *ctx);
 
-cJSON *ws_recv_to_switch(ws_ctx *ctx, json_switch *switch_, void *out);
+cJSON *ws_recv(ws_ctx *ctx);
 
-cJSON *ws_send(ws_ctx *ctx);
+void ws_send(ws_ctx *ctx);
 
 #endif

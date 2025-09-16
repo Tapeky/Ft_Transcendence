@@ -1,5 +1,6 @@
 #include "api.h"
 #include <string.h>
+#include <stdlib.h>
 
 static size_t api_ctx_writer(char *data, size_t size, size_t nmemb, void *clientp)
 {
@@ -60,6 +61,26 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
 	ctx->header_list = list;
 	ctx->curl = easy;
 	
+	return (1);
+}
+
+int api_ctx_append_token(api_ctx *ctx, const char *token)
+{
+	const char prepend[] = "Authorization: Bearer ";
+	
+	size_t token_len = strlen(token);
+	char *str = malloc(token_len + sizeof(prepend));
+	if (!str)
+		return (0);
+	memcpy(str, prepend, sizeof(prepend) - 1);
+	strcpy(str + sizeof(prepend) - 1, token);
+	fprintf(stderr, "%s\n%s\n", token, str);
+
+	struct curl_slist *new_list = curl_slist_append(ctx->header_list, str);
+	free(str);
+	if (!new_list)
+		return (0);
+	curl_easy_setopt(ctx->curl, CURLOPT_HTTPHEADER, new_list);
 	return (1);
 }
 

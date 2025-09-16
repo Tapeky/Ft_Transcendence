@@ -63,29 +63,7 @@ static api_request_result api_request_common(api_ctx *ctx, const char *endpoint,
 	return (result);
 }
 
-cJSON *do_api_request_to_choice(
-	api_ctx *ctx,
-	const char *endpoint,
-	request_type request_type,
-	json_choice *choice,
-	void *out)
-{
-	api_request_result res = api_request_common(ctx, endpoint, request_type);
-	if (res.err)
-		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
-	json_content_error err = json_parse_from_choice(res.json_obj, choice, out);
-	if (err)
-	{
-		res.err = ERR_JSON_CONTENT;
-		res.json_content_error = err;
-		cJSON_Delete(res.json_obj);
-		res.json_obj = NULL;
-		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
-	}
-	return (res.json_obj);
-}
-
-cJSON *do_api_request_to_def(
+void do_api_request_to_def(
 	api_ctx *ctx,
 	const char *endpoint,
 	request_type request_type,
@@ -100,10 +78,19 @@ cJSON *do_api_request_to_def(
 	{
 		res.err = ERR_JSON_CONTENT;
 		res.json_content_error = err;
-		cJSON_Delete(res.json_obj);
 		res.json_obj = NULL;
 		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	}
+}
+
+cJSON *do_api_request(
+	api_ctx *ctx,
+	const char *endpoint,
+	request_type request_type)
+{
+	api_request_result res = api_request_common(ctx, endpoint, request_type);
+	if (res.err)
+		DO_CLEANUP(print_api_request_result(&g_ctx.api_ctx, res, stderr));
 	return (res.json_obj);
 }
 
