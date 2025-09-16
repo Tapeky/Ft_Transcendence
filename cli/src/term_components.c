@@ -48,16 +48,45 @@ void label_init(console_component *c, u16 x, u16 y, const char *content, int str
 	BASE_INIT(LABEL, c, x, y);
 	component_label *self = &c->u.c_label;
 	self->str = NULL;
+	self->wrap_around = -1;
 	label_update_text(c, content, str_is_allocated);
 }
 
 void label_draw(console_component *c)
 {
-	cursor_goto(c->x, c->y);
+	int y = c->y;
+	cursor_goto(c->x, y);
 
 	const char *content = c->u.c_label.str;
+	int n_on_cur_line = 0;
+	int wrap_around = c->u.c_label.wrap_around;
 	if (content)
-		PUTS(content);
+	{
+		while (*content)
+		{
+			char chr = *content++;
+			if (chr == '\n')
+			{
+				n_on_cur_line = 0;
+				cursor_goto(c->x, ++y);
+			}
+			else
+			{
+				PUTC(chr);
+				n_on_cur_line++;
+				if (wrap_around > 0 && n_on_cur_line >= wrap_around)
+				{
+					n_on_cur_line = 0;
+					cursor_goto(c->x, ++y);
+				}
+			}
+		}
+	}
+}
+
+void	label_wrap_around(console_component *c, int n)
+{
+	c->u.c_label.wrap_around = n;
 }
 
 void	label_update_text(console_component *c, const char *new_content, int str_is_allocated)
@@ -255,6 +284,7 @@ void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_f
 	component_button *self = &c->u.c_button;
 	self->str = text;
 	self->str_len = strlen(text);
+	self->wrap_around = -1;
 	self->func = func;
 	self->func_param = param;
 	self->held = 0;
