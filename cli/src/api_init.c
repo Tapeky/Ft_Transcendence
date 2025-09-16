@@ -74,7 +74,6 @@ int api_ctx_append_token(api_ctx *ctx, const char *token)
 		return (0);
 	memcpy(str, prepend, sizeof(prepend) - 1);
 	strcpy(str + sizeof(prepend) - 1, token);
-	fprintf(stderr, "%s\n%s\n", token, str);
 
 	struct curl_slist *new_list = curl_slist_append(ctx->header_list, str);
 	free(str);
