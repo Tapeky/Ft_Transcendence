@@ -8,6 +8,8 @@
 # include "ws.h"
 # include "json_defs.h"
 
+# define C(x) console_component *x
+
 typedef struct s_ctx
 {
 	Display		*dpy;
@@ -16,15 +18,25 @@ typedef struct s_ctx
 	ws_ctx		ws_ctx;
 	api_ctx		api_ctx;
 	login		user_login;
+	tournaments	tournaments;
 
 	struct
 	{
-		console_component	*username_field;
-		console_component	*password_field;
-		console_component	*login_button;
-		console_component	*login_error_label;
-	};
+		C(username_field);
+		C(password_field);
+		C(login_error_label);
+	}	login_view;
+	struct
+	{
+		size_t tournament_cursor;
+		C(left_arrow);
+		C(right_arrow);
+		C(tournament_name);
+		C(tournament_description);
+	}	tournament_view;
 }   ctx;
+
+# undef C
 
 int ctx_init(ctx *ctx, const char *api_endpoint_base, const char *ws_endpoint);
 void ctx_deinit(ctx *ctx);
