@@ -192,6 +192,13 @@ static void cinit_window(term_window_type window_type)
 
 void cswitch_window(term_window_type window_type, int refresh)
 {
+	if (window_type == cur_term_window_type)
+		return;
+
+	console_component *cur = ccurrent_component();
+	if (cur && cur->type == BUTTON)
+		cur->u.c_button.held = 0;
+
 	assert(window_type >= 0 && window_type < term_window_type__MAX);
 	term_window *win = &term_windows[window_type];
 	if (!win->has_initiated)
