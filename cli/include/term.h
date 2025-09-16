@@ -33,6 +33,7 @@ typedef struct
 {
 	const char	*str;
 	size_t		str_len;
+	int			wrap_around;
 	int			str_is_allocated;
 }	component_label;
 
@@ -71,6 +72,7 @@ typedef struct s_component_button
 {
 	char				*str;
 	size_t				str_len;
+	int					wrap_around;
 	button_action_func	*func;
 	void				*func_param;
 	int					held;
@@ -103,6 +105,7 @@ void	component_toggle_visibility(console_component *c);
 void	label_init(console_component *c, u16 x, u16 y, const char *content, int str_is_allocated);
 void	label_draw(console_component *c);
 void	label_update_text(console_component *c, const char *new_content, int str_is_allocated);
+void	label_wrap_around(console_component *c, int n);
 
 void	text_area_init(console_component *c, u16 x, u16 y, size_t max_text_size, const char *hint, int text_hidden);
 void	text_area_draw(console_component *c, int force_redraw);
