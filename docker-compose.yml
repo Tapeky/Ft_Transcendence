@@ -1,24 +1,56 @@
 # Ft_Transcendence Docker Compose Configuration
 services:
+  vault:
+    image: hashicorp/vault:latest
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://0.0.0.0:8200"
+    command: ["vault", "server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200"]
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+
+  vault-init:
+    build:
+      context: ./vault
+      dockerfile: Dockerfile
+    depends_on:
+      - vault
+    volumes:
+      - ./vault/scripts:/vault/scripts
+      - ./vault/file:/vault/file
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "root"
+    command: ["/bin/sh", "/vault/scripts/init-vault.sh"]
+    networks:
+      - ft_transcendence
+    restart: "no"
+
   # Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "${FRONTEND_PORT}:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - ./ssl:/app/ssl:ro
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - VITE_API_URL=${VITE_API_URL}
-      - ENABLE_HTTPS=${ENABLE_HTTPS}
+      FRONTEND_PORT: 3000
+      VITE_API_URL: http://localhost:8000
     depends_on:
       - backend
     networks:
       - ft_transcendence
+    restart: unless-stopped
 
   # Backend Service (Node.js + Fastify)
   backend:
@@ -26,30 +58,21 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./backend:/app
       - /app/node_modules
       - ./db:/app/db
       - ./ssl:/app/ssl:ro
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - ENABLE_HTTPS=${ENABLE_HTTPS}
-      - DB_NAME=${DB_NAME}
-      - DB_PATH=${DB_PATH}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "root"
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - ft_transcendence
-
-# Additional services can be added here
+    restart: unless-stopped
 
 # Docker volumes
 volumes:

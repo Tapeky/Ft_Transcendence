@@ -145,7 +145,5 @@ playwright-report/
 coverage/
 
 # Lock files
-package-lock.json
-*/package-lock.json
 yarn.lock
 */yarn.lock

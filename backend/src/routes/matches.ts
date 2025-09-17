@@ -140,7 +140,7 @@ export async function matchRoutes(server: FastifyInstance) {
         data: createdMatch
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur enregistrement match:', error);
       
       // Gestion d'erreurs spécifiques
@@ -225,7 +225,7 @@ export async function matchRoutes(server: FastifyInstance) {
         pagination: { limit, offset, total: matches.length }
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur récupération matches:', error);
       reply.status(500).send({
         success: false,
@@ -291,7 +291,7 @@ export async function matchRoutes(server: FastifyInstance) {
         data: match[0],
         message: 'Match créé avec succès'
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur création match:', error);
       reply.status(500).send({
         success: false,
@@ -321,7 +321,7 @@ export async function matchRoutes(server: FastifyInstance) {
         count: liveMatches.length
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur matches live:', error);
       reply.status(500).send({
         success: false,
@@ -348,7 +348,7 @@ export async function matchRoutes(server: FastifyInstance) {
         data: match
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur détails match:', error);
       reply.status(500).send({
         success: false,
@@ -440,7 +440,7 @@ export async function matchRoutes(server: FastifyInstance) {
         data: updatedMatch[0],
         message: 'Résultat enregistré avec succès'
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur enregistrement résultat:', error);
       reply.status(500).send({
         success: false,
@@ -486,7 +486,7 @@ export async function matchRoutes(server: FastifyInstance) {
         message: 'Match démarré'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur démarrage match:', error);
       reply.status(500).send({
         success: false,

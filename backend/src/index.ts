@@ -11,7 +11,10 @@ import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
 import { GameManager } from './websocket/game_manager';
+import { VaultService } from './vault/vault';
 
+
+const vaultService = VaultService.getInstance();
 // Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
@@ -37,6 +40,9 @@ const server = Fastify({
 
 async function start() {
   try {
+    await vaultService.initialize().catch(err => {
+      console.error('❌ Impossible de charger les secrets depuis Vault:', err);
+    });
     // 1. Configuration de la base de données
     console.log('🔌 Connexion à la base de données...');
     const dbManager = DatabaseManager.getInstance();
@@ -181,7 +187,7 @@ async function start() {
         try {
           await dbManager.cleanupExpiredTokens();
         } catch (error) {
-          server.log.error('Erreur lors du nettoyage des tokens:', error);
+          server.log.error('Erreur lors du nettoyage des tokens:', error as Error);
         }
       }, 60 * 60 * 1000);
     }
@@ -200,13 +206,13 @@ async function start() {
           server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
         }
       } catch (error) {
-        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error);
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error as Error);
       }
     }, 5 * 60 * 1000);
 
     GameManager.instance.registerLoop();
   } catch (err) {
-    server.log.error('❌ Erreur de démarrage du serveur:', err);
+    server.log.error('❌ Erreur de démarrage du serveur:', err as Error);
     process.exit(1);
   }
 }

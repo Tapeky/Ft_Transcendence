@@ -70,7 +70,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
         success: true,
         data: tournaments
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur tournois:', error);
       reply.status(500).send({
         success: false,
@@ -115,7 +115,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
         data: tournament[0],
         message: 'Tournoi créé avec succès'
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur création tournoi:', error);
       reply.status(500).send({
         success: false,
@@ -197,7 +197,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
         success: true,
         message: `Vous avez rejoint le tournoi en tant que "${alias}"`
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur rejoindre tournoi:', error);
       reply.status(500).send({
         success: false,
@@ -254,7 +254,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
           bracket_data: tournament[0].bracket_data ? JSON.parse(tournament[0].bracket_data) : null
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur bracket tournoi:', error);
       reply.status(500).send({
         success: false,
@@ -327,7 +327,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
         message: 'Tournoi démarré avec succès',
         data: { bracket_data: bracketData }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur démarrage tournoi:', error);
       reply.status(500).send({
         success: false,
@@ -374,7 +374,7 @@ export async function tournamentRoutes(server: FastifyInstance) {
           matches
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur matches tournoi:', error);
       reply.status(500).send({
         success: false,

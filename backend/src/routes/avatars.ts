@@ -149,7 +149,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
 					const oldFilePath = path.join(__dirname, '../../', currentUserData.avatar_url);
 					await fs.unlink(oldFilePath);
 				}
-			} catch (error) {
+			} catch (error: unknown) {
 				request.log.warn('Impossible de supprimer l\'ancien avatar:', error);
 			}
 

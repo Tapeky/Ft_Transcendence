@@ -29,7 +29,7 @@ export async function userRoutes(server: FastifyInstance) {
         data: users
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur lors de la recherche:', error);
       reply.status(500).send({
         success: false,
@@ -50,7 +50,7 @@ export async function userRoutes(server: FastifyInstance) {
         data: leaderboard
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur lors de la récupération du classement:', error);
       reply.status(500).send({
         success: false,
@@ -71,7 +71,7 @@ export async function userRoutes(server: FastifyInstance) {
         data: onlineUsers
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur lors de la récupération des utilisateurs en ligne:', error);
       reply.status(500).send({
         success: false,
@@ -112,7 +112,7 @@ export async function userRoutes(server: FastifyInstance) {
         }
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       request.log.error('Erreur lors de la récupération du profil:', error);
       reply.status(500).send({
         success: false,
