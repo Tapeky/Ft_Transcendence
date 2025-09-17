@@ -373,8 +373,18 @@ export class Dashboard {
 }
 
 	private renderGraphs() {
-	const lastMatches = this.matches.slice(-5);
+	// Guard against undefined or empty matches
+	if (!this.matches || this.matches.length === 0) {
+		const left = this.container.querySelector('#graph-left');
+		const right = this.container.querySelector('#graph-right');
 
+		const noDataMessage = '<div class="flex items-center justify-center h-full text-[2rem]">No match data available</div>';
+		if (left) left.innerHTML = noDataMessage;
+		if (right) right.innerHTML = noDataMessage;
+		return;
+	}
+
+	const lastMatches = this.matches.slice(-5);
 	const currentUsername = appState.getState().user?.username;
 	const scores = lastMatches.map(m => {
 		return m.player1_username === currentUsername ? m.player1_score : m.player2_score;
@@ -390,6 +400,16 @@ export class Dashboard {
 	}
 
 	private generateBarChart(data: number[], title: string): string {
+		// Handle empty data array
+		if (!data || data.length === 0) {
+			return `
+				<svg viewBox="0 0 600 250" class="w-full h-full">
+				<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
+				<text x="300" y="125" text-anchor="middle" class="fill-white text-[2rem]">No data to display</text>
+				</svg>
+			`;
+		}
+
 		const max = Math.max(...data);
 		const bars = data.map((val, i) => {
 			const height = (val / max) * 160;
