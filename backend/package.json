@@ -26,18 +26,18 @@
     "bcrypt": "^5.1.1",
     "fastify": "^4.26.2",
     "formdata-node": "^6.0.3",
+    "node-vault": "^0.10.5",
     "sharp": "^0.34.2",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "node-vault": "^0.10.5"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.11.30",
+    "@types/node-vault": "^0.9.4",
     "@types/sharp": "^0.31.1",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
-    "@types/node-vault": "^0.9.4",
     "typescript": "^5.4.2"
   },
   "engines": {
