@@ -92,6 +92,48 @@ void handle_login_button(console_component *button, int press, void *param)
 		attempt_login((ctx *)param);
 }
 
+void attempt_register(ctx *ctx)
+{
+	REQ_API_REGISTER(
+		ctx->api_ctx.in_buf,
+		ctx->register_view.username_field->u.c_text_area.buf,
+		ctx->register_view.email_field->u.c_text_area.buf,
+		ctx->register_view.password_field->u.c_text_area.buf,
+		ctx->register_view.display_name_field->u.c_text_area.buf
+	);
+	cJSON *json;
+	json = do_api_request(&ctx->api_ctx, "api/auth/register", POST);
+	if (cJSON_GetObjectItem(json, "success")->type == cJSON_False)
+	{
+		label_update_text(ctx->register_view.register_error_label, xstrdup(cJSON_GetObjectItem(json, "error")->valuestring), 1);
+		cJSON_Delete(json);
+		crefresh(0);
+	}
+	else
+	{
+		json_parse_from_def_force(json, login_def, &ctx->user_login);
+
+		if (!api_ctx_append_token(&ctx->api_ctx, ctx->user_login.data.token))
+			clean_and_fail("api_ctx_append_token() fail\n");
+		cswitch_window(term_window_type_DASHBOARD, 1);
+	}
+}
+
+void handle_register_button(console_component *button, int press, void *param)
+{
+	(void)button;
+	if (press)
+		attempt_register((ctx *)param);
+}
+
+void handle_register_window_switch_button(console_component *button, int press, void *param)
+{
+	(void)button;
+	(void)param;
+	if (press)
+		cswitch_window(term_window_type_REGISTER, 1);
+}
+
 void handle_tournament_enter_button(console_component *button, int press, void *param)
 {
 	(void)button;
@@ -161,10 +203,37 @@ static void init_windows(ctx *ctx)
 		strcpy(ctx->login_view.username_field->u.c_text_area.buf, "admin@transcendence.com");
 		strcpy(ctx->login_view.password_field->u.c_text_area.buf, "admin123");
 
-		add_pretty_button(3, 15, " LOGIN ", handle_login_button, ctx);
+		add_pretty_button(15, 10, " LOGIN ", handle_login_button, ctx);
 
-		label_init(&component, 2, 18, NULL, 0);
+		button_init(&component, 15, 14, "REGISTER", handle_register_window_switch_button, ctx);
+		ccomponent_add(component);
+
+		label_init(&component, 2, 17, NULL, 0);
 		ctx->login_view.login_error_label = ccomponent_add(component);
+	}
+
+	cswitch_window(term_window_type_REGISTER, 0);
+	{
+		label_init(&component, 2, 2, "USERNAME", 0);
+		ccomponent_add(component);
+		ctx->register_view.username_field = add_pretty_textarea(3, 3, 32, "...", 0);
+
+		label_init(&component, 2, 6, "PASSWORD", 0);
+		ccomponent_add(component);
+		ctx->register_view.password_field = add_pretty_textarea(3, 7, 32, "...", 1);
+
+		label_init(&component, 2, 10, "EMAIL", 0);
+		ccomponent_add(component);
+		ctx->register_view.email_field = add_pretty_textarea(3, 11, 32, "...", 0);
+
+		label_init(&component, 2, 14, "DISPLAY NAME", 0);
+		ccomponent_add(component);
+		ctx->register_view.display_name_field = add_pretty_textarea(3, 15, 32, "...", 0);
+
+		add_pretty_button(14, 18, " REGISTER ", handle_register_button, ctx);
+
+		label_init(&component, 2, 21, NULL, 0);
+		ctx->register_view.register_error_label = ccomponent_add(component);
 	}
 
 	cswitch_window(term_window_type_DASHBOARD, 0);

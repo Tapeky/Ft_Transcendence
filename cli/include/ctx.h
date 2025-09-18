@@ -29,6 +29,14 @@ typedef struct s_ctx
 	}	login_view;
 	struct
 	{
+		C(username_field);
+		C(password_field);
+		C(email_field);
+		C(display_name_field);
+		C(register_error_label);
+	}	register_view;
+	struct
+	{
 		list_view list_view;
 		C(tournament_name);
 		C(tournament_description);

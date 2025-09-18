@@ -12,7 +12,6 @@ DEFINE_JSON(userdef,
 	(STRING, email),
 	(STRING, display_name),
 	(STRING_N, avatar_url),
-	(BOOL, is_online),
 );
 
 DEFINE_JSON(login_data,
@@ -68,7 +67,30 @@ DEFINE_JSON(tournaments,
 		buf, sizeof(buf), fmt, ## __VA_ARGS__ \
 	)
 
-# define REQ_API_LOGIN(buf, username, password) \
-	FILL_REQUEST(buf, "{\"email\":\"%s\",\"password\":\"%s\"}", username, password)
+# define REQ_WRAP(expr) \
+	"{" expr "}"
+
+# define REQ_CHOOSE(a, b, ...) b
+
+# define REQ_ENTRY_LAST(name, ...) \
+	"\"" name "\"" ":" REQ_CHOOSE(0, ## __VA_ARGS__, "\"%s\"")
+
+# define REQ_ENTRY(name, ...) \
+	REQ_ENTRY_LAST(name, ## __VA_ARGS__) ","
+
+# define REQ_API_LOGIN(buf, email, password)	\
+	FILL_REQUEST(buf, REQ_WRAP(					\
+		REQ_ENTRY("email")						\
+		REQ_ENTRY_LAST("password")				\
+	), email, password)
+
+# define REQ_API_REGISTER(buf, username, email, password, display_name)	\
+	FILL_REQUEST(buf, REQ_WRAP(											\
+		REQ_ENTRY("username")											\
+		REQ_ENTRY("email")												\
+		REQ_ENTRY("password")											\
+		REQ_ENTRY("display_name")										\
+		REQ_ENTRY_LAST("data_consent", "true")							\
+	), username, email, password, display_name)
 
 #endif
