@@ -327,6 +327,7 @@ int list_view_update(list_view *list_view, void *param, int increment)
 		component_hide(list_view->right_arrow_label);
 		if (list_view->draw_view_func)
 			list_view->draw_view_func(NULL, param);
+		crefresh(1);
 		return (0);
 	}
 	i64 new_cursor = list_view->list_cursor + increment;
