@@ -123,6 +123,28 @@ void	box_draw(console_component *c);
 void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func, void *param);
 void	button_draw(console_component *c);
 
+typedef void (draw_view_func)(void *obj, void *param);
+
+typedef struct
+{
+	term_window_type	my_window;
+	console_component	*left_arrow_label;
+	console_component	*right_arrow_label;
+	console_component	*box;
+
+	draw_view_func		*draw_view_func;
+	i64					*list_size;
+	i64					list_cursor;
+	void				**list;
+	size_t				elem_size;
+}	list_view;
+
+void list_view_init(list_view *list_view,
+	u16 x, u16 y, u16 w, u16 h,
+	draw_view_func *draw_view_func, i64 *list_size, void **list, size_t elem_size);
+
+int list_view_update(list_view *list_view, void *param, int increment);
+
 aabb	component_bouding_box(console_component *c);
 
 extern u16 		c_y;
