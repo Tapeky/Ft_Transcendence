@@ -295,3 +295,57 @@ void	button_draw(console_component *c)
 	// dirty ? yes. works ? yes.
 	label_draw(c);
 }
+
+void list_view_init(list_view *list_view,
+	u16 x, u16 y, u16 w, u16 h,
+	draw_view_func *draw_view_func, i64 *list_size, void **list, size_t elem_size)
+{
+	console_component c;
+	
+	label_init(&c, x - 2, y + h / 2, "<", 0);
+	list_view->left_arrow_label = ccomponent_add(c);
+	label_init(&c, x + w + 1, y + h / 2, ">", 0);
+	list_view->right_arrow_label = ccomponent_add(c);
+	box_init(&c, x, y, w, h, '-', '-', '|', '|', '+', '+', '+', '+');
+	list_view->box = ccomponent_add(c);
+
+	list_view->my_window = cur_term_window_type;
+	list_view->draw_view_func = draw_view_func;
+	list_view->list_size = list_size;
+	list_view->list_cursor = 0;
+	list_view->list = list;
+	list_view->elem_size = elem_size;
+}
+
+int list_view_update(list_view *list_view, void *param, int increment)
+{
+	if (cur_term_window_type != list_view->my_window)
+		return (0);
+	if (!*list_view->list_size)
+	{
+		component_hide(list_view->left_arrow_label);
+		component_hide(list_view->right_arrow_label);
+		if (list_view->draw_view_func)
+			list_view->draw_view_func(NULL, param);
+		return (0);
+	}
+	i64 new_cursor = list_view->list_cursor + increment;
+	if (new_cursor >= 0 && new_cursor < *list_view->list_size)
+	{
+		list_view->list_cursor = new_cursor;
+		if (!new_cursor)
+			component_hide(list_view->left_arrow_label);
+		else
+			component_show(list_view->left_arrow_label);
+		if (new_cursor + 1 == *list_view->list_size)
+			component_hide(list_view->right_arrow_label);
+		else
+			component_show(list_view->right_arrow_label);
+
+		if (list_view->draw_view_func)
+			list_view->draw_view_func(*list_view->list + list_view->elem_size * new_cursor, param);
+		crefresh(1);
+		return (1);
+	}
+	return (0);
+}
