@@ -41,7 +41,7 @@ typedef struct json_def
 		x value;						\
 	} __attribute__((packed))
 # define _ARRAY(x) struct { \
-		size_t size;					\
+		i64 size;						\
 		x *arr;							\
 	} __attribute__((packed))
 

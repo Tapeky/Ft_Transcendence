@@ -32,7 +32,7 @@ static size_t def_count(const json_def *defs)
 json_content_error parse_array(cJSON *base, const json_def *def, void *out)
 {
 	json_content_error error;
-	size_t *size_ptr = (size_t *)((u8 *)out + def->offset);
+	i64 *size_ptr = (i64 *)((u8 *)out + def->offset);
 	void **ptr_loc = (void **)((u8 *)out + def->offset + sizeof(size_t));
 
 	int sz = cJSON_GetArraySize(base);
@@ -169,12 +169,12 @@ static void json_clean_obj_rec(const json_def *defs, void *in);
 
 static void json_clean_array(const json_def *def, void *in)
 {
-	size_t *size_ptr = (size_t *)((u8 *)in + def->offset);
-	void **ptr_loc = (void **)((u8 *)in + def->offset + sizeof(size_t));
+	i64 *size_ptr = (i64 *)((u8 *)in + def->offset);
+	void **ptr_loc = (void **)((u8 *)in + def->offset + sizeof(i64));
 
-	size_t size = *size_ptr; 
+	i64 size = *size_ptr; 
 	void *ptr = *ptr_loc;
-	for (size_t i = 0; i < size; i++)
+	for (i64 i = 0; i < size; i++)
 	{
 		json_clean_obj_rec(def->recursive_object, ptr);
 		ptr += def->element_len;
