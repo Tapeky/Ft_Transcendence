@@ -19,6 +19,7 @@ typedef struct s_ctx
 	api_ctx		api_ctx;
 	login		user_login;
 	tournaments	tournaments;
+	friends		friends;
 
 	struct
 	{
@@ -28,12 +29,15 @@ typedef struct s_ctx
 	}	login_view;
 	struct
 	{
-		size_t tournament_cursor;
-		C(left_arrow);
-		C(right_arrow);
+		list_view list_view;
 		C(tournament_name);
 		C(tournament_description);
 	}	tournament_view;
+	struct
+	{
+		list_view list_view;
+		C(friend_name);
+	}	friends_view;
 }   ctx;
 
 # undef C

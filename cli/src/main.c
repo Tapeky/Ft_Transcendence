@@ -13,56 +13,41 @@
 
 ctx g_ctx = {0};
 
-void update_tournament_view(ctx *ctx);
-
 int on_key_event(ctx *ctx, KeySym key, int on_press)
 {
 	(void)ctx;
-	if (cur_term_window_type == term_window_type_TOURNAMENT_VIEW && on_press)
+	if (key == XK_Left && on_press)
 	{
-		if (key == XK_Left)
-		{
-			if (ctx->tournament_view.tournament_cursor)
-			{
-				--ctx->tournament_view.tournament_cursor;
-				update_tournament_view(ctx);
-				crefresh(1);
-			}
-		}
-		else if (key == XK_Right)
-		{
-			if (ctx->tournament_view.tournament_cursor + 1 < ctx->tournaments.data.size)
-			{
-				++ctx->tournament_view.tournament_cursor;
-				update_tournament_view(ctx);
-				crefresh(1);
-			}
-		}
-		else if (key == XK_b)
-			cswitch_window(term_window_type_DASHBOARD, 1);
+		if (list_view_update(&ctx->tournament_view.list_view, ctx, -1)
+			|| list_view_update(&ctx->friends_view.list_view, ctx, -1))
+			return (0);
 	}
+	else if (key == XK_Right && on_press)
+	{
+		if (list_view_update(&ctx->tournament_view.list_view, ctx, 1)
+			|| list_view_update(&ctx->friends_view.list_view, ctx, 1))
+			return (0);
+	}
+	else if (key == XK_b && cur_term_window_type > term_window_type_DASHBOARD)
+		cswitch_window(term_window_type_DASHBOARD, 1);
 	chandle_key_event(key, on_press);
 	return (key == XK_Escape);
 }
 
-void update_tournament_view(ctx *ctx)
+void update_tournament_view(void *obj, void *param)
 {
-	size_t i = ctx->tournament_view.tournament_cursor;
-	size_t n = ctx->tournaments.data.size;
+	tournament *t = obj;
+	ctx *ctx = param;
 
-	tournament *t = &ctx->tournaments.data.arr[i];
-
-	label_update_text(ctx->tournament_view.tournament_name, t->name, 0);
-	label_update_text(ctx->tournament_view.tournament_description, t->description, 0);
-
-	if (!i)
-		component_hide(ctx->tournament_view.left_arrow);
+	if (t)
+	{
+		label_update_text(ctx->tournament_view.tournament_name, t->name, 0);
+		label_update_text(ctx->tournament_view.tournament_description, t->description, 0);
+	}
 	else
-		component_show(ctx->tournament_view.left_arrow);
-	if (i + 1 == n)
-		component_hide(ctx->tournament_view.right_arrow);
-	else
-		component_show(ctx->tournament_view.right_arrow);
+	{
+		label_update_text(ctx->tournament_view.tournament_name, "NO TOURNAMENT", 0);
+	}
 }
 
 void refresh_tournaments(ctx *ctx)
@@ -71,14 +56,8 @@ void refresh_tournaments(ctx *ctx)
 	if (ctx->tournaments._json_)
 		json_clean_obj(&ctx->tournaments, tournaments_def);
 	do_api_request_to_def(&ctx->api_ctx, "api/tournaments", GET, tournaments_def, &ctx->tournaments);
-	ctx->tournament_view.tournament_cursor = 0;
-	component_hide(ctx->tournament_view.left_arrow);
-	
-	size_t number_of_tournaments = ctx->tournaments.data.size;
-	if (number_of_tournaments)
-		update_tournament_view(ctx);
-
-	crefresh(1);
+	ctx->tournament_view.list_view.list_cursor = 0;
+	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
 }
 
 void attempt_login(ctx *ctx)
@@ -124,11 +103,44 @@ void handle_tournament_enter_button(console_component *button, int press, void *
 	}
 }
 
+void update_friends_view(void *obj, void *param)
+{
+	friend *f = obj;
+	ctx *ctx = param;
+
+	if (f)
+	{
+		label_update_text(ctx->friends_view.friend_name, f->display_name, 0);
+	}
+	else
+	{
+		label_update_text(ctx->friends_view.friend_name, "NO FRIEND :(", 0);
+	}
+}
+
+void refresh_friends(ctx *ctx)
+{
+	cswitch_window(term_window_type_FRIENDS_VIEW, 0);
+
+	if (ctx->friends._json_)
+		json_clean_obj(&ctx->friends, friends_def);
+	do_api_request_to_def(&ctx->api_ctx, "api/friends", GET, friends_def, &ctx->friends);
+	ctx->friends_view.list_view.list_cursor = 0;
+	list_view_update(&ctx->friends_view.list_view, ctx, 0);
+}
+
 void handle_tournament_window_switch_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	if (press)
 		refresh_tournaments((ctx *)param);
+}
+
+void handle_friends_window_switch_button(console_component *button, int press, void *param)
+{
+	(void)button;
+	if (press)
+		refresh_friends((ctx *)param);
 }
 
 static void init_windows(ctx *ctx)
@@ -160,7 +172,21 @@ static void init_windows(ctx *ctx)
 		label_init(&component, 2, 2, "DASHBOARD", 0);
 		add_pretty_button(15, 6, " TOURNAMENTS ", handle_tournament_window_switch_button, ctx);
 
-		add_pretty_button(15, 11, " FRIENDS ", NULL, NULL);
+		add_pretty_button(15, 11, " FRIENDS ", handle_friends_window_switch_button, ctx);
+	}
+
+	cswitch_window(term_window_type_FRIENDS_VIEW, 0);
+	{
+		const int BOX_X = 4;
+		const int BOX_Y = 4;
+		const int BOX_W = 50;
+		const int BOX_H = 14;
+
+		list_view_init(&ctx->friends_view.list_view, BOX_X, BOX_Y, BOX_W, BOX_H, update_friends_view, &ctx->friends.data.size, (void **)&ctx->friends.data.arr, sizeof(friend));
+		label_init(&component, BOX_X, BOX_Y - 1, "FRIENDS", 0);
+		ccomponent_add(component);
+		label_init(&component, BOX_X + 2, BOX_Y + 2, NULL, 0);
+		ctx->friends_view.friend_name = ccomponent_add(component);
 	}
 	
 	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
@@ -170,18 +196,9 @@ static void init_windows(ctx *ctx)
 		const int BOX_W = 50;
 		const int BOX_H = 14;
 
+		list_view_init(&ctx->tournament_view.list_view, BOX_X, BOX_Y, BOX_W, BOX_H, update_tournament_view, &ctx->tournaments.data.size, (void **)&ctx->tournaments.data.arr, sizeof(tournament));
 		label_init(&component, BOX_X, BOX_Y - 1, "TOURNAMENTS", 0);
 		ccomponent_add(component);
-		box_init(&component,
-			BOX_X, BOX_Y, BOX_W, BOX_H,
-			'-', '-', '|', '|',
-			'+', '+', '+', '+'
-		);
-		ccomponent_add(component);
-		label_init(&component, BOX_X - 2, BOX_Y + BOX_H / 2, "<", 0);
-		ctx->tournament_view.left_arrow = ccomponent_add(component);
-		label_init(&component, BOX_X + BOX_W + 1, BOX_Y + BOX_H / 2, ">", 0);
-		ctx->tournament_view.right_arrow = ccomponent_add(component);
 		label_init(&component, BOX_X + 2, BOX_Y + 1, NULL, 0);
 		ctx->tournament_view.tournament_name = ccomponent_add(component);
 		label_init(&component, BOX_X + 2, BOX_Y + 3, NULL, 0);
