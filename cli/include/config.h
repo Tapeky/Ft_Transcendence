@@ -8,6 +8,7 @@ typedef enum
 {
 	term_window_type_LOGIN,
 	term_window_type_DASHBOARD,
+	term_window_type_FRIENDS_VIEW,
 	term_window_type_TOURNAMENT_VIEW,
 	term_window_type__MAX
 }	term_window_type;

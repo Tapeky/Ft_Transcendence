@@ -25,6 +25,20 @@ DEFINE_JSON(login,
 	(OBJECT, data, login_data)
 );
 
+DEFINE_JSON(friend,
+	(INT, id),
+	(STRING, username),
+	(STRING, display_name),
+	(INT, is_online), // int ???
+	(INT, total_wins),
+	(INT, total_losses),
+	(STRING, created_at)
+);
+
+DEFINE_JSON(friends,
+	(ARRAY, data, friend),
+);
+
 DEFINE_JSON(bracket_data);
 
 DEFINE_JSON(tournament,
