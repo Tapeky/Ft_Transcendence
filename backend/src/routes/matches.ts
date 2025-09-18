@@ -123,6 +123,29 @@ export async function matchRoutes(server: FastifyInstance) {
 
       const matchId = result.lastID;
 
+      // Mettre à jour les statistiques des joueurs (SEULEMENT pour les utilisateurs authentifiés)
+      if (finalP1Id) {
+        const p1IsWinner = winner_id === finalP1Id;
+        await db.execute(`
+          UPDATE users
+          SET total_games = total_games + 1,
+              total_wins = total_wins + ?,
+              total_losses = total_losses + ?
+          WHERE id = ?
+        `, [p1IsWinner ? 1 : 0, p1IsWinner ? 0 : 1, finalP1Id]);
+      }
+
+      if (finalP2Id) {
+        const p2IsWinner = winner_id === finalP2Id;
+        await db.execute(`
+          UPDATE users
+          SET total_games = total_games + 1,
+              total_wins = total_wins + ?,
+              total_losses = total_losses + ?
+          WHERE id = ?
+        `, [p2IsWinner ? 1 : 0, p2IsWinner ? 0 : 1, finalP2Id]);
+      }
+
       // Si c'est un match de tournoi, avancer le bracket
       if (tournament_id && winner_id) {
         await advanceTournamentBracket(tournament_id, matchId, winner_id, db);
@@ -420,6 +443,29 @@ export async function matchRoutes(server: FastifyInstance) {
             duration_seconds = ?
         WHERE id = ?
       `, [player1_score, player2_score, winner_id, durationSeconds, matchId]);
+
+      // Mettre à jour les statistiques des joueurs
+      if (currentMatch.player1_id) {
+        const p1IsWinner = winner_id === currentMatch.player1_id;
+        await db.query(`
+          UPDATE users
+          SET total_games = total_games + 1,
+              total_wins = total_wins + ?,
+              total_losses = total_losses + ?
+          WHERE id = ?
+        `, [p1IsWinner ? 1 : 0, p1IsWinner ? 0 : 1, currentMatch.player1_id]);
+      }
+
+      if (currentMatch.player2_id) {
+        const p2IsWinner = winner_id === currentMatch.player2_id;
+        await db.query(`
+          UPDATE users
+          SET total_games = total_games + 1,
+              total_wins = total_wins + ?,
+              total_losses = total_losses + ?
+          WHERE id = ?
+        `, [p2IsWinner ? 1 : 0, p2IsWinner ? 0 : 1, currentMatch.player2_id]);
+      }
 
       if (currentMatch.tournament_id) {
         await advanceTournamentBracket(currentMatch.tournament_id, matchId, winner_id, db);

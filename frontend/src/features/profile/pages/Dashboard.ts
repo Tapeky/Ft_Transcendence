@@ -89,13 +89,101 @@ export class Dashboard {
   private async loadMatches() {
     try {
       if (this.playerId) {
-        const response = await apiService.getMatches({ player_id: Number(this.playerId) });
-        this.matches = response.data;
+        console.log('🔄 Loading matches for player ID:', this.playerId);
+        const response = await apiService.getMatches({
+          player_id: Number(this.playerId),
+          include_guests: true
+        });
+        console.log('📡 API response:', response);
+        this.matches = Array.isArray(response) ? response : response.data;
+        console.log('✅ Matches loaded:', this.matches?.length || 0, 'matches');
+        if (this.matches?.length > 0) {
+          console.log('🎮 First match sample:', this.matches[0]);
+        }
+      } else {
+        console.warn('⚠️ No playerId provided for loadMatches');
       }
     } catch (error) {
-      console.error('Error loading matches:', error);
+      console.error('❌ Error loading matches:', error);
       this.matches = [];
     }
+  }
+
+  private getPlayerStats(matches?: any[]) {
+    const totalGames = this.player?.total_games || 0;
+    const wins = this.player?.total_wins || 0;
+    const losses = this.player?.total_losses || 0;
+
+    return {
+      winRate: totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0',
+      avgScore: this.calculateAverageScore(matches),
+      bestScore: this.getBestScore(matches),
+      recentForm: this.getRecentForm(matches)
+    };
+  }
+
+  private calculateAverageScore(matches?: any[]): string {
+    const matchesToUse = matches || this.matches || [];
+    if (matchesToUse.length === 0) return '0';
+
+    const currentUsername = appState.getState().user?.username;
+    const scores = matchesToUse.map(match =>
+      match.player1_username === currentUsername ? match.player1_score : match.player2_score
+    );
+
+    const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+    return average.toFixed(1);
+  }
+
+  private getBestScore(matches?: any[]): number {
+    const matchesToUse = matches || this.matches || [];
+    if (matchesToUse.length === 0) return 0;
+
+    const currentUsername = appState.getState().user?.username;
+    const scores = matchesToUse.map(match =>
+      match.player1_username === currentUsername ? match.player1_score : match.player2_score
+    );
+
+    return Math.max(...scores);
+  }
+
+  private getRecentForm(matches?: any[]): string {
+    const matchesToUse = matches || this.matches || [];
+    if (matchesToUse.length === 0) return 'N/A';
+
+    const currentUser = appState.getState().user;
+    const recentMatches = matchesToUse.slice(-5);
+
+    const results = recentMatches.map(match =>
+      match.winner_id === currentUser?.id ? 'W' : 'L'
+    );
+
+    return results.join('');
+  }
+
+  private renderAdvancedStats(): string {
+    const stats = this.getPlayerStats();
+
+    return `
+      <div class="grid grid-cols-2 gap-4 text-[1.8rem] px-4">
+        <div class="text-center">
+          <div class="text-yellow-300">Win Rate</div>
+          <div class="text-[2rem] font-bold">${stats.winRate}%</div>
+        </div>
+        <div class="text-center">
+          <div class="text-blue-300">Avg Score</div>
+          <div class="text-[2rem] font-bold">${stats.avgScore}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-green-300">Best Score</div>
+          <div class="text-[2rem] font-bold">${stats.bestScore}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-purple-300">Recent Form</div>
+          <div class="text-[2rem] font-bold tracking-wider">${stats.recentForm}</div>
+        </div>
+      </div>
+    `;
   }
 
   private render() {
@@ -135,10 +223,11 @@ export class Dashboard {
           <div class="flex flex-col mt-6 mx-10 flex-grow text-white text-[3rem]">
             <div class="border-b-2 pb-6 border-dashed mb-10">
               <h3 class="text-center text-[2.5rem]">Games played : ${this.player?.total_games || 0}</h3>
-              <ul class="flex justify-evenly text-[2.2rem]">
+              <ul class="flex justify-evenly text-[2.2rem] mb-4">
                 <li>Wins : ${this.player?.total_wins || 0}</li>
                 <li>Losses : ${this.player?.total_losses || 0}</li>
               </ul>
+              ${this.renderAdvancedStats()}
             </div>
             
             <div class="flex flex-col gap-2 items-center">
@@ -262,14 +351,14 @@ export class Dashboard {
     }
 
 	const graphBtn = this.container.querySelector('#graph-toggle');
-	const modal = document.querySelector('#graph-modal');
-	const closeBtn = document.querySelector('#close-graph');
+	const modal = this.container.querySelector('#graph-modal');
+	const closeBtn = this.container.querySelector('#close-graph');
 
 	if (graphBtn && modal && closeBtn) {
 	graphBtn.addEventListener('click', () => {
 		modal.classList.remove('hidden');
 		modal.classList.add('flex');
-		this.renderGraphs();
+		this.renderGraphs().catch(console.error);
 	});
 
 	closeBtn.addEventListener('click', () => {
@@ -372,31 +461,286 @@ export class Dashboard {
 	`;
 }
 
-	private renderGraphs() {
-	// Guard against undefined or empty matches
-	if (!this.matches || this.matches.length === 0) {
+	private async renderGraphs() {
+		console.log('🔍 renderGraphs called');
+
+		// Charger les données fraîches directement
+		let matches = [];
+		try {
+			const response = await apiService.getMatches({
+				player_id: Number(this.playerId),
+				include_guests: true
+			});
+			matches = Array.isArray(response) ? response : response.data || [];
+			console.log('✅ Fresh matches loaded for modal:', matches.length, 'matches');
+		} catch (error) {
+			console.error('❌ Failed to load matches for modal:', error);
+		}
+
+		// Guard against undefined or empty matches
+		if (!matches || matches.length === 0) {
+			const left = this.container.querySelector('#graph-left');
+			const right = this.container.querySelector('#graph-right');
+
+			console.log('⚠️ No data - Left element:', !!left, 'Right element:', !!right);
+
+			const noDataMessage = this.generateBarChart([], 'No match data');
+			if (left) left.innerHTML = noDataMessage;
+			if (right) right.innerHTML = noDataMessage;
+			return;
+		}
+
+		// Extraire les scores du joueur actuel
+		const currentUser = appState.getState().user;
+		const scores = matches.map(match => {
+			return match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
+		});
+
 		const left = this.container.querySelector('#graph-left');
 		const right = this.container.querySelector('#graph-right');
 
-		const noDataMessage = '<div class="flex items-center justify-center h-full text-[2rem]">No match data available</div>';
-		if (left) left.innerHTML = noDataMessage;
-		if (right) right.innerHTML = noDataMessage;
-		return;
+		console.log('📈 Rendering stats - Left element:', !!left, 'Right element:', !!right);
+
+		if (left)
+			left.innerHTML = this.generateBarChart(scores, 'Last scores');
+		if (right)
+			right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
 	}
 
-	const lastMatches = this.matches.slice(-5);
-	const currentUsername = appState.getState().user?.username;
-	const scores = lastMatches.map(m => {
-		return m.player1_username === currentUsername ? m.player1_score : m.player2_score;
-	});
+	private renderDetailedStats(matches?: any[]): string {
+		const stats = this.getPlayerStats(matches);
+		const totalGames = this.player?.total_games || 0;
+		const wins = this.player?.total_wins || 0;
+		const losses = this.player?.total_losses || 0;
+		const winRate = parseFloat(stats.winRate);
 
-	const left = this.container.querySelector('#graph-left');
-	const right = this.container.querySelector('#graph-right');
+		return `
+			<div class="h-full p-4 flex flex-col">
+				<h3 class="text-center text-[2.5rem] mb-6 border-b-2 pb-2">Performance Analytics</h3>
 
-	if (left)
-		left.innerHTML = this.generateBarChart(scores, 'Last scores');
-	if (right)
-		right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
+				<!-- Win Rate Circular Progress -->
+				<div class="mb-6">
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Win Rate</h4>
+					<div class="flex justify-center items-center">
+						<div class="relative w-32 h-32">
+							<svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+								<path class="text-gray-600" stroke="currentColor" stroke-width="3" fill="none" 
+									d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+								<path class="text-green-400" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"
+									stroke-dasharray="${winRate}, 100" 
+									d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+							</svg>
+							<div class="absolute inset-0 flex items-center justify-center">
+								<span class="text-[1.5rem] font-bold text-white">${stats.winRate}%</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Score Distribution Chart -->
+				<div class="mb-6">
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Analysis</h4>
+					<div class="space-y-2">
+						<div class="flex justify-between items-center">
+							<span class="text-[1.4rem]">Avg Score:</span>
+							<div class="flex items-center">
+								<div class="w-24 h-4 bg-gray-600 rounded mr-2">
+									<div class="h-4 bg-blue-400 rounded" style="width: ${Math.min(parseFloat(stats.avgScore) / 21 * 100, 100)}%"></div>
+								</div>
+								<span class="text-[1.4rem] font-bold">${stats.avgScore}</span>
+							</div>
+						</div>
+						<div class="flex justify-between items-center">
+							<span class="text-[1.4rem]">Best Score:</span>
+							<div class="flex items-center">
+								<div class="w-24 h-4 bg-gray-600 rounded mr-2">
+									<div class="h-4 bg-yellow-400 rounded" style="width: ${Math.min(stats.bestScore / 21 * 100, 100)}%"></div>
+								</div>
+								<span class="text-[1.4rem] font-bold">${stats.bestScore}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Games Distribution -->
+				<div>
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Games Distribution</h4>
+					<div class="space-y-3">
+						<div class="flex items-center">
+							<span class="text-[1.4rem] w-20">Wins:</span>
+							<div class="flex-1 mx-3 h-6 bg-gray-600 rounded">
+								<div class="h-6 bg-green-400 rounded flex items-center justify-end pr-2" 
+									style="width: ${totalGames > 0 ? (wins / totalGames * 100) : 0}%">
+									<span class="text-[1rem] font-bold">${wins}</span>
+								</div>
+							</div>
+						</div>
+						<div class="flex items-center">
+							<span class="text-[1.4rem] w-20">Losses:</span>
+							<div class="flex-1 mx-3 h-6 bg-gray-600 rounded">
+								<div class="h-6 bg-red-400 rounded flex items-center justify-end pr-2" 
+									style="width: ${totalGames > 0 ? (losses / totalGames * 100) : 0}%">
+									<span class="text-[1rem] font-bold">${losses}</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Recent Form -->
+				<div class="mt-4">
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Form</h4>
+					<div class="flex justify-center space-x-2">
+						${stats.recentForm.split('').map(result => 
+							`<div class="w-8 h-8 rounded ${result === 'W' ? 'bg-green-400' : 'bg-red-400'} 
+								flex items-center justify-center text-black font-bold text-[1.2rem]">${result}</div>`
+						).join('')}
+					</div>
+				</div>
+			</div>
+		`;
+	}
+
+	private renderMatchBreakdown(matches?: any[]): string {
+		const matchesToUse = matches || this.matches || [];
+		if (matchesToUse.length === 0) {
+			return '<div class="flex items-center justify-center h-full text-[2rem]">No matches to analyze</div>';
+		}
+
+		const currentUser = appState.getState().user;
+		const recentMatches = matchesToUse.slice(-10);
+
+		// Calculer les données pour le graphique en ligne
+		const matchResults = recentMatches.map((match, index) => {
+			const isWin = match.winner_id === currentUser?.id;
+			const playerScore = match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
+			return { index, isWin, score: playerScore };
+		});
+
+		const maxScore = Math.max(...matchResults.map(m => m.score), 21);
+		const chartHeight = 200;
+
+		return `
+			<div class="h-full p-4 flex flex-col">
+				<h3 class="text-center text-[2.5rem] mb-4 border-b-2 pb-2">Match Progression</h3>
+
+				<!-- Score Trend Chart -->
+				<div class="mb-6">
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Evolution</h4>
+					<div class="bg-gray-800 rounded p-4 relative" style="height: ${chartHeight}px;">
+						<!-- Grid lines -->
+						${Array.from({length: 5}, (_, i) => {
+							const y = (chartHeight - 40) * i / 4 + 20;
+							const value = Math.round(maxScore * (4 - i) / 4);
+							return `
+								<div class="absolute left-0 right-0 border-t border-gray-600" style="top: ${y}px;"></div>
+								<span class="absolute left-1 text-[0.8rem] text-gray-400" style="top: ${y - 8}px;">${value}</span>
+							`;
+						}).join('')}
+						
+						<!-- Chart line -->
+						<svg class="absolute top-5 left-8 right-2 bottom-5" style="width: calc(100% - 40px); height: ${chartHeight - 40}px;">
+							<polyline
+								fill="none"
+								stroke="#60a5fa"
+								stroke-width="2"
+								points="${matchResults.map((result, i) => {
+									const x = (i / Math.max(matchResults.length - 1, 1)) * 100;
+									const y = 100 - (result.score / maxScore * 100);
+									return `${x}%,${y}%`;
+								}).join(' ')}"
+							/>
+							<!-- Data points -->
+							${matchResults.map((result, i) => {
+								const x = (i / Math.max(matchResults.length - 1, 1)) * 100;
+								const y = 100 - (result.score / maxScore * 100);
+								return `
+									<circle
+										cx="${x}%"
+										cy="${y}%"
+										r="4"
+										fill="${result.isWin ? '#10b981' : '#ef4444'}"
+										stroke="white"
+										stroke-width="1"
+									/>
+								`;
+							}).join('')}
+						</svg>
+					</div>
+				</div>
+
+				<!-- Win/Loss Timeline -->
+				<div>
+					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Results</h4>
+					<div class="space-y-2 max-h-40 overflow-y-auto">
+						${recentMatches.reverse().map((match, index) => {
+							const isWin = match.winner_id === currentUser?.id;
+							const playerScore = match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
+							const opponentScore = match.player1_username === currentUser?.username ? match.player2_score : match.player1_score;
+							const opponent = match.player1_username === currentUser?.username ?
+								(match.player2_username || match.player2_guest_name) :
+								(match.player1_username || match.player1_guest_name);
+
+							// Date formatting
+							const date = new Date(match.created_at);
+							const timeAgo = this.getTimeAgo(date);
+
+							return `
+								<div class="flex items-center justify-between p-2 rounded ${isWin ? 'bg-green-800/20' : 'bg-red-800/20'}">
+									<div class="flex items-center space-x-3">
+										<div class="w-8 h-8 rounded ${isWin ? 'bg-green-400' : 'bg-red-400'} 
+											flex items-center justify-center text-black font-bold text-[1.2rem]">
+											${isWin ? 'W' : 'L'}
+										</div>
+										<span class="text-[1.3rem]">${playerScore}-${opponentScore}</span>
+									</div>
+									<div class="text-right">
+										<div class="text-[1.1rem] text-gray-300 truncate max-w-[100px]">vs ${opponent || 'Unknown'}</div>
+										<div class="text-[0.9rem] text-gray-500">${timeAgo}</div>
+									</div>
+								</div>
+							`;
+						}).join('')}
+					</div>
+				</div>
+			</div>
+		`;
+	}
+
+	private getTimeAgo(date: Date): string {
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffMins = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMs / 3600000);
+		const diffDays = Math.floor(diffMs / 86400000);
+
+		if (diffMins < 60) {
+			return diffMins <= 1 ? 'Just now' : `${diffMins}m ago`;
+		} else if (diffHours < 24) {
+			return `${diffHours}h ago`;
+		} else if (diffDays < 7) {
+			return `${diffDays}d ago`;
+		} else {
+			return date.toLocaleDateString();
+		}
+	}
+
+	private getCurrentWinStreak(): number {
+		if (!this.matches || this.matches.length === 0) return 0;
+
+		const currentUser = appState.getState().user;
+		let streak = 0;
+
+		// Parcourir les matchs du plus récent au plus ancien
+		for (let i = this.matches.length - 1; i >= 0; i--) {
+			if (this.matches[i].winner_id === currentUser?.id) {
+				streak++;
+			} else {
+				break;
+			}
+		}
+
+		return streak;
 	}
 
 	private generateBarChart(data: number[], title: string): string {
@@ -434,6 +778,23 @@ export class Dashboard {
 
 
 
+
+	async refreshData() {
+		try {
+			// Recharger les données utilisateur et matchs
+			await Promise.all([
+				this.loadPlayer(),
+				this.loadMatches()
+			]);
+
+			// Re-render pour afficher les nouvelles données
+			this.render();
+
+			console.log('Dashboard data refreshed successfully');
+		} catch (error) {
+			console.error('Error refreshing dashboard data:', error);
+		}
+	}
 
 	destroy() {
 		if (this.header) {

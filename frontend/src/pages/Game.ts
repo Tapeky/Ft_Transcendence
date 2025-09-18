@@ -2,6 +2,8 @@ import { authManager } from '../core/auth/AuthManager';
 import { router } from '../core/app/Router';
 import { Header } from '../shared/components/Header';
 import { Banner } from '../shared/components/Banner';
+import { apiService } from '../shared/services/api';
+import { appState } from '../core/state/AppState';
 
 interface GameState {
     leftPaddle: { pos: { x: number; y: number }; hitCount: number; };
@@ -279,7 +281,7 @@ export class GamePage {
                     this.gameEnded = true;
                     const winner = this.gameState.leftScore >= 5 ? 'Player 1' : 'Player 2';
                     const winnerAlias = this.getWinnerAlias(this.gameState.leftScore >= 5);
-                    this.showGameEnd(winnerAlias || winner);
+                    this.showGameEnd(winnerAlias || winner).catch(console.error);
                     return;
                 }
             }
@@ -424,14 +426,57 @@ export class GamePage {
         }
     }
 
-    private showGameEnd(winner: string): void {
-        if (this.gameEndOverlay) return;
+    private async recordMatch(leftScore: number, rightScore: number): Promise<void> {
+        try {
+            const currentUser = appState.getState().user;
+            if (!currentUser) {
+                console.warn('No authenticated user, cannot record match');
+                return;
+            }
 
-        const overlay = document.createElement('div');
-        overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+            // Pour une partie locale, on considère que l'utilisateur connecté joue contre un guest
+            // Le joueur connecté est toujours player1 (left), l'adversaire est un guest (right)
+            const winnerId = leftScore > rightScore ? currentUser.id : null; // null si guest gagne
+
+            const matchData = {
+                player1_id: currentUser.id,
+                player2_id: null, // Guest player
+                player1_guest_name: null,
+                player2_guest_name: 'Guest Player',
+                player1_score: leftScore,
+                player2_score: rightScore,
+                winner_id: winnerId,
+                game_type: 'pong',
+                max_score: 5,
+                duration_seconds: 60, // Estimation, le jeu local ne track pas la durée
+                player1_touched_ball: this.gameState?.leftPaddle.hitCount || 0,
+                player1_missed_ball: Math.max(0, rightScore), // Approximation
+                player2_touched_ball: this.gameState?.rightPaddle.hitCount || 0,
+                player2_missed_ball: Math.max(0, leftScore) // Approximation
+            };
+
+            await apiService.recordMatch(matchData);
+            console.log('✅ Match recorded successfully');
+
+        } catch (error) {
+            console.error('❌ Failed to record match:', error);
+            // Ne pas bloquer l'affichage de fin de partie si l'enregistrement échoue
+        }
+    }
+
+    private async showGameEnd(winner: string): Promise<void> {
+        if (this.gameEndOverlay) return;
 
         const leftScore = this.gameState?.leftScore || 0;
         const rightScore = this.gameState?.rightScore || 0;
+
+        // Enregistrer automatiquement le match (seulement pour parties normales, pas tournois)
+        if (!this.tournamentContext) {
+            await this.recordMatch(leftScore, rightScore);
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
 
         if (this.tournamentContext) {
             // Tournament mode - show match result
