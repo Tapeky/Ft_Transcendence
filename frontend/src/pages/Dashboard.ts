@@ -20,7 +20,7 @@ export class Dashboard {
   }
 
   private async init() {
-    // DEBUG: Afficher l'état d'auth au moment du Dashboard
+    // DEBUG
     const state = appState.getState();
     console.log('🔍 Dashboard INIT - État auth:', {
       loading: state.loading,
@@ -30,14 +30,12 @@ export class Dashboard {
     });
 
     if (state.loading) {
-      // Afficher un état de chargement pendant l'initialisation
       this.showLoadingState();
       
-      // Attendre la fin de l'initialisation
       await this.waitForAuthInitialization();
     }
 
-    // Vérifier l'authentification APRÈS initialisation
+    
     const finalState = appState.getState();
     console.log('🔍 Dashboard FINAL - État auth:', {
       loading: finalState.loading,
@@ -52,9 +50,6 @@ export class Dashboard {
       return;
     }
 
-    // Success;
-
-    // Charger les données
     await Promise.all([
       this.loadPlayer(),
       this.loadMatches()
@@ -66,13 +61,13 @@ export class Dashboard {
 
   private async waitForAuthInitialization(): Promise<void> {
     return new Promise((resolve) => {
-      // Si déjà initialisé, résoudre immédiatement
+     
       if (!appState.getState().loading) {
         resolve();
         return;
       }
 
-      // Sinon, attendre le changement d'état
+   
       const unsubscribe = appState.subscribe((state) => {
         if (!state.loading) {
           unsubscribe();
@@ -112,6 +107,7 @@ export class Dashboard {
     }
   }
 
+
   private render() {
     if (this.loading) {
       this.container.innerHTML = `
@@ -122,7 +118,7 @@ export class Dashboard {
       return;
     }
 
-    // Vérifier à nouveau l'auth après loading
+   
     const state = appState.getState();
     if (!state.isAuthenticated || !state.user) {
       this.container.innerHTML = '';
@@ -188,7 +184,7 @@ export class Dashboard {
 
 	this.container.insertAdjacentHTML('beforeend', modalHTML);
 
-    // Initialiser les composants
+    
     this.initializeComponents();
   }
 
@@ -247,14 +243,14 @@ export class Dashboard {
   }
 
   private initializeComponents() {
-    // Initialiser Header
+    
     const headerContainer = this.container.querySelector('#header-container') as HTMLElement;
     if (headerContainer) {
       this.header = new Header(true);
       headerContainer.appendChild(this.header.getElement());
     }
 
-    // Initialiser BackBtn
+    
     const backBtnContainer = this.container.querySelector('#back-btn-container') as HTMLElement;
     if (backBtnContainer) {
       this.backBtn = new BackBtn();
@@ -278,8 +274,6 @@ export class Dashboard {
 	});
 }
 
-
-    // Ajouter les event listeners pour les matches
     this.addMatchEventListeners();
   }
 
@@ -296,7 +290,7 @@ export class Dashboard {
   }
 
   private async showMatchStats(matchId: number) {
-    // Créer le modal de statistiques
+    
     const modal = document.createElement('div');
     modal.className = 'fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen flex justify-center items-center text-white';
     modal.innerHTML = `
@@ -318,7 +312,7 @@ export class Dashboard {
       `;
     }
 
-    // Ajouter event listener pour fermer
+    
     modal.addEventListener('click', (e) => {
       if (e.target === modal || (e.target as HTMLElement).classList.contains('match-stats-close')) {
         document.body.removeChild(modal);
@@ -372,34 +366,40 @@ export class Dashboard {
 	`;
 }
 
+
 	private renderGraphs() {
 	const lastMatches = this.matches.slice(-5);
 
+
 	const currentUsername = appState.getState().user?.username;
+	const currentId = appState.getState().user?.id;
 	const scores = lastMatches.map(m => {
 		return m.player1_username === currentUsername ? m.player1_score : m.player2_score;
+	});
+  const results = lastMatches.map(m => {
+		return m.winner_id === currentId ? 1 : 0;
 	});
 
 	const left = this.container.querySelector('#graph-left');
 	const right = this.container.querySelector('#graph-right');
 
 	if (left)
-		left.innerHTML = this.generateBarChart(scores, 'Last scores');
+		left.innerHTML = this.generateScores(scores, 'Last scores');
 	if (right)
-		right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
+		right.innerHTML = this.generateWinrate(results, 'Winrate (5 last games)');
 	}
 
-	private generateBarChart(data: number[], title: string): string {
+	private generateScores(data: number[], title: string): string {
 		const max = Math.max(...data);
 		const bars = data.map((val, i) => {
-			const height = (val / max) * 160;
-			const x = 40 + i * 100;
-			const y = 200 - height;
-			return `
-			<rect x="${x}" y="${y}" width="60" height="${height}" class="fill-blue-400"></rect>
-			<text x="${x + 30}" y="220" text-anchor="middle" class="fill-white text-[1.7rem]">${i + 1}</text>
-			<text x="${x + 30}" y="${y - 5}" text-anchor="middle" class="fill-white text-[1.5rem]">${val}</text>
-			`;
+      const height = (val / max) * 160;
+      const x = 40 + i * 100;
+      const y = 200 - height;
+      return `
+      <rect x="${x}" y="${y}" width="60" height="${height}" class="fill-blue-400"></rect>
+      <text x="${x + 30}" y="220" text-anchor="middle" class="fill-white text-[1.7rem]">${i + 1}</text>
+      <text x="${x + 30}" y="${y - 5}" text-anchor="middle" class="fill-white text-[1.5rem]">${val}</text>
+      `;
 		}).join('');
 
 		return `
@@ -411,6 +411,33 @@ export class Dashboard {
 		`;
 	}
 
+  private generateWinrate(data: number[], title: string): string {
+    let wins = 0;
+    const winrates = data.map((val, i) => {
+      wins += val;
+      return Math.round((wins / (i + 1)) * 100);
+    });
+
+    const max = 100;
+    const bars = winrates.map((val, i) => {
+      const height = (val / max) * 160;
+      const x = 40 + i * 100;
+      const y = 200 - height;
+      return `
+        <rect x="${x}" y="${y}" width="60" height="${height}" class="fill-green-400"></rect>
+        <text x="${x + 30}" y="220" text-anchor="middle" class="fill-white text-[1.7rem]">${i + 1}</text>
+        <text x="${x + 30}" y="${y - 5}" text-anchor="middle" class="fill-white text-[1.5rem]">${val}%</text>
+      `;
+    }).join('');
+
+    return `
+      <svg viewBox="0 0 600 250" class="w-full h-full">
+        <text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
+        <line x1="30" y1="200" x2="570" y2="200" stroke="white" />
+        ${bars}
+      </svg>
+    `;
+  }
 
 
 
