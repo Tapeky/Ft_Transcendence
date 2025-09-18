@@ -490,10 +490,18 @@ export class Dashboard {
 			return;
 		}
 
-		// Extraire les scores du joueur actuel
+		// Prendre les 5 derniers matchs
+		const lastMatches = matches.slice(-5);
 		const currentUser = appState.getState().user;
-		const scores = matches.map(match => {
+
+		// Extraire les scores du joueur actuel
+		const scores = lastMatches.map(match => {
 			return match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
+		});
+
+		// Extraire les résultats (victoire/défaite) pour le winrate
+		const results = lastMatches.map(match => {
+			return match.winner_id === currentUser?.id ? 1 : 0;
 		});
 
 		const left = this.container.querySelector('#graph-left');
@@ -504,7 +512,7 @@ export class Dashboard {
 		if (left)
 			left.innerHTML = this.generateBarChart(scores, 'Last scores');
 		if (right)
-			right.innerHTML = this.generateBarChart(scores.reverse(), 'Reversed history');
+			right.innerHTML = this.generateWinrate(results, 'Winrate (5 last games)');
 	}
 
 	private renderDetailedStats(matches?: any[]): string {
@@ -771,6 +779,44 @@ export class Dashboard {
 			<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
 			<line x1="30" y1="200" x2="570" y2="200" stroke="white" />
 			${bars}
+			</svg>
+		`;
+	}
+
+	private generateWinrate(data: number[], title: string): string {
+		// Handle empty data array
+		if (!data || data.length === 0) {
+			return `
+				<svg viewBox="0 0 600 250" class="w-full h-full">
+				<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
+				<text x="300" y="125" text-anchor="middle" class="fill-white text-[2rem]">No data to display</text>
+				</svg>
+			`;
+		}
+
+		let wins = 0;
+		const winrates = data.map((val, i) => {
+			wins += val;
+			return Math.round((wins / (i + 1)) * 100);
+		});
+
+		const max = 100;
+		const bars = winrates.map((val, i) => {
+			const height = (val / max) * 160;
+			const x = 40 + i * 100;
+			const y = 200 - height;
+			return `
+				<rect x="${x}" y="${y}" width="60" height="${height}" class="fill-green-400"></rect>
+				<text x="${x + 30}" y="220" text-anchor="middle" class="fill-white text-[1.7rem]">${i + 1}</text>
+				<text x="${x + 30}" y="${y - 5}" text-anchor="middle" class="fill-white text-[1.5rem]">${val}%</text>
+			`;
+		}).join('');
+
+		return `
+			<svg viewBox="0 0 600 250" class="w-full h-full">
+				<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
+				<line x1="30" y1="200" x2="570" y2="200" stroke="white" />
+				${bars}
 			</svg>
 		`;
 	}
