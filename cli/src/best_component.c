@@ -24,12 +24,12 @@ static float calculate_weight(direction dir, float x1, float y1, float x2, float
 	// for example if the boxes are in front of each other angle is 0
 	// angle is between 0 and pi / 2 (aka 180 degrees)
 
-	if (angle > 110 * M_PI / 360)
+	if (angle > 110 * M_PI / 180)
 		return (NAN);
 
 	float x = 0.5 + angle / M_PI;
-	(void)max_dist_squared;
-	return (pow(dist_squared / max_dist_squared, 1.5f) * x);
+	float res = pow(dist_squared / max_dist_squared, 1.5f) * x;
+	return (res);
 }
 
 static direction opposite_dir_map[] = {
