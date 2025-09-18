@@ -189,7 +189,7 @@ async function start() {
         try {
           await dbManager.cleanupExpiredTokens();
         } catch (error) {
-          server.log.error('Erreur lors du nettoyage des tokens:', error);
+          server.log.error('Erreur lors du nettoyage des tokens:', error as any);
         }
       }, 60 * 60 * 1000);
     }
@@ -208,7 +208,7 @@ async function start() {
           server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
         }
       } catch (error) {
-        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error);
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error as any);
       }
     }, 5 * 60 * 1000);
 
