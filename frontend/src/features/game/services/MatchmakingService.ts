@@ -42,13 +42,11 @@ export class MatchmakingService {
     this.setupWebSocketHandlers();
   }
 
-  // Configuration des handlers WebSocket
+  // WebSocket handlers configuration
   private setupWebSocketHandlers(): void {
-    console.log('🔍 [MATCHMAKING-FRONTEND] Setting up WebSocket handlers');
     
     // Utiliser l'external handler du WebSocketManager existant
     this.wsManager.setExternalHandler((message) => {
-      console.log('📥 [MATCHMAKING-FRONTEND] Received WebSocket message:', JSON.stringify(message));
       
       switch (message.type) {
         case 'auth_success':

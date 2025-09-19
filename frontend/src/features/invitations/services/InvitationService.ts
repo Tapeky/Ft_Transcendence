@@ -1,4 +1,4 @@
-// 🎯 Service d'Invitations Unifié - Architecture Robuste et Thread-Safe
+// Unified Invitation Service
 import { invitationStore } from '../core/InvitationStore';
 import { webSocketManager } from '../core/WebSocketManager';
 import { 
@@ -41,29 +41,24 @@ export class InvitationService {
   }
 
   private initializeEventListeners(): void {
-    // Écouter les événements du store
+    // Listen to store events
     invitationStore.on('received', (invite: GameInvite) => {
-      this.logDebug('Invite received:', invite);
       this.callbacks.onInviteReceived?.(invite);
     });
 
     invitationStore.on('sent', (data: { inviteId: string; toUserId: number }) => {
-      this.logDebug('Invite sent:', data);
       this.callbacks.onInviteSent?.(data);
     });
 
     invitationStore.on('accepted', (data: { inviteId: string }) => {
-      this.logDebug('Invite accepted:', data);
       this.callbacks.onInviteAccepted?.(data);
     });
 
     invitationStore.on('declined', (data: { inviteId: string }) => {
-      this.logDebug('Invite declined:', data);
       this.callbacks.onInviteDeclined?.(data);
     });
 
     invitationStore.on('expired', (data: { inviteId: string; invite: GameInvite }) => {
-      this.logDebug('Invite expired:', data);
       this.callbacks.onInviteExpired?.(data);
     });
 
@@ -84,10 +79,10 @@ export class InvitationService {
   }
 
   private performCleanup(): void {
-    // Nettoyer les invitations expirées
+    // Clean expired invitations
     invitationStore.clearExpiredInvites();
     
-    // Nettoyer le rate limiting
+    // Clean rate limiting
     const now = Date.now();
     for (const [userId, timestamp] of this.lastInviteTimes.entries()) {
       if (now - timestamp > this.RATE_LIMIT_WINDOW) {
@@ -95,7 +90,6 @@ export class InvitationService {
       }
     }
 
-    this.logDebug('Cleanup performed');
   }
 
   // 📤 Envoyer une invitation
@@ -143,7 +137,6 @@ export class InvitationService {
       invitationStore.addSentInvite(userId, inviteId);
       this.updateRateLimit(userId);
 
-      this.logDebug('Invite sent successfully', { userId, inviteId });
       return { success: true, inviteId };
 
     } catch (error) {
@@ -153,7 +146,7 @@ export class InvitationService {
     }
   }
 
-  // ✅ Répondre à une invitation
+  // Respond to invitation
   async respondToInvite(inviteId: string, accept: boolean): Promise<{ success: boolean; error?: string }> {
     try {
       // Validation
@@ -163,7 +156,7 @@ export class InvitationService {
         return { success: false, error };
       }
 
-      // Vérifier que l'invitation existe
+      // Check if invitation exists
       const receivedInvites = invitationStore.getReceivedInvites();
       const invite = receivedInvites.find(inv => inv.inviteId === inviteId);
       
@@ -173,7 +166,7 @@ export class InvitationService {
         return { success: false, error };
       }
 
-      // Vérifier expiration
+      // Check expiration
       if (invite.expiresAt && invite.expiresAt < Date.now()) {
         const error = 'Invite has expired';
         this.logError(error, { inviteId, expiresAt: invite.expiresAt });
@@ -188,7 +181,7 @@ export class InvitationService {
         return { success: false, error };
       }
 
-      // Envoyer la réponse
+      // Send response
       const sent = webSocketManager.sendMessage({
         type: 'respond_game_invite',
         inviteId: inviteId,
@@ -204,7 +197,6 @@ export class InvitationService {
       // Supprimer l'invitation reçue
       invitationStore.removeInvite(inviteId);
 
-      this.logDebug('Invite response sent successfully', { inviteId, accept });
       return { success: true };
 
     } catch (error) {
@@ -217,12 +209,10 @@ export class InvitationService {
   // 🔄 Callbacks Management
   setCallbacks(callbacks: Partial<InvitationCallbacks>): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
-    this.logDebug('Callbacks updated', Object.keys(callbacks));
   }
 
   removeCallback(callbackName: keyof InvitationCallbacks): void {
     delete this.callbacks[callbackName];
-    this.logDebug('Callback removed', callbackName);
   }
 
   // 📊 État et Informations
@@ -296,33 +286,26 @@ export class InvitationService {
     return `invite_${userId}_${timestamp}_${random}`;
   }
 
-  private logDebug(message: string, data?: any): void {
-    if (this.config.debugMode) {
-      console.log(`🎯 [InvitationService] ${message}`, data || '');
-    }
-  }
 
   private logError(message: string, data?: any): void {
-    console.error(`❌ [InvitationService] ${message}`, data || '');
+    console.error(`[InvitationService] ${message}`, data || '');
   }
 
-  // 🔗 Integration avec Game.ts - DEPRECATED
-  // Game.ts gère maintenant son propre external handler avec filtrage
+  // Integration with Game.ts - DEPRECATED
+  // Game.ts now manages its own external handler with filtering
   enableGameIntegration(): void {
-    this.logDebug('Game integration enabled (handled by Game.ts)');
   }
 
   disableGameIntegration(): void {
     webSocketManager.removeExternalHandler();
-    this.logDebug('Game integration disabled');
   }
 
-  // 🔄 Retry et Récupération
+  // Retry and Recovery
   async retryConnection(): Promise<boolean> {
     try {
       webSocketManager.forceReconnect();
       
-      // Attendre la connexion (max 10 secondes)
+      // Wait for connection (max 10 seconds)
       return new Promise((resolve) => {
         let attempts = 0;
         const maxAttempts = 20; // 10 secondes (500ms * 20)
@@ -347,9 +330,8 @@ export class InvitationService {
     }
   }
 
-  // 🧹 Cleanup
+  // Cleanup
   cleanup(): void {
-    this.logDebug('Cleaning up InvitationService');
     
     if (this.cleanupIntervalId) {
       clearInterval(this.cleanupIntervalId);

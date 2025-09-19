@@ -8,7 +8,7 @@ export class SimpleInvitePopup {
   private autoCloseTimer?: number;
 
   constructor(private invite: GameInvite) {
-    // KISS: Prevent duplicates - simple check
+    // Prevent duplicates
     if (activePopups.has(invite.inviteId)) {
       return;
     }
@@ -293,16 +293,16 @@ export class SimpleInvitePopup {
     
     this.isDestroyed = true;
     
-    // KISS: Clean up popup registry
+    // Clean up popup registry
     activePopups.delete(this.invite.inviteId);
     
-    // KISS: Clear all timers
+    // Clear all timers
     this.clearAllTimers();
     
     this.element.remove();
   }
 
-  // KISS: Simple timer cleanup
+  // Simple timer cleanup
   private clearAllTimers(): void {
     if (this.autoCloseTimer) {
       clearTimeout(this.autoCloseTimer);

@@ -1,4 +1,4 @@
-// 🎯 WebSocket Manager - Robuste et Thread-Safe
+// WebSocket Manager
 import { apiService } from '../../../shared/services/api';
 import { invitationStore } from './InvitationStore';
 import { WebSocketMessage, INVITATION_CONSTANTS } from '../types/InvitationTypes';
@@ -30,11 +30,11 @@ export class WebSocketManager {
   }
 
   private constructor() {
-    // Auto-connect quand pas en jeu
+    // Auto-connect when not in game
     this.scheduleConnect();
   }
 
-  // 🔌 Connection Management
+  // Connection Management
   private scheduleConnect(): void {
     if (this.shouldConnect()) {
       setTimeout(() => this.connect(), 1000);
@@ -42,7 +42,7 @@ export class WebSocketManager {
   }
 
   private shouldConnect(): boolean {
-    // Toujours se connecter pour les invitations, Game.ts utilise l'external handler
+    // Always connect for invitations, Game.ts uses external handler
     return !this.ws && 
            !this.isConnecting &&
            this.circuitState !== 'open';
@@ -50,17 +50,17 @@ export class WebSocketManager {
 
   async connect(): Promise<void> {
     if (this.isConnecting || this.isConnected()) {
-      console.log('🔌 WebSocketManager - Already connecting/connected, skipping');
+      console.log('WebSocketManager - Already connecting/connected, skipping');
       return;
     }
 
-    console.log('🔌 WebSocketManager - Initiating connection...');
+    console.log('WebSocketManager - Initiating connection...');
 
     // Circuit breaker check
     if (this.circuitState === 'open') {
       const timeSinceLastFailure = Date.now() - this.circuitLastFailure;
       if (timeSinceLastFailure < this.CIRCUIT_RECOVERY_TIMEOUT) {
-        console.log('🔴 Circuit breaker: Connection blocked');
+        console.log('Circuit breaker: Connection blocked');
         return;
       }
       this.circuitState = 'half-open';
@@ -96,7 +96,7 @@ export class WebSocketManager {
     this.circuitFailures = 0;
     this.circuitState = 'closed';
     
-    console.log('✅ WebSocketManager connected');
+    console.log('WebSocketManager connected');
     invitationStore.setConnectionState('connected');
     
     this.authenticate();
@@ -153,7 +153,7 @@ export class WebSocketManager {
     // Circuit breaker logic
     if (this.circuitFailures >= this.CIRCUIT_FAILURE_THRESHOLD) {
       this.circuitState = 'open';
-      console.log('🔴 Circuit breaker: OPEN');
+      console.log('Circuit breaker: OPEN');
     }
     
     invitationStore.setConnectionState('error', error);
@@ -187,7 +187,7 @@ export class WebSocketManager {
     }, delay);
   }
 
-  // 🔐 Authentication
+  // Authentication
   private authenticate(): void {
     const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
     
@@ -218,7 +218,7 @@ export class WebSocketManager {
     });
   }
 
-  // 💓 Heartbeat
+  // Heartbeat
   private startHeartbeat(): void {
     if (this.heartbeatIntervalId) {
       clearInterval(this.heartbeatIntervalId);
@@ -238,13 +238,13 @@ export class WebSocketManager {
     }
   }
 
-  // 📨 Message Handling
+  // Message Handling
   private handleMessage(message: WebSocketMessage): void {
     console.log('🔌 WebSocketManager - Message received:', message.type, message);
     
-    // SIMPLIFIÉ: Traiter directement tous les messages d'invitation
-    // Plus d'external handler pour éviter les conflits
-    console.log(`🔌 Processing invitation message: ${message.type}`);
+    // Process all invitation messages directly
+    // No external handler to avoid conflicts
+    console.log(`Processing invitation message: ${message.type}`);
     this.handleInvitationMessage(message);
   }
 
@@ -252,7 +252,7 @@ export class WebSocketManager {
     switch (message.type) {
       case 'auth_success':
         this.isAuthenticated = true;
-        console.log('✅ WebSocketManager authenticated successfully');
+        console.log('WebSocketManager authenticated successfully');
         break;
 
       case 'auth_error':
@@ -261,40 +261,40 @@ export class WebSocketManager {
         break;
 
       case 'game_invite_received':
-        console.log('📨 WebSocketManager - Game invite received:', message);
+        console.log('WebSocketManager - Game invite received:', message);
         const invite = {
           inviteId: message.inviteId,
           fromUserId: message.fromUserId,
           fromUsername: message.fromUsername,
           expiresAt: message.expiresAt || (Date.now() + INVITATION_CONSTANTS.DEFAULT_TIMEOUT)
         };
-        console.log('📨 Adding to store:', invite);
+        console.log('Adding to store:', invite);
         invitationStore.addReceivedInvite(invite);
         break;
 
       case 'invite_sent':
-        console.log('✈️ Invite sent confirmation:', message);
+        console.log('Invite sent confirmation:', message);
         if (message.inviteId) {
           invitationStore.addSentInvite(message.toUserId, message.inviteId);
         }
         break;
 
       case 'invite_declined':
-        console.log('❌ Invite declined:', message);
+        console.log('Invite declined:', message);
         if (message.inviteId) {
           invitationStore.updateSentInviteStatus(message.inviteId, 'declined');
         }
         break;
 
       case 'invite_expired':
-        console.log('⏰ Invite expired:', message);
+        console.log('Invite expired:', message);
         if (message.inviteId) {
           invitationStore.expireInvite(message.inviteId);
         }
         break;
 
       case 'game_started':
-        console.log('🎮 Game started:', message);
+        console.log('Game started:', message);
         if (message.inviteId) {
           invitationStore.updateSentInviteStatus(message.inviteId, 'accepted');
         }
@@ -315,7 +315,7 @@ export class WebSocketManager {
         break;
 
       case 'connected':
-        console.log('🔌 Server connection confirmed');
+        console.log('Server connection confirmed');
         break;
 
       default:
@@ -421,7 +421,7 @@ export class WebSocketManager {
     }
   }
 
-  // 🔌 Status
+  // Status
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
   }
@@ -442,9 +442,9 @@ export class WebSocketManager {
     };
   }
 
-  // 🧹 Cleanup
+  // Cleanup
   disconnect(): void {
-    console.log('🔌 Disconnecting WebSocket');
+    console.log('Disconnecting WebSocket');
     
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);

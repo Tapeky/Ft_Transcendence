@@ -680,7 +680,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
   server.delete('/clear-all', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const db = DatabaseManager.getInstance().getDb();
-      console.log('🗑️💥 DELETING ALL TOURNAMENTS...');
       
       // Get count before deletion
       const countResult = await db.get(`SELECT COUNT(*) as count FROM tournaments`);
@@ -713,7 +712,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
   server.delete('/history', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const db = DatabaseManager.getInstance().getDb();
-      console.log('🗑️ Clearing tournament history...');
       
       // Get all tournaments to check which ones are completed
       const allTournaments = await db.all(`

@@ -1,4 +1,4 @@
-// 🎯 KISS Invite Buttons - Auto-intégration dans l'UI existante
+// KISS Invite Buttons - Auto-integration in existing UI
 import { gameInviteService } from '../services/GameInviteService';
 
 export class KissInviteButtons {
@@ -12,21 +12,21 @@ export class KissInviteButtons {
     return KissInviteButtons.instance;
   }
 
-  // 🎮 Initialiser le système d'auto-détection des boutons
+  // Initialize auto-detection system for buttons
   init(): void {
     if (this.initialized) return;
     
     
-    // Observer pour détecter les nouveaux boutons ajoutés dynamiquement
+    // Observer to detect dynamically added buttons
     this.setupMutationObserver();
     
-    // Scan initial
+    // Initial scan
     this.scanAndSetupButtons();
     
     this.initialized = true;
   }
 
-  // 🔍 Scanner et configurer tous les boutons d'invitation
+  // Scan and configure all invitation buttons
   private scanAndSetupButtons(): void {
     const buttons = document.querySelectorAll('[data-invite-user]:not([data-kiss-setup])');
     
@@ -140,7 +140,7 @@ export class KissInviteButtons {
     });
   }
 
-  // 🎯 Méthode utilitaire pour créer un bouton d'invitation
+  // Utility method to create invitation button
   static createInviteButton(userId: number, username: string, className?: string): HTMLButtonElement {
     const button = document.createElement('button');
     button.setAttribute('data-invite-user', userId.toString());
@@ -149,11 +149,11 @@ export class KissInviteButtons {
     button.className = className || 'btn btn-primary';
     button.innerHTML = 'Challenge';
     
-    // Le système KISS va automatiquement le configurer
+    // KISS system will automatically configure it
     return button;
   }
 
-  // 📊 Statistiques pour debug
+  // Debug statistics
   getStats(): { setupButtons: number, connectedToService: boolean } {
     const setupButtons = document.querySelectorAll('[data-kiss-setup="true"]').length;
     return {

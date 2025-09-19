@@ -78,7 +78,6 @@ export class PongGame {
     this.gameState = 'countdown';
     let countdown = 3;
     
-    // Starting game countdown
     
     const sendCountdown = () => {
       const countdownMessage = {

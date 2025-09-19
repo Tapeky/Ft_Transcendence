@@ -1,4 +1,4 @@
-// 🎯 KISS Game Invite Service - Intégré avec WebSocket existant
+// KISS Game Invite Service - Integrated with existing WebSocket
 import { apiService } from '../../../shared/services/api';
 
 export class GameInviteService {
@@ -14,13 +14,13 @@ export class GameInviteService {
   private externalWsHandler?: (message: any) => void;
 
   constructor() {
-    // Démarrage différé pour éviter les conflits avec Game.ts
+    // Delayed startup to avoid conflicts with Game.ts
     setTimeout(() => this.initializeIfNeeded(), 1000);
   }
   
-  // Nouvelle méthode pour vérifier si on doit créer notre propre connexion
+  // Method to check if we should create our own connection
   private initializeIfNeeded(): void {
-    // Si on est pas en jeu (pas de /game dans l'URL) ou si aucune connexion externe n'est disponible
+    // If not in game (no /game in URL) or no external connection available
     if (!window.location.pathname.includes('/game')) {
       this.connect();
     }
@@ -28,11 +28,11 @@ export class GameInviteService {
 
   private connect(): void {
     try {
-      // Utiliser la même méthode que l'API existante
+      // Use same method as existing API
       this.ws = apiService.connectWebSocket();
       
       this.ws!.onopen = () => {
-        // KISS: Reset reconnection attempts on successful connection
+        // Reset reconnection attempts on successful connection
         this.reconnectAttempts = 0;
         this.authenticate();
       };
@@ -60,7 +60,7 @@ export class GameInviteService {
 
   private authenticate(): void {
     
-    // KISS: Une seule méthode d'authentification - toujours localStorage en premier
+    // Single authentication method - localStorage first
     const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
     
     if (!token || !this.ws) {
@@ -77,7 +77,7 @@ export class GameInviteService {
     switch (data.type) {
       case 'auth_success':
         this.isAuthenticated = true;
-        // KISS: Ensure reconnection attempts are reset after successful auth
+        // Ensure reconnection attempts are reset after successful auth
         this.reconnectAttempts = 0;
         break;
 
@@ -180,7 +180,7 @@ export class GameInviteService {
       return;
     }
     
-    // KISS: Connection state validation
+    // Connection state validation
     if (!this.isConnected()) {
       this.connect();
       return;
@@ -203,7 +203,7 @@ export class GameInviteService {
       return;
     }
     
-    // KISS: Connection state validation
+    // Connection state validation
     if (!this.isConnected()) {
       return;
     }
@@ -281,7 +281,7 @@ export class GameInviteService {
     }, 500);
   }
 
-  // KISS: Basic cleanup method for singleton
+  // Basic cleanup method for singleton
   cleanup(): void {
     this.disconnect();
     

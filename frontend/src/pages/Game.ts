@@ -130,9 +130,9 @@ export class GamePage {
         if (tournamentContextParam) {
             try {
                 this.tournamentContext = JSON.parse(decodeURIComponent(tournamentContextParam));
-                console.log('✅ Tournament context loaded:', this.tournamentContext);
+                console.log('Tournament context loaded:', this.tournamentContext);
             } catch (e) {
-                console.error('❌ Failed to parse tournament context:', e);
+                console.error('Failed to parse tournament context:', e);
             }
         }
     }
@@ -456,10 +456,10 @@ export class GamePage {
             };
 
             await apiService.recordMatch(matchData);
-            console.log('✅ Match recorded successfully');
+            console.log('Match recorded successfully');
 
         } catch (error) {
-            console.error('❌ Failed to record match:', error);
+            console.error('Failed to record match:', error);
             // Ne pas bloquer l'affichage de fin de partie si l'enregistrement échoue
         }
     }
