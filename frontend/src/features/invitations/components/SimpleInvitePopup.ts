@@ -8,7 +8,6 @@ export class SimpleInvitePopup {
   private autoCloseTimer?: number;
 
   constructor(private invite: GameInvite) {
-    // Prevent duplicates
     if (activePopups.has(invite.inviteId)) {
       return;
     }
@@ -28,17 +27,14 @@ export class SimpleInvitePopup {
       animate-fade-in
     `;
 
-    // Calculer le temps restant
     const timeLeft = this.getTimeLeft();
 
     popup.innerHTML = `
-      <!-- Header avec fermeture -->
       <div class="flex justify-between items-start mb-3">
         <h3 class="text-[1.5rem] font-bold">🎮 Game Invite!</h3>
         <button id="close-btn" class="text-[1.2rem] hover:scale-110 transition cursor-pointer">✕</button>
       </div>
 
-      <!-- Contenu invitation -->
       <div class="mb-4" id="content">
         <p class="text-[1.2rem] mb-2">
           <strong>${this.invite.fromUsername}</strong> wants to play!
@@ -48,7 +44,6 @@ export class SimpleInvitePopup {
         </p>
       </div>
 
-      <!-- Boutons d'action -->
       <div class="flex gap-3" id="buttons">
         <button 
           id="accept-btn"
@@ -70,19 +65,16 @@ export class SimpleInvitePopup {
   }
 
   private setupEventListeners(popup: HTMLElement): void {
-    // Bouton fermer
     const closeBtn = popup.querySelector('#close-btn');
     closeBtn?.addEventListener('click', () => {
       this.close();
     });
 
-    // Bouton accepter
     const acceptBtn = popup.querySelector('#accept-btn');
     acceptBtn?.addEventListener('click', () => {
       this.respond(true);
     });
 
-    // Bouton refuser
     const declineBtn = popup.querySelector('#decline-btn');
     declineBtn?.addEventListener('click', () => {
       this.respond(false);
@@ -93,21 +85,15 @@ export class SimpleInvitePopup {
     if (this.isDestroyed) return;
 
     try {
-      
-      // Désactiver les boutons immédiatement
       this.disableButtons();
-      
+
       if (accept) {
         this.showLoadingState();
       }
-      
-      // Envoyer la réponse via le service
+
       gameInviteService.respondToInvite(this.invite.inviteId, accept);
-      
-      // Afficher confirmation
       this.showConfirmation(accept);
-      
-      // Fermer après un délai
+
       const closeDelay = accept ? 1500 : 2000;
       setTimeout(() => {
         if (!this.isDestroyed) {
@@ -166,7 +152,6 @@ export class SimpleInvitePopup {
       `;
     }
 
-    // Masquer les boutons
     const buttonsDiv = this.element.querySelector('#buttons');
     if (buttonsDiv) {
       buttonsDiv.remove();
@@ -186,10 +171,8 @@ export class SimpleInvitePopup {
       `;
     }
 
-    // Changer la couleur du container pour indiquer l'erreur
     this.element.className = this.element.className.replace('bg-green-800', 'bg-red-800');
 
-    // Auto-close après 5 secondes
     setTimeout(() => {
       if (!this.isDestroyed) {
         this.close();
@@ -217,31 +200,26 @@ export class SimpleInvitePopup {
     if (this.isDestroyed) return;
     
     document.body.appendChild(this.element);
-    
-    // Son de notification
     this.playNotificationSound();
-    
-    // Auto-close basé sur l'expiration
+
     const expiresAt = new Date(this.invite.expiresAt);
     const now = new Date();
     const timeUntilExpiry = expiresAt.getTime() - now.getTime();
-    
+
     if (timeUntilExpiry > 0) {
       this.autoCloseTimer = window.setTimeout(() => {
         if (!this.isDestroyed) {
           this.expire();
         }
-      }, Math.min(timeUntilExpiry, 60000)); // Maximum 60 secondes
+      }, Math.min(timeUntilExpiry, 60000));
     } else {
-      // Déjà expiré
       this.expire();
     }
   }
 
   private expire(): void {
     if (this.isDestroyed) return;
-    
-    
+
     const content = this.element.querySelector('#content');
     if (content) {
       content.innerHTML = `
@@ -251,13 +229,11 @@ export class SimpleInvitePopup {
       `;
     }
 
-    // Masquer les boutons
     const buttonsDiv = this.element.querySelector('#buttons');
     if (buttonsDiv) {
       buttonsDiv.remove();
     }
 
-    // Fermer après 3 secondes
     setTimeout(() => {
       if (!this.isDestroyed) {
         this.close();
@@ -267,24 +243,22 @@ export class SimpleInvitePopup {
 
   private playNotificationSound(): void {
     try {
-      // Son simple avec Web Audio API
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
       oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
-      // Pas grave si le son ne marche pas
     }
   }
 
@@ -292,17 +266,11 @@ export class SimpleInvitePopup {
     if (this.isDestroyed) return;
     
     this.isDestroyed = true;
-    
-    // Clean up popup registry
     activePopups.delete(this.invite.inviteId);
-    
-    // Clear all timers
     this.clearAllTimers();
-    
     this.element.remove();
   }
 
-  // Simple timer cleanup
   private clearAllTimers(): void {
     if (this.autoCloseTimer) {
       clearTimeout(this.autoCloseTimer);

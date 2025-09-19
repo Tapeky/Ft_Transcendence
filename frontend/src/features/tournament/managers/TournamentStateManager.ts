@@ -41,9 +41,6 @@ export class TournamentStateManager {
     this.setupRegistrationListener();
   }
 
-  /**
-   * Subscribe to state changes
-   */
   subscribe(listener: TournamentSystemListener): () => void {
     this.listeners.push(listener);
     return () => {
@@ -54,9 +51,6 @@ export class TournamentStateManager {
     };
   }
 
-  /**
-   * Get complete system state
-   */
   getState(): TournamentSystemState {
     return {
       tournament: this.tournament,
@@ -73,23 +67,16 @@ export class TournamentStateManager {
     };
   }
 
-  /**
-   * Notify all listeners of state changes
-   */
   private notifyListeners(): void {
     this.systemState.lastUpdated = new Date();
     const state = this.getState();
     this.listeners.forEach(listener => listener(state));
   }
 
-  /**
-   * Initialize tournament system
-   */
   async initialize(): Promise<void> {
     try {
       this.updateUIState({ isLoading: true, error: undefined });
       
-      // System is now initialized
       this.systemState.isInitialized = true;
       this.systemState.lastError = null;
       
@@ -112,9 +99,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Resume an existing tournament by ID
-   */
   async resumeTournament(tournamentId: string): Promise<Tournament> {
     this.updateUIState({ isLoading: true, error: undefined });
 
@@ -124,7 +108,6 @@ export class TournamentStateManager {
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
       
-      // Determine current view based on tournament status
       let currentView: TournamentUIState['currentView'] = 'lobby';
       
       switch (tournament.status) {
@@ -132,12 +115,11 @@ export class TournamentStateManager {
           currentView = 'registration';
           break;
         case 'ready':
-          // Si ready mais pas de bracket, rester en registration pour permettre de start
           currentView = tournament.bracket ? 'bracket' : 'registration';
           break;
         case 'in_progress':
         case 'running':
-          currentView = 'bracket'; // Could be 'game' if match is active
+          currentView = 'bracket';
           break;
         case 'completed':
           currentView = 'results';
@@ -165,9 +147,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Create a new tournament
-   */
   async createTournament(name: string, maxPlayers: 4 | 8 | 16): Promise<Tournament> {
     this.updateUIState({ isLoading: true, error: undefined });
 
@@ -196,16 +175,12 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Join an existing tournament
-   */
   async joinTournament(tournamentId: string, alias: string): Promise<void> {
     this.updateUIState({ isLoading: true, error: undefined });
 
     try {
       await this.registrationManager.joinTournament(tournamentId, alias);
       
-      // Tournament state will be updated via registration manager listener
       this.initializeMatchOrchestrator(tournamentId);
       
       this.updateUIState({
@@ -226,9 +201,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Load existing tournament by ID
-   */
   async loadTournament(tournamentId: string): Promise<Tournament> {
     this.updateUIState({ isLoading: true, error: undefined });
 
@@ -238,7 +210,6 @@ export class TournamentStateManager {
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
       
-      // Determine current view based on tournament status
       let currentView: TournamentUIState['currentView'] = 'lobby';
       
       switch (tournament.status) {
@@ -246,12 +217,11 @@ export class TournamentStateManager {
           currentView = 'registration';
           break;
         case 'ready':
-          // Si ready mais pas de bracket, rester en registration pour permettre de start
           currentView = tournament.bracket ? 'bracket' : 'registration';
           break;
         case 'in_progress':
         case 'running':
-          currentView = 'bracket'; // Could be 'game' if match is active
+          currentView = 'bracket';
           break;
         case 'completed':
           currentView = 'results';
@@ -279,15 +249,11 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Start tournament (move from registration to bracket)
-   */
   async startTournament(): Promise<void> {
     if (!this.tournament) {
       throw new Error('No tournament loaded');
     }
 
-    // Prevent starting tournament if already in progress or running
     if (this.tournament.status === 'in_progress' || this.tournament.status === 'running') {
       console.warn('Tournament is already started, skipping start request');
       return;
@@ -323,9 +289,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Start next match
-   */
   async startNextMatch(): Promise<void> {
     if (!this.matchOrchestrator) {
       throw new Error('Match orchestrator not initialized');
@@ -356,9 +319,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Complete current match
-   */
   async completeMatch(result: GameResult): Promise<void> {
     if (!this.matchOrchestrator) {
       throw new Error('Match orchestrator not initialized');
@@ -369,11 +329,9 @@ export class TournamentStateManager {
     try {
       await this.matchOrchestrator.completeMatch(result);
       
-      // Refresh tournament state
       if (this.tournament) {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
         
-        // Check if tournament is complete
         if (this.tournament.status === 'completed') {
           this.updateUIState({
             currentView: 'results',
@@ -381,7 +339,6 @@ export class TournamentStateManager {
             error: undefined
           });
         } else {
-          // Back to bracket view to show updated bracket
           this.updateUIState({
             currentView: 'bracket',
             isLoading: false,
@@ -402,11 +359,7 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Navigate to different tournament view
-   */
   navigateToView(view: TournamentUIState['currentView']): void {
-    // Validate navigation is allowed
     if (!this.canNavigateToView(view)) {
       throw new Error(`Cannot navigate to ${view} in current state`);
     }
@@ -418,9 +371,6 @@ export class TournamentStateManager {
     this.notifyListeners();
   }
 
-  /**
-   * Refresh tournament data
-   */
   async refreshTournament(): Promise<void> {
     if (!this.tournament) {
       throw new Error('No tournament loaded');
@@ -443,9 +393,6 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Get tournament statistics
-   */
   getTournamentStatistics(): {
     totalPlayers: number;
     completedMatches: number;
@@ -480,9 +427,6 @@ export class TournamentStateManager {
     return stats;
   }
 
-  /**
-   * Clear all errors
-   */
   clearErrors(): void {
     this.registrationManager.clearError();
     this.matchOrchestrator?.clearError();
@@ -491,9 +435,6 @@ export class TournamentStateManager {
     this.notifyListeners();
   }
 
-  /**
-   * Reset entire system
-   */
   reset(): void {
     this.tournament = null;
     this.registrationManager.reset();
@@ -507,7 +448,7 @@ export class TournamentStateManager {
     };
 
     this.systemState = {
-      isInitialized: true, // Keep initialized
+      isInitialized: true,
       lastError: null,
       lastUpdated: new Date()
     };
@@ -515,12 +456,8 @@ export class TournamentStateManager {
     this.notifyListeners();
   }
 
-  /**
-   * Setup registration manager listener
-   */
   private setupRegistrationListener(): void {
     this.registrationManager.subscribe((registrationState) => {
-      // Update tournament reference when registration state changes
       if (registrationState.tournament) {
         this.tournament = registrationState.tournament;
       }
@@ -528,9 +465,6 @@ export class TournamentStateManager {
     });
   }
 
-  /**
-   * Initialize match orchestrator for tournament
-   */
   private initializeMatchOrchestrator(tournamentId: string): void {
     if (this.matchOrchestrator) {
       this.matchOrchestrator.reset();
@@ -538,22 +472,15 @@ export class TournamentStateManager {
 
     this.matchOrchestrator = new MatchOrchestrator(tournamentId);
     
-    // Setup match orchestrator listener
     this.matchOrchestrator.subscribe(() => {
       this.notifyListeners();
     });
   }
 
-  /**
-   * Update UI state
-   */
   private updateUIState(updates: Partial<TournamentUIState>): void {
     this.uiState = { ...this.uiState, ...updates };
   }
 
-  /**
-   * Check if navigation to view is allowed
-   */
   private canNavigateToView(view: TournamentUIState['currentView']): boolean {
     if (!this.tournament) {
       return view === 'lobby';
@@ -573,25 +500,17 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Get current tournament
-   */
   getCurrentTournament(): Tournament | null {
     return this.tournament;
   }
 
-  /**
-   * Refresh tournament state from backend
-   */
   async refreshTournamentState(): Promise<void> {
     if (this.tournament) {
       try {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
         
-        // 🔧 DEBUG: Log tournament data from backend
         console.log('🔧 Tournament data from backend:', JSON.stringify(this.tournament, null, 2));
         
-        // Recalculate current view based on updated tournament status
         let currentView: TournamentUIState['currentView'] = 'lobby';
         
         switch (this.tournament.status) {
@@ -620,16 +539,10 @@ export class TournamentStateManager {
     }
   }
 
-  /**
-   * Get match orchestrator
-   */
   getMatchOrchestrator(): MatchOrchestrator | null {
     return this.matchOrchestrator;
   }
 
-  /**
-   * Check if system is initialized
-   */
   isInitialized(): boolean {
     return this.systemState.isInitialized;
   }
