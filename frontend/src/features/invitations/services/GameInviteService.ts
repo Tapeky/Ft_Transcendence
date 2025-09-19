@@ -1,4 +1,3 @@
-// KISS Game Invite Service - Integrated with existing WebSocket
 import { apiService } from '../../../shared/services/api';
 
 export class GameInviteService {
@@ -14,13 +13,10 @@ export class GameInviteService {
   private externalWsHandler?: (message: any) => void;
 
   constructor() {
-    // Delayed startup to avoid conflicts with Game.ts
     setTimeout(() => this.initializeIfNeeded(), 1000);
   }
   
-  // Method to check if we should create our own connection
   private initializeIfNeeded(): void {
-    // If not in game (no /game in URL) or no external connection available
     if (!window.location.pathname.includes('/game')) {
       this.connect();
     }
@@ -28,15 +24,13 @@ export class GameInviteService {
 
   private connect(): void {
     try {
-      // Use same method as existing API
       this.ws = apiService.connectWebSocket();
-      
+
       this.ws!.onopen = () => {
-        // Reset reconnection attempts on successful connection
         this.reconnectAttempts = 0;
         this.authenticate();
       };
-      
+
       this.ws!.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -44,25 +38,23 @@ export class GameInviteService {
         } catch (error) {
         }
       };
-      
+
       this.ws!.onclose = () => {
         this.isAuthenticated = false;
         this.reconnect();
       };
-      
+
       this.ws!.onerror = (error) => {
       };
-      
+
     } catch (error) {
       this.reconnect();
     }
   }
 
   private authenticate(): void {
-    
-    // Single authentication method - localStorage first
     const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-    
+
     if (!token || !this.ws) {
       return;
     }
@@ -77,7 +69,6 @@ export class GameInviteService {
     switch (data.type) {
       case 'auth_success':
         this.isAuthenticated = true;
-        // Ensure reconnection attempts are reset after successful auth
         this.reconnectAttempts = 0;
         break;
 
@@ -113,11 +104,8 @@ export class GameInviteService {
           this.onGameStartedCallback(data);
         }
         
-        // 🎯 Stocker les infos pour la reconnexion Game.ts
         localStorage.setItem('kiss_game_id', data.gameId.toString());
         localStorage.setItem('kiss_opponent_id', data.opponent.id.toString());
-        
-        // Navigation automatique vers le jeu
         this.navigateToGame(data.gameId);
         break;
 
@@ -134,11 +122,9 @@ export class GameInviteService {
         break;
 
       case 'pong':
-        // Heartbeat response - ignore
         break;
 
       default:
-        // Message non traité par ce service
         break;
     }
   }
@@ -158,60 +144,51 @@ export class GameInviteService {
   }
 
   private navigateToGame(gameId: number): void {
-    // Utilisation du router existant
     if (window.router) {
       window.router.navigate(`/game/${gameId}`);
     } else {
-      // Fallback
       window.location.href = `/game/${gameId}`;
     }
   }
 
-  // 📤 Envoyer invitation
   sendInvite(userId: number): void {
     const message = {
       type: 'send_game_invite',
       toUserId: userId
     };
-    
-    // Utiliser la connexion externe si disponible, sinon notre propre connexion
+
     if (this.externalWsHandler) {
       this.externalWsHandler(message);
       return;
     }
-    
-    // Connection state validation
+
     if (!this.isConnected()) {
       this.connect();
       return;
     }
-    
+
     this.ws!.send(JSON.stringify(message));
   }
 
-  // ✅ Répondre à invitation
   respondToInvite(inviteId: string, accept: boolean): void {
     const message = {
       type: 'respond_game_invite',
       inviteId: inviteId,
       accept: accept
     };
-    
-    // Utiliser la connexion externe si disponible, sinon notre propre connexion
+
     if (this.externalWsHandler) {
       this.externalWsHandler(message);
       return;
     }
-    
-    // Connection state validation
+
     if (!this.isConnected()) {
       return;
     }
-    
+
     this.ws!.send(JSON.stringify(message));
   }
 
-  // 🎧 Callbacks pour les événements
   onInviteReceived(callback: (invite: GameInvite) => void): void {
     this.onInviteReceivedCallback = callback;
   }
@@ -232,15 +209,12 @@ export class GameInviteService {
     this.onInviteSentCallback = callback;
   }
 
-  // 🔌 État de la connexion
   isConnected(): boolean {
     return (this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated) || !!this.externalWsHandler;
   }
   
-  // 🔗 Utiliser une connexion WebSocket externe (pour Game.ts)
   setExternalWebSocketHandler(handler: (message: any) => void): void {
     this.externalWsHandler = handler;
-    // Fermer notre propre connexion si on en avait une
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -248,16 +222,13 @@ export class GameInviteService {
     }
   }
   
-  // 🔓 Supprimer le handler externe
   removeExternalWebSocketHandler(): void {
     this.externalWsHandler = undefined;
-    // Redémarrer notre propre connexion si nécessaire
     if (!window.location.pathname.includes('/game')) {
       setTimeout(() => this.connect(), 500);
     }
   }
 
-  // 🧹 Cleanup
   disconnect(): void {
     if (this.ws) {
       this.ws.close();
@@ -266,7 +237,6 @@ export class GameInviteService {
     this.isAuthenticated = false;
   }
 
-  // 🔄 Force reconnection (pour éviter les conflits avec Game.ts)
   forceReconnect(): void {
     if (this.ws) {
       this.ws.close();
@@ -274,24 +244,21 @@ export class GameInviteService {
     }
     this.isAuthenticated = false;
     this.reconnectAttempts = 0;
-    
-    // Reconnection immédiate
+
     setTimeout(() => {
       this.connect();
     }, 500);
   }
 
-  // Basic cleanup method for singleton
   cleanup(): void {
     this.disconnect();
-    
-    // Clear all callbacks
+
     this.onInviteReceivedCallback = undefined;
     this.onInviteDeclinedCallback = undefined;
     this.onGameStartedCallback = undefined;
     this.onInviteErrorCallback = undefined;
     this.onInviteSentCallback = undefined;
-    
+
     this.reconnectAttempts = 0;
   }
 }
@@ -303,5 +270,4 @@ export interface GameInvite {
   expiresAt: number;
 }
 
-// Export singleton
 export const gameInviteService = new GameInviteService();
