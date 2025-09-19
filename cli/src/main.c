@@ -28,10 +28,20 @@ int on_key_event(ctx *ctx, KeySym key, int on_press)
 			|| list_view_update(&ctx->friends_view.list_view, ctx, 1))
 			return (0);
 	}
-	else if (key == XK_b && cur_term_window_type > term_window_type_DASHBOARD)
-		cswitch_window(term_window_type_DASHBOARD, 1);
+	else if (on_press && key == XK_Escape)
+	{
+		if (cur_term_window_type == term_window_type_LOGIN)
+			return (1); // exit
+		// if we go back to the login menu
+		if (cprevious_window(1) && cur_term_window_type == term_window_type_LOGIN)
+		{
+			api_ctx_remove_token(&ctx->api_ctx);
+			cJSON_Delete(ctx->user_login._json_);
+			ctx->user_login._json_ = NULL;
+		}
+	}
 	chandle_key_event(key, on_press);
-	return (key == XK_Escape);
+	return (0);
 }
 
 void update_tournament_view(void *obj, void *param)
@@ -60,6 +70,27 @@ void refresh_tournaments(ctx *ctx)
 	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
 }
 
+int json_success(cJSON *json, char **error_string)
+{
+	cJSON *success_obj = cJSON_GetObjectItem(json, "success");
+	if (!success_obj || !(success_obj->type & (cJSON_True | cJSON_False)))
+	{
+		*error_string = "Invalid JSON returned";
+		return (0);
+	}
+	if (success_obj->type == cJSON_True)
+	{
+		*error_string = NULL;
+		return (1);
+	}
+	cJSON *error_obj = cJSON_GetObjectItem(json, "error");
+	if (!error_obj || error_obj->type != cJSON_String)
+		*error_string = "Unspecified error";
+	else
+		*error_string = error_obj->valuestring;
+	return (0);
+}
+
 void attempt_login(ctx *ctx)
 {
 	REQ_API_LOGIN(
@@ -69,9 +100,10 @@ void attempt_login(ctx *ctx)
 	);
 	cJSON *json;
 	json = do_api_request(&ctx->api_ctx, "api/auth/login", POST);
-	if (cJSON_GetObjectItem(json, "success")->type == cJSON_False)
+	char *error;
+	if (!json_success(json, &error))
 	{
-		label_update_text(ctx->login_view.login_error_label, xstrdup(cJSON_GetObjectItem(json, "error")->valuestring), 1);
+		label_update_text(ctx->login_view.login_error_label, xstrdup(error), 1);
 		cJSON_Delete(json);
 		crefresh(0);
 	}
@@ -79,7 +111,7 @@ void attempt_login(ctx *ctx)
 	{
 		json_parse_from_def_force(json, login_def, &ctx->user_login);
 
-		if (!api_ctx_append_token(&ctx->api_ctx, ctx->user_login.data.token))
+		if (!api_ctx_set_token(&ctx->api_ctx, ctx->user_login.data.token))
 			clean_and_fail("api_ctx_append_token() fail\n");
 		cswitch_window(term_window_type_DASHBOARD, 1);
 	}
@@ -103,9 +135,10 @@ void attempt_register(ctx *ctx)
 	);
 	cJSON *json;
 	json = do_api_request(&ctx->api_ctx, "api/auth/register", POST);
-	if (cJSON_GetObjectItem(json, "success")->type == cJSON_False)
+	char *error;
+	if (!json_success(json, &error))
 	{
-		label_update_text(ctx->register_view.register_error_label, xstrdup(cJSON_GetObjectItem(json, "error")->valuestring), 1);
+		label_update_text(ctx->register_view.register_error_label, xstrdup(error), 1);
 		cJSON_Delete(json);
 		crefresh(0);
 	}
@@ -113,7 +146,7 @@ void attempt_register(ctx *ctx)
 	{
 		json_parse_from_def_force(json, login_def, &ctx->user_login);
 
-		if (!api_ctx_append_token(&ctx->api_ctx, ctx->user_login.data.token))
+		if (!api_ctx_set_token(&ctx->api_ctx, ctx->user_login.data.token))
 			clean_and_fail("api_ctx_append_token() fail\n");
 		cswitch_window(term_window_type_DASHBOARD, 1);
 	}
@@ -289,6 +322,7 @@ int main()
 	cinit();
 
 	init_windows(ctx);
+	creset_window_stack();
 	cswitch_window(term_window_type_LOGIN, 1);
 
 	input_loop(ctx, on_key_event);

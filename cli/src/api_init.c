@@ -64,7 +64,7 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
 	return (1);
 }
 
-int api_ctx_append_token(api_ctx *ctx, const char *token)
+int api_ctx_set_token(api_ctx *ctx, const char *token)
 {
 	const char prepend[] = "Authorization: Bearer ";
 	
@@ -81,6 +81,34 @@ int api_ctx_append_token(api_ctx *ctx, const char *token)
 		return (0);
 	curl_easy_setopt(ctx->curl, CURLOPT_HTTPHEADER, new_list);
 	return (1);
+}
+
+void api_ctx_remove_token(api_ctx *ctx)
+{
+	const char header[] = "Authorization:";
+	struct curl_slist *list = ctx->header_list;
+	struct curl_slist *previous = NULL;
+	while (list)
+	{
+		if (!strncmp(list->data, header, sizeof(header) - 1))
+		{
+			if (!previous)
+			{
+				curl_easy_setopt(ctx->curl, CURLOPT_HTTPHEADER, NULL);
+				ctx->header_list = NULL;
+			}
+			else
+			{
+				struct curl_slist *next = list->next;
+				free(list->data);
+				free(list);
+				previous->next = next;
+				return;
+			}
+		}
+		previous = list;
+		list = list->next;
+	}
 }
 
 void api_ctx_deinit(api_ctx *ctx)
