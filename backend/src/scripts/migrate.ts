@@ -10,7 +10,6 @@ import fs from 'fs';
 import path from 'path';
 
 async function runMigrations() {
-  console.log('🔄 Starting database migrations...');
   
   const db = DatabaseManager.getInstance();
   
@@ -27,7 +26,6 @@ async function runMigrations() {
     const migrationsPath = path.join(__dirname, '../database/migrations.sql');
     const migrations = fs.readFileSync(migrationsPath, 'utf8');
     
-    console.log('📋 Applying migrations from migrations.sql...');
     
     // Split migrations by semicolon and execute each
     const statements = migrations

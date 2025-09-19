@@ -45,7 +45,6 @@ export function setupWebSocket(server: FastifyInstance) {
             const userRepo = new UserRepository(db);
             await userRepo.updateOnlineStatus(userId, false);
           } catch (error) {
-            // Silent error handling for production
           }
           
           wsManager.removeUser(userId);

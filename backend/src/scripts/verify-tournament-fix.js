@@ -8,7 +8,6 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, '../../../db/ft_transcendence.db');
 
-console.log('🔍 Testing tournament system fix...');
 console.log('Database path:', DB_PATH);
 
 const db = new Database(DB_PATH, (err) => {
@@ -22,7 +21,6 @@ const db = new Database(DB_PATH, (err) => {
 // Test sequence
 async function runTests() {
   try {
-    console.log('\n📊 Checking current table schemas...');
     
     // Check tournaments table
     const tournamentsSchema = await new Promise((resolve, reject) => {
@@ -105,7 +103,6 @@ async function runTests() {
     });
     
     // Test data type compatibility
-    console.log('\n🧪 Testing data type compatibility...');
     
     // Find tournaments table ID column type
     const tournamentsIdCol = tournamentsColumns.find(col => col.name === 'id');

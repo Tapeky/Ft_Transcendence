@@ -4,7 +4,6 @@ import * as path from 'path';
 // Get database path
 const DB_PATH = path.join(process.cwd(), '../db/ft_transcendence.db');
 
-console.log('🔄 Starting tournament schema migration...');
 console.log('Database path:', DB_PATH);
 
 const db = new Database(DB_PATH, (err) => {
