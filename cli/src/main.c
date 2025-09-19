@@ -304,7 +304,7 @@ static void init_windows(ctx *ctx)
 		label_init(&component, BOX_X + 2, BOX_Y + 1, NULL, 0);
 		ctx->tournament_view.tournament_name = ccomponent_add(component);
 		label_init(&component, BOX_X + 2, BOX_Y + 3, NULL, 0);
-		label_wrap_around(&component, BOX_W - 3);
+		label_wrap_around(&component, BOX_W - 4);
 		ctx->tournament_view.tournament_description = ccomponent_add(component);
 		button_init(&component, BOX_X + 4, BOX_Y + BOX_H - 2, "ENTER", handle_tournament_enter_button, ctx);
 		ccomponent_add(component);
