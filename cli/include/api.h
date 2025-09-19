@@ -27,7 +27,8 @@ typedef enum
 }	request_type;
 
 int	api_ctx_init(api_ctx *ctx, const char *api_base_url);
-int api_ctx_append_token(api_ctx *ctx, const char *token);
+int api_ctx_set_token(api_ctx *ctx, const char *token);
+void api_ctx_remove_token(api_ctx *ctx);
 void api_ctx_deinit(api_ctx *ctx);
 
 void do_api_request_to_def(
