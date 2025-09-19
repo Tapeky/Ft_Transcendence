@@ -18,6 +18,11 @@ term_window_type	cur_term_window_type;
 
 static int has_initiated = 0;
 static struct termios orig_termios;
+static struct 
+{
+	term_window_type stack[term_window_type__MAX];
+	int cursor;
+} window_stack = {0};
 
 static void fetch_term_sz()
 {
@@ -71,6 +76,8 @@ void cinit()
 	cur_term_window_type = (term_window_type)0;
 	cinit_window(cur_term_window_type);
 	cur_term_window = &term_windows[cur_term_window_type];
+	window_stack.cursor = 0;
+	window_stack.stack[0] = 0;
 	has_initiated = 1;
 }
 
@@ -190,16 +197,12 @@ static void cinit_window(term_window_type window_type)
 	win->has_initiated = 1;
 }
 
-void cswitch_window(term_window_type window_type, int refresh)
+static void _cswitch_window(term_window_type window_type, int refresh)
 {
-	if (window_type == cur_term_window_type)
-		return;
-
 	console_component *cur = ccurrent_component();
 	if (cur && cur->type == BUTTON)
 		cur->u.c_button.held = 0;
 
-	assert(window_type >= 0 && window_type < term_window_type__MAX);
 	term_window *win = &term_windows[window_type];
 	if (!win->has_initiated)
 		cinit_window(window_type);
@@ -207,6 +210,32 @@ void cswitch_window(term_window_type window_type, int refresh)
 	cur_term_window_type = window_type;
 	if (refresh)
 		crefresh(1);
+}
+
+void cswitch_window(term_window_type window_type, int refresh)
+{
+	assert(window_type >= 0 && window_type < term_window_type__MAX);
+	if (window_type == cur_term_window_type)
+		return;
+	assert(window_stack.cursor < term_window_type__MAX);
+	window_stack.stack[++window_stack.cursor] = cur_term_window_type;
+	_cswitch_window(window_type, refresh);
+}
+
+int cprevious_window(int refresh)
+{
+	if (window_stack.cursor >= 1)
+	{
+		term_window_type previous_window = window_stack.stack[window_stack.cursor--];
+		_cswitch_window(previous_window, refresh);
+		return (1);
+	}
+	return (0);
+}
+
+void creset_window_stack()
+{
+	window_stack.cursor = -1;
 }
 
 console_component *ccomponent_add(console_component component)
