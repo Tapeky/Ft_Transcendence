@@ -89,7 +89,6 @@ export class Dashboard {
   private async loadMatches() {
     try {
       if (this.playerId) {
-        console.log('🔄 Loading matches for player ID:', this.playerId);
         const response = await apiService.getMatches({
           player_id: Number(this.playerId),
           include_guests: true
@@ -98,7 +97,6 @@ export class Dashboard {
         this.matches = Array.isArray(response) ? response : response.data;
         console.log('✅ Matches loaded:', this.matches?.length || 0, 'matches');
         if (this.matches?.length > 0) {
-          console.log('🎮 First match sample:', this.matches[0]);
         }
       } else {
         console.warn('⚠️ No playerId provided for loadMatches');

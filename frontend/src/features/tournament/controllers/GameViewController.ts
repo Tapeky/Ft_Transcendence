@@ -49,7 +49,6 @@ export class GameViewController extends TournamentViewController {
     if (gameContext) {
       // Navigate to game with tournament context
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
-      console.log('🚀 Redirecting to game with context:', gameContext);
       // Force page reload instead of SPA navigation to fix HTTPS routing issue
       window.location.href = `/game?tournamentContext=${contextParam}`;
     }

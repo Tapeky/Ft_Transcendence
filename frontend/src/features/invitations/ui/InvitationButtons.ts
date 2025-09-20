@@ -134,9 +134,6 @@ export class InvitationButtons {
       this.setupButton(button as HTMLElement);
     });
 
-    if (buttons.length > 0) {
-      console.log(`🎮 Found and configured ${buttons.length} invitation buttons`);
-    }
   }
 
   private setupButton(element: HTMLElement): void {
