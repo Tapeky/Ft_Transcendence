@@ -59,7 +59,6 @@ export class MatchmakingService {
           return true; // Message traité
           
         case 'matchmaking:found':
-          console.log('🎮 [MATCHMAKING-FRONTEND] Handling match found message');
           this.handleMatchFound(message.matchId, message.opponent);
           return true;
           
@@ -83,7 +82,6 @@ export class MatchmakingService {
 
   // Démarrer la recherche
   startSearching(): void {
-    console.log('🚀 [MATCHMAKING-FRONTEND] startSearching called');
     console.log('🔍 [MATCHMAKING-FRONTEND] Current status:', this.status);
     
     if (this.status.isSearching) {
@@ -91,7 +89,6 @@ export class MatchmakingService {
       return;
     }
 
-    console.log('🎯 [MATCHMAKING-FRONTEND] Démarrage recherche matchmaking...');
     this.status = { isSearching: true };
     this.notifyStatusChange();
 
@@ -105,7 +102,6 @@ export class MatchmakingService {
 
   // Méthode contournement - WebSocket direct
   private sendDirectMessage(message: any): void {
-    console.log('🚀 [MATCHMAKING-FRONTEND] Sending direct WebSocket message:', JSON.stringify(message));
     
     // Obtenir la connexion WebSocket brute depuis le WebSocketManager
     const wsManager = this.wsManager as IWebSocketManager;
@@ -150,8 +146,6 @@ export class MatchmakingService {
   }
 
   private handleMatchFound(matchId: string, opponent: any): void {
-    console.log(`🎮 [MATCHMAKING-FRONTEND] handleMatchFound - Match ID: ${matchId}, Opponent:`, opponent);
-    console.log(`🎮 Match trouvé! vs ${opponent.username} (ID: ${matchId})`);
     
     // Arrêter la recherche
     this.status = { isSearching: false };

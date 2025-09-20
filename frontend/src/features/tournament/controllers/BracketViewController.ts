@@ -100,7 +100,6 @@ export class BracketViewController extends TournamentViewController {
     const bracketContainer = this.querySelector('#bracket-display');
     if (!bracketContainer) return;
 
-    console.log('🔧 Rendering bracket:', JSON.stringify(bracket, null, 2));
     const bracketHTML = bracket.rounds.map((round: any, roundIndex: number) => `
       <div class="bracket-round mb-10">
         <h3 class="text-2xl font-bold mb-6 text-center text-white font-iceland">Round ${roundIndex + 1}</h3>

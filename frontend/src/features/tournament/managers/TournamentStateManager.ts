@@ -509,7 +509,6 @@ export class TournamentStateManager {
       try {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
         
-        console.log('🔧 Tournament data from backend:', JSON.stringify(this.tournament, null, 2));
         
         let currentView: TournamentUIState['currentView'] = 'lobby';
         
