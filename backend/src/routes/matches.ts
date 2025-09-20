@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticateToken, validateInput } from '../middleware';
 import { DatabaseManager } from '../database/DatabaseManager';
+import { formatError } from '../utils/formatError';
 
 // Interface complète avec tous les cas d'usage
 interface RecordMatchBody {
@@ -164,8 +165,7 @@ export async function matchRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur enregistrement match:', error);
-      
+      request.log.error(`Erreur enregistrement match: ${formatError(error)}`);
       // Gestion d'erreurs spécifiques
       if (error instanceof Error) {
         if (error.message.includes('FOREIGN KEY constraint failed')) {
@@ -249,7 +249,7 @@ export async function matchRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur récupération matches:', error);
+      request.log.error(`Erreur récupération matches: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération des matches'
@@ -315,7 +315,7 @@ export async function matchRoutes(server: FastifyInstance) {
         message: 'Match créé avec succès'
       });
     } catch (error) {
-      request.log.error('Erreur création match:', error);
+      request.log.error(`Erreur création match: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la création du match'
@@ -345,7 +345,7 @@ export async function matchRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur matches live:', error);
+      request.log.error(`Erreur matches live: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération des matches en cours'
@@ -372,7 +372,7 @@ export async function matchRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur détails match:', error);
+      request.log.error(`Erreur détails match: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération du match'
@@ -487,7 +487,7 @@ export async function matchRoutes(server: FastifyInstance) {
         message: 'Résultat enregistré avec succès'
       });
     } catch (error) {
-      request.log.error('Erreur enregistrement résultat:', error);
+      request.log.error(`Erreur enregistrement résultat: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de l\'enregistrement du résultat'
@@ -533,7 +533,7 @@ export async function matchRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur démarrage match:', error);
+      request.log.error(`Erreur démarrage match: ${formatError(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors du démarrage du match'

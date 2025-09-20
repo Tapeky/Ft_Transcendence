@@ -3,6 +3,7 @@ import { authenticateToken, validateInput } from '../middleware';
 import { validateImageUpload } from '../middleware/uploadValidation';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
+import { formatError } from '../utils/formatError';
 import sharp from 'sharp';
 import fs from 'fs/promises';
 import path from 'path';
@@ -150,7 +151,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
 					await fs.unlink(oldFilePath);
 				}
 			} catch (error) {
-				request.log.warn('Impossible de supprimer l\'ancien avatar:', error);
+				request.log.warn(`Impossible de supprimer l\'ancien avatar: ${formatError(error)}`);
 			}
 
 			// update bdd

@@ -30,7 +30,7 @@ export async function userRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur lors de la recherche:', error);
+      request.log.error(`Erreur lors de la recherche: ${error instanceof Error ? error.message : String(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la recherche'
@@ -51,7 +51,7 @@ export async function userRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur lors de la récupération du classement:', error);
+      request.log.error(`Erreur lors de la récupération du classement: ${error instanceof Error ? error.message : String(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération du classement'
@@ -72,7 +72,7 @@ export async function userRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur lors de la récupération des utilisateurs en ligne:', error);
+      request.log.error(`Erreur lors de la récupération des utilisateurs en ligne: ${error instanceof Error ? error.message : String(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération des utilisateurs en ligne'
@@ -113,7 +113,7 @@ export async function userRoutes(server: FastifyInstance) {
       });
 
     } catch (error) {
-      request.log.error('Erreur lors de la récupération du profil:', error);
+      request.log.error(`Erreur lors de la récupération du profil: ${error instanceof Error ? error.message : String(error)}`);
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération du profil'

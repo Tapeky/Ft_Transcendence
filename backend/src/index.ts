@@ -215,7 +215,7 @@ async function start() {
     GameManager.instance.registerLoop();
   } catch (err) {
     // Server startup error - always log critical errors
-    server.log.error('❌ Erreur de démarrage du serveur:', err);
+    server.log.error(`❌ Erreur de démarrage du serveur: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
@@ -238,12 +238,12 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason, promise) => {
-  server.log.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  server.log.error(`❌ Unhandled Rejection at: ${String(promise)}\nReason: ${reason instanceof Error ? reason.message : String(reason)}`);
   process.exit(1);
 });
 
 process.on('uncaughtException', (error) => {
-  server.log.error('❌ Uncaught Exception:', error);
+  server.log.error(`❌ Uncaught Exception: ${error instanceof Error ? error.stack : String(error)}`);
   process.exit(1);
 });
 

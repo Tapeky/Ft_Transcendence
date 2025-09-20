@@ -77,7 +77,7 @@ export class FriendOptions {
     const gameSection = document.createElement('div');
     gameSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
     gameSection.innerHTML = `
-      <h2 class="text-[1.8rem]">🎮 Challenge ${this.props.username} 🎮</h2>
+      <h2 class="text-[1.8rem]">▼ Challenge ${this.props.username} ▼</h2>
       <div class="h-[80px] w-3/4 text-center">
         <button 
           id="invite-btn"
@@ -93,10 +93,10 @@ export class FriendOptions {
     const actionsSection = document.createElement('div');
     actionsSection.className = 'flex-grow flex justify-evenly items-center';
     actionsSection.innerHTML = `
-      <button id="block-btn" class="border-2 h-[60px] w-[60px] mr-2 bg-white border-black">
+      <button id="block-btn" class="border-2 h-[50px] w-[50px] mr-2 bg-white border-black">
         <img src="/src/img/block.svg" alt="block"/>
       </button>
-      <button id="remove-btn" class="border-2 h-[60px] w-[60px] mr-2 bg-white border-black">
+      <button id="remove-btn" class="border-2 h-[50px] w-[50px] mr-2 bg-white border-black">
         <img src="/src/img/remove.svg" alt="remove"/>
       </button>
     `;
