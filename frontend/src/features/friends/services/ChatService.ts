@@ -496,6 +496,11 @@ export class ChatService {
     return this.isInGame;
   }
 
+  formatMessageTime(timestamp: string): string {
+    // Time display removed - always return empty string
+    return '';
+  }
+
   getOtherUserInConversation(conversation: Conversation, currentUserId: number): {
     id: number;
     username: string;
@@ -516,21 +521,7 @@ export class ChatService {
     }
   }
 
-  formatMessageTime(timestamp: string): string {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'now';
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays}d`;
-    
-    return date.toLocaleDateString();
-  }
 }
 
 export const chatService = ChatService.getInstance();
