@@ -1,7 +1,6 @@
 import { api } from '../../../shared/services/api';
 import { Tournament, TournamentCreateRequest, TournamentJoinRequest, TournamentMatchResult } from '../types/tournament';
 
-// Interface pour les réponses de l'API Tournament (dans response.data)
 export interface TournamentApiResponse {
   tournament?: Tournament;
   player?: {
@@ -24,84 +23,58 @@ export interface TournamentApiResponse {
 export class TournamentService {
   private static readonly BASE_URL = '/api/local-tournaments';
 
-  /**
-   * Create a new tournament
-   */
   static async createTournament(request: TournamentCreateRequest): Promise<Tournament> {
     const response = await api.post<TournamentApiResponse>(`${this.BASE_URL}/create`, request);
-    
     if (!response.success || !response.data?.tournament) {
-      throw new Error(response.error || 'Failed to create tournament');
+      throw new Error(response.error || 'Tournament creation failed');
     }
-
     return this.transformTournamentFromApi(response.data.tournament);
   }
 
-  /**
-   * Join a tournament with an alias
-   */
   static async joinTournament(tournamentId: string, request: TournamentJoinRequest): Promise<{
     player: { id: string; alias: string; joinedAt: Date };
     tournament: { currentPlayers: number; status: string; ready: boolean };
   }> {
     const response = await api.post<TournamentApiResponse>(`${this.BASE_URL}/join/${tournamentId}`, request);
-    
-    if (!response.success || !response.data?.player) {
-      throw new Error(response.error || 'Failed to join tournament');
+    if (!response.success || !response.data?.player || !response.data?.tournament) {
+      throw new Error(response.error || 'Joining tournament failed');
     }
-
     return {
       player: {
         ...response.data.player,
         joinedAt: new Date(response.data.player.joinedAt)
       },
-      tournament: response.data.tournament
+      tournament: {
+        currentPlayers: response.data.tournament.currentPlayers,
+        status: response.data.tournament.status,
+        ready: response.data.tournament.currentPlayers >= response.data.tournament.maxPlayers
+      }
     };
   }
 
-  /**
-   * Start a tournament (generate bracket and begin matches)
-   */
   static async startTournament(tournamentId: string): Promise<Tournament> {
     const response = await api.post<TournamentApiResponse>(`${this.BASE_URL}/start/${tournamentId}`);
-    
     if (!response.success || !response.data?.tournament) {
-      throw new Error(response.error || 'Failed to start tournament');
+      throw new Error(response.error || 'Starting tournament failed');
     }
-
     return this.transformTournamentFromApi(response.data.tournament);
   }
 
-  /**
-   * Get current tournament state
-   */
   static async getTournamentState(tournamentId: string): Promise<Tournament> {
     const response = await api.get<TournamentApiResponse>(`${this.BASE_URL}/state/${tournamentId}`);
-    
     if (!response.success || !response.data?.tournament) {
-      throw new Error(response.error || 'Failed to get tournament state');
+      throw new Error(response.error || 'Fetching tournament state failed');
     }
-
-    // 🔧 DEBUG: Log raw backend response
-    console.log('🔧 Raw backend response:', JSON.stringify(response.data.tournament, null, 2));
-
     return this.transformTournamentFromApi(response.data.tournament);
   }
 
-  /**
-   * Submit match result
-   */
   static async submitMatchResult(tournamentId: string, result: TournamentMatchResult): Promise<void> {
     const response = await api.post<TournamentApiResponse>(`${this.BASE_URL}/match-result/${tournamentId}`, result);
-    
     if (!response.success) {
-      throw new Error(response.error || 'Failed to submit match result');
+      throw new Error(response.error || 'Submitting match result failed');
     }
   }
 
-  /**
-   * Get next match to play
-   */
   static async getNextMatch(tournamentId: string): Promise<{
     id: string;
     tournamentId: string;
@@ -113,39 +86,33 @@ export class TournamentService {
     startedAt: Date;
   } | null> {
     const response = await api.get<TournamentApiResponse>(`${this.BASE_URL}/next-match/${tournamentId}`);
-    
     if (!response.success) {
-      throw new Error(response.error || 'Failed to get next match');
+      throw new Error(response.error || 'Getting next match failed');
     }
-
-    if (!response.data?.match) {
-      return null; // No pending matches
-    }
-
+    if (!response.data?.match) return null;
     return {
       ...response.data.match,
-      status: 'in_progress', // Force the correct type
-      startedAt: new Date(response.data.match.startedAt!)
+      status: 'in_progress' as const,
+      startedAt: response.data.match.startedAt ? new Date(response.data.match.startedAt) : new Date()
     };
   }
 
-  /**
-   * Transform tournament data from API format to frontend types
-   */
   private static transformTournamentFromApi(apiTournament: any): Tournament {
+    if (!apiTournament?.id || !apiTournament?.name) {
+      throw new Error('Invalid tournament data from API');
+    }
     return {
       id: apiTournament.id,
       name: apiTournament.name,
-      maxPlayers: apiTournament.maxPlayers,
-      currentPlayers: apiTournament.currentPlayers,
-      status: apiTournament.status,
+      maxPlayers: apiTournament.maxPlayers || 0,
+      currentPlayers: apiTournament.currentPlayers || 0,
+      status: apiTournament.status || 'waiting',
       players: apiTournament.players?.map((p: any) => ({
         id: p.id,
         alias: p.alias,
         position: p.position,
         joinedAt: new Date(p.joinedAt)
       })) || [],
-      // ✅ Utiliser directement le bracket du backend (nouvelle structure)
       bracket: apiTournament.bracket || (apiTournament.matches?.length > 0 ? this.generateBracketFromMatches(apiTournament.matches) : undefined),
       winnerId: apiTournament.winnerId,
       createdAt: new Date(apiTournament.createdAt),
@@ -154,20 +121,12 @@ export class TournamentService {
     };
   }
 
-  /**
-   * Generate bracket structure from flat matches array
-   */
   private static generateBracketFromMatches(matches: any[]): { rounds: any[][]; currentRound: number; currentMatch?: string } {
     const roundsMap = new Map<number, any[]>();
     let currentRound = 1;
     let currentMatch: string | undefined;
-
-    // Group matches by round
     matches.forEach(match => {
-      if (!roundsMap.has(match.round)) {
-        roundsMap.set(match.round, []);
-      }
-      
+      if (!roundsMap.has(match.round)) roundsMap.set(match.round, []);
       const transformedMatch = {
         id: match.id,
         tournamentId: match.tournamentId || '',
@@ -182,156 +141,95 @@ export class TournamentService {
         startedAt: match.startedAt ? new Date(match.startedAt) : undefined,
         completedAt: match.completedAt ? new Date(match.completedAt) : undefined
       };
-
       roundsMap.get(match.round)!.push(transformedMatch);
-
-      // Find current round and match
       if (match.status === 'in_progress') {
         currentRound = match.round;
         currentMatch = match.id;
-      } else if (match.status === 'pending' && currentRound === 1) {
-        currentRound = match.round;
+      } else if (match.status === 'pending' && !currentMatch) {
+        if (currentRound === 1 || match.round < currentRound) currentRound = match.round;
       }
     });
-
-    // Convert to array format
     const rounds: any[][] = [];
     const maxRound = Math.max(...roundsMap.keys());
-    
     for (let i = 1; i <= maxRound; i++) {
       rounds.push((roundsMap.get(i) || []).sort((a, b) => a.matchNumber - b.matchNumber));
     }
-
-    return {
-      rounds,
-      currentRound,
-      currentMatch
-    };
+    return { rounds, currentRound, currentMatch };
   }
 
-  /**
-   * Calculate tournament progress percentage
-   */
   static calculateProgress(tournament: Tournament): number {
-    if (!tournament.bracket || tournament.bracket.rounds.length === 0) {
-      return 0;
-    }
-
+    if (!tournament.bracket || tournament.bracket.rounds.length === 0) return 0;
     const totalMatches = tournament.bracket.rounds.reduce((total, round) => total + round.length, 0);
     const completedMatches = tournament.bracket.rounds.reduce(
-      (total, round) => total + round.filter(match => match.status === 'completed').length,
-      0
+      (total, round) => total + round.filter(match => match.status === 'completed').length, 0
     );
-
     return totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
   }
 
-  /**
-   * Get current match being played
-   */
   static getCurrentMatch(tournament: Tournament) {
     if (!tournament.bracket) return null;
-
     for (const round of tournament.bracket.rounds) {
       for (const match of round) {
-        if (match.status === 'in_progress') {
-          return match;
-        }
+        if (match.status === 'in_progress') return match;
       }
     }
-
     return null;
   }
 
-  /**
-   * Get next pending match
-   */
   static getNextPendingMatch(tournament: Tournament) {
     if (!tournament.bracket) return null;
-
     for (const round of tournament.bracket.rounds) {
       for (const match of round) {
-        if (match.status === 'pending') {
-          return match;
-        }
+        if (match.status === 'pending') return match;
       }
     }
-
     return null;
   }
 
-  /**
-   * Check if tournament is complete
-   */
   static isTournamentComplete(tournament: Tournament): boolean {
     return tournament.status === 'completed' && !!tournament.winnerId;
   }
 
-  /**
-   * Get tournament winner
-   */
   static getTournamentWinner(tournament: Tournament): string | null {
     if (tournament.status !== 'completed') return null;
     return tournament.winnerId || null;
   }
 
-  /**
-   * Get tournament history
-   */
   static async getHistory(): Promise<Tournament[]> {
-    const response = await api.get<{
-      success: boolean;
-      data: {
-        tournaments: Tournament[];
-        total: number;
-      };
-      error?: string;
-    }>(`${this.BASE_URL}/history`);
-    
-    if (!response.success) {
-      throw new Error(response.error || 'Failed to get tournament history');
+    const response = await api.get<any>(`${this.BASE_URL}/history`);
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Fetching history failed');
     }
-    
-    // Convert date strings back to Date objects
-    return response.data.tournaments.map(tournament => ({
+    return response.data.tournaments.map((tournament: any) => ({
       ...tournament,
       createdAt: new Date(tournament.createdAt),
       startedAt: tournament.startedAt ? new Date(tournament.startedAt) : undefined,
       completedAt: tournament.completedAt ? new Date(tournament.completedAt) : undefined,
-      players: tournament.players.map(player => ({
+      players: tournament.players?.map((player: any) => ({
         ...player,
         joinedAt: new Date(player.joinedAt)
-      })),
+      })) || [],
       bracket: tournament.bracket ? {
         ...tournament.bracket,
-        rounds: tournament.bracket.rounds.map(round => 
-          round.map(match => ({
+        rounds: tournament.bracket.rounds?.map((round: any) => 
+          round?.map((match: any) => ({
             ...match,
             startedAt: match.startedAt ? new Date(match.startedAt) : undefined,
             completedAt: match.completedAt ? new Date(match.completedAt) : undefined
-          }))
-        )
+          })) || []
+        ) || []
       } : undefined
     }));
   }
 
-  /**
-   * Clear all tournament history (completed tournaments only)
-   */
   static async clearHistory(): Promise<{ message: string; deletedCount: number }> {
-    const response = await api.delete<{
-      success: boolean;
-      data: {
-        message: string;
-        deletedCount: number;
-      };
-      error?: string;
-    }>(`${this.BASE_URL}/history`);
-    
-    if (!response.success) {
-      throw new Error(response.error || 'Failed to clear tournament history');
+    const response = await api.delete<any>(`${this.BASE_URL}/history`);
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Clearing history failed');
     }
-    
-    return response.data;
+    return {
+      message: response.data.message || 'History cleared',
+      deletedCount: response.data.deletedCount || 0
+    };
   }
 }

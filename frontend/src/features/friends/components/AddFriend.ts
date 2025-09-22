@@ -1,9 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { authManager } from '../../../core/auth/AuthManager';
 
-// AddFriend - Reproduction exacte de la version React
-// Input field + ADD button + Status messages (ok/ko/len/self)
-
 export class AddFriend {
   private element: HTMLElement;
   private status: string = 'ok';
@@ -13,7 +10,6 @@ export class AddFriend {
   constructor() {
     this.element = this.createElement();
     this.bindEvents();
-    
   }
 
   private createElement(): HTMLElement {
@@ -21,7 +17,6 @@ export class AddFriend {
     container.className = 'mx-3 mb-4 border-b-2 z-50';
 
     container.innerHTML = `
-      <!-- Header avec titre et status -->
       <div class="flex items-start">
         <h2 class="flex-1">Add friend</h2>
         <h3 id="status-message" class="${this.status === 'ok' ? 'text-green-500' : 'text-orange-500'} ${this.showStatus ? 'block' : 'hidden'} flex-1">
@@ -29,7 +24,6 @@ export class AddFriend {
         </h3>
       </div>
 
-      <!-- Input et bouton -->
       <div class="flex items-center">
         <input 
           id="nameInput" 
@@ -58,13 +52,11 @@ export class AddFriend {
 
     addBtn?.addEventListener('click', () => this.addFriend());
 
-    // Enter key in input
     nameInput?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.addFriend();
       }
     });
-
   }
 
   private async addFriend(): Promise<void> {
@@ -74,20 +66,17 @@ export class AddFriend {
     const username = nameInput.value.trim();
     const currentUser = authManager.getCurrentUser();
 
-    // Validation: minimum 3 characters
     if (username.length < 3) {
       this.setStatus('len');
       return;
     }
 
-    // Validation: can't add yourself
     if (username === currentUser?.username) {
       this.setStatus('self');
       return;
     }
 
     try {
-      // Search user by username
       const users = await apiService.searchUsers(username);
       const foundUser = users.find(user => user.username === username);
 
@@ -96,16 +85,13 @@ export class AddFriend {
         return;
       }
 
-      // Send friend request
       await apiService.sendFriendRequest(foundUser.id);
       
-      // Success
       this.setStatus('ok');
-      nameInput.value = ''; // Clear input
-
+      nameInput.value = '';
 
     } catch (error) {
-      console.error('❌ AddFriend: Failed to send friend request:', error);
+      console.error('Failed to send friend request:', error);
       this.setStatus('ko');
     }
   }
@@ -115,7 +101,6 @@ export class AddFriend {
     this.showStatus = true;
     this.updateStatusDisplay();
 
-    // Auto-hide status after 5 seconds (React behavior)
     if (this.statusTimer) {
       clearTimeout(this.statusTimer);
     }
@@ -130,7 +115,6 @@ export class AddFriend {
     const statusMessage = this.element.querySelector('#status-message');
     if (!statusMessage) return;
 
-    // Update visibility
     if (this.showStatus) {
       statusMessage.classList.remove('hidden');
       statusMessage.classList.add('block');
@@ -139,7 +123,6 @@ export class AddFriend {
       statusMessage.classList.remove('block');
     }
 
-    // Update color and text
     statusMessage.className = `${this.status === 'ok' ? 'text-green-500' : 'text-orange-500'} ${this.showStatus ? 'block' : 'hidden'} flex-1`;
     statusMessage.textContent = this.getStatusMessage();
   }

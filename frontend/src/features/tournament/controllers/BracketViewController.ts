@@ -1,19 +1,10 @@
 import { TournamentViewController } from './TournamentViewController';
 import { TournamentSystemState } from '../managers/TournamentStateManager';
 
-/**
- * Controller for the tournament bracket view
- * Handles bracket display and match progression
- */
 export class BracketViewController extends TournamentViewController {
   render(container: Element, state: TournamentSystemState): void {
     const tournament = state.tournament;
-    console.log('BracketViewController.render called:', {
-      tournament: !!tournament,
-      bracket: !!tournament?.bracket,
-      status: tournament?.status,
-      currentView: state.ui.currentView
-    });
+    console.log('Rendering bracket for:', tournament?.name);
 
     if (!tournament) {
       container.innerHTML = '<div class="text-center text-white text-2xl font-iceland">No tournament loaded</div>';
@@ -58,7 +49,7 @@ export class BracketViewController extends TournamentViewController {
 
   bindEvents(): void {
     if (!this.isElementReady()) {
-      console.warn('BracketViewController: Attempting to bind events before element is ready');
+      console.warn('BracketViewController: Element not ready for binding');
       return;
     }
 

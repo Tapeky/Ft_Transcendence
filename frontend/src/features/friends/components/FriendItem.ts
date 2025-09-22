@@ -2,10 +2,6 @@ import { getAvatarUrl } from '../../../shared/utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../../core/app/Router';
 import { apiService } from '../../../shared/services/api';
-import { gameInviteService, kissInviteButtons } from '../../invitations';
-
-// FriendItem - Reproduction exacte de la version React
-// Avatar + Display name + Username + Online status + Chat/Options buttons + FriendOptions modal
 
 export interface FriendItemProps {
   username: string;
@@ -26,7 +22,6 @@ export class FriendItem {
     this.props = props;
     this.element = this.createElement();
     this.bindEvents();
-    
   }
 
   private createElement(): HTMLElement {
@@ -34,29 +29,18 @@ export class FriendItem {
     container.className = `${this.isVisible ? 'block' : 'hidden'} ${this.isOptionsOpen ? 'z-[55]' : 'z-[50]'} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`;
 
     container.innerHTML = `
-      <!-- Avatar Section -->
       <div class="flex items-center justify-center min-w-[120px]">
         <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
       </div>
-
-      <!-- User Info Section -->
       <div class="leading-none flex flex-col gap-1 flex-grow overflow-hidden">
         <h2 class="mt-2">${this.props.displayName}</h2>
         <h2 class="text-[1.5rem]">${this.props.username}</h2>
       </div>
-
-      <!-- Actions Section -->
       <div class="min-w-[110px] flex flex-col pl-2">
-        
-        <!-- Online Status -->
         <div class="flex-1 flex justify-start items-center ml-1">
           <h2 class="text-[1.5rem]">${this.props.is_online ? 'Online' : 'Offline'}</h2>
         </div>
-
-        <!-- Action Buttons -->
         <div class="flex-1 flex justify-evenly items-start mt-1">
-          
-          <!-- Game Invite Button - KISS Integration -->
           <button 
             id="invite-btn" 
             data-invite-user="${this.props.id}"
@@ -64,16 +48,11 @@ export class FriendItem {
             class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 hover:scale-110 transition">
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
-
-          <!-- Options Button -->
           <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
             <img src="/src/img/plus.svg" alt="more" />
           </button>
-
         </div>
       </div>
-
-      <!-- FriendOptions container (modal will be injected here) -->
       <div id="friend-options-container"></div>
     `;
 
@@ -84,19 +63,13 @@ export class FriendItem {
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
-    // Game invite button - handled by KISS system via data-invite-user attribute
-
-    // Options button - open FriendOptions modal
     optionsBtn?.addEventListener('click', () => this.openOptions());
-
   }
-
 
   private openOptions(): void {
     this.isOptionsOpen = true;
     this.updateZIndex();
 
-    // Create FriendOptions instance (modal overlay)
     if (!this.friendOptionsInstance) {
       this.friendOptionsInstance = new FriendOptions({
         username: this.props.username,
@@ -109,9 +82,7 @@ export class FriendItem {
       });
     }
 
-    // Attach to document.body (portal pattern like React)
     document.body.appendChild(this.friendOptionsInstance.getElement());
-
   }
 
   private closeOptions(): void {
@@ -122,41 +93,29 @@ export class FriendItem {
       this.friendOptionsInstance.destroy();
       this.friendOptionsInstance = undefined;
     }
-
   }
 
   private dismissItem(): void {
-    // React behavior: setVisible(false) - hide the item
     this.isVisible = false;
     this.updateVisibility();
     
-    // Also close options if open
     if (this.isOptionsOpen) {
       this.closeOptions();
     }
-
   }
 
   private updateVisibility(): void {
-    if (this.isVisible) {
-      this.element.classList.remove('hidden');
-      this.element.classList.add('block');
-    } else {
-      this.element.classList.add('hidden');
-      this.element.classList.remove('block');
-    }
+    this.element.classList.toggle('hidden', !this.isVisible);
+    this.element.classList.toggle('block', this.isVisible);
   }
 
   private updateZIndex(): void {
-    // Update z-index based on options state (React className logic)
     this.element.className = `${this.isVisible ? 'block' : 'hidden'} ${this.isOptionsOpen ? 'z-[55]' : 'z-[50]'} border-white border-2 min-h-[120px] w-[450px] flex bg-blue-800 relative`;
   }
 
-  // Public method to update props (if needed)
   public updateProps(newProps: Partial<FriendItemProps>): void {
     this.props = { ...this.props, ...newProps };
     
-    // Re-render with new props
     const newElement = this.createElement();
     this.element.parentNode?.replaceChild(newElement, this.element);
     this.element = newElement;

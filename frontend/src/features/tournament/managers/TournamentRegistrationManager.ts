@@ -25,7 +25,6 @@ export class TournamentRegistrationManager {
 
   subscribe(listener: (state: RegistrationState) => void): () => void {
     this.listeners.push(listener);
-    // Return unsubscribe function
     return () => {
       const index = this.listeners.indexOf(listener);
       if (index > -1) {
@@ -48,11 +47,11 @@ export class TournamentRegistrationManager {
 
     try {
       if (!name.trim()) {
-        throw new Error('Tournament name is required');
+        throw new Error('Please enter a tournament name');
       }
 
       if (name.trim().length > 255) {
-        throw new Error('Tournament name is too long (max 255 characters)');
+        throw new Error('Tournament name too long (max 255 characters)');
       }
 
       if (![4, 8, 16].includes(maxPlayers)) {
@@ -91,11 +90,11 @@ export class TournamentRegistrationManager {
 
     try {
       if (!alias.trim()) {
-        throw new Error('Player alias is required');
+        throw new Error('Please enter a player alias');
       }
 
       if (alias.trim().length > 50) {
-        throw new Error('Player alias is too long (max 50 characters)');
+        throw new Error('Player alias too long (max 50 characters)');
       }
 
       if (!/^[a-zA-Z0-9_-]+$/.test(alias.trim())) {
@@ -194,11 +193,11 @@ export class TournamentRegistrationManager {
 
   static validateTournamentName(name: string): { isValid: boolean; error?: string } {
     if (!name.trim()) {
-      return { isValid: false, error: 'Tournament name is required' };
+      return { isValid: false, error: 'Please enter a tournament name' };
     }
 
     if (name.trim().length > 255) {
-      return { isValid: false, error: 'Tournament name is too long (max 255 characters)' };
+      return { isValid: false, error: 'Tournament name too long (max 255 characters)' };
     }
 
     return { isValid: true };
@@ -206,11 +205,11 @@ export class TournamentRegistrationManager {
 
   static validatePlayerAlias(alias: string): { isValid: boolean; error?: string } {
     if (!alias.trim()) {
-      return { isValid: false, error: 'Player alias is required' };
+      return { isValid: false, error: 'Please enter a player alias' };
     }
 
     if (alias.trim().length > 50) {
-      return { isValid: false, error: 'Player alias is too long (max 50 characters)' };
+      return { isValid: false, error: 'Player alias too long (max 50 characters)' };
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(alias.trim())) {

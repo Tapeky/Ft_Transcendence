@@ -14,14 +14,13 @@ export class Router {
     this.routeGuard = guard;
   }
 
-private createComponentContainer<T>(ComponentClass: new (container: HTMLElement, ...args: any[]) => T, ...args: any[]): HTMLElement {
-  const container = document.createElement('div');
-  new ComponentClass(container, ...args);
-  return container;
-}
+  private createComponentContainer<T>(ComponentClass: new (container: HTMLElement, ...args: any[]) => T, ...args: any[]): HTMLElement {
+    const container = document.createElement('div');
+    new ComponentClass(container, ...args);
+    return container;
+  }
 
   private setupRoutes(): void {
-    // Normal routes
     this.routes.set('/', async () => {
       const { HomePage } = await import('../../pages/Home');
       return new HomePage().getElement();
@@ -32,7 +31,6 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       return new AuthPage().getElement();
     });
 
-    // Protected routes
     this.routes.set('/menu', async () => {
       const { MenuPage } = await import('../../pages/Menu');
       return new MenuPage().getElement();
@@ -51,10 +49,7 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
     this.routes.set('/tournament', async () => {
       const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
       const tournament = new LocalTournament();
-
-      // Wait for async initialization before returning the element
       await tournament.waitForInitialization();
-
       return tournament.getElement();
     });
 
@@ -63,12 +58,10 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
       return new TournamentHistory().getElement();
     });
 
-
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
       const userId = pathSegments[2];
-
 
       if (!userId || !userId.match(/^\d+$/)) {
         const { NotFoundPage } = await import('../../pages/NotFound');
@@ -91,10 +84,9 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
   }
 
   private findRoute(path: string): ((path?: string) => Promise<HTMLElement>) | undefined {
-    if (this.routes.has(path)) { return this.routes.get(path); }
+    if (this.routes.has(path)) return this.routes.get(path);
 
     if (path.startsWith('/dashboard/')) {
-      // Extract pathname without query parameters
       const pathname = path.split('?')[0];
       const segments = pathname.split('/');
       if (segments.length === 3 && segments[2].match(/^\d+$/)) {
@@ -121,7 +113,6 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
         return;
 
     try {
-      // Update URL first so renderPath can access correct window.location
       if (window.location.pathname + window.location.search !== path)
         window.history.pushState(null, '', path);
 
@@ -133,7 +124,7 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
 
   private render(page: HTMLElement): void {
     const root = document.getElementById('root');
-    if (!root) { throw new Error('Root element not found'); }
+    if (!root) throw new Error('Root element not found');
 
     root.innerHTML = '';
     root.appendChild(page);
@@ -177,7 +168,10 @@ private createComponentContainer<T>(ComponentClass: new (container: HTMLElement,
   }
 
   public getCurrentPath(): string { return window.location.pathname; }
-  public getAvailableRoutes(): string[] { return Array.from(this.routes.keys()); } // A supprimer a la fin du projet
+  
+  public getAvailableRoutes(): string[] {
+    return Array.from(this.routes.keys());
+  }
 }
 
 export const router = new Router();

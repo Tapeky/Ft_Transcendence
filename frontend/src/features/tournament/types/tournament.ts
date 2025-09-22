@@ -1,5 +1,3 @@
-// Tournament System Type Definitions
-
 export type TournamentStatus = 'registration' | 'ready' | 'in_progress' | 'running' | 'completed' | 'cancelled';
 
 export type TournamentSize = 4 | 8 | 16;
@@ -7,7 +5,7 @@ export type TournamentSize = 4 | 8 | 16;
 export interface TournamentPlayer {
   id: string;
   alias: string;
-  position?: number; // Final tournament position (1st, 2nd, etc.)
+  position?: number;
   joinedAt: Date;
 }
 
@@ -29,7 +27,7 @@ export interface TournamentMatch {
 export interface TournamentBracket {
   rounds: TournamentMatch[][];
   currentRound: number;
-  currentMatch?: string; // Match ID currently being played
+  currentMatch?: string;
 }
 
 export interface Tournament {
@@ -48,7 +46,6 @@ export interface Tournament {
   completedAt?: Date;
 }
 
-// API Response types
 export interface TournamentCreateRequest {
   name: string;
   maxPlayers: TournamentSize;
@@ -65,7 +62,6 @@ export interface TournamentMatchResult {
   winnerAlias: string;
 }
 
-// UI State types
 export interface TournamentUIState {
   currentTournament?: Tournament;
   isLoading: boolean;
@@ -73,7 +69,6 @@ export interface TournamentUIState {
   currentView: 'lobby' | 'registration' | 'bracket' | 'game' | 'results';
 }
 
-// Game Integration types
 export interface TournamentGameContext {
   tournamentId: string;
   matchId: string;

@@ -1,10 +1,6 @@
 import { TournamentViewController } from './TournamentViewController';
 import { TournamentSystemState } from '../managers/TournamentStateManager';
 
-/**
- * Controller for the tournament registration view
- * Handles player registration and tournament starting
- */
 export class RegistrationViewController extends TournamentViewController {
   render(container: Element, state: TournamentSystemState): void {
     const tournament = state.tournament;
@@ -88,10 +84,7 @@ export class RegistrationViewController extends TournamentViewController {
   }
 
   bindEvents(): void {
-    if (!this.isElementReady()) {
-      console.warn('RegistrationViewController: Attempting to bind events before element is ready');
-      return;
-    }
+    if (!this.isElementReady()) return;
 
     const copyButton = this.querySelector('#copy-id');
     if (copyButton) {
@@ -140,19 +133,19 @@ export class RegistrationViewController extends TournamentViewController {
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
-      console.log('Tournament status before start (registration view):', currentTournament?.status);
+      console.log('Status before start:', currentTournament?.status);
 
       if (!currentTournament || (
         currentTournament.status !== 'ready' &&
         currentTournament.status !== 'in_progress' &&
         currentTournament.status !== 'running'
       )) {
-        throw new Error(`Tournament cannot be started. Current status: ${currentTournament?.status || 'unknown'}`);
+        throw new Error(`Cannot start. Status: ${currentTournament?.status || 'unknown'}`);
       }
 
       await this.stateManager.startTournament();
     } catch (error) {
-      console.error('Failed to start tournament:', error);
+      console.error('Start failed:', error);
       this.showError('Failed to start tournament. Please ensure all players have joined.');
     }
   }
@@ -161,7 +154,7 @@ export class RegistrationViewController extends TournamentViewController {
     try {
       await this.stateManager.refreshTournament();
     } catch (error) {
-      console.error('Failed to refresh tournament:', error);
+      console.error('Refresh failed:', error);
       this.showError('Failed to refresh tournament.');
     }
   }
