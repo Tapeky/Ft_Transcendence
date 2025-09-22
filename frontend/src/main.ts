@@ -20,26 +20,8 @@ class App {
         initUserSwitcher();
       }
       
-      try {
-        const { gameInviteService, SimpleInvitePopup, ConnectionStatus } = await import('./features/invitations');
-        
-        if (!gameInviteService) {
-          throw new Error('GameInviteService not loaded');
-        }
-        
-        gameInviteService.onInviteReceived((invite) => {
-          new SimpleInvitePopup(invite);
-        });
-        
-        const connectionStatus = new ConnectionStatus();
-        connectionStatus.show();
-        
-      } catch (error) {
-        console.error('Failed to initialize KISS Game Invite System:', error);
-      }
-      
     } catch (error) {
-      console.error('Failed to initialize application:', error);
+      console.error('App init failed:', error);
       
       root.innerHTML = `
         <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626); 

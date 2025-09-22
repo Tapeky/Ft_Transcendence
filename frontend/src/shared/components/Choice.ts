@@ -1,15 +1,11 @@
 import { router } from '../../core/app/Router';
 
-// Choice - Reproduction exacte de la version React  
-// 2 boutons Pong et Profile avec animations hover et backgrounds GIF
-
 export class Choice {
   private element: HTMLElement;
 
   constructor() {
     this.element = this.createElement();
     this.bindEvents();
-    
   }
 
   private createElement(): HTMLElement {
@@ -18,7 +14,6 @@ export class Choice {
     main.className = 'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700';
 
     main.innerHTML = `
-      <!-- Section Gauche - PONG -->
       <div class="flex-1 flex items-center justify-end">
         <div 
           id="pong-choice" 
@@ -31,12 +26,10 @@ export class Choice {
         </div>
       </div>
 
-      <!-- Section Centre - Titre -->
       <div class="flex-1 flex items-center justify-center text-[5rem] text-center text-white">
         CHOOSE YOUR MODE
       </div>
 
-      <!-- Section Droite - TOURNAMENT -->
       <div class="flex-1 flex items-center justify-start">
         <div 
           id="tournament-choice" 
@@ -54,30 +47,21 @@ export class Choice {
   }
 
   private bindEvents(): void {
-    // Pong choice navigation
     const pongChoice = this.element.querySelector('#pong-choice');
     pongChoice?.addEventListener('click', () => this.navigateToGame());
 
-    // Tournament choice navigation  
     const tournamentChoice = this.element.querySelector('#tournament-choice');
     tournamentChoice?.addEventListener('click', () => this.navigateToTournament());
 
     this.setupHoverEffects();
-
   }
 
   private setupHoverEffects(): void {
-    // Effet sonore hover (optionnel)
     const choices = this.element.querySelectorAll('[data-route]');
     
     choices.forEach(choice => {
-      choice.addEventListener('mouseenter', () => {
-        // Ajouter un effet sonore de hover si désiré
-      });
-
-      choice.addEventListener('mouseleave', () => {
-        // Effet de sortie de hover si désiré
-      });
+      choice.addEventListener('mouseenter', () => {});
+      choice.addEventListener('mouseleave', () => {});
     });
   }
 

@@ -13,20 +13,17 @@ export class MenuPage {
 
   constructor() {
     this.element = this.createElement();
-    this.bindEvents();
     this.subscribeToAuth();
-    
   }
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
-    this.header = new Header(true); // userVisible = true
+    this.header = new Header(true);
     this.banner = new Banner();
     this.choice = new Choice();
 
-    // Assemble the page (reproduction exacte du React Menu)
     container.appendChild(this.header.getElement());
     container.appendChild(this.banner.getElement());
     container.appendChild(this.choice.getElement());
@@ -34,19 +31,13 @@ export class MenuPage {
     return container;
   }
 
-  private bindEvents(): void {
-    // Les événements sont gérés par les composants individuels
-  }
-
   private subscribeToAuth(): void {
-    // Vérifier l'authentification comme dans le React Menu
     this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
         router.navigate('/');
       }
     });
 
-    // Vérification initiale
     if (!authManager.isAuthenticated() || !authManager.getCurrentUser()) {
       router.navigate('/');
     }
@@ -57,20 +48,10 @@ export class MenuPage {
   }
 
   destroy(): void {
-    if (this.header) {
-      this.header.destroy();
-    }
-    if (this.banner) {
-      this.banner.destroy();
-    }
-    if (this.choice) {
-      this.choice.destroy();
-    }
-
-    if (this.authUnsubscribe) {
-      this.authUnsubscribe();
-    }
-    
+    if (this.header) this.header.destroy();
+    if (this.banner) this.banner.destroy();
+    if (this.choice) this.choice.destroy();
+    if (this.authUnsubscribe) this.authUnsubscribe();
     this.element.remove();
   }
 }

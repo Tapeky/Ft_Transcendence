@@ -108,25 +108,7 @@ export class TournamentStateManager {
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
       
-      let currentView: TournamentUIState['currentView'] = 'lobby';
-      
-      switch (tournament.status) {
-        case 'registration':
-          currentView = 'registration';
-          break;
-        case 'ready':
-          currentView = tournament.bracket ? 'bracket' : 'registration';
-          break;
-        case 'in_progress':
-        case 'running':
-          currentView = 'bracket';
-          break;
-        case 'completed':
-          currentView = 'results';
-          break;
-        default:
-          currentView = 'lobby';
-      }
+      const currentView = this.getViewForStatus(tournament.status, tournament.bracket);
 
       this.updateUIState({
         currentView,
@@ -210,25 +192,7 @@ export class TournamentStateManager {
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
       
-      let currentView: TournamentUIState['currentView'] = 'lobby';
-      
-      switch (tournament.status) {
-        case 'registration':
-          currentView = 'registration';
-          break;
-        case 'ready':
-          currentView = tournament.bracket ? 'bracket' : 'registration';
-          break;
-        case 'in_progress':
-        case 'running':
-          currentView = 'bracket';
-          break;
-        case 'completed':
-          currentView = 'results';
-          break;
-        default:
-          currentView = 'lobby';
-      }
+      const currentView = this.getViewForStatus(tournament.status, tournament.bracket);
 
       this.updateUIState({
         currentView,
@@ -255,7 +219,7 @@ export class TournamentStateManager {
     }
 
     if (this.tournament.status === 'in_progress' || this.tournament.status === 'running') {
-      console.warn('Tournament is already started, skipping start request');
+      console.warn('Tournament already started');
       return;
     }
 
@@ -265,11 +229,7 @@ export class TournamentStateManager {
       const tournament = await this.registrationManager.startTournament(this.tournament.id);
       
       this.tournament = tournament;
-      console.log('Tournament started successfully:', {
-        status: tournament.status,
-        bracket: !!tournament.bracket,
-        bracketRounds: tournament.bracket?.rounds?.length
-      });
+      console.log('Tournament started:', tournament.status);
       
       this.updateUIState({
         currentView: 'bracket',
@@ -297,7 +257,6 @@ export class TournamentStateManager {
     this.updateUIState({ isLoading: true, error: undefined });
 
     try {
-      // Load and start next match
       await this.matchOrchestrator.loadNextMatch();
       await this.matchOrchestrator.startMatch();
       
@@ -332,19 +291,12 @@ export class TournamentStateManager {
       if (this.tournament) {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
         
-        if (this.tournament.status === 'completed') {
-          this.updateUIState({
-            currentView: 'results',
-            isLoading: false,
-            error: undefined
-          });
-        } else {
-          this.updateUIState({
-            currentView: 'bracket',
-            isLoading: false,
-            error: undefined
-          });
-        }
+        const currentView = this.tournament.status === 'completed' ? 'results' : 'bracket';
+        this.updateUIState({
+          currentView,
+          isLoading: false,
+          error: undefined
+        });
       }
 
       this.notifyListeners();
@@ -500,6 +452,22 @@ export class TournamentStateManager {
     }
   }
 
+  private getViewForStatus(status: string, bracket?: any): TournamentUIState['currentView'] {
+    switch (status) {
+      case 'registration':
+        return 'registration';
+      case 'ready':
+        return bracket ? 'bracket' : 'registration';
+      case 'in_progress':
+      case 'running':
+        return 'bracket';
+      case 'completed':
+        return 'results';
+      default:
+        return 'lobby';
+    }
+  }
+
   getCurrentTournament(): Tournament | null {
     return this.tournament;
   }
@@ -509,31 +477,11 @@ export class TournamentStateManager {
       try {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
         
-        
-        let currentView: TournamentUIState['currentView'] = 'lobby';
-        
-        switch (this.tournament.status) {
-          case 'registration':
-            currentView = 'registration';
-            break;
-          case 'ready':
-            currentView = this.tournament.bracket ? 'bracket' : 'registration';
-            break;
-          case 'in_progress':
-          case 'running':
-            currentView = 'bracket';
-            break;
-          case 'completed':
-            currentView = 'results';
-            break;
-          default:
-            currentView = 'lobby';
-        }
-
+        const currentView = this.getViewForStatus(this.tournament.status, this.tournament.bracket);
         this.updateUIState({ currentView });
         this.notifyListeners();
       } catch (error) {
-        console.error('Failed to refresh tournament state:', error);
+        console.error('Refresh failed:', error);
       }
     }
   }

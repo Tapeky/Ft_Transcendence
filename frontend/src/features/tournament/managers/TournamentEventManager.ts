@@ -14,9 +14,7 @@ export class TournamentEventManager {
 
   setElement(element: HTMLElement): void {
     this.cleanup();
-
     this.element = element;
-
     if (USE_EVENT_MANAGER) {
       this.bindGlobalEvents();
     }
@@ -28,10 +26,8 @@ export class TournamentEventManager {
       const target = e.target as HTMLElement;
       this.handleGlobalClick(target, e);
     };
-
     this.element.addEventListener('click', globalClickHandler);
     this.eventListeners.set('click', globalClickHandler);
-
     this.bindNavigationEvents();
     this.bindErrorEvents();
   }
@@ -55,20 +51,20 @@ export class TournamentEventManager {
   }
 
   private bindNavigationEvents(): void {
-    console.log('Tournament navigation events bound via delegation');
+    console.log('Navigation events bound');
   }
 
   private bindErrorEvents(): void {
-    console.log('Tournament error events bound via delegation');
+    console.log('Error events bound');
   }
 
   private handleBackNavigation(): void {
-    console.log('Back button clicked - navigating to /menu');
+    console.log('Going back to menu');
     router.navigate('/menu');
   }
 
   private handleHistoryNavigation(): void {
-    console.log('History button clicked - navigating to /tournament-history');
+    console.log('Viewing tournament history');
     router.navigate('/tournament-history');
   }
 

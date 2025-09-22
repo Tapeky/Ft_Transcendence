@@ -1,11 +1,8 @@
-# Ft_Transcendence Docker Compose Configuration
 services:
-  # Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    runtime: runc
     ports:
       - "${FRONTEND_PORT}:3000"
     volumes:
@@ -21,12 +18,10 @@ services:
     networks:
       - ft_transcendence
 
-  # Backend Service (Node.js + Fastify)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    runtime: runc
     ports:
       - "${BACKEND_PORT}:8000"
     volumes:
@@ -51,14 +46,10 @@ services:
     networks:
       - ft_transcendence
 
-# Additional services can be added here
-
-# Docker volumes
 volumes:
   db_data:
   ssl_certs:
 
-# Docker networks
 networks:
   ft_transcendence:
     driver: bridge

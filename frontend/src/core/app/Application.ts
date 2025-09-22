@@ -22,18 +22,11 @@ export class Application {
   }
 
   public async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      return;
-    }
-
-    try {
-      this.setupCoreDependencies();
-      this.initializeRouteProtection();
-      this.setupErrorHandling();
-      this.isInitialized = true;
-    } catch (error) {
-      throw error;
-    }
+    if (this.isInitialized) return;
+    this.setupCoreDependencies();
+    this.initializeRouteProtection();
+    this.setupErrorHandling();
+    this.isInitialized = true;
   }
 
   private setupCoreDependencies(): void {
@@ -45,19 +38,17 @@ export class Application {
     this.routeGuard.initialize();
   }
 
-
   private setupErrorHandling(): void {
     window.addEventListener('error', (event) => {
       this.handleGlobalError(event.error);
     });
-
     window.addEventListener('unhandledrejection', (event) => {
       this.handleGlobalError(event.reason);
     });
   }
 
   private handleGlobalError(error: any): void {
-    console.error('Global error occurred:', error);
+    console.error('Error:', error);
   }
 
   public getSystemStatus(): {
@@ -77,9 +68,16 @@ export class Application {
   public getRouteGuard(): RouteGuard { return this.routeGuard; }
   public getAuthManager(): AuthManager { return this.authManager; }
   public shutdown(): void { this.isInitialized = false; }
-
 }
 
 export const application = Application.getInstance();
+
+declare global {
+  interface Window {
+    router: typeof router;
+    application: typeof application;
+  }
+}
+
 window.router = router;
 window.application = application;

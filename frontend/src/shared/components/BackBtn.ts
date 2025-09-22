@@ -1,6 +1,3 @@
-// BackBtn - Reproduction exacte de la version React
-// Bouton retour avec style Iceland et hover scale
-
 export class BackBtn {
   private element: HTMLElement;
 
@@ -23,9 +20,7 @@ export class BackBtn {
     `;
 
     const backBtn = container.querySelector('#back-btn');
-    backBtn?.addEventListener('click', () => {
-      window.history.back();
-    });
+    backBtn?.addEventListener('click', () => window.history.back());
 
     return container;
   }

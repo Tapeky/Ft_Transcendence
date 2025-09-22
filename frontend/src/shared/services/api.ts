@@ -1,8 +1,4 @@
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:8000';
-
-
-// Type Definitions
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
 
 export interface User {
 	id: number;
@@ -69,7 +65,6 @@ export interface FriendRequest {
 	is_online: boolean;
 }
 
-
 export interface Match {
 	id: number;
 	player1_username: string;
@@ -105,7 +100,6 @@ export interface LeaderboardEntry {
 	win_rate: number;
 }
 
-// API Service Class
 class ApiService {
 	private token: string | null = null;
 
@@ -115,52 +109,27 @@ class ApiService {
 
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
 		const url = `${API_BASE_URL}${endpoint}`;
-		
-		const headers: Record<string, string> = {
-			...options.headers as Record<string, string>
-		};
-
-		// Définir Content-Type seulement si on a un body qui n'est pas FormData
+		const headers: Record<string, string> = { ...options.headers as Record<string, string> };
 		if (options.body && !(options.body instanceof FormData)) {
 			headers['Content-Type'] = 'application/json';
 		}
-
 		if (this.token) {
 			headers['Authorization'] = `Bearer ${this.token}`;
 		}
-
-		const config: RequestInit = {
-			...options,
-			headers,
-		};
-
+		const config: RequestInit = { ...options, headers };
 		try {
 			const response = await fetch(url, config);
 			const data = await response.json();
 			if (!response.ok) {
-				throw new Error(data.error || 'Une erreur est survenue');
+				throw new Error(data.error || 'An error occurred');
 			}
 			return data;
 		} catch (error) {
-			// Only log unexpected errors, not expected validation errors
-			if (error instanceof Error) {
-				// Don't log expected validation errors (4xx status codes)
-				const isValidationError = error.message.includes('déjà pris') || 
-					error.message.includes('déjà utilisé') || 
-					error.message.includes('déjà utilisé') ||
-					error.message.includes('existe déjà') ||
-					error.message.includes('invalide') ||
-					error.message.includes('incorrect');
-					
-				if (!isValidationError) {
-					console.error('Unexpected API error:', error.message, error.name);
-				}
-			} else {
-				console.error('Non-standard API error:', String(error));
+			if (error instanceof Error && !['taken', 'used', 'exists', 'invalid', 'incorrect'].some(word => error.message.includes(word))) {
+				console.error('API error:', error.message);
 			}
 			throw error;
 		}
-
 	}
 
 	async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -168,14 +137,14 @@ class ApiService {
 			method: 'POST',
 			body: JSON.stringify(credentials),
 		});
-		if (response.data?.token) { // si response.data existe ET contient un token
+		if (response.data?.token) {
 			this.setToken(response.data.token);
 		}
 		return response.data!;	
 	}
 
 	async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-		const response = await this .request<AuthResponse>('/api/auth/register', {
+		const response = await this.request<AuthResponse>('/api/auth/register', {
 			method: 'POST',
 			body: JSON.stringify(credentials),
 		});
@@ -210,12 +179,7 @@ class ApiService {
 				body: JSON.stringify({})
 			});
 		} catch (error) {
-			// Properly log logout errors without accessing undefined properties
-			if (error instanceof Error) {
-				console.error('Logout backend error:', error.message);
-			} else {
-				console.error('Logout backend error:', String(error));
-			}
+			console.error('Logout error:', error instanceof Error ? error.message : String(error));
 		} finally {
 			this.clearToken();
 		}
@@ -226,50 +190,40 @@ class ApiService {
 		return response.data!;
 	}
 
-	// GitHub OAuth
 	getGitHubAuthUrl(): string {
 		return `${API_BASE_URL}/api/auth/github`;
 	}
 
-	// Google OAuth
 	getGoogleAuthUrl(): string {
 		return `${API_BASE_URL}/api/auth/google`;
 	}
 
-	// Gestion du token depuis l'URL (callback OAuth)
 	handleAuthCallback(): string | null {
 		const urlParams = new URLSearchParams(window.location.search);
 		const token = urlParams.get('token');
 		const error = urlParams.get('error');
-
 		if (token) {
 			this.setToken(token);
-			// Nettoyer l'URL
 			window.history.replaceState({}, document.title, window.location.pathname);
 			return token;
 		}
-
 		if (error) {
-			console.error('Auth callback error:', String(error));
-			// Nettoyer l'URL
+			console.error('Auth error:', error);
 			window.history.replaceState({}, document.title, window.location.pathname);
 			if (error === 'google_auth_failed') {
-				throw new Error('Erreur lors de l\'authentification Google');
+				throw new Error('Google auth failed');
 			} else if (error === 'github_auth_failed') {
-				throw new Error('Erreur lors de l\'authentification GitHub');
+				throw new Error('GitHub auth failed');
 			} else {
-				throw new Error('Erreur lors de l\'authentification');
+				throw new Error('Auth failed');
 			}
 		}
-
 		return null;
 	}
 
 	private getWebSocketUrl(): string {
-		// Use the same base URL as the API, but change http/https to ws/wss
-		const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8000';
+		const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
 		const wsUrl = apiUrl.replace(/^https?:/, window.location.protocol === 'https:' ? 'wss:' : 'ws:');
-
 		return `${wsUrl}/ws`;
 	}
 	
@@ -277,7 +231,6 @@ class ApiService {
 		return new WebSocket(this.getWebSocketUrl());
 	}
 
-	// Profile Management
 	async updateProfile(data: { display_name?: string; avatar_url?: string }): Promise<User> {
 		const response = await this.request<User>('/api/auth/profile', {
 			method: 'PUT',
@@ -314,7 +267,6 @@ class ApiService {
 		return response.data!;
 	}
 
-	// Users
 	async searchUsers(query: string, limit: number = 10): Promise<User[]> {
 		const response = await this.request<User[]>(`/api/users/search?q=${encodeURIComponent(query)}&limit=${limit}`);
 		return response.data!;
@@ -335,7 +287,6 @@ class ApiService {
 		return response.data!;
 	}
 
-	// Friends
 	async sendFriendRequest(friendId: number): Promise<{ id: number; friend_id: number; status: string }> {
 		const response = await this.request<{ id: number; friend_id: number; status: string }>('/api/friends/request', {
 			method: 'POST',
@@ -396,7 +347,6 @@ class ApiService {
 		});
 	}
 
-	// Avatars
 	async getAvatars(): Promise<Avatar[]> {
 		const response = await this.request<Avatar[]>('/api/avatars');
 		return response.data!;
@@ -413,7 +363,6 @@ class ApiService {
 	async uploadAvatar(file: File): Promise<{ avatar_url: string; filename: string }> {
 		const formData = new FormData();
 		formData.append('file', file);
-
 		const response = await this.request<{ avatar_url: string; filename: string }>('/api/avatars/upload', {
 			method: 'POST',
 			body: formData
@@ -421,8 +370,6 @@ class ApiService {
 		return response.data!;
 	}
 
-
-	// Matches
 	async recordMatch(data: {
 		player1_id?: number;
 		player2_id?: number;
@@ -462,7 +409,6 @@ class ApiService {
 		if (params?.offset) searchParams.append('offset', params.offset.toString());
 		if (params?.include_guests) searchParams.append('include_guests', params.include_guests.toString());
 		if (params?.include_stats) searchParams.append('include_stats', params.include_stats.toString());
-
 		const response = await this.request<{ data: Match[]; pagination: { limit: number; offset: number; total: number } }>(`/api/matches${searchParams.toString() ? '?' + searchParams.toString() : ''}`);
 		return response.data!;
 	}
@@ -503,7 +449,6 @@ class ApiService {
 		});
 	}
 
-	// System
 	async getHealthStatus(): Promise<{
 		status: string;
 		timestamp: string;
@@ -545,7 +490,6 @@ class ApiService {
 		});
 	}
 
-	// Game Invites
 	async sendGameInvite(receiverId: number): Promise<void> {
 		await this.request('/api/game-invites/send', {
 			method: 'POST',
@@ -565,7 +509,6 @@ class ApiService {
 		return response.data?.invites || [];
 	}
 
-	// HTTP Methods for service compatibility
 	async get<T>(endpoint: string): Promise<ApiResponse<T>> {
 		return this.request<T>(endpoint, { method: 'GET' });
 	}
@@ -587,11 +530,7 @@ class ApiService {
 	async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
 		return this.request<T>(endpoint, { method: 'DELETE' });
 	}
-
-
 }
 
 export const apiService = new ApiService();
-
-// Export also as 'api' for backward compatibility
 export const api = apiService;

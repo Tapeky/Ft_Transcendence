@@ -10,10 +10,6 @@ export const USE_VIEW_CONTROLLERS = true;
 
 export type TournamentView = 'lobby' | 'registration' | 'bracket' | 'game' | 'results';
 
-/**
- * Manages tournament view controllers and their lifecycle
- * Provides centralized view management with progressive migration support
- */
 export class TournamentViewManager {
   private controllers: Map<TournamentView, TournamentViewController> = new Map();
   private currentController: TournamentViewController | null = null;
@@ -27,9 +23,7 @@ export class TournamentViewManager {
 
   setElement(element: HTMLElement): void {
     this.element = element;
-    this.controllers.forEach(controller => {
-      controller.setElement(element);
-    });
+    this.controllers.forEach(controller => controller.setElement(element));
   }
 
   private initializeControllers(): void {
@@ -41,13 +35,11 @@ export class TournamentViewManager {
   }
 
   renderView(view: TournamentView, container: Element, state: TournamentSystemState): void {
-    if (!USE_VIEW_CONTROLLERS) {
-      return;
-    }
+    if (!USE_VIEW_CONTROLLERS) return;
 
     const controller = this.controllers.get(view);
     if (!controller) {
-      console.error(`No controller found for view: ${view}`);
+      console.error('No controller for view:', view);
       return;
     }
 
@@ -56,10 +48,7 @@ export class TournamentViewManager {
     }
 
     this.currentController = controller;
-    if (this.element) {
-      controller.setElement(this.element);
-    }
-
+    if (this.element) controller.setElement(this.element);
     controller.render(container, state);
   }
 
@@ -76,9 +65,7 @@ export class TournamentViewManager {
   }
 
   destroy(): void {
-    this.controllers.forEach(controller => {
-      controller.destroy();
-    });
+    this.controllers.forEach(controller => controller.destroy());
     this.controllers.clear();
     this.currentController = null;
   }

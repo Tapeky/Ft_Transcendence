@@ -25,30 +25,20 @@ export class LocalTournament {
   constructor() {
     this.element = this.createElement();
     this.stateManager = new TournamentStateManager();
-
-    // Initialize async components and wait for them
     this.initializationPromise = this.initializeAsync();
-
     this.setupStateSubscription();
     this.subscribeToAuth();
   }
 
   private async initializeAsync(): Promise<void> {
-    // Initialize new architecture first
     await this.initializeNewArchitecture();
-
-    // Set elements for managers after they're created
     if (this.viewManager) {
       this.viewManager.setElement(this.element);
     }
     if (this.eventManager) {
       this.eventManager.setElement(this.element);
     }
-
-    // Bind events after managers are ready
     this.bindEvents();
-
-    // Check for existing tournament
     setTimeout(() => {
       this.checkForExistingTournament();
     }, 0);
@@ -81,7 +71,7 @@ export class LocalTournament {
 
     if (tournamentId) {
       try {
-        console.log('🔄 Attempting to resume tournament:', tournamentId);
+        console.log('Resuming tournament:', tournamentId);
         await this.stateManager.resumeTournament(tournamentId);
       } catch (error) {
         console.error('Failed to resume tournament:', error);
@@ -108,13 +98,12 @@ export class LocalTournament {
     if (tournamentResultJson) {
       try {
         const result = JSON.parse(tournamentResultJson);
-        console.log('🔧 Tournament result from sessionStorage:', result);
+        console.log('Tournament result:', result);
         sessionStorage.removeItem('tournamentMatchResult');
         if (!this.currentState?.tournament) {
           await this.stateManager.loadTournament(result.tournamentId);
         }
 
-        // Submit the match result directly to the service
         const matchResult = {
           matchId: result.matchId,
           player1Score: result.player1Score,
@@ -122,7 +111,7 @@ export class LocalTournament {
           winnerAlias: result.winnerAlias
         };
 
-        console.log('🔧 Sending match result to API:', { tournamentId: result.tournamentId, matchResult });
+        console.log('Sending match result:', { tournamentId: result.tournamentId, matchResult });
         const { TournamentService } = await import('../services/TournamentService');
         await TournamentService.submitMatchResult(result.tournamentId, matchResult);
         await this.stateManager.refreshTournamentState();
@@ -218,7 +207,7 @@ export class LocalTournament {
 
   private bindEvents(): void {
     if (!this.element) {
-      console.warn('LocalTournament: Element not ready for event binding, retrying...');
+      console.warn('Element not ready for event binding, retrying...');
       setTimeout(() => {
         this.bindEvents();
       }, 100);
@@ -285,11 +274,6 @@ export class LocalTournament {
     console.warn('ViewManager not available - this should not happen with new architecture');
   }
 
-  /**
-   * Create a local tournament with the specified players.
-   * Note: This only creates and registers players, it does not start the tournament.
-   * User must manually start the tournament using the "Start Tournament" button in the registration view.
-   */
   private async createLocalTournament(name: string, maxPlayers: TournamentSize, players: string[]): Promise<void> {
     try {
       await this.stateManager.createTournament(name, maxPlayers);
@@ -328,7 +312,7 @@ export class LocalTournament {
 
     if (gameContext) {
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
-      console.log('🚀 Redirecting to game with context:', gameContext);
+      console.log('Redirecting to game with context:', gameContext);
       window.location.href = `/game?tournamentContext=${contextParam}`;
     }
   }
@@ -341,7 +325,6 @@ export class LocalTournament {
     return this.element;
   }
 
-  // Ensure initialization is complete before returning element
   async waitForInitialization(): Promise<void> {
     await this.initializationPromise;
   }

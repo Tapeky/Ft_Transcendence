@@ -1,10 +1,6 @@
 import { TournamentViewController } from './TournamentViewController';
 import { TournamentSystemState } from '../managers/TournamentStateManager';
 
-/**
- * Controller for the tournament game view
- * Handles game launch and match transitions
- */
 export class GameViewController extends TournamentViewController {
   render(container: Element, state: TournamentSystemState): void {
     const matchOrchestrator = this.stateManager.getMatchOrchestrator();
@@ -32,24 +28,19 @@ export class GameViewController extends TournamentViewController {
       </div>
     `;
 
-    // Auto-redirect to game after a short delay
     setTimeout(() => {
       this.redirectToGame(state);
     }, 3000);
   }
 
-  bindEvents(): void {
-    // No specific events needed for game view - just auto-redirect
-  }
+  bindEvents(): void {}
 
   private redirectToGame(state: TournamentSystemState): void {
     const matchOrchestrator = this.stateManager.getMatchOrchestrator();
     const gameContext = matchOrchestrator?.getCurrentGameContext();
 
     if (gameContext) {
-      // Navigate to game with tournament context
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
-      // Force page reload instead of SPA navigation to fix HTTPS routing issue
       window.location.href = `/game?tournamentContext=${contextParam}`;
     }
   }

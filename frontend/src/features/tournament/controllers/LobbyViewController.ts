@@ -2,10 +2,6 @@ import { TournamentViewController } from './TournamentViewController';
 import { TournamentSystemState } from '../managers/TournamentStateManager';
 import { TournamentSize } from '../types/tournament';
 
-/**
- * Controller for the tournament lobby view
- * Handles tournament creation and player setup
- */
 export class LobbyViewController extends TournamentViewController {
   render(container: Element, state: TournamentSystemState): void {
     container.innerHTML = `
@@ -64,7 +60,7 @@ export class LobbyViewController extends TournamentViewController {
 
   bindEvents(): void {
     if (!this.isElementReady()) {
-      console.warn('LobbyViewController: Attempting to bind events before element is ready');
+      console.warn('Element not ready');
       return;
     }
 
@@ -111,7 +107,7 @@ export class LobbyViewController extends TournamentViewController {
     const playersSelect = this.querySelector('#max-players') as HTMLSelectElement;
 
     if (!nameInput || !playersSelect) {
-      console.error('Form elements not found');
+      console.error('Form elements missing');
       return;
     }
 
@@ -121,19 +117,19 @@ export class LobbyViewController extends TournamentViewController {
     for (let i = 1; i <= maxPlayers; i++) {
       const playerInput = this.querySelector(`#player-${i}`) as HTMLInputElement;
       if (!playerInput) {
-        console.error(`Player ${i} input not found`);
+        console.error(`Player ${i} input missing`);
         return;
       }
       const playerName = playerInput.value.trim();
       if (!playerName) {
-        alert(`Please enter a name for Player ${i}`);
+        alert(`Enter name for Player ${i}`);
         return;
       }
       players.push(playerName);
     }
     const uniqueNames = new Set(players);
     if (uniqueNames.size !== players.length) {
-      alert('Player names must be unique');
+      alert('Names must be unique');
       return;
     }
 
@@ -141,16 +137,12 @@ export class LobbyViewController extends TournamentViewController {
       try {
         await this.createLocalTournament(name, maxPlayers as TournamentSize, players);
       } catch (error) {
-        console.error('Failed to create tournament:', error);
-        this.showError('Failed to create tournament. Please try again.');
+        console.error('Tournament creation failed:', error);
+        this.showError('Creation failed. Try again.');
       }
     }
   }
 
-  /**
-   * Create a local tournament with the specified players.
-   * Note: This only creates and registers players, does not start the tournament.
-   */
   private async createLocalTournament(name: string, maxPlayers: TournamentSize, players: string[]): Promise<void> {
     try {
       await this.stateManager.createTournament(name, maxPlayers);
@@ -158,7 +150,7 @@ export class LobbyViewController extends TournamentViewController {
       const tournamentId = currentState.tournament?.id;
 
       if (!tournamentId) {
-        throw new Error('Tournament ID not available after creation');
+        throw new Error('No tournament ID');
       }
       for (const playerName of players) {
         await this.stateManager.joinTournament(tournamentId, playerName);
@@ -167,20 +159,16 @@ export class LobbyViewController extends TournamentViewController {
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
-      console.log('Tournament status after creation:', currentTournament?.status);
+      console.log('Status:', currentTournament?.status);
 
-      if (!currentTournament || (
-        currentTournament.status !== 'ready' &&
-        currentTournament.status !== 'in_progress' &&
-        currentTournament.status !== 'running'
-      )) {
-        throw new Error(`Tournament cannot be started. Current status: ${currentTournament?.status || 'unknown'}`);
+      if (!currentTournament || !['ready', 'in_progress', 'running'].includes(currentTournament.status)) {
+        throw new Error(`Can't start. Status: ${currentTournament?.status || 'unknown'}`);
       }
 
-      console.log('Tournament created successfully. Navigate to registration view to start.');
+      console.log('Tournament created. Go to registration.');
 
     } catch (error) {
-      console.error('Failed to start local tournament:', error);
+      console.error('Tournament start failed:', error);
       throw error;
     }
   }

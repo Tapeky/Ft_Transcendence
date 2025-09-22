@@ -32,12 +32,11 @@ export interface Message {
 
 export interface ChatState {
   conversations: Map<number, Conversation>;
-  messages: Map<number, Message[]>; // conversation_id -> messages
+  messages: Map<number, Message[]>;
   currentConversationId: number | null;
   isConnected: boolean;
   isLoading: boolean;
 }
-
 
 export interface GameStartMessage {
   type: 'start_game';
@@ -94,7 +93,7 @@ export class ChatService {
   private reconnectDelay = 1000;
 
   private getApiUrl(endpoint: string): string {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:8000';
+    const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
     return `${API_BASE_URL}${endpoint}`;
   }
 
@@ -107,7 +106,6 @@ export class ChatService {
     return ChatService.instance;
   }
 
-
   async connect(): Promise<void> {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
@@ -119,10 +117,7 @@ export class ChatService {
       this.ws!.onopen = () => {
         this.state.isConnected = true;
         this.reconnectAttempts = 0;
-        
-        // Authentification automatique
         this.authenticateWebSocket();
-        
         this.emit('connected', null);
       };
 
@@ -131,25 +126,23 @@ export class ChatService {
           const data = JSON.parse(event.data);
           this.handleWebSocketMessage(data);
         } catch (error) {
-          console.error('❌ ChatService: Erreur parsing message:', error);
+          console.error('ChatService: Error parsing message:', error);
         }
       };
 
       this.ws!.onclose = () => {
         this.state.isConnected = false;
         this.emit('disconnected', null);
-        
-        // Tentative de reconnexion
         this.attemptReconnect();
       };
 
       this.ws!.onerror = (error) => {
-        console.error('❌ ChatService: Erreur WebSocket:', error);
+        console.error('ChatService: WebSocket error:', error);
         this.emit('error', { error });
       };
 
     } catch (error) {
-      console.error('❌ ChatService: Erreur connexion WebSocket:', error);
+      console.error('ChatService: WebSocket connection error:', error);
       throw error;
     }
   }
@@ -159,7 +152,7 @@ export class ChatService {
     
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      console.error('❌ ChatService: Pas de token pour auth WebSocket');
+      console.error('ChatService: No token for WebSocket auth');
       return;
     }
 
@@ -171,17 +164,16 @@ export class ChatService {
 
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('❌ ChatService: Max tentatives de reconnexion atteintes');
+      console.error('ChatService: Max reconnect attempts reached');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    
     setTimeout(() => {
       this.connect().catch(error => {
-        console.error('❌ ChatService: Échec reconnexion:', error);
+        console.error('ChatService: Reconnect failed:', error);
       });
     }, delay);
   }
@@ -194,17 +186,14 @@ export class ChatService {
     this.state.isConnected = false;
   }
 
-  // ============ Message Handling ============
-
   private handleWebSocketMessage(data: any): void {
-
     switch (data.type) {
       case 'auth_success':
         this.emit('authenticated', data.data);
         break;
 
       case 'auth_error':
-        console.error('❌ ChatService: Erreur authentification:', data.message);
+        console.error('ChatService: Auth error:', data.message);
         this.emit('auth_error', data);
         break;
 
@@ -217,7 +206,7 @@ export class ChatService {
         break;
 
       case 'error':
-        console.error('❌ ChatService: Erreur serveur:', data.message);
+        console.error('ChatService: Server error:', data.message);
         this.emit('error', data);
         break;
 
@@ -229,7 +218,6 @@ export class ChatService {
         this.emit('game_invite_response', data.data);
         break;
 
-      // ============ Game Messages ============
       case 'success':
         this.handleGameSuccess(data);
         break;
@@ -250,34 +238,26 @@ export class ChatService {
       case 'err_player_not_in_game':
       case 'err_game_already_ended':
       case 'err_invalid_input':
-        console.error('❌ ChatService: Game error:', data.message);
+        console.error('ChatService: Game error:', data.message);
         this.emit('game_error', { type: data.type, message: data.message });
         break;
 
       case 'pong':
-        // Heartbeat response
         break;
 
       default:
-        console.warn('⚠️ ChatService: Type de message non géré:', data.type);
+        console.warn('ChatService: Unhandled message type:', data.type);
     }
   }
 
   private handleMessageReceived(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
-    
-    // Mettre à jour la conversation
     this.state.conversations.set(conversation.id, conversation);
-    
-    // Ajouter le message
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
-
     if (!exists) {
       messages.push(message);
       this.state.messages.set(conversation.id, messages);
-      
-      // Émettre les événements
       this.emit('message_received', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
@@ -285,39 +265,28 @@ export class ChatService {
 
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
-    
-    // Mettre à jour la conversation
     this.state.conversations.set(conversation.id, conversation);
-    
-    // Ajouter le message (si pas déjà là)
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
-    
     if (!exists) {
       messages.push(message);
       this.state.messages.set(conversation.id, messages);
-      
-      // Émettre les événements
       this.emit('message_sent', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
   }
 
-  // ============ Game Message Handlers ============
-
   private handleGameSuccess(data: { data: { gameId: number } }): void {
     this.currentGameId = data.data.gameId;
     this.isInGame = true;
-    
     this.emit('game_joined', { gameId: this.currentGameId });
   }
 
   private handleGameUpdate(data: { data: GameState }): void {
     if (!this.isInGame || !this.currentGameId) {
-      console.warn('⚠️ ChatService: Received game update but not in game');
+      console.warn('ChatService: Received game update but not in game');
       return;
     }
-    
     this.gameState = data.data;
     this.emit('game_state_update', this.gameState);
   }
@@ -328,48 +297,29 @@ export class ChatService {
     playerSide: 'left' | 'right' 
   } }): void {
     const { gameId, opponent, playerSide } = data.data;
-    
-    
-    // Update internal game state
     this.currentGameId = gameId;
     this.isInGame = true;
-    
-    // Emit event for UI components
-    this.emit('game_started', {
-      gameId,
-      opponent,
-      playerSide
-    });
-    
-    // Automatically navigate to the game page
+    this.emit('game_started', { gameId, opponent, playerSide });
     router.navigate(`/game/${gameId}`).catch(error => {
-      console.error('❌ ChatService: Failed to navigate to game:', error);
-      // If navigation fails, show error to user
+      console.error('ChatService: Failed to navigate to game:', error);
       this.emit('game_navigation_error', { error, gameId });
     });
   }
 
   private handleGameEnded(data: { data: any }): void {
-    
     this.emit('game_ended', data.data);
-    
-    // Clean up game state
     this.currentGameId = null;
     this.gameState = null;
     this.isInGame = false;
   }
 
-  // ============ Public API ============
-
   async sendMessage(toUserId: number, content: string): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('WebSocket non connecté');
+      throw new Error('WebSocket not connected');
     }
-
     if (!content.trim()) {
-      throw new Error('Message vide');
+      throw new Error('Empty message');
     }
-
     this.ws.send(JSON.stringify({
       type: 'direct_message',
       toUserId: toUserId,
@@ -380,8 +330,6 @@ export class ChatService {
   async loadConversations(): Promise<Conversation[]> {
     try {
       this.state.isLoading = true;
-      
-      // Use fetch directly since apiService.request is private
       const token = localStorage.getItem('auth_token');
       const response = await fetch(this.getApiUrl('/api/chat/conversations'), {
         headers: {
@@ -389,21 +337,16 @@ export class ChatService {
           'Authorization': token ? `Bearer ${token}` : ''
         }
       });
-      
       const data = await response.json();
       const conversations = data.conversations || [];
-      
-      // Mettre à jour le state
       this.state.conversations.clear();
       conversations.forEach((conv: Conversation) => {
         this.state.conversations.set(conv.id, conv);
       });
-      
       this.emit('conversations_updated', conversations);
       return conversations;
-      
     } catch (error) {
-      console.error('❌ ChatService: Erreur chargement conversations:', error);
+      console.error('ChatService: Error loading conversations:', error);
       throw error;
     } finally {
       this.state.isLoading = false;
@@ -412,7 +355,6 @@ export class ChatService {
 
   async loadConversationMessages(conversationId: number, page: number = 1): Promise<Message[]> {
     try {
-      // Use fetch directly since apiService.request is private
       const token = localStorage.getItem('auth_token');
       const response = await fetch(this.getApiUrl(`/api/chat/conversations/${conversationId}/messages?page=${page}&limit=50`), {
         headers: {
@@ -420,26 +362,20 @@ export class ChatService {
           'Authorization': token ? `Bearer ${token}` : ''
         }
       });
-      
       const data = await response.json();
       const messages = data.messages || [];
-      
-      // Mettre à jour le state
       this.state.messages.set(conversationId, messages);
       this.state.currentConversationId = conversationId;
-      
       this.emit('messages_loaded', { conversationId, messages });
       return messages;
-      
     } catch (error) {
-      console.error('❌ ChatService: Erreur chargement messages:', error);
+      console.error('ChatService: Error loading messages:', error);
       throw error;
     }
   }
 
   async createOrGetConversation(withUserId: number): Promise<Conversation> {
     try {
-      // Use fetch directly since apiService.request is private
       const token = localStorage.getItem('auth_token');
       const response = await fetch(this.getApiUrl('/api/chat/conversations'), {
         method: 'POST',
@@ -449,28 +385,19 @@ export class ChatService {
         },
         body: JSON.stringify({ withUserId })
       });
-      
       const data = await response.json();
-      
-      // Handle different response structures
       const conversation = data.data?.conversation || data.conversation || data.data || data;
-      
       if (!conversation) {
-        throw new Error('Erreur création conversation');
+        throw new Error('Error creating conversation');
       }
-      
       this.state.conversations.set(conversation.id, conversation);
       this.emit('conversation_created', conversation);
-      
       return conversation;
-      
     } catch (error) {
-      console.error('❌ ChatService: Erreur création conversation:', error);
+      console.error('ChatService: Error creating conversation:', error);
       throw error;
     }
   }
-
-  // ============ State Getters ============
 
   getConversations(): Conversation[] {
     return Array.from(this.state.conversations.values());
@@ -492,8 +419,6 @@ export class ChatService {
     return this.state.isLoading;
   }
 
-  // ============ Event System ============
-
   on(event: string, listener: ChatEventListener): void {
     const listeners = this.listeners.get(event) || [];
     listeners.push(listener);
@@ -507,7 +432,7 @@ export class ChatService {
       listeners.splice(index, 1);
       this.listeners.set(event, listeners);
     } else {
-      console.warn(`⚠️ ChatService: Impossible de supprimer listener pour '${event}' - listener non trouvé`);
+      console.warn(`ChatService: Unable to remove listener for '${event}' - listener not found`);
     }
   }
 
@@ -517,69 +442,47 @@ export class ChatService {
       try {
         listener(data);
       } catch (error) {
-        console.error(`❌ ChatService: Erreur dans listener ${event}:`, error);
+        console.error(`ChatService: Error in listener ${event}:`, error);
       }
     });
   }
 
-  // ============ Game API ============
-
-  /**
-   * Start a new Pong game with specified opponent
-   */
   async startGame(opponentId: number): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('WebSocket non connecté');
+      throw new Error('WebSocket not connected');
     }
-
     if (this.isInGame) {
-      throw new Error('Déjà dans une partie');
+      throw new Error('Already in a game');
     }
-
-    
     this.ws.send(JSON.stringify({
       type: 'start_game',
       opponentId: opponentId
     }));
   }
 
-  /**
-   * Send player input to the current game
-   */
   sendGameInput(input: Input): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('⚠️ ChatService: Cannot send input - WebSocket not connected');
+      console.warn('ChatService: Cannot send input - WebSocket not connected');
       return;
     }
-
     if (!this.isInGame || !this.currentGameId) {
-      console.warn('⚠️ ChatService: Cannot send input - not in game');
+      console.warn('ChatService: Cannot send input - not in game');
       return;
     }
-
     this.ws.send(JSON.stringify({
       type: 'update_input',
       input: input
     }));
   }
 
-  /**
-   * Leave the current game
-   */
   leaveGame(): void {
     if (this.isInGame && this.currentGameId) {
-      
-      // Emit event for UI to handle
       this.emit('game_left', { gameId: this.currentGameId });
-      
-      // Clean up state
       this.currentGameId = null;
       this.gameState = null;
       this.isInGame = false;
     }
   }
-
-  // ============ Game State Getters ============
 
   getCurrentGameId(): number | null {
     return this.currentGameId;
@@ -592,8 +495,6 @@ export class ChatService {
   isCurrentlyInGame(): boolean {
     return this.isInGame;
   }
-
-  // ============ Utility ============
 
   getOtherUserInConversation(conversation: Conversation, currentUserId: number): {
     id: number;
@@ -632,5 +533,4 @@ export class ChatService {
   }
 }
 
-// Export singleton instance
 export const chatService = ChatService.getInstance();
