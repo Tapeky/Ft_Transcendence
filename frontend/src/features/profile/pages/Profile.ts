@@ -23,7 +23,6 @@ export class ProfilePage {
   }
 
   private createElement(): HTMLElement {
-    // Main container with React exact styling
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white';
 
@@ -32,39 +31,32 @@ export class ProfilePage {
     this.header = new Header(true);
     container.appendChild(this.header.getElement());
 
-    // Center container with React exact gradient and borders
     const centerContainer = document.createElement('div');
     centerContainer.className = 'w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4 overflow-auto';
 
-    // Header section with BackBtn (React exact)
     const headerSection = document.createElement('div');
     headerSection.className = 'text-center text-[4rem] border-b-2 w-full flex';
 
     this.backBtn = new BackBtn();
     headerSection.appendChild(this.backBtn.getElement());
 
-    // Title (React exact)
     const title = document.createElement('h1');
     title.className = 'flex-1';
     title.textContent = 'Profile';
     headerSection.appendChild(title);
 
-    // Right spacer (React exact)
     const rightSpacer = document.createElement('div');
     rightSpacer.className = 'flex-1';
     headerSection.appendChild(rightSpacer);
 
     centerContainer.appendChild(headerSection);
 
-    // Main content layout (React exact 2-columns)
     const mainContent = document.createElement('div');
     mainContent.className = 'flex m-10 flex-grow';
 
-    // Left column: User info + forms (React exact)
     const leftColumn = document.createElement('div');
     leftColumn.className = 'flex flex-col flex-[1.5] text-[2rem] gap-10';
 
-    // Username section (React exact)
     const usernameSection = document.createElement('div');
     usernameSection.className = 'flex gap-[9.5rem]';
     usernameSection.innerHTML = `
@@ -73,7 +65,6 @@ export class ProfilePage {
     `;
     leftColumn.appendChild(usernameSection);
 
-    // Display Name section (functional)
     const displayNameSection = document.createElement('div');
     displayNameSection.className = 'flex justify-between';
     displayNameSection.innerHTML = `
@@ -97,7 +88,6 @@ export class ProfilePage {
     `;
     leftColumn.appendChild(displayNameSection);
 
-    // Password section (functional)
     const passwordSection = document.createElement('div');
     passwordSection.className = 'flex justify-center';
     passwordSection.innerHTML = `
@@ -116,11 +106,10 @@ export class ProfilePage {
 
     mainContent.appendChild(leftColumn);
 
-    // Right column: Avatar (React exact)
     const rightColumn = document.createElement('div');
     rightColumn.className = 'flex-[0.5] flex justify-center relative';
     
-    // Avatar (functional with proper URL handling)
+    // Avatar
     rightColumn.innerHTML = `
       <img 
         id="profile-main-avatar"
@@ -183,7 +172,7 @@ export class ProfilePage {
       // Refresh user data
       await authManager.refreshUser();
       
-      // Update Header display name too!
+      // Update Header display name
       if (this.header) {
         this.header.refresh();
       }
@@ -207,19 +196,16 @@ export class ProfilePage {
   }
 
   private renderPasswordModal(): void {
-    // Create modal overlay
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'password-modal';
     modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
 
-    // Modal container
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
 
-    // Modal content
     const modalContent = document.createElement('div');
     modalContent.className = 'flex flex-col justify-center items-center mt-6 gap-4 px-8';
     modalContent.innerHTML = `
@@ -227,8 +213,8 @@ export class ProfilePage {
         <h2>Current password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="current-password"/>
-          <button id="toggle-current" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+          <button id="toggle-current" class="w-[50px] rounded-md ml-3 border-2 border-white text-[1rem]">
+            SHOW
           </button>
         </div>
       </div>
@@ -237,8 +223,8 @@ export class ProfilePage {
         <h2>New password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="new-password"/>
-          <button id="toggle-new" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+          <button id="toggle-new" class="w-[50px] rounded-md ml-3 border-2 border-white text-[1rem]">
+            SHOW
           </button>
         </div>
       </div>
@@ -247,8 +233,8 @@ export class ProfilePage {
         <h2>Confirm new password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="confirm-password"/>
-          <button id="toggle-confirm" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+          <button id="toggle-confirm" class="w-[50px] rounded-md ml-3 border-2 border-white text-[1rem]">
+            SHOW
           </button>
         </div>
       </div>
@@ -272,7 +258,6 @@ export class ProfilePage {
     const modal = document.getElementById('password-modal');
     if (!modal) return;
 
-    // Toggle password visibility (React exact)
     const toggles = ['current', 'new', 'confirm'];
     toggles.forEach(type => {
       const toggleBtn = modal.querySelector(`#toggle-${type}`);
@@ -281,7 +266,7 @@ export class ProfilePage {
       toggleBtn?.addEventListener('click', () => {
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          toggleBtn.textContent = input.type === 'password' ? '👁️' : '🙈';
+          toggleBtn.textContent = input.type === 'password' ? 'SHOW' : 'HIDE';
         }
       });
     });
@@ -319,7 +304,6 @@ export class ProfilePage {
     try {
       this.updatePasswordStatus('Updating password...', 'info');
       
-      // Use actual API call (React exact)
       await apiService.changePassword(currentPassword, newPassword);
       
       this.updatePasswordStatus('Password updated successfully!', 'success');
@@ -339,7 +323,6 @@ export class ProfilePage {
     modalOverlay.id = 'avatar-modal';
     modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
 
-    // Modal container
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
@@ -347,12 +330,10 @@ export class ProfilePage {
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
 
     this.avatarSelect = new AvatarSelect(() => {
-      // Avatar change callback - update main avatar
       this.updateMainAvatar();
     });
     modalContainer.appendChild(this.avatarSelect.getElement());
 
-    // Upload section (like React but with AvatarSelect above)
     const uploadSection = document.createElement('div');
     uploadSection.className = 'flex-grow flex items-center justify-center';
     uploadSection.innerHTML = `
@@ -408,7 +389,7 @@ export class ProfilePage {
       mainAvatar.src = finalUrl;
     }
     
-    // CRUCIAL: Update Header avatar too!
+    // Update Header avatar
     if (this.header) {
       this.header.refresh();
     }
@@ -420,7 +401,7 @@ export class ProfilePage {
       
       const result = await apiService.uploadAvatar(file);
       
-      // Refresh user data (React exact)
+      // Refresh user data
       await authManager.refreshUser();
       
       // Update main avatar
