@@ -47,6 +47,9 @@ export class GamePage {
     private readonly PADDLE_WIDTH = 8;
     private readonly PADDLE_HEIGHT = 80;
     private readonly BALL_RADIUS = 8;
+    private readonly INITIAL_BALL_SPEED = 4;
+    private readonly SPEED_INCREASE = 0.3;
+    private readonly MAX_BALL_SPEED = 12;
 
     constructor() {
         this.element = this.createElement();
@@ -171,7 +174,7 @@ export class GamePage {
         this.gameState = {
             leftPaddle: { pos: { x: 20, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
             rightPaddle: { pos: { x: this.ARENA_WIDTH - 28, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
-            ball: { pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, direction: { x: 4, y: 3 } },
+            ball: { pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, direction: { x: this.INITIAL_BALL_SPEED, y: 3 } },
             state: 1,
             leftScore: 0,
             rightScore: 0
@@ -279,12 +282,14 @@ export class GamePage {
             ball.pos.y >= this.gameState.leftPaddle.pos.y &&
             ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT) {
             ball.direction.x = Math.abs(ball.direction.x);
+            this.increaseBallSpeed();
             this.gameState.leftPaddle.hitCount++;
         }
         if (ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
             ball.pos.y >= this.gameState.rightPaddle.pos.y &&
             ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT) {
             ball.direction.x = -Math.abs(ball.direction.x);
+            this.increaseBallSpeed();
             this.gameState.rightPaddle.hitCount++;
         }
         if (ball.pos.x < 0) {
@@ -300,8 +305,25 @@ export class GamePage {
         if (!this.gameState) return;
         this.gameState.ball.pos.x = this.ARENA_WIDTH / 2;
         this.gameState.ball.pos.y = this.ARENA_HEIGHT / 2;
-        this.gameState.ball.direction.x = Math.random() > 0.5 ? 4 : -4;
+        this.gameState.ball.direction.x = Math.random() > 0.5 ? this.INITIAL_BALL_SPEED : -this.INITIAL_BALL_SPEED;
         this.gameState.ball.direction.y = (Math.random() - 0.5) * 6;
+    }
+
+    private increaseBallSpeed(): void {
+        if (!this.gameState) return;
+        const ball = this.gameState.ball;
+        
+        // Calculate current speed
+        const currentSpeedX = Math.abs(ball.direction.x);
+        const currentSpeedY = Math.abs(ball.direction.y);
+        
+        // Increase speed but cap at maximum
+        const newSpeedX = Math.min(currentSpeedX + this.SPEED_INCREASE, this.MAX_BALL_SPEED);
+        const newSpeedY = Math.min(currentSpeedY + this.SPEED_INCREASE, this.MAX_BALL_SPEED);
+        
+        // Maintain direction while increasing speed
+        ball.direction.x = ball.direction.x > 0 ? newSpeedX : -newSpeedX;
+        ball.direction.y = ball.direction.y > 0 ? newSpeedY : -newSpeedY;
     }
 
     private setupKeyboardListeners(): void {
@@ -594,3 +616,4 @@ export class GamePage {
         this.element.remove();
     }
 }
+
