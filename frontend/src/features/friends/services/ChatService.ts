@@ -91,6 +91,7 @@ export class ChatService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+  private syncInterval: number | null = null;
 
   private getApiUrl(endpoint: string): string {
     const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
@@ -104,6 +105,12 @@ export class ChatService {
       ChatService.instance = new ChatService();
     }
     return ChatService.instance;
+  }
+
+  static async createAndInitialize(): Promise<ChatService> {
+    const instance = ChatService.getInstance();
+    await instance.initialize();
+    return instance;
   }
 
   async connect(): Promise<void> {
@@ -126,7 +133,7 @@ export class ChatService {
           const data = JSON.parse(event.data);
           this.handleWebSocketMessage(data);
         } catch (error) {
-          console.error('ChatService: Error parsing message:', error);
+          console.error('Error parsing message:', error);
         }
       };
 
@@ -137,12 +144,12 @@ export class ChatService {
       };
 
       this.ws!.onerror = (error) => {
-        console.error('ChatService: WebSocket error:', error);
+        console.error('WebSocket error:', error);
         this.emit('error', { error });
       };
 
     } catch (error) {
-      console.error('ChatService: WebSocket connection error:', error);
+      console.error('WebSocket connection error:', error);
       throw error;
     }
   }
@@ -152,7 +159,7 @@ export class ChatService {
     
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      console.error('ChatService: No token for WebSocket auth');
+      console.error('No token for WebSocket auth');
       return;
     }
 
@@ -164,7 +171,7 @@ export class ChatService {
 
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('ChatService: Max reconnect attempts reached');
+      console.error('Max reconnect attempts reached');
       return;
     }
 
@@ -173,7 +180,7 @@ export class ChatService {
     
     setTimeout(() => {
       this.connect().catch(error => {
-        console.error('ChatService: Reconnect failed:', error);
+        console.error('Reconnect failed:', error);
       });
     }, delay);
   }
@@ -184,16 +191,21 @@ export class ChatService {
       this.ws = null;
     }
     this.state.isConnected = false;
+    this.stopPeriodicSync();
   }
 
   private handleWebSocketMessage(data: any): void {
     switch (data.type) {
       case 'auth_success':
         this.emit('authenticated', data.data);
+        this.syncWithServer().catch(error => {
+          console.error('Error syncing with server after auth:', error);
+        });
+        this.startPeriodicSync();
         break;
 
       case 'auth_error':
-        console.error('ChatService: Auth error:', data.message);
+        console.error('Auth error:', data.message);
         this.emit('auth_error', data);
         break;
 
@@ -206,7 +218,7 @@ export class ChatService {
         break;
 
       case 'error':
-        console.error('ChatService: Server error:', data.message);
+        console.error('Server error:', data.message);
         this.emit('error', data);
         break;
 
@@ -238,7 +250,7 @@ export class ChatService {
       case 'err_player_not_in_game':
       case 'err_game_already_ended':
       case 'err_invalid_input':
-        console.error('ChatService: Game error:', data.message);
+        console.error('Game error:', data.message);
         this.emit('game_error', { type: data.type, message: data.message });
         break;
 
@@ -246,18 +258,25 @@ export class ChatService {
         break;
 
       default:
-        console.warn('ChatService: Unhandled message type:', data.type);
+        console.warn('Unhandled message type:', data.type);
     }
   }
 
   private handleMessageReceived(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
+    
     this.state.conversations.set(conversation.id, conversation);
+    
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
     if (!exists) {
-      messages.push(message);
-      this.state.messages.set(conversation.id, messages);
+      const newMessages = [...messages, message].sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      this.state.messages.set(conversation.id, newMessages);
+      
+      this.saveToLocalStorage();
+      
       this.emit('message_received', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
@@ -265,12 +284,19 @@ export class ChatService {
 
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
+    
     this.state.conversations.set(conversation.id, conversation);
+    
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
     if (!exists) {
-      messages.push(message);
-      this.state.messages.set(conversation.id, messages);
+      const newMessages = [...messages, message].sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      this.state.messages.set(conversation.id, newMessages);
+      
+      this.saveToLocalStorage();
+      
       this.emit('message_sent', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
@@ -284,7 +310,7 @@ export class ChatService {
 
   private handleGameUpdate(data: { data: GameState }): void {
     if (!this.isInGame || !this.currentGameId) {
-      console.warn('ChatService: Received game update but not in game');
+      console.warn('Received game update but not in game');
       return;
     }
     this.gameState = data.data;
@@ -301,7 +327,7 @@ export class ChatService {
     this.isInGame = true;
     this.emit('game_started', { gameId, opponent, playerSide });
     router.navigate(`/game/${gameId}`).catch(error => {
-      console.error('ChatService: Failed to navigate to game:', error);
+      console.error('Failed to navigate to game:', error);
       this.emit('game_navigation_error', { error, gameId });
     });
   }
@@ -343,10 +369,11 @@ export class ChatService {
       conversations.forEach((conv: Conversation) => {
         this.state.conversations.set(conv.id, conv);
       });
+      this.saveToLocalStorage();
       this.emit('conversations_updated', conversations);
       return conversations;
     } catch (error) {
-      console.error('ChatService: Error loading conversations:', error);
+      console.error('Error loading conversations:', error);
       throw error;
     } finally {
       this.state.isLoading = false;
@@ -363,13 +390,21 @@ export class ChatService {
         }
       });
       const data = await response.json();
-      const messages = data.messages || [];
-      this.state.messages.set(conversationId, messages);
+      const serverMessages = data.messages || [];
+      
+      const existingMessages = this.state.messages.get(conversationId) || [];
+      const mergedMessages = this.mergeMessages(existingMessages, serverMessages);
+      
+      this.state.messages.set(conversationId, mergedMessages);
       this.state.currentConversationId = conversationId;
-      this.emit('messages_loaded', { conversationId, messages });
-      return messages;
+      
+      this.saveToLocalStorage();
+      
+      this.emit('messages_loaded', { conversationId, messages: mergedMessages });
+      
+      return mergedMessages;
     } catch (error) {
-      console.error('ChatService: Error loading messages:', error);
+      console.error('Error loading messages:', error);
       throw error;
     }
   }
@@ -391,10 +426,11 @@ export class ChatService {
         throw new Error('Error creating conversation');
       }
       this.state.conversations.set(conversation.id, conversation);
+      this.saveToLocalStorage();
       this.emit('conversation_created', conversation);
       return conversation;
     } catch (error) {
-      console.error('ChatService: Error creating conversation:', error);
+      console.error('Error creating conversation:', error);
       throw error;
     }
   }
@@ -432,7 +468,7 @@ export class ChatService {
       listeners.splice(index, 1);
       this.listeners.set(event, listeners);
     } else {
-      console.warn(`ChatService: Unable to remove listener for '${event}' - listener not found`);
+      console.warn(`Unable to remove listener for '${event}' - listener not found`);
     }
   }
 
@@ -442,7 +478,7 @@ export class ChatService {
       try {
         listener(data);
       } catch (error) {
-        console.error(`ChatService: Error in listener ${event}:`, error);
+        console.error(`Error in listener ${event}:`, error);
       }
     });
   }
@@ -462,11 +498,11 @@ export class ChatService {
 
   sendGameInput(input: Input): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('ChatService: Cannot send input - WebSocket not connected');
+      console.warn('Cannot send input - WebSocket not connected');
       return;
     }
     if (!this.isInGame || !this.currentGameId) {
-      console.warn('ChatService: Cannot send input - not in game');
+      console.warn('Cannot send input - not in game');
       return;
     }
     this.ws.send(JSON.stringify({
@@ -497,7 +533,6 @@ export class ChatService {
   }
 
   formatMessageTime(timestamp: string): string {
-    // Time display removed - always return empty string
     return '';
   }
 
@@ -521,7 +556,134 @@ export class ChatService {
     }
   }
 
+  private saveToLocalStorage(): void {
+    try {
+      const conversationsArray = Array.from(this.state.conversations.entries());
+      const messagesArray = Array.from(this.state.messages.entries());
+      
+      localStorage.setItem('chat_conversations', JSON.stringify(conversationsArray));
+      localStorage.setItem('chat_messages', JSON.stringify(messagesArray));
+      localStorage.setItem('chat_current_conversation', this.state.currentConversationId?.toString() || '');
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }
 
+  private mergeMessages(existingMessages: Message[], newMessages: Message[]): Message[] {
+    const messageMap = new Map<number, Message>();
+    
+    existingMessages.forEach(msg => messageMap.set(msg.id, msg));
+    
+    newMessages.forEach(msg => messageMap.set(msg.id, msg));
+    
+    return Array.from(messageMap.values()).sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }
+
+  async initialize(): Promise<void> {
+    try {
+      if (this.state.isConnected) {
+        await this.syncWithServer();
+      } else {
+        this.loadFromLocalStorage();
+        this.restoreState();
+      }
+    } catch (error) {
+      console.error('Error during initialization:', error);
+      this.loadFromLocalStorage();
+      this.restoreState();
+    }
+  }
+
+  private loadFromLocalStorage(): void {
+    try {
+      const conversationsData = localStorage.getItem('chat_conversations');
+      const messagesData = localStorage.getItem('chat_messages');
+      const currentConversationData = localStorage.getItem('chat_current_conversation');
+
+      if (conversationsData) {
+        const conversationsArray = JSON.parse(conversationsData);
+        this.state.conversations = new Map(conversationsArray);
+      }
+
+      if (messagesData) {
+        const messagesArray = JSON.parse(messagesData);
+        this.state.messages = new Map(messagesArray);
+      }
+
+      if (currentConversationData && currentConversationData !== '') {
+        this.state.currentConversationId = parseInt(currentConversationData);
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+    }
+  }
+
+  private async syncWithServer(): Promise<void> {
+    try {
+      this.loadFromLocalStorage();
+      
+      await this.loadConversations();
+      
+      if (this.state.currentConversationId) {
+        await this.loadConversationMessages(this.state.currentConversationId);
+      }
+      
+      this.restoreState();
+    } catch (error) {
+      console.error('Error syncing with server:', error);
+      this.restoreState();
+    }
+  }
+
+  async refreshMessages(conversationId?: number): Promise<void> {
+    try {
+      await this.loadConversations();
+      
+      if (conversationId) {
+        await this.loadConversationMessages(conversationId);
+      } else if (this.state.currentConversationId) {
+        await this.loadConversationMessages(this.state.currentConversationId);
+      }
+    } catch (error) {
+      console.error('Error refreshing messages:', error);
+      throw error;
+    }
+  }
+
+  startPeriodicSync(): void {
+    this.stopPeriodicSync();
+    
+    this.syncInterval = window.setInterval(() => {
+      if (this.state.isConnected && this.state.currentConversationId) {
+        this.refreshMessages(this.state.currentConversationId).catch(error => {
+          console.error('Error in periodic sync:', error);
+        });
+      }
+    }, 30000);
+  }
+
+  stopPeriodicSync(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+  }
+
+  restoreState(): void {
+    if (this.state.conversations.size > 0) {
+      this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+    }
+    
+    if (this.state.currentConversationId && this.state.messages.has(this.state.currentConversationId)) {
+      const messages = this.state.messages.get(this.state.currentConversationId) || [];
+      this.emit('messages_loaded', { 
+        conversationId: this.state.currentConversationId, 
+        messages 
+      });
+    }
+  }
 }
 
 export const chatService = ChatService.getInstance();
