@@ -39,7 +39,6 @@ export class TournamentHistory {
   }
 
   private async clearHistory(): Promise<void> {
-    // Confirmation dialog
     const confirmationHTML = `
       <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-8 text-center text-gray-800 max-w-md w-[90%] shadow-2xl border-2 border-gray-200">
@@ -58,7 +57,6 @@ export class TournamentHistory {
       </div>
     `;
 
-    // Add confirmation modal to DOM
     const confirmationEl = document.createElement('div');
     confirmationEl.innerHTML = confirmationHTML;
     document.body.appendChild(confirmationEl);
@@ -74,17 +72,14 @@ export class TournamentHistory {
       confirmBtn?.addEventListener('click', async () => {
         cleanup();
         try {
-          // Show loading state
           this.isLoading = true;
           this.updateLoadingState();
 
           const result = await TournamentService.clearHistory();
-          console.log(`✅ ${result.message} - ${result.deletedCount} tournois supprimés`);
+          console.log('History cleared:', result);
           
-          // Reload the tournaments list
           await this.loadTournaments();
           
-          // Show success message briefly
           this.showMessage('✅ Historique supprimé avec succès !', 'success');
           
           resolve();
@@ -100,7 +95,6 @@ export class TournamentHistory {
         resolve();
       });
 
-      // Close on overlay click
       const overlay = confirmationEl.firstElementChild as HTMLElement;
       overlay?.addEventListener('click', (e) => {
         if (e.target === overlay) {
@@ -119,7 +113,6 @@ export class TournamentHistory {
 
     document.body.appendChild(messageEl);
 
-    // Auto-remove after 3 seconds
     setTimeout(() => {
       if (messageEl.parentNode) {
         messageEl.style.animation = 'fadeOut 0.3s ease';
@@ -136,15 +129,13 @@ export class TournamentHistory {
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
-    this.header = new Header(true); // userVisible = true
+    this.header = new Header(true);
     this.banner = new Banner();
 
-    // Main content area
     const mainContent = document.createElement('div');
     mainContent.className = 'tournament-history-main flex-grow bg-gradient-to-r from-blue-800 to-red-700';
     mainContent.id = 'tournament-content';
 
-    // Assemble the page (matching Menu.ts structure)
     container.appendChild(this.header.getElement());
     container.appendChild(this.banner.getElement());
     container.appendChild(mainContent);
@@ -153,14 +144,12 @@ export class TournamentHistory {
   }
 
   private subscribeToAuth(): void {
-    // Subscribe to auth changes like Menu page
     this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
         router.navigate('/');
       }
     });
 
-    // Initial verification
     if (!authManager.isAuthenticated() || !authManager.getCurrentUser()) {
       router.navigate('/');
     }
@@ -211,7 +200,6 @@ export class TournamentHistory {
     if (this.tournaments.length === 0) {
       mainContent.innerHTML = `
         <div class="p-8 max-w-6xl mx-auto">
-          <!-- Header Section -->
           <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
             <h1 class="text-5xl font-bold text-white text-shadow-lg">📊 Historique des Tournois</h1>
             <button id="back-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105">
@@ -219,7 +207,6 @@ export class TournamentHistory {
             </button>
           </div>
           
-          <!-- Empty State -->
           <div class="flex items-center justify-center min-h-[400px] text-white">
             <div class="text-center bg-white/10 rounded-2xl p-12 backdrop-blur-sm border border-white/20">
               <h2 class="text-6xl mb-6">🏆</h2>
@@ -235,11 +222,9 @@ export class TournamentHistory {
     } else {
       mainContent.innerHTML = `
         <div class="p-8 max-w-6xl mx-auto">
-          <!-- Header Section -->
           <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
             <h1 class="text-5xl font-bold text-white">📊 Historique des Tournois</h1>
             
-            <!-- Stats -->
             <div class="flex gap-4">
               <span class="bg-white/20 px-4 py-2 rounded-full text-white font-bold backdrop-blur-sm">
                 Total: ${this.tournaments.length}
@@ -249,7 +234,6 @@ export class TournamentHistory {
               </span>
             </div>
             
-            <!-- Actions -->
             <div class="flex gap-3">
               <button id="clear-history-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition duration-300 transform hover:scale-105">
                 🗑️ Supprimer l'historique
@@ -260,7 +244,6 @@ export class TournamentHistory {
             </div>
           </div>
           
-          <!-- Tournaments Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             ${this.tournaments.map(tournament => this.renderTournamentCard(tournament)).join('')}
           </div>
@@ -280,7 +263,6 @@ export class TournamentHistory {
     return `
       <div class="bg-gradient-to-br from-purple-900 to-blue-800 rounded-2xl p-6 border-2 border-white/20 backdrop-blur-sm cursor-pointer transition duration-300 transform hover:scale-105 hover:shadow-2xl text-white" data-tournament-id="${tournament.id}">
         
-        <!-- Card Header -->
         <div class="flex justify-between items-start mb-4 gap-3">
           <h3 class="text-xl font-bold text-white flex-1">${tournament.name}</h3>
           <span class="px-3 py-1 rounded-full text-sm font-bold bg-black/20 whitespace-nowrap ${statusColorClass}">
@@ -288,7 +270,6 @@ export class TournamentHistory {
           </span>
         </div>
         
-        <!-- Tournament Info -->
         <div class="space-y-3 mb-4">
           <div class="flex justify-between items-center">
             <span class="font-bold text-white/90">👥 Joueurs:</span>
@@ -363,17 +344,6 @@ export class TournamentHistory {
     }
   }
 
-  private getStatusColor(status: string): string {
-    switch (status) {
-      case 'completed': return '#28a745';
-      case 'in_progress': case 'running': return '#007bff';
-      case 'ready': return '#ffc107';
-      case 'registration': return '#17a2b8';
-      case 'cancelled': return '#dc3545';
-      default: return '#6c757d';
-    }
-  }
-
   private getStatusColorClass(status: string): string {
     switch (status) {
       case 'completed': return 'text-green-300';
@@ -401,7 +371,6 @@ export class TournamentHistory {
     const mainContent = this.element.querySelector('#tournament-content');
     if (!mainContent) return;
 
-    // Back button
     const backBtn = mainContent.querySelector('#back-btn') as HTMLButtonElement;
     if (backBtn) {
       backBtn.addEventListener('click', () => {
@@ -409,7 +378,6 @@ export class TournamentHistory {
       });
     }
 
-    // Clear history button
     const clearBtn = mainContent.querySelector('#clear-history-btn') as HTMLButtonElement;
     if (clearBtn) {
       clearBtn.addEventListener('click', async () => {
@@ -421,7 +389,6 @@ export class TournamentHistory {
       });
     }
 
-    // Create tournament button
     const createBtn = mainContent.querySelector('#create-tournament-btn') as HTMLButtonElement;
     if (createBtn) {
       createBtn.addEventListener('click', () => {
@@ -429,26 +396,22 @@ export class TournamentHistory {
       });
     }
 
-    // Resume tournament buttons
     const resumeBtns = mainContent.querySelectorAll('.resume-tournament-btn');
     resumeBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         const tournamentId = btn.getAttribute('data-tournament-id');
         if (tournamentId) {
-          // Navigate to tournament page with ID to resume
           router.navigate(`/tournament?id=${tournamentId}`);
         }
       });
     });
 
-    // Tournament cards click to view details (only for completed tournaments)
     const tournamentCards = mainContent.querySelectorAll('[data-tournament-id]');
     tournamentCards.forEach(card => {
       card.addEventListener('click', () => {
         const tournamentId = card.getAttribute('data-tournament-id');
         if (tournamentId) {
-          // Only allow viewing details for completed tournaments
           const tournament = this.tournaments.find(t => t.id === tournamentId);
           if (tournament && tournament.status === 'completed') {
             router.navigate(`/tournament?id=${tournamentId}`);
@@ -458,29 +421,23 @@ export class TournamentHistory {
     });
   }
 
-  // Removed old CSS styles - now using Tailwind classes
-
   public getElement(): HTMLElement {
     return this.element;
   }
 
   public destroy(): void {
-    // Clean up Header component
     if (this.header) {
       this.header.destroy();
     }
     
-    // Clean up Banner component
     if (this.banner) {
       this.banner.destroy();
     }
 
-    // Unsubscribe from auth
     if (this.authUnsubscribe) {
       this.authUnsubscribe();
     }
     
-    // Remove element
     if (this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
     }

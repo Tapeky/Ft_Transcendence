@@ -7,7 +7,6 @@ const path = require('path');
 const dbPath = path.join(__dirname, '..', 'db', 'ft_transcendence.db');
 const db = new Database(dbPath);
 
-console.log('🗑️  Clearing all tournament data...');
 
 try {
     // Start transaction

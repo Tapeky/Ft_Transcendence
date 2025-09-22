@@ -44,13 +44,8 @@ export class NotFoundPage {
     const homeButton = this.element.querySelector('#home-btn');
     const testButton = this.element.querySelector('#test-btn');
 
-    homeButton?.addEventListener('click', () => {
-        router.navigate('/');
-    });
-
-    testButton?.addEventListener('click', () => {
-        router.navigate('/test');
-    });
+    homeButton?.addEventListener('click', () => router.navigate('/'));
+    testButton?.addEventListener('click', () => router.navigate('/test'));
   }
 
   getElement(): HTMLElement {
@@ -58,7 +53,6 @@ export class NotFoundPage {
   }
 
   destroy(): void {
-    // Nettoyer les event listeners si nécessaire
     this.element.remove();
   }
 }

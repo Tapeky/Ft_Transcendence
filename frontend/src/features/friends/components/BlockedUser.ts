@@ -1,9 +1,6 @@
 import { apiService } from '../../../shared/services/api';
 import { getAvatarUrl } from '../../../shared/utils/avatar';
 
-// BlockedUser - Reproduction exacte de la version React
-// Avatar + Username + Unblock button avec dismiss behavior
-
 export interface BlockedUserProps {
   username: string;
   avatar: string | undefined;
@@ -19,7 +16,6 @@ export class BlockedUser {
     this.props = props;
     this.element = this.createElement();
     this.bindEvents();
-    
   }
 
   private createElement(): HTMLElement {
@@ -27,16 +23,11 @@ export class BlockedUser {
     container.className = `${this.isVisible ? 'block' : 'hidden'} border-white border-2 min-h-[120px] w-[260px] flex bg-pink-800 text-[1.2rem] mt-4 overflow-hidden mx-2`;
 
     container.innerHTML = `
-      <!-- Avatar Section -->
       <div class="flex items-center justify-center min-w-[120px]">
         <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
       </div>
-
-      <!-- Content Section -->
       <div class="flex flex-col">
         <h2 class="mt-2 flex-grow">${this.props.username}</h2>
-        
-        <!-- Unblock Button -->
         <button id="unblock-btn" class="border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
           <img src="/src/img/unblock.svg" alt="unblock" />
         </button>
@@ -48,27 +39,21 @@ export class BlockedUser {
 
   private bindEvents(): void {
     const unblockBtn = this.element.querySelector('#unblock-btn');
-
-    // Unblock button click
     unblockBtn?.addEventListener('click', () => this.unblock());
-
   }
 
   private async unblock(): Promise<void> {
     try {
       await apiService.unblockUser(this.props.id);
       this.dismiss();
-
     } catch (error) {
-      console.error('❌ BlockedUser: Failed to unblock user:', error);
+      console.error('Failed to unblock user:', error);
     }
   }
 
   private dismiss(): void {
-    // React behavior: setVisible(false) - hide the item
     this.isVisible = false;
     this.updateVisibility();
-
   }
 
   private updateVisibility(): void {
@@ -81,11 +66,8 @@ export class BlockedUser {
     }
   }
 
-  // Public method to update props (if needed)
   public updateProps(newProps: Partial<BlockedUserProps>): void {
     this.props = { ...this.props, ...newProps };
-    
-    // Re-render with new props
     const newElement = this.createElement();
     this.element.parentNode?.replaceChild(newElement, this.element);
     this.element = newElement;

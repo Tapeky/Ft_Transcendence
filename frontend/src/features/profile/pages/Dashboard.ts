@@ -3,243 +3,226 @@ import { BackBtn } from '../../../shared/components/BackBtn';
 import { apiService, User, Match } from '../../../shared/services/api';
 import { appState } from '../../../core/state/AppState';
 
-
 export class Dashboard {
-  private container: HTMLElement;
-  private player: User | null = null;
-  private matches: Match[] = [];
-  private loading = true;
-  private playerId: string;
-  private header: Header | null = null;
-  private backBtn: BackBtn | null = null;
+	private container: HTMLElement;
+	private player: User | null = null;
+	private matches: Match[] = [];
+	private loading = true;
+	private playerId: string;
+	private header: Header | null = null;
+	private backBtn: BackBtn | null = null;
 
-  constructor(container: HTMLElement, playerId: string) {
-    this.container = container;
-    this.playerId = playerId;
-    this.init();
-  }
+	constructor(container: HTMLElement, playerId: string) {
+		this.container = container;
+		this.playerId = playerId;
+		this.init();
+	}
 
-  private async init() {
-    const state = appState.getState();
+	private async init() {
+		const state = appState.getState();
 
-    if (state.loading) {
-      // Afficher un état de chargement pendant l'initialisation
-      this.showLoadingState();
-      
-      // Attendre la fin de l'initialisation
-      await this.waitForAuthInitialization();
-    }
+		if (state.loading) {
+			this.showLoadingState();
+			await this.waitForAuthInitialization();
+		}
 
-    // Vérifier l'authentification APRÈS initialisation
-    const finalState = appState.getState();
+		const finalState = appState.getState();
 
-    if (!finalState.isAuthenticated || !finalState.user) {
-      appState.router?.navigate('/');
-      return;
-    }
+		if (!finalState.isAuthenticated || !finalState.user) {
+			appState.router?.navigate('/');
+			return;
+		}
 
-    // Success;
+		await Promise.all([
+			this.loadPlayer(),
+			this.loadMatches()
+		]);
 
-    // Charger les données
-    await Promise.all([
-      this.loadPlayer(),
-      this.loadMatches()
-    ]);
+		this.loading = false;
+		this.render();
+	}
 
-    this.loading = false;
-    this.render();
-  }
+	private async waitForAuthInitialization(): Promise<void> {
+		return new Promise((resolve) => {
+			if (!appState.getState().loading) {
+				resolve();
+				return;
+			}
 
-  private async waitForAuthInitialization(): Promise<void> {
-    return new Promise((resolve) => {
-      // Si déjà initialisé, résoudre immédiatement
-      if (!appState.getState().loading) {
-        resolve();
-        return;
-      }
+			const unsubscribe = appState.subscribe((state) => {
+				if (!state.loading) {
+					unsubscribe();
+					resolve();
+				}
+			});
+		});
+	}
 
-      // Sinon, attendre le changement d'état
-      const unsubscribe = appState.subscribe((state) => {
-        if (!state.loading) {
-          unsubscribe();
-          resolve();
-        }
-      });
-    });
-  }
+	private showLoadingState(): void {
+		this.container.innerHTML = `
+			<div class="min-h-screen bg-blue-900 text-white flex items-center justify-center">
+				<div class="text-4xl font-iceland">
+					Loading Dashboard...
+				</div>
+			</div>
+		`;
+	}
 
-  private showLoadingState(): void {
-    this.container.innerHTML = `
-      <div class="min-h-screen bg-blue-900 text-white flex items-center justify-center">
-        <div class="text-4xl font-iceland">
-          Loading Dashboard...
-        </div>
-      </div>
-    `;
-  }
+	private async loadPlayer() {
+		try {
+			this.player = await apiService.getUserById(Number(this.playerId));
+		} catch (error) {
+			console.error('Error loading player:', error);
+		}
+	}
 
-  private async loadPlayer() {
-    try {
-      this.player = await apiService.getUserById(Number(this.playerId));
-    } catch (error) {
-      console.error('Error loading player:', error);
-    }
-  }
+	private async loadMatches() {
+		try {
+			if (this.playerId) {
+				const response = await apiService.getMatches({
+					player_id: Number(this.playerId),
+					include_guests: true
+				});
+				this.matches = Array.isArray(response) ? response : response.data;
+			} else {
+				console.warn('No playerId provided for loadMatches');
+			}
+		} catch (error) {
+			console.error('Error loading matches:', error);
+			this.matches = [];
+		}
+	}
 
-  private async loadMatches() {
-    try {
-      if (this.playerId) {
-        console.log('🔄 Loading matches for player ID:', this.playerId);
-        const response = await apiService.getMatches({
-          player_id: Number(this.playerId),
-          include_guests: true
-        });
-        console.log('📡 API response:', response);
-        this.matches = Array.isArray(response) ? response : response.data;
-        console.log('✅ Matches loaded:', this.matches?.length || 0, 'matches');
-        if (this.matches?.length > 0) {
-          console.log('🎮 First match sample:', this.matches[0]);
-        }
-      } else {
-        console.warn('⚠️ No playerId provided for loadMatches');
-      }
-    } catch (error) {
-      console.error('❌ Error loading matches:', error);
-      this.matches = [];
-    }
-  }
+	private getPlayerStats(matches?: any[]) {
+		const totalGames = this.player?.total_games || 0;
+		const wins = this.player?.total_wins || 0;
+		const losses = this.player?.total_losses || 0;
 
-  private getPlayerStats(matches?: any[]) {
-    const totalGames = this.player?.total_games || 0;
-    const wins = this.player?.total_wins || 0;
-    const losses = this.player?.total_losses || 0;
+		return {
+			winRate: totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0',
+			avgScore: this.calculateAverageScore(matches),
+			bestScore: this.getBestScore(matches),
+			recentForm: this.getRecentForm(matches)
+		};
+	}
 
-    return {
-      winRate: totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0',
-      avgScore: this.calculateAverageScore(matches),
-      bestScore: this.getBestScore(matches),
-      recentForm: this.getRecentForm(matches)
-    };
-  }
+	private calculateAverageScore(matches?: any[]): string {
+		const matchesToUse = matches || this.matches || [];
+		if (matchesToUse.length === 0) return '0';
 
-  private calculateAverageScore(matches?: any[]): string {
-    const matchesToUse = matches || this.matches || [];
-    if (matchesToUse.length === 0) return '0';
+		const currentUsername = appState.getState().user?.username;
+		const scores = matchesToUse.map(match =>
+			match.player1_username === currentUsername ? match.player1_score : match.player2_score
+		);
 
-    const currentUsername = appState.getState().user?.username;
-    const scores = matchesToUse.map(match =>
-      match.player1_username === currentUsername ? match.player1_score : match.player2_score
-    );
+		const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+		return average.toFixed(1);
+	}
 
-    const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    return average.toFixed(1);
-  }
+	private getBestScore(matches?: any[]): number {
+		const matchesToUse = matches || this.matches || [];
+		if (matchesToUse.length === 0) return 0;
 
-  private getBestScore(matches?: any[]): number {
-    const matchesToUse = matches || this.matches || [];
-    if (matchesToUse.length === 0) return 0;
+		const currentUsername = appState.getState().user?.username;
+		const scores = matchesToUse.map(match =>
+			match.player1_username === currentUsername ? match.player1_score : match.player2_score
+		);
 
-    const currentUsername = appState.getState().user?.username;
-    const scores = matchesToUse.map(match =>
-      match.player1_username === currentUsername ? match.player1_score : match.player2_score
-    );
+		return Math.max(...scores);
+	}
 
-    return Math.max(...scores);
-  }
+	private getRecentForm(matches?: any[]): string {
+		const matchesToUse = matches || this.matches || [];
+		if (matchesToUse.length === 0) return 'N/A';
 
-  private getRecentForm(matches?: any[]): string {
-    const matchesToUse = matches || this.matches || [];
-    if (matchesToUse.length === 0) return 'N/A';
+		const currentUser = appState.getState().user;
+		const recentMatches = matchesToUse.slice(-5);
 
-    const currentUser = appState.getState().user;
-    const recentMatches = matchesToUse.slice(-5);
+		const results = recentMatches.map(match =>
+			match.winner_id === currentUser?.id ? 'W' : 'L'
+		);
 
-    const results = recentMatches.map(match =>
-      match.winner_id === currentUser?.id ? 'W' : 'L'
-    );
+		return results.join('');
+	}
 
-    return results.join('');
-  }
+	private renderAdvancedStats(): string {
+		const stats = this.getPlayerStats();
 
-  private renderAdvancedStats(): string {
-    const stats = this.getPlayerStats();
+		return `
+			<div class="grid grid-cols-2 gap-4 text-[1.8rem] px-4">
+				<div class="text-center">
+					<div class="text-yellow-300">Win Rate</div>
+					<div class="text-[2rem] font-bold">${stats.winRate}%</div>
+				</div>
+				<div class="text-center">
+					<div class="text-blue-300">Avg Score</div>
+					<div class="text-[2rem] font-bold">${stats.avgScore}</div>
+				</div>
+				<div class="text-center">
+					<div class="text-green-300">Best Score</div>
+					<div class="text-[2rem] font-bold">${stats.bestScore}</div>
+				</div>
+				<div class="text-center">
+					<div class="text-purple-300">Recent Form</div>
+					<div class="text-[2rem] font-bold tracking-wider">${stats.recentForm}</div>
+				</div>
+			</div>
+		`;
+	}
 
-    return `
-      <div class="grid grid-cols-2 gap-4 text-[1.8rem] px-4">
-        <div class="text-center">
-          <div class="text-yellow-300">Win Rate</div>
-          <div class="text-[2rem] font-bold">${stats.winRate}%</div>
-        </div>
-        <div class="text-center">
-          <div class="text-blue-300">Avg Score</div>
-          <div class="text-[2rem] font-bold">${stats.avgScore}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-green-300">Best Score</div>
-          <div class="text-[2rem] font-bold">${stats.bestScore}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-purple-300">Recent Form</div>
-          <div class="text-[2rem] font-bold tracking-wider">${stats.recentForm}</div>
-        </div>
-      </div>
-    `;
-  }
+	private render() {
+		if (this.loading) {
+			this.container.innerHTML = `
+				<div class="bg-purple-800 text-white text-3xl min-h-screen flex items-center justify-center">
+					Loading...
+				</div>
+			`;
+			return;
+		}
 
-  private render() {
-    if (this.loading) {
-      this.container.innerHTML = `
-        <div class="bg-purple-800 text-white text-3xl min-h-screen flex items-center justify-center">
-          Loading...
-        </div>
-      `;
-      return;
-    }
+		const state = appState.getState();
+		if (!state.isAuthenticated || !state.user) {
+			this.container.innerHTML = '';
+			return;
+		}
 
-    // Vérifier à nouveau l'auth après loading
-    const state = appState.getState();
-    if (!state.isAuthenticated || !state.user) {
-      this.container.innerHTML = '';
-      return;
-    }
-
-    this.container.innerHTML = `
-      <div class="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white">
-        <div id="header-container"></div>
-        
-        <div class="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4">
-          <div class="text-center text-[4rem] border-b-2 w-full flex">
-            <div id="back-btn-container" class="flex-1"></div>
-            <h1 class="flex-1">${this.player?.username || 'Unknown'}'s <br /> Dashboard</h1>
-            
+		this.container.innerHTML = `
+			<div class="min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white">
+				<div id="header-container"></div>
+				
+				<div class="w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4">
+					<div class="text-center text-[4rem] border-b-2 w-full flex">
+						<div id="back-btn-container" class="flex-1"></div>
+						<h1 class="flex-1">${this.player?.username || 'Unknown'}'s <br /> Dashboard</h1>
+						
 			<div class="flex-1 flex items-center justify-center">
 				<button id="graph-toggle" class="border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[120px] flex items-center justify-center text-[3rem]">
 					More
 				</button>
 			</div>
 
-          </div>
+					</div>
 
-          <div class="flex flex-col mt-6 mx-10 flex-grow text-white text-[3rem]">
-            <div class="border-b-2 pb-6 border-dashed mb-10">
-              <h3 class="text-center text-[2.5rem]">Games played : ${this.player?.total_games || 0}</h3>
-              <ul class="flex justify-evenly text-[2.2rem] mb-4">
-                <li>Wins : ${this.player?.total_wins || 0}</li>
-                <li>Losses : ${this.player?.total_losses || 0}</li>
-              </ul>
-              ${this.renderAdvancedStats()}
-            </div>
-            
-            <div class="flex flex-col gap-2 items-center">
-              <h3 class="border-b-2 border-white">Match history</h3>
-              <div id="matches-container">
-                ${this.renderMatches()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+					<div class="flex flex-col mt-6 mx-10 flex-grow text-white text-[3rem]">
+						<div class="border-b-2 pb-6 border-dashed mb-10">
+							<h3 class="text-center text-[2.5rem]">Games played : ${this.player?.total_games || 0}</h3>
+							<ul class="flex justify-evenly text-[2.2rem] mb-4">
+								<li>Wins : ${this.player?.total_wins || 0}</li>
+								<li>Losses : ${this.player?.total_losses || 0}</li>
+							</ul>
+							${this.renderAdvancedStats()}
+						</div>
+						
+						<div class="flex flex-col gap-2 items-center">
+							<h3 class="border-b-2 border-white">Match history</h3>
+							<div id="matches-container">
+								${this.renderMatches()}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
 
 	const modalHTML = `
 	<div id="graph-modal" class="hidden fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen justify-center items-center text-white font-iceland">
@@ -263,92 +246,89 @@ export class Dashboard {
 
 	this.container.insertAdjacentHTML('beforeend', modalHTML);
 
-    // Initialiser les composants
-    this.initializeComponents();
-  }
+		this.initializeComponents();
+	}
 
-  private renderMatches(): string {
-    if (!this.matches || this.matches.length === 0) {
-      return '<div class="text-white text-3xl">Nothing to see here</div>';
-    }
+	private renderMatches(): string {
+		if (!this.matches || this.matches.length === 0) {
+			return '<div class="text-white text-3xl">Nothing to see here</div>';
+		}
 
-    return this.matches.map(match => this.renderMatchRecap(match)).join('');
-  }
+		return this.matches.map(match => this.renderMatchRecap(match)).join('');
+	}
 
-  private renderMatchRecap(match: Match): string {
-    const state = appState.getState();
-    const currentUser = state.user;
-    const victory = match.winner_id === currentUser?.id;
+	private renderMatchRecap(match: Match): string {
+		const state = appState.getState();
+		const currentUser = state.user;
+		const victory = match.winner_id === currentUser?.id;
 
-    return `
-      <div class="${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-[800px] border-2 
-        self-center cursor-pointer hover:scale-105 transition duration-300 text-[2rem] p-4 flex mb-4"
-        data-match-id="${match.id}">
-        
-        <div class="flex-1">
-          <h1 class="text-[3rem]">${victory ? "Victory" : "Defeat"}</h1>
-          <h2>${match.created_at}</h2>
-        </div>
+		return `
+			<div class="${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-[800px] border-2 
+				self-center cursor-pointer hover:scale-105 transition duration-300 text-[2rem] p-4 flex mb-4"
+				data-match-id="${match.id}">
+				
+				<div class="flex-1">
+					<h1 class="text-[3rem]">${victory ? "Victory" : "Defeat"}</h1>
+					<h2>${match.created_at}</h2>
+				</div>
 
-        <div class="flex-[2] flex items-center justify-center">
-          <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
-            <img src="${this.getAvatarUrl(match.player1_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
-            <h1>${match.player1_username || match.player1_guest_name || 'Unknown'}</h1>
-            ${match.player1_username && match.player1_username !== currentUser?.username ? `
-              <button 
-                data-invite-username="${match.player1_username}"
-                class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
-                🎮 Rematch
-              </button>
-            ` : ''}
-          </div>
+				<div class="flex-[2] flex items-center justify-center">
+					<div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
+						<img src="${this.getAvatarUrl(match.player1_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
+						<h1>${match.player1_username || match.player1_guest_name || 'Unknown'}</h1>
+						${match.player1_username && match.player1_username !== currentUser?.username ? `
+							<button 
+								data-invite-username="${match.player1_username}"
+								class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
+								🎮 Rematch
+							</button>
+						` : ''}
+					</div>
 
-          <h1 class="flex-1 text-center text-[4rem]">${match.player1_score} - ${match.player2_score}</h1>
-          
-          <div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
-            <img src="${this.getAvatarUrl(match.player2_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
-            <h1>${match.player2_username || match.player2_guest_name || 'Unknown'}</h1>
-            ${match.player2_username && match.player2_username !== currentUser?.username ? `
-              <button 
-                data-invite-username="${match.player2_username}"
-                class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
-                🎮 Rematch
-              </button>
-            ` : ''}
-          </div>
-        </div>
-      </div>
-    `;
-  }
+					<h1 class="flex-1 text-center text-[4rem]">${match.player1_score} - ${match.player2_score}</h1>
+					
+					<div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
+						<img src="${this.getAvatarUrl(match.player2_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
+						<h1>${match.player2_username || match.player2_guest_name || 'Unknown'}</h1>
+						${match.player2_username && match.player2_username !== currentUser?.username ? `
+							<button 
+								data-invite-username="${match.player2_username}"
+								class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
+								🎮 Rematch
+							</button>
+						` : ''}
+					</div>
+				</div>
+			</div>
+		`;
+	}
 
-  private getAvatarUrl(avatarUrl: string | null | undefined): string {
-    const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4';
-    
-    if (!avatarUrl || avatarUrl.trim() === '') {
-      return DEFAULT_AVATAR_URL;
-    }
-    
-    if (avatarUrl.startsWith('/uploads/')) {
-      return `https://localhost:8000${avatarUrl}`;
-    }
-    
-    return avatarUrl;
-  }
+	private getAvatarUrl(avatarUrl: string | null | undefined): string {
+		const DEFAULT_AVATAR_URL = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4';
+		
+		if (!avatarUrl || avatarUrl.trim() === '') {
+			return DEFAULT_AVATAR_URL;
+		}
+		
+		if (avatarUrl.startsWith('/uploads/')) {
+			return `https://localhost:8000${avatarUrl}`;
+		}
+		
+		return avatarUrl;
+	}
 
-  private initializeComponents() {
-    // Initialiser Header
-    const headerContainer = this.container.querySelector('#header-container') as HTMLElement;
-    if (headerContainer) {
-      this.header = new Header(true);
-      headerContainer.appendChild(this.header.getElement());
-    }
+	private initializeComponents() {
+		const headerContainer = this.container.querySelector('#header-container') as HTMLElement;
+		if (headerContainer) {
+			this.header = new Header(true);
+			headerContainer.appendChild(this.header.getElement());
+		}
 
-    // Initialiser BackBtn
-    const backBtnContainer = this.container.querySelector('#back-btn-container') as HTMLElement;
-    if (backBtnContainer) {
-      this.backBtn = new BackBtn();
-      backBtnContainer.appendChild(this.backBtn.getElement());
-    }
+		const backBtnContainer = this.container.querySelector('#back-btn-container') as HTMLElement;
+		if (backBtnContainer) {
+			this.backBtn = new BackBtn();
+			backBtnContainer.appendChild(this.backBtn.getElement());
+		}
 
 	const graphBtn = this.container.querySelector('#graph-toggle');
 	const modal = this.container.querySelector('#graph-modal');
@@ -368,63 +348,60 @@ export class Dashboard {
 }
 
 
-    // Ajouter les event listeners pour les matches
-    this.addMatchEventListeners();
-  }
+		this.addMatchEventListeners();
+	}
 
-  private addMatchEventListeners() {
-    const matchElements = this.container.querySelectorAll('[data-match-id]');
-    matchElements.forEach(element => {
-      element.addEventListener('click', (e) => {
-        const matchId = (e.currentTarget as HTMLElement).dataset.matchId;
-        if (matchId) {
-          this.showMatchStats(Number(matchId));
-        }
-      });
-    });
-  }
+	private addMatchEventListeners() {
+		const matchElements = this.container.querySelectorAll('[data-match-id]');
+		matchElements.forEach(element => {
+			element.addEventListener('click', (e) => {
+				const matchId = (e.currentTarget as HTMLElement).dataset.matchId;
+				if (matchId) {
+					this.showMatchStats(Number(matchId));
+				}
+			});
+		});
+	}
 
-  private async showMatchStats(matchId: number) {
-    // Créer le modal de statistiques
-    const modal = document.createElement('div');
-    modal.className = 'fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen flex justify-center items-center text-white';
-    modal.innerHTML = `
-      <div class="flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 w-[1000px] h-[600px] border-[5px] border-black text-[3rem] box-border font-iceland select-none">
-        <div class="text-center p-4">Loading match statistics...</div>
-      </div>
-    `;
+	private async showMatchStats(matchId: number) {
+		const modal = document.createElement('div');
+		modal.className = 'fixed top-0 left-0 bg-white z-40 bg-opacity-20 w-screen h-screen flex justify-center items-center text-white';
+		modal.innerHTML = `
+			<div class="flex flex-col bg-gradient-to-b from-pink-800 to-purple-600 w-[1000px] h-[600px] border-[5px] border-black text-[3rem] box-border font-iceland select-none">
+				<div class="text-center p-4">Loading match statistics...</div>
+			</div>
+		`;
 
-    document.body.appendChild(modal);
+		document.body.appendChild(modal);
 
-    try {
-      const matchDetails = await apiService.getMatchById(matchId);
-      this.renderMatchStatsModal(modal, matchDetails);
-    } catch (error) {
-      console.error('Error loading match stats:', error);
-      modal.querySelector('div')!.innerHTML = `
-        <div class="text-center p-4">Error loading stats</div>
-        <button class="match-stats-close bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Close</button>
-      `;
-    }
+		try {
+			const matchDetails = await apiService.getMatchById(matchId);
+			this.renderMatchStatsModal(modal, matchDetails);
+		} catch (error) {
+			console.error('Error loading match stats:', error);
+			modal.querySelector('div')!.innerHTML = `
+				<div class="text-center p-4">Error loading stats</div>
+				<button class="match-stats-close bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Close</button>
+			`;
+		}
 
-    // Ajouter event listener pour fermer
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal || (e.target as HTMLElement).classList.contains('match-stats-close')) {
-        document.body.removeChild(modal);
-      }
-    });
-  }
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal || (e.target as HTMLElement).classList.contains('match-stats-close')) {
+				document.body.removeChild(modal);
+			}
+		});
+	}
 
-  private renderMatchStatsModal(modal: HTMLElement, matchDetails: any) {
-    const modalContent = modal.querySelector('div') as HTMLElement;
-    modalContent.innerHTML = `
+	private renderMatchStatsModal(modal: HTMLElement, matchDetails: any) {
+		const modalContent = modal.querySelector('div') as HTMLElement;
+		modalContent.innerHTML = `
 
 	<div class="flex justify-end">
 		<button class='match-stats-close border-[2px] px-4 hover:scale-110 rounded-md bg-blue-800 h-[50px] w-[50px] mt-2 mr-2 flex items-center z-50 text-[2rem]'>
 			X
 		</button>
 	</div>
-      
+			
 	<div class="flex flex-col items-center border-collapse m-2">
 		<div class="flex w-full text-center gap-10">
 		<div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-start">
@@ -462,27 +439,20 @@ export class Dashboard {
 }
 
 	private async renderGraphs() {
-		console.log('🔍 renderGraphs called');
-
-		// Charger les données fraîches directement
-		let matches = [];
+		let matches: Match[] = [];
 		try {
 			const response = await apiService.getMatches({
 				player_id: Number(this.playerId),
 				include_guests: true
 			});
 			matches = Array.isArray(response) ? response : response.data || [];
-			console.log('✅ Fresh matches loaded for modal:', matches.length, 'matches');
 		} catch (error) {
-			console.error('❌ Failed to load matches for modal:', error);
+			console.error('Failed to load matches for modal:', error);
 		}
 
-		// Guard against undefined or empty matches
 		if (!matches || matches.length === 0) {
 			const left = this.container.querySelector('#graph-left');
 			const right = this.container.querySelector('#graph-right');
-
-			console.log('⚠️ No data - Left element:', !!left, 'Right element:', !!right);
 
 			const noDataMessage = this.generateBarChart([], 'No match data');
 			if (left) left.innerHTML = noDataMessage;
@@ -490,24 +460,19 @@ export class Dashboard {
 			return;
 		}
 
-		// Prendre les 5 derniers matchs
 		const lastMatches = matches.slice(-5);
 		const currentUser = appState.getState().user;
 
-		// Extraire les scores du joueur actuel
 		const scores = lastMatches.map(match => {
 			return match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
 		});
 
-		// Extraire les résultats (victoire/défaite) pour le winrate
 		const results = lastMatches.map(match => {
 			return match.winner_id === currentUser?.id ? 1 : 0;
 		});
 
 		const left = this.container.querySelector('#graph-left');
 		const right = this.container.querySelector('#graph-right');
-
-		console.log('📈 Rendering stats - Left element:', !!left, 'Right element:', !!right);
 
 		if (left)
 			left.innerHTML = this.generateBarChart(scores, 'Last scores');
@@ -526,7 +491,6 @@ export class Dashboard {
 			<div class="h-full p-4 flex flex-col">
 				<h3 class="text-center text-[2.5rem] mb-6 border-b-2 pb-2">Performance Analytics</h3>
 
-				<!-- Win Rate Circular Progress -->
 				<div class="mb-6">
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Win Rate</h4>
 					<div class="flex justify-center items-center">
@@ -545,7 +509,6 @@ export class Dashboard {
 					</div>
 				</div>
 
-				<!-- Score Distribution Chart -->
 				<div class="mb-6">
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Analysis</h4>
 					<div class="space-y-2">
@@ -570,7 +533,6 @@ export class Dashboard {
 					</div>
 				</div>
 
-				<!-- Games Distribution -->
 				<div>
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Games Distribution</h4>
 					<div class="space-y-3">
@@ -595,7 +557,6 @@ export class Dashboard {
 					</div>
 				</div>
 
-				<!-- Recent Form -->
 				<div class="mt-4">
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Form</h4>
 					<div class="flex justify-center space-x-2">
@@ -618,7 +579,6 @@ export class Dashboard {
 		const currentUser = appState.getState().user;
 		const recentMatches = matchesToUse.slice(-10);
 
-		// Calculer les données pour le graphique en ligne
 		const matchResults = recentMatches.map((match, index) => {
 			const isWin = match.winner_id === currentUser?.id;
 			const playerScore = match.player1_username === currentUser?.username ? match.player1_score : match.player2_score;
@@ -632,11 +592,9 @@ export class Dashboard {
 			<div class="h-full p-4 flex flex-col">
 				<h3 class="text-center text-[2.5rem] mb-4 border-b-2 pb-2">Match Progression</h3>
 
-				<!-- Score Trend Chart -->
 				<div class="mb-6">
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Evolution</h4>
 					<div class="bg-gray-800 rounded p-4 relative" style="height: ${chartHeight}px;">
-						<!-- Grid lines -->
 						${Array.from({length: 5}, (_, i) => {
 							const y = (chartHeight - 40) * i / 4 + 20;
 							const value = Math.round(maxScore * (4 - i) / 4);
@@ -646,7 +604,6 @@ export class Dashboard {
 							`;
 						}).join('')}
 						
-						<!-- Chart line -->
 						<svg class="absolute top-5 left-8 right-2 bottom-5" style="width: calc(100% - 40px); height: ${chartHeight - 40}px;">
 							<polyline
 								fill="none"
@@ -658,7 +615,6 @@ export class Dashboard {
 									return `${x}%,${y}%`;
 								}).join(' ')}"
 							/>
-							<!-- Data points -->
 							${matchResults.map((result, i) => {
 								const x = (i / Math.max(matchResults.length - 1, 1)) * 100;
 								const y = 100 - (result.score / maxScore * 100);
@@ -677,7 +633,6 @@ export class Dashboard {
 					</div>
 				</div>
 
-				<!-- Win/Loss Timeline -->
 				<div>
 					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Results</h4>
 					<div class="space-y-2 max-h-40 overflow-y-auto">
@@ -689,7 +644,6 @@ export class Dashboard {
 								(match.player2_username || match.player2_guest_name) :
 								(match.player1_username || match.player1_guest_name);
 
-							// Date formatting
 							const date = new Date(match.created_at);
 							const timeAgo = this.getTimeAgo(date);
 
@@ -739,7 +693,6 @@ export class Dashboard {
 		const currentUser = appState.getState().user;
 		let streak = 0;
 
-		// Parcourir les matchs du plus récent au plus ancien
 		for (let i = this.matches.length - 1; i >= 0; i--) {
 			if (this.matches[i].winner_id === currentUser?.id) {
 				streak++;
@@ -752,7 +705,6 @@ export class Dashboard {
 	}
 
 	private generateBarChart(data: number[], title: string): string {
-		// Handle empty data array
 		if (!data || data.length === 0) {
 			return `
 				<svg viewBox="0 0 600 250" class="w-full h-full">
@@ -784,7 +736,6 @@ export class Dashboard {
 	}
 
 	private generateWinrate(data: number[], title: string): string {
-		// Handle empty data array
 		if (!data || data.length === 0) {
 			return `
 				<svg viewBox="0 0 600 250" class="w-full h-full">
@@ -821,19 +772,13 @@ export class Dashboard {
 		`;
 	}
 
-
-
-
-
 	async refreshData() {
 		try {
-			// Recharger les données utilisateur et matchs
 			await Promise.all([
 				this.loadPlayer(),
 				this.loadMatches()
 			]);
 
-			// Re-render pour afficher les nouvelles données
 			this.render();
 
 			console.log('Dashboard data refreshed successfully');

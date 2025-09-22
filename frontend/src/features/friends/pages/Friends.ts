@@ -118,11 +118,6 @@ export class FriendsPage {
     return container;
   }
 
-  private setupEventListeners(): void {
-    // This method is now unused - events are bound in createElement()
-    // Keeping for potential future use or additional event handling
-  }
-
   public getElement(): HTMLElement {
     return this.element;
   }

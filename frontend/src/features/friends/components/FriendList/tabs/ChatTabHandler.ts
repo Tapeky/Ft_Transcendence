@@ -3,7 +3,6 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
-import { gameInviteService } from '../../../../invitations/services/GameInviteService';
 
 export class ChatTabHandler {
   private container: Element;
@@ -12,7 +11,6 @@ export class ChatTabHandler {
   private chatFriendsList?: ChatFriendsList;
   private onRefresh?: () => void;
   
-  // ✅ Event handler for messages updates
   private messagesUpdatedHandler?: (data: { conversationId: number; messages: any[] }) => void;
 
   constructor(config: TabHandlerConfig, chatManager: ChatManager) {
@@ -24,10 +22,8 @@ export class ChatTabHandler {
   async initialize(): Promise<void> {
     await this.chatManager.initialize();
     
-    // ✅ Setup event listener for message updates
     this.messagesUpdatedHandler = (data) => {
       
-      // If we're in conversation view and it's the right conversation
       const chatState = this.chatManager.getState();
       if (chatState.chatView === 'conversation' && this.chatConversation) {
         this.chatConversation.updateMessages(data.messages);
@@ -52,20 +48,16 @@ export class ChatTabHandler {
   private async renderChatFriendsList(): Promise<void> {
     this.container.innerHTML = '';
 
-    // Clean up existing chat friends list
     if (this.chatFriendsList) {
       this.chatFriendsList.destroy();
     }
 
     try {
-      // Fetch friends for chat
       const friends = await apiService.getFriends();
 
-      // Create new ChatFriendsList component
       this.chatFriendsList = new ChatFriendsList({
         friends: friends,
-        onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend),
-        onGameInvite: (friend: Friend) => this.sendGameInviteToFriend(friend)
+        onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend)
       });
 
       this.container.appendChild(this.chatFriendsList.getElement());
@@ -83,12 +75,10 @@ export class ChatTabHandler {
       return;
     }
 
-    // Clean up existing chat conversation
     if (this.chatConversation) {
       this.chatConversation.destroy();
     }
 
-    // Create new ChatConversation component
     this.chatConversation = new ChatConversation({
       conversation: chatState.currentConversation,
       currentUser: this.chatManager.getCurrentUser(),
@@ -112,32 +102,9 @@ export class ChatTabHandler {
 
     try {
       await this.chatManager.openConversation(friend.id);
-      await this.renderChatContent(); // Re-render to show conversation
+      await this.renderChatContent();
     } catch (error) {
       console.error('❌ Error opening chat with friend:', error);
-    }
-  }
-
-  private async sendGameInviteToFriend(friend: Friend): Promise<void> {
-    if (!friend?.id || !friend?.username) {
-      console.error('❌ Invalid friend data for game invite');
-      return;
-    }
-
-    try {
-      // Vérifier que le service KISS est connecté
-      if (!gameInviteService.isConnected()) {
-        console.error('❌ KISS service not connected');
-        alert('Service d\'invitations non connecté. Veuillez rafraîchir la page.');
-        return;
-      }
-      
-      // Send game invite via KISS system
-      gameInviteService.sendInvite(friend.id);
-      alert(`✈️ Game invite sent to ${friend.username}!`);
-    } catch (error) {
-      console.error('❌ Error sending KISS game invite:', error);
-      alert(`Failed to send invitation to ${friend.username}`);
     }
   }
 
@@ -149,7 +116,6 @@ export class ChatTabHandler {
     this.container.appendChild(errorDiv);
   }
 
-  // Method called when messages are received/sent to update the current view
   updateMessages(): void {
     const chatState = this.chatManager.getState();
     
@@ -159,9 +125,7 @@ export class ChatTabHandler {
   }
 
   async refresh(): Promise<void> {
-    // Refresh current view
     await this.renderChatContent();
-    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   switchToFriendsView(): void {
@@ -174,7 +138,6 @@ export class ChatTabHandler {
   }
 
   destroy(): void {
-    // ✅ Clean up event listener
     if (this.messagesUpdatedHandler) {
       this.chatManager.off('messages_updated', this.messagesUpdatedHandler);
       this.messagesUpdatedHandler = undefined;
@@ -189,7 +152,5 @@ export class ChatTabHandler {
       this.chatFriendsList.destroy();
       this.chatFriendsList = undefined;
     }
-
-    // Note: ChatManager is destroyed by the main modal, not here
   }
 }

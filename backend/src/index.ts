@@ -41,16 +41,14 @@ const server = Fastify({
 
 async function start() {
   try {
-    // 1. Configuration de la base de données
-    // Connecting to database...
+    // Database setup
     const dbManager = DatabaseManager.getInstance();
     const dbPath = path.join(process.env.DB_PATH || './db', process.env.DB_NAME || 'ft_transcendence.db');
     await dbManager.connect(dbPath);
     await dbManager.initialize();
     await dbManager.cleanupExpiredTokens();
     
-    // 2. Plugins Fastify
-    // Configuring plugins...
+    // Register plugins
     
     // CORS
     const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
@@ -86,17 +84,14 @@ async function start() {
       prefix: '/uploads/'
     });
     
-    // 3. Middleware global
-    // Configuring middleware...
+    // Setup middleware
     setupMiddleware(server);
     
-    // 4. WebSocket handlers
-    // Configuring WebSockets...
+    // WebSocket setup
     const wsManager = setupWebSocket(server);
     (server as any).websocketManager = wsManager;
     
-    // 5. Routes
-    // Configuring routes...
+    // Register routes
     setupRoutes(server);
     
     // 6. Routes de santé et monitoring
@@ -167,12 +162,11 @@ async function start() {
       });
     });
     
-    // 8. Démarrage du serveur
+    // Start server
     await server.listen({ port: PORT, host: HOST });
     const protocol = ENABLE_HTTPS ? 'https' : 'http';
     const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
     
-    // Server started successfully - logging only for development
     if (NODE_ENV === 'development') {
       console.log(`
 🚀 Serveur ft_transcendence démarré !
@@ -221,15 +215,11 @@ async function start() {
 }
 
 async function gracefulShutdown(signal: string) {
-  // Graceful shutdown signal received
-  
   try {
     await server.close();
     await DatabaseManager.getInstance().close();
-    // Server shutdown completed
     process.exit(0);
   } catch (error) {
-    // Shutdown error
     process.exit(1);
   }
 }

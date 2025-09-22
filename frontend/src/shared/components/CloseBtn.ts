@@ -1,6 +1,3 @@
-// CloseBtn - Reproduction exacte de la version React
-// Bouton X pour fermer les modals avec style exact
-
 export class CloseBtn {
   private element: HTMLElement;
   private onClose: () => void;
@@ -25,11 +22,7 @@ export class CloseBtn {
       </button>
     `;
 
-    const closeBtn = container.querySelector('#close-btn');
-    closeBtn?.addEventListener('click', () => {
-      this.onClose();
-    });
-
+    container.querySelector('#close-btn')?.addEventListener('click', this.onClose);
     return container;
   }
 

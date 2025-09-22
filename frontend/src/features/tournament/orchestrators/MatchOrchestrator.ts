@@ -14,8 +14,8 @@ export interface GameResult {
   player1Score: number;
   player2Score: number;
   winnerAlias: string;
-  duration?: number; // in seconds
-  gameData?: any; // Additional game-specific data
+  duration?: number;
+  gameData?: any;
 }
 
 export class MatchOrchestrator {
@@ -34,9 +34,6 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Subscribe to match state changes
-   */
   subscribe(listener: (state: MatchState) => void): () => void {
     this.listeners.push(listener);
     return () => {
@@ -47,24 +44,15 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Get current match state
-   */
   getState(): MatchState {
     return { ...this.state };
   }
 
-  /**
-   * Update state and notify listeners
-   */
   private updateState(updates: Partial<MatchState>): void {
     this.state = { ...this.state, ...updates };
     this.listeners.forEach(listener => listener(this.getState()));
   }
 
-  /**
-   * Load next match to be played
-   */
   async loadNextMatch(): Promise<TournamentMatch | null> {
     this.updateState({ isLoading: true, error: null });
 
@@ -80,7 +68,6 @@ export class MatchOrchestrator {
         return null;
       }
 
-      // Convert API response to TournamentMatch format
       const nextMatch: TournamentMatch = {
         id: nextMatchData.id,
         tournamentId: nextMatchData.tournamentId,
@@ -113,9 +100,6 @@ export class MatchOrchestrator {
     }
   }
 
-  /**
-   * Start the current match (launch game)
-   */
   async startMatch(): Promise<TournamentGameContext> {
     if (!this.state.currentMatch) {
       throw new Error('No match loaded');
@@ -142,9 +126,6 @@ export class MatchOrchestrator {
     }
   }
 
-  /**
-   * Complete current match with game result
-   */
   async completeMatch(result: GameResult): Promise<void> {
     if (!this.state.currentMatch) {
       throw new Error('No match loaded');
@@ -155,10 +136,8 @@ export class MatchOrchestrator {
     }
 
     try {
-      // Validate result
       this.validateGameResult(result, this.state.currentMatch);
 
-      // Submit result to backend
       await TournamentService.submitMatchResult(this.tournamentId, {
         matchId: this.state.currentMatch.id,
         player1Score: result.player1Score,
@@ -166,7 +145,6 @@ export class MatchOrchestrator {
         winnerAlias: result.winnerAlias
       });
 
-      // Update local state
       const completedMatch: TournamentMatch = {
         ...this.state.currentMatch,
         player1Score: result.player1Score,
@@ -190,9 +168,6 @@ export class MatchOrchestrator {
     }
   }
 
-  /**
-   * Cancel current match in progress
-   */
   async cancelMatch(): Promise<void> {
     if (!this.state.isGameActive) {
       throw new Error('No match in progress to cancel');
@@ -205,9 +180,6 @@ export class MatchOrchestrator {
     });
   }
 
-  /**
-   * Get match statistics for UI display
-   */
   getMatchStatistics(): {
     player1: { alias: string; score: number };
     player2: { alias: string; score: number };
@@ -237,9 +209,6 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Create game context for tournament integration
-   */
   private createGameContext(match: TournamentMatch): TournamentGameContext {
     return {
       tournamentId: this.tournamentId,
@@ -251,30 +220,21 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Helper method to safely convert date strings to Date objects
-   */
   private parseDate(dateString: string | Date | undefined): Date | undefined {
     if (!dateString) return undefined;
     if (dateString instanceof Date) return dateString;
     return new Date(dateString);
   }
 
-  /**
-   * Validate game result before submission
-   */
   private validateGameResult(result: GameResult, match: TournamentMatch): void {
-    // Validate scores are non-negative
     if (result.player1Score < 0 || result.player2Score < 0) {
       throw new Error('Scores cannot be negative');
     }
 
-    // Validate winner is one of the players
     if (result.winnerAlias !== match.player1Alias && result.winnerAlias !== match.player2Alias) {
       throw new Error('Winner must be one of the match players');
     }
 
-    // Validate winner has higher score
     const winnerScore = result.winnerAlias === match.player1Alias 
       ? result.player1Score 
       : result.player2Score;
@@ -286,9 +246,8 @@ export class MatchOrchestrator {
       throw new Error('Winner must have higher score than loser');
     }
 
-    // Validate scores make sense for Pong (allow higher scores for testing)
     const maxScore = Math.max(result.player1Score, result.player2Score);
-    if (maxScore > 50) { // More reasonable upper limit for testing
+    if (maxScore > 50) {
       throw new Error('Scores seem unreasonably high');
     }
 
@@ -297,16 +256,10 @@ export class MatchOrchestrator {
     }
   }
 
-  /**
-   * Get current game context
-   */
   getCurrentGameContext(): TournamentGameContext | null {
     return this.state.gameContext;
   }
 
-  /**
-   * Check if match orchestrator is ready to start a match
-   */
   isReadyToStart(): boolean {
     return !!(this.state.currentMatch && 
               !this.state.isGameActive && 
@@ -314,16 +267,10 @@ export class MatchOrchestrator {
               (this.state.currentMatch.status === 'in_progress' || this.state.currentMatch.status === 'pending'));
   }
 
-  /**
-   * Check if match is currently active
-   */
   isMatchActive(): boolean {
     return this.state.isGameActive;
   }
 
-  /**
-   * Get current match info for UI
-   */
   getCurrentMatchInfo(): {
     round: number;
     matchNumber: number;
@@ -345,11 +292,7 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Get round name for display
-   */
   private getRoundName(round: number): string {
-    // Enhanced to work with different tournament sizes
     switch (round) {
       case 1: return 'First Round';
       case 2: return 'Second Round';
@@ -359,16 +302,10 @@ export class MatchOrchestrator {
     }
   }
 
-  /**
-   * Clear error state
-   */
   clearError(): void {
     this.updateState({ error: null });
   }
 
-  /**
-   * Reset orchestrator state
-   */
   reset(): void {
     this.updateState({
       currentMatch: null,
@@ -379,28 +316,20 @@ export class MatchOrchestrator {
     });
   }
 
-  /**
-   * Prepare for next match after completion
-   */
   async prepareNextMatch(): Promise<TournamentMatch | null> {
     if (this.state.isGameActive) {
       throw new Error('Cannot prepare next match while current match is active');
     }
 
-    // Reset current state
     this.updateState({
       currentMatch: null,
       gameContext: null,
       error: null
     });
 
-    // Load next match
     return await this.loadNextMatch();
   }
 
-  /**
-   * Get match result from completed match
-   */
   getLastMatchResult(): {
     player1Score: number;
     player2Score: number;
@@ -422,9 +351,6 @@ export class MatchOrchestrator {
     };
   }
 
-  /**
-   * Static helper to create game result from Pong game
-   */
   static createGameResult(
     player1Alias: string,
     player2Alias: string,

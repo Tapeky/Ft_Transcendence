@@ -27,11 +27,9 @@ export class ChatConversation {
     this.bindEvents();
     
     if (options.messages && options.messages.length > 0) {
-      // Use provided messages from parent
       this.renderMessages();
       this.scrollToBottom();
     } else {
-      // Fall back to loading messages if none provided
       this.loadMessages();
     }
   }
@@ -41,16 +39,13 @@ export class ChatConversation {
     container.className = 'flex flex-col w-full h-full';
     
     container.innerHTML = `
-      <!-- Bouton retour vers la liste des amis -->
       <div class="bg-gray-700 p-2 border-b border-gray-600">
         <button id="back-to-friends" class="text-white text-sm hover:text-blue-400 flex items-center gap-2">
           ← Back to Friends
         </button>
       </div>
       
-      <!-- Messages Area -->
       <div class="flex-1 flex flex-col bg-gray-900">
-        <!-- Header de la conversation -->
         <div id="chat-header" class="bg-gray-700 p-2 border-b border-gray-600 text-white text-sm">
           <div class="flex items-center gap-2">
             <div class="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs">
@@ -60,12 +55,10 @@ export class ChatConversation {
           </div>
         </div>
         
-        <!-- Messages -->
         <div id="messages-container" class="flex-1 overflow-y-auto p-2">
           <div id="messages-list" class="space-y-2"></div>
         </div>
         
-        <!-- Input de message -->
         <div id="message-input-area" class="bg-gray-700 p-2 border-t border-gray-600">
           <div class="flex gap-2">
             <input id="message-input" type="text" placeholder="Type a message..." 
@@ -82,11 +75,9 @@ export class ChatConversation {
   }
 
   private bindEvents(): void {
-    // Back button
     const backBtn = this.element.querySelector('#back-to-friends');
     backBtn?.addEventListener('click', this.onBack);
 
-    // Send message functionality
     const messageInput = this.element.querySelector('#message-input') as HTMLInputElement;
     const sendBtn = this.element.querySelector('#send-btn');
     
@@ -113,7 +104,7 @@ export class ChatConversation {
       this.renderMessages();
       this.scrollToBottom();
     } catch (error) {
-      console.error('❌ Error loading messages:', error);
+      console.error('Error loading messages:', error);
     }
   }
 
@@ -140,12 +131,9 @@ export class ChatConversation {
   private async sendMessage(content: string): Promise<void> {
     try {
       const otherUser = this.getOtherUser();
-      
-      // Pas d'affichage optimiste - attendre la confirmation serveur
       await chatService.sendMessage(otherUser.id, content);
-      
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      console.error('Error sending message:', error);
     }
   }
 
@@ -164,21 +152,16 @@ export class ChatConversation {
     return chatService.getOtherUserInConversation(this.conversation, this.currentUser?.id);
   }
 
-  // Public methods for external message updates
   public addMessage(message: Message): void {
-
-    const existingMessage = this.messages.find(m => m.id === message.id);
-    if (!existingMessage) {
+    if (!this.messages.find(m => m.id === message.id)) {
       this.messages.push(message);
       this.renderMessages();
       this.scrollToBottom();
-    } else {
     }
   }
 
   public updateMessages(messages: Message[]): void {
-    
-    this.messages = messages; // Remplacer complètement les messages
+    this.messages = messages;
     this.renderMessages();
     this.scrollToBottom();
   }

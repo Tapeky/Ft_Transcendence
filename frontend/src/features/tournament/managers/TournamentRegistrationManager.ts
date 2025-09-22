@@ -23,12 +23,8 @@ export class TournamentRegistrationManager {
     };
   }
 
-  /**
-   * Subscribe to state changes
-   */
   subscribe(listener: (state: RegistrationState) => void): () => void {
     this.listeners.push(listener);
-    // Return unsubscribe function
     return () => {
       const index = this.listeners.indexOf(listener);
       if (index > -1) {
@@ -37,38 +33,27 @@ export class TournamentRegistrationManager {
     };
   }
 
-  /**
-   * Get current registration state
-   */
   getState(): RegistrationState {
     return { ...this.state };
   }
 
-  /**
-   * Update state and notify listeners
-   */
   private updateState(updates: Partial<RegistrationState>): void {
     this.state = { ...this.state, ...updates };
     this.listeners.forEach(listener => listener(this.getState()));
   }
 
-  /**
-   * Create a new tournament
-   */
   async createTournament(name: string, maxPlayers: TournamentSize): Promise<Tournament> {
     this.updateState({ isCreating: true, error: null });
 
     try {
-      // Validate tournament name
       if (!name.trim()) {
-        throw new Error('Tournament name is required');
+        throw new Error('Please enter a tournament name');
       }
 
       if (name.trim().length > 255) {
-        throw new Error('Tournament name is too long (max 255 characters)');
+        throw new Error('Tournament name too long (max 255 characters)');
       }
 
-      // Validate max players
       if (![4, 8, 16].includes(maxPlayers)) {
         throw new Error('Tournament size must be 4, 8, or 16 players');
       }
@@ -97,9 +82,6 @@ export class TournamentRegistrationManager {
     }
   }
 
-  /**
-   * Join an existing tournament
-   */
   async joinTournament(tournamentId: string, alias: string): Promise<{
     player: { id: string; alias: string; joinedAt: Date };
     tournament: { currentPlayers: number; status: string; ready: boolean };
@@ -107,16 +89,14 @@ export class TournamentRegistrationManager {
     this.updateState({ isJoining: true, error: null });
 
     try {
-      // Validate alias
       if (!alias.trim()) {
-        throw new Error('Player alias is required');
+        throw new Error('Please enter a player alias');
       }
 
       if (alias.trim().length > 50) {
-        throw new Error('Player alias is too long (max 50 characters)');
+        throw new Error('Player alias too long (max 50 characters)');
       }
 
-      // Check for invalid characters
       if (!/^[a-zA-Z0-9_-]+$/.test(alias.trim())) {
         throw new Error('Player alias can only contain letters, numbers, underscore, and dash');
       }
@@ -127,7 +107,6 @@ export class TournamentRegistrationManager {
 
       const result = await TournamentService.joinTournament(tournamentId, request);
       
-      // Update tournament state after successful join
       const updatedTournament = await TournamentService.getTournamentState(tournamentId);
       
       this.updateState({ 
@@ -148,17 +127,12 @@ export class TournamentRegistrationManager {
     }
   }
 
-  /**
-   * Leave a tournament (if in registration phase)
-   */
   async leaveTournament(tournamentId: string): Promise<void> {
     if (!this.state.tournament || this.state.tournament.status !== 'registration') {
       throw new Error('Cannot leave tournament after registration closes');
     }
 
     try {
-      // Note: This would require a backend endpoint for leaving tournaments
-      // For now, we'll clear the local state
       this.updateState({ 
         tournament: null, 
         playerAlias: null, 
@@ -171,9 +145,6 @@ export class TournamentRegistrationManager {
     }
   }
 
-  /**
-   * Refresh tournament state
-   */
   async refreshTournament(tournamentId: string): Promise<Tournament> {
     try {
       const tournament = await TournamentService.getTournamentState(tournamentId);
@@ -186,9 +157,6 @@ export class TournamentRegistrationManager {
     }
   }
 
-  /**
-   * Start tournament (generate bracket)
-   */
   async startTournament(tournamentId: string): Promise<Tournament> {
     if (!this.state.tournament) {
       throw new Error('No tournament loaded');
@@ -209,16 +177,10 @@ export class TournamentRegistrationManager {
     }
   }
 
-  /**
-   * Clear error state
-   */
   clearError(): void {
     this.updateState({ error: null });
   }
 
-  /**
-   * Reset registration manager state
-   */
   reset(): void {
     this.updateState({
       isCreating: false,
@@ -229,31 +191,25 @@ export class TournamentRegistrationManager {
     });
   }
 
-  /**
-   * Validate tournament name
-   */
   static validateTournamentName(name: string): { isValid: boolean; error?: string } {
     if (!name.trim()) {
-      return { isValid: false, error: 'Tournament name is required' };
+      return { isValid: false, error: 'Please enter a tournament name' };
     }
 
     if (name.trim().length > 255) {
-      return { isValid: false, error: 'Tournament name is too long (max 255 characters)' };
+      return { isValid: false, error: 'Tournament name too long (max 255 characters)' };
     }
 
     return { isValid: true };
   }
 
-  /**
-   * Validate player alias
-   */
   static validatePlayerAlias(alias: string): { isValid: boolean; error?: string } {
     if (!alias.trim()) {
-      return { isValid: false, error: 'Player alias is required' };
+      return { isValid: false, error: 'Please enter a player alias' };
     }
 
     if (alias.trim().length > 50) {
-      return { isValid: false, error: 'Player alias is too long (max 50 characters)' };
+      return { isValid: false, error: 'Player alias too long (max 50 characters)' };
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(alias.trim())) {
@@ -263,9 +219,6 @@ export class TournamentRegistrationManager {
     return { isValid: true };
   }
 
-  /**
-   * Check if tournament can be started
-   */
   static canStartTournament(tournament: Tournament | null): { canStart: boolean; reason?: string } {
     if (!tournament) {
       return { canStart: false, reason: 'No tournament loaded' };
@@ -285,9 +238,6 @@ export class TournamentRegistrationManager {
     return { canStart: true };
   }
 
-  /**
-   * Check if player can join tournament
-   */
   static canJoinTournament(tournament: Tournament | null): { canJoin: boolean; reason?: string } {
     if (!tournament) {
       return { canJoin: false, reason: 'Tournament not found' };
@@ -304,9 +254,6 @@ export class TournamentRegistrationManager {
     return { canJoin: true };
   }
 
-  /**
-   * Get registration progress
-   */
   static getRegistrationProgress(tournament: Tournament | null): { 
     current: number; 
     max: number; 

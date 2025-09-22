@@ -34,10 +34,7 @@ export class ChatFriendsList {
         </div>
       `;
     } else {
-      this.friends.forEach(friend => {
-        const friendItem = this.createChatFriendItem(friend);
-        container.appendChild(friendItem);
-      });
+      this.friends.forEach(friend => container.appendChild(this.createChatFriendItem(friend)));
     }
     
     return container;
@@ -51,36 +48,19 @@ export class ChatFriendsList {
       <div class="flex items-center justify-center min-w-[120px]">
         <img src="${getAvatarUrl(friend.avatar_url)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
       </div>
-
       <div class="flex flex-col flex-grow">
         <h2 class="mt-2 flex-grow text-white">${friend.display_name || friend.username}</h2>
         <div class="text-sm text-gray-300">@${friend.username}</div>
-        <div class="text-xs text-gray-400 mt-1">
-          ${friend.is_online ? '🟢 Online' : '🔴 Offline'}
-        </div>
-        
+        <div class="text-xs text-gray-400 mt-1">${friend.is_online ? '🟢 Online' : '🔴 Offline'}</div>
         <div class="flex gap-2 items-end ml-12">
-          <button class="invite-btn border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 text-white text-sm rounded">
-            ✈️ Invite
-          </button>
-          <button class="chat-btn border-2 min-h-[40px] px-4 bg-green-600 hover:bg-green-700 border-black mb-4 text-white text-sm rounded">
-            💬 Chat
-          </button>
+          <button class="invite-btn border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 text-white text-sm rounded">✈️ Invite</button>
+          <button class="chat-btn border-2 min-h-[40px] px-4 bg-green-600 hover:bg-green-700 border-black mb-4 text-white text-sm rounded">💬 Chat</button>
         </div>
       </div>
     `;
 
-    const inviteBtn = item.querySelector('.invite-btn');
-    inviteBtn?.addEventListener('click', () => {
-      if (this.onGameInvite) {
-        this.onGameInvite(friend);
-      }
-    });
-
-    const chatBtn = item.querySelector('.chat-btn');
-    chatBtn?.addEventListener('click', () => {
-      this.onChatWithFriend(friend);
-    });
+    item.querySelector('.invite-btn')?.addEventListener('click', () => this.onGameInvite?.(friend));
+    item.querySelector('.chat-btn')?.addEventListener('click', () => this.onChatWithFriend(friend));
 
     return item;
   }
@@ -95,8 +75,6 @@ export class ChatFriendsList {
   }
 
   public destroy(): void {
-    if (this.element.parentNode) {
-      this.element.remove();
-    }
+    this.element.remove();
   }
 }

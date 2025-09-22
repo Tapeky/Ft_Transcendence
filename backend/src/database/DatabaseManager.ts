@@ -35,10 +35,8 @@ export class DatabaseManager {
       // Activer les foreign keys
       await this.db.exec('PRAGMA foreign_keys = ON;');
       
-      // Database connected successfully
       return this.db;
     } catch (error) {
-      // Database connection error will be handled by calling code
       throw error;
     }
   }
@@ -115,7 +113,6 @@ export class DatabaseManager {
       `, [user.username, user.email, user.password, user.display_name, user.data_consent]);
     }
     
-    // Test data added successfully
   }
   
   getDb(): Database {
@@ -168,13 +165,11 @@ export class DatabaseManager {
   async vacuum(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('VACUUM');
-    // Database vacuum completed
   }
   
   async analyze(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('ANALYZE');
-    // Database analyze completed
   }
   
   // Cleanup des tokens expirés
@@ -186,7 +181,6 @@ export class DatabaseManager {
       WHERE expires_at < datetime('now') OR revoked = true
     `);
     
-    // Expired tokens cleanup completed
   }
   
   // Stats de la base de données

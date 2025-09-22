@@ -14,18 +14,11 @@ export interface User {
 }
 
 export interface AppStateData {
-  // Authentication state
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  
-  // UI state
   currentPath: string;
-  
-  // App state
   lastActivity: Date;
-  
-  // Debug info
   stateVersion: number;
 }
 
@@ -46,11 +39,11 @@ export class AppState {
   public getState(): AppStateData { return { ...this.state }; }
   public getRouter(): Router | null { return this.router; }
   public getSubscriberCount(): number { return this.subscribers.length; }
-  public getStateHistory(): AppStateData[] {  return [...this.stateHistory];  }
+  public getStateHistory(): AppStateData[] { return [...this.stateHistory]; }
   public setRouter(router: Router): void { this.router = router; }
   public setLoading(loading: boolean): void { this.setState({ loading }); }
   public updateCurrentPath(path: string): void { this.setState({ currentPath: path }); }
-  
+
   private getInitialState(): AppStateData {
     return {
       user: null,
@@ -64,7 +57,6 @@ export class AppState {
 
   public setState(updates: StateUpdater): void {
     this.saveToHistory();
-    
     const previousState = { ...this.state };
     this.state = {
       ...this.state,
@@ -72,13 +64,11 @@ export class AppState {
       stateVersion: this.state.stateVersion + 1,
       lastActivity: new Date()
     };
-    
     this.notifySubscribers();
   }
 
   public subscribe(callback: StateSubscriber): () => void {
     this.subscribers.push(callback);
-    
     callback(this.getState());
     return () => {
       const index = this.subscribers.indexOf(callback);
@@ -90,18 +80,17 @@ export class AppState {
 
   private notifySubscribers(): void {
     const currentState = this.getState();
-    this.subscribers.forEach((callback, index) => {
+    this.subscribers.forEach(callback => {
       try {
         callback(currentState);
       } catch (error) {
-        console.error(`Error in subscriber ${index}:`, error);
+        console.error('Subscriber error:', error);
       }
     });
   }
 
   private saveToHistory(): void {
     this.stateHistory.push({ ...this.state });
-    
     if (this.stateHistory.length > this.maxHistorySize) {
       this.stateHistory.shift();
     }

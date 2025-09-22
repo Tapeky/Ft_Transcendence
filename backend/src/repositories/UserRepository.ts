@@ -5,11 +5,9 @@ import bcrypt from 'bcrypt';
 export class UserRepository {
   constructor(private db: Database) {}
   
-  // Créer un utilisateur
   async create(userData: UserCreateInput): Promise<User> {
     const { password, ...otherData } = userData;
-    
-    // Hash du mot de passe
+
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || '12');
     const password_hash = await bcrypt.hash(password, saltRounds);
     
