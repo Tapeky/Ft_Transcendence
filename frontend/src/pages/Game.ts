@@ -87,7 +87,10 @@ export class GamePage {
 
     private bindEvents(): void {
         const backButton = this.element.querySelector('#back-to-menu');
-        backButton?.addEventListener('click', () => router.navigate('/menu'));
+        backButton?.addEventListener('click', () => {
+            this.destroy();
+            router.navigate('/menu');
+        });
         setTimeout(() => this.initializeGame(), 100);
     }
 
