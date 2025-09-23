@@ -171,6 +171,31 @@ export class GameManager {
     const game = new PongGame(gameId, new PongPlayer(leftPlayerId, leftPlayerSocket), new PongPlayer(rightPlayerId, rightPlayerSocket));
     this._games.set(gameId, game);
     
+    // Send initial state and side assignment to both players
+    const initialState = game.repr(leftPlayerId);
+    try {
+      leftPlayerSocket.send(JSON.stringify({
+        type: 'game_state',
+        data: initialState,
+        timestamp: Date.now(),
+        playerSide: 'left',
+        gameId: gameId
+      }));
+      
+      const rightState = game.repr(rightPlayerId);
+      rightPlayerSocket.send(JSON.stringify({
+        type: 'game_state', 
+        data: rightState,
+        timestamp: Date.now(),
+        playerSide: 'right',
+        gameId: gameId
+      }));
+      
+      console.log(`🎮 Initial game state sent to both players for game ${gameId}`);
+    } catch (error) {
+      console.error('Error sending initial game state:', error);
+    }
+    
     // Si c'est une partie locale (même joueur), démarrer immédiatement
     if (leftPlayerId === rightPlayerId) {
       console.log(`🎮 Local game ${gameId} - starting immediately`);

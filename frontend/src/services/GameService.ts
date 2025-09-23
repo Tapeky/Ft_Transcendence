@@ -296,6 +296,11 @@ export class GameService implements IGameService {
   public currentState: GameState | null = null;
   public stateHistory: StateSnapshot[] = [];
 
+  // Server authoritative mode
+  private isServerAuthoritative = false;
+  private playerSide: 'left' | 'right' | null = null;
+  private localUpdateInterval: any = null;
+
   // Network components
   private ws: WebSocket | null = null;
   private connectionManager: ConnectionManager;
@@ -417,6 +422,10 @@ export class GameService implements IGameService {
       
       this.setupChatServiceGameListeners();
       
+      // Switch to server authoritative mode for online games
+      this.isServerAuthoritative = true;
+      this.stopLocalSimulation();
+      
       // Notifier ChatService qu'on rejoint une session de jeu
       this.chatService.joinGame(sessionId);
       
@@ -424,7 +433,7 @@ export class GameService implements IGameService {
       this.ws = {} as WebSocket; // Mock object pour éviter les null checks
       this.sessionId = sessionId;
       
-      console.log('✅ Using ChatService WebSocket for game communication');
+      console.log(`✅ Switched to server authoritative mode for game ${sessionId}`);
       
       return Promise.resolve(this.ws);
     } catch (error) {
@@ -432,6 +441,18 @@ export class GameService implements IGameService {
       this.handleError(networkError);
       throw networkError;
     }
+  }
+
+  private stopLocalSimulation(): void {
+    if (this.localUpdateInterval) {
+      clearInterval(this.localUpdateInterval);
+      this.localUpdateInterval = null;
+      console.log('🔇 Local simulation stopped');
+    }
+  }
+
+  public getPlayerSide(): 'left' | 'right' | null {
+    return this.playerSide;
   }
 
   private setupChatServiceGameListeners(): void {
@@ -451,17 +472,32 @@ export class GameService implements IGameService {
   }
 
   private handleChatServiceStateUpdate(gameState: any): void {
+    console.log('🎮 [GameService] handleChatServiceStateUpdate called with:', gameState);
+    
+    // Extract player side assignment if present
+    if (gameState.playerSide) {
+      this.playerSide = gameState.playerSide;
+      console.log(`🎮 [GameService] Player side assigned: ${this.playerSide}`);
+    }
+    
     // Convertir le format ChatService vers le format GameState
     const convertedState = this.convertChatServiceState(gameState);
+    console.log('🎮 [GameService] Converted state:', convertedState);
     
-    // Utiliser la méthode existante pour traiter l'état
-    if (this.predictionSettings.enabled && this.currentState) {
-      // Pour l'instant, appliquer directement l'état sans réconciliation complexe
+    // Force server state in authoritative mode
+    if (this.isServerAuthoritative) {
       this.currentState = convertedState;
+      console.log('🔄 [GameService] Server state applied directly (authoritative mode)');
       this.notifyStateUpdate(convertedState);
     } else {
-      this.currentState = convertedState;
-      this.notifyStateUpdate(convertedState);
+      // Use prediction/reconciliation for local mode
+      if (this.predictionSettings.enabled && this.currentState) {
+        this.currentState = convertedState;
+        this.notifyStateUpdate(convertedState);
+      } else {
+        this.currentState = convertedState;
+        this.notifyStateUpdate(convertedState);
+      }
     }
   }
 

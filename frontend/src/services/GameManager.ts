@@ -187,8 +187,11 @@ export class GameManager implements GameManagerEvents {
 
     // Forward game service events
     this.gameService.onStateUpdate = (state) => {
+      console.log('🎮 [GameManager] onStateUpdate received:', state);
       if (this.onGameStateUpdate) {
-        this.onGameStateUpdate(convertLocalToOnlineGameState(state));
+        const onlineState = convertLocalToOnlineGameState(state);
+        console.log('🎮 [GameManager] Converted to online state:', onlineState);
+        this.onGameStateUpdate(onlineState);
       }
     };
 

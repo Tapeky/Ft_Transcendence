@@ -140,7 +140,7 @@ export class GamePage {
             }
             
             // Set up online game event listeners
-            this.gameManager.onGameUpdate = (gameData) => {
+            this.gameManager.onGameStateUpdate = (gameData) => {
                 this.handleOnlineGameUpdate(gameData);
             };
             
@@ -180,6 +180,9 @@ export class GamePage {
         
         this.setupKeyboardListeners();
         this.render();
+        
+        // Start render-only loop for online games
+        this.startOnlineRenderLoop();
     }
     
     private startOnlineGame(): void {
@@ -190,8 +193,43 @@ export class GamePage {
         this.startCountdown();
     }
     
+    private startOnlineRenderLoop(): void {
+        if (!this.isOnlineGame) return;
+        
+        const renderFrame = () => {
+            if (!this.isOnlineGame || this.gameEnded) return;
+            
+            // Only render - no simulation
+            this.render();
+            
+            // Check for game end based on server state
+            if (this.gameState && (this.gameState.leftScore >= 5 || this.gameState.rightScore >= 5)) {
+                if (!this.gameEnded) {
+                    this.gameEnded = true;
+                    const winner = this.gameState.leftScore >= 5 ? 'Left Player' : 'Right Player';
+                    const winnerAlias = this.getWinnerAlias(this.gameState.leftScore >= 5);
+                    this.showGameEnd(winnerAlias || winner).catch(console.error);
+                    return;
+                }
+            }
+            
+            this.animationId = requestAnimationFrame(renderFrame);
+        };
+        
+        console.log('🎮 Starting online render-only loop');
+        this.animationId = requestAnimationFrame(renderFrame);
+    }
+    
     private handleOnlineGameUpdate(gameData: any): void {
         if (!this.gameState) return;
+        
+        console.log('🎮 [Game.ts] Received server state update:', {
+            leftPaddleX: gameData.leftPaddle?.pos?.x,
+            rightPaddleX: gameData.rightPaddle?.pos?.x,
+            ballX: gameData.ball?.pos?.x,
+            leftScore: gameData.leftScore,
+            rightScore: gameData.rightScore
+        });
         
         // Update game state from server
         this.gameState.leftPaddle = gameData.leftPaddle;
@@ -201,6 +239,7 @@ export class GamePage {
         this.gameState.rightScore = gameData.rightScore;
         this.gameState.state = gameData.state;
         
+        console.log('🎮 [Game.ts] Applied server state to local gameState');
         this.render();
         
         // Check for game end
@@ -349,6 +388,13 @@ export class GamePage {
 
     private localGameLoop(): void {
         if (!this.gameState || this.gameEnded) return;
+        
+        // Skip local simulation for online games - server handles everything
+        if (this.isOnlineGame) {
+            console.log('🔇 Skipping local game loop - server authoritative mode');
+            return;
+        }
+        
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastFrameTime;
         if (deltaTime >= (1000 / this.TARGET_FPS)) {
@@ -518,10 +564,12 @@ export class GamePage {
         const normalizedKey = key.toLowerCase();
         
         if (validKeys.includes(normalizedKey)) {
-            this.gameManager.sendGameInput(this.sessionId, {
+            // Use the correct method name from GameManager
+            this.gameManager.sendInput({
                 key: normalizedKey,
                 pressed: isPressed,
-                player: this.isLeftPlayer ? 'left' : 'right'
+                player: this.isLeftPlayer ? 'left' : 'right',
+                timestamp: Date.now()
             });
         }
     }
@@ -643,6 +691,15 @@ export class GamePage {
 
     private render(): void {
         if (!this.gameState || !this.ctx) return;
+        
+        console.log('🎨 [Game.ts] Rendering state:', {
+            leftPaddleX: this.gameState.leftPaddle.pos.x,
+            rightPaddleX: this.gameState.rightPaddle.pos.x,
+            ballX: this.gameState.ball.pos.x,
+            leftScore: this.gameState.leftScore,
+            rightScore: this.gameState.rightScore
+        });
+        
         this.ctx.clearRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
         this.ctx.setLineDash([8, 8]);
         this.ctx.beginPath();
