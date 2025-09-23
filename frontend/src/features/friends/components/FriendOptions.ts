@@ -2,6 +2,7 @@ import { apiService } from '../../../shared/services/api';
 import { router } from '../../../core/app/Router';
 import { CloseBtn } from '../../../shared/components/CloseBtn';
 import { getAvatarUrl } from '../../../shared/utils/avatar';
+import { GameManager } from '../../../services/GameManager';
 
 export interface FriendOptionsProps {
   username: string;
@@ -106,6 +107,8 @@ export class FriendOptions {
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
 
+    const inviteBtn = this.element.querySelector('#invite-btn');
+    inviteBtn?.addEventListener('click', () => this.handleGameInvite());
   }
 
   private handleDashboard(): void {
@@ -131,6 +134,36 @@ export class FriendOptions {
     } catch (error) {
       console.error('Error blocking user:', error);
       alert(`Erreur lors du blocage: ${error}`);
+    }
+  }
+
+  private async handleGameInvite(): Promise<void> {
+    try {
+      const gameManager = GameManager.getInstance();
+      await gameManager.initialize();
+
+      const inviteId = await gameManager.sendGameInvite(this.props.id, this.props.username);
+      console.log(`🎮 Game invite sent to ${this.props.username} (ID: ${inviteId})`);
+
+      // Visual feedback
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        const originalText = inviteBtn.textContent;
+        inviteBtn.textContent = '✅ Invite Sent!';
+        inviteBtn.disabled = true;
+        inviteBtn.style.backgroundColor = '#065f46'; // dark green
+
+        setTimeout(() => {
+          inviteBtn.textContent = originalText;
+          inviteBtn.disabled = false;
+          inviteBtn.style.backgroundColor = '#059669'; // original green
+        }, 3000);
+      }
+
+      this.props.setIsOpen(); // Close modal
+    } catch (error) {
+      console.error('Error sending game invite:', error);
+      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
     }
   }
 

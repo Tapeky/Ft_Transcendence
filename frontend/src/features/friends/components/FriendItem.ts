@@ -2,6 +2,7 @@ import { getAvatarUrl } from '../../../shared/utils/avatar';
 import { FriendOptions } from './FriendOptions';
 import { router } from '../../../core/app/Router';
 import { apiService } from '../../../shared/services/api';
+import { GameManager } from '../../../services/GameManager';
 
 export interface FriendItemProps {
   username: string;
@@ -63,6 +64,7 @@ export class FriendItem {
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
+    inviteBtn?.addEventListener('click', () => this.handleGameInvite());
     optionsBtn?.addEventListener('click', () => this.openOptions());
   }
 
@@ -83,6 +85,43 @@ export class FriendItem {
     }
 
     document.body.appendChild(this.friendOptionsInstance.getElement());
+  }
+
+  private async handleGameInvite(): Promise<void> {
+    try {
+      const gameManager = GameManager.getInstance();
+      await gameManager.initialize();
+
+      const inviteId = await gameManager.sendGameInvite(this.props.id, this.props.username);
+      console.log(`🎮 Game invite sent to ${this.props.username} (ID: ${inviteId})`);
+
+      // Visual feedback
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        const img = inviteBtn.querySelector('img');
+        const originalSrc = img?.src;
+
+        // Change to checkmark or success indicator
+        inviteBtn.style.backgroundColor = '#065f46'; // dark green
+        inviteBtn.disabled = true;
+
+        if (img) {
+          img.style.filter = 'brightness(0) invert(1)'; // Make icon white
+        }
+
+        setTimeout(() => {
+          inviteBtn.style.backgroundColor = 'white';
+          inviteBtn.disabled = false;
+          if (img) {
+            img.style.filter = 'none'; // Reset icon color
+          }
+        }, 3000);
+      }
+
+    } catch (error) {
+      console.error('Error sending game invite:', error);
+      alert(`Erreur lors de l'envoi de l'invitation: ${error}`);
+    }
   }
 
   private closeOptions(): void {

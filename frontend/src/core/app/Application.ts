@@ -2,6 +2,7 @@ import { appState } from '../state/AppState';
 import { router } from './Router';
 import { AuthManager } from '../../core/auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
+import { gameNotificationService } from '../../shared/services/GameNotificationService';
 
 export class Application {
   private static instance: Application;
@@ -26,6 +27,7 @@ export class Application {
     this.setupCoreDependencies();
     this.initializeRouteProtection();
     this.setupErrorHandling();
+    await gameNotificationService.initialize();
     this.isInitialized = true;
   }
 

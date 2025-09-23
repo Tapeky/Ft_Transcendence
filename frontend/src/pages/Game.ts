@@ -4,6 +4,8 @@ import { Header } from '../shared/components/Header';
 import { Banner } from '../shared/components/Banner';
 import { apiService } from '../shared/services/api';
 import { appState } from '../core/state/AppState';
+import { GameManager } from '../services/GameManager';
+import { gameNotificationService } from '../shared/services/GameNotificationService';
 
 interface GameState {
     leftPaddle: { pos: { x: number; y: number }; hitCount: number; };
@@ -50,12 +52,19 @@ export class GamePage {
     private readonly INITIAL_BALL_SPEED = 4;
     private readonly SPEED_INCREASE = 0.3;
     private readonly MAX_BALL_SPEED = 12;
+    
+    // Online game properties
+    private gameManager?: GameManager;
+    private isOnlineGame: boolean = false;
+    private sessionId?: string;
+    private isLeftPlayer: boolean = true;
 
     constructor() {
         this.element = this.createElement();
         this.bindEvents();
         this.subscribeToAuth();
         this.checkTournamentContext();
+        this.checkOnlineGameContext();
     }
 
     private createElement(): HTMLElement {
@@ -109,6 +118,106 @@ export class GamePage {
         }
     }
 
+    private checkOnlineGameContext(): void {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('sessionId');
+        
+        if (sessionId) {
+            this.isOnlineGame = true;
+            this.sessionId = sessionId;
+            console.log(`🎮 Online game detected with session ID: ${sessionId}`);
+        }
+    }
+
+    private async setupOnlineGame(): Promise<void> {
+        try {
+            this.gameManager = GameManager.getInstance();
+            await this.gameManager.initialize();
+            
+            if (!this.sessionId) {
+                console.error('No session ID for online game');
+                return;
+            }
+            
+            // Set up online game event listeners
+            this.gameManager.onGameUpdate = (gameData) => {
+                this.handleOnlineGameUpdate(gameData);
+            };
+            
+            this.gameManager.onGameStarted = (sessionId) => {
+                console.log('🚀 Online game started!', sessionId);
+                this.startOnlineGame();
+            };
+            
+            this.gameManager.onGameEnded = (result) => {
+                console.log('🏁 Online game ended', result);
+                this.handleOnlineGameEnd(result);
+            };
+            
+            // Join the game session
+            await this.gameManager.joinGameSession(this.sessionId);
+            
+            // Initialize game state for online play
+            this.initializeOnlineGameState();
+            
+        } catch (error) {
+            console.error('Failed to setup online game:', error);
+            // Fallback to local game
+            this.isOnlineGame = false;
+            this.setupLocalGame();
+        }
+    }
+    
+    private initializeOnlineGameState(): void {
+        this.gameState = {
+            leftPaddle: { pos: { x: 20, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            rightPaddle: { pos: { x: this.ARENA_WIDTH - 28, y: this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2 }, hitCount: 0 },
+            ball: { pos: { x: this.ARENA_WIDTH / 2, y: this.ARENA_HEIGHT / 2 }, direction: { x: this.INITIAL_BALL_SPEED, y: 3 } },
+            state: 0, // Waiting for game start
+            leftScore: 0,
+            rightScore: 0
+        };
+        
+        this.setupKeyboardListeners();
+        this.render();
+    }
+    
+    private startOnlineGame(): void {
+        if (!this.gameState) return;
+        
+        this.gameState.state = 1; // Game active
+        this.render();
+        this.startCountdown();
+    }
+    
+    private handleOnlineGameUpdate(gameData: any): void {
+        if (!this.gameState) return;
+        
+        // Update game state from server
+        this.gameState.leftPaddle = gameData.leftPaddle;
+        this.gameState.rightPaddle = gameData.rightPaddle;
+        this.gameState.ball = gameData.ball;
+        this.gameState.leftScore = gameData.leftScore;
+        this.gameState.rightScore = gameData.rightScore;
+        this.gameState.state = gameData.state;
+        
+        this.render();
+        
+        // Check for game end
+        if (gameData.leftScore >= 5 || gameData.rightScore >= 5) {
+            if (!this.gameEnded) {
+                this.gameEnded = true;
+                const winner = gameData.leftScore >= 5 ? 'Left Player' : 'Right Player';
+                this.showGameEnd(winner).catch(console.error);
+            }
+        }
+    }
+    
+    private handleOnlineGameEnd(result: any): void {
+        this.gameEnded = true;
+        console.log('Game ended with result:', result);
+    }
+
     private subscribeToAuth(): void {
         this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
             if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
@@ -127,7 +236,13 @@ export class GamePage {
             return;
         }
         this.initCanvas(container as HTMLElement);
-        this.setupLocalGame();
+        
+        if (this.isOnlineGame) {
+            this.setupOnlineGame();
+        } else {
+            this.setupLocalGame();
+        }
+        
         this.updateInstructions();
     }
 
@@ -148,7 +263,20 @@ export class GamePage {
     private updateInstructions(): void {
         const instructionsElement = this.element.querySelector('#game-instructions');
         if (!instructionsElement) return;
-        if (this.tournamentContext) {
+        
+        if (this.isOnlineGame) {
+            instructionsElement.innerHTML = `
+                <div class="text-xl font-bold mb-2 text-green-300">
+                    🌐 Online Game
+                </div>
+                <div class="text-lg">
+                    ${this.isLeftPlayer ? 'You are Left Player (W/S Keys)' : 'You are Right Player (↑/↓ Keys)'}
+                </div>
+                <div class="text-sm text-gray-300 mt-2">
+                    Waiting for opponent...
+                </div>
+            `;
+        } else if (this.tournamentContext) {
             instructionsElement.innerHTML = `
                 <div class="text-2xl font-bold mb-2">
                     ${this.tournamentContext.player1Alias} vs ${this.tournamentContext.player2Alias}
@@ -333,40 +461,68 @@ export class GamePage {
 
     private keydownHandler = (e: KeyboardEvent) => {
         if (this.isCountingDown) return;
-        switch(e.key.toLowerCase()) {
-            case 'w':
-                this.localInputLeft.up = true;
-                e.preventDefault();
-                break;
-            case 's':
-                this.localInputLeft.down = true;
-                e.preventDefault();
-                break;
-            case 'arrowup':
-                this.localInputRight.up = true;
-                e.preventDefault();
-                break;
-            case 'arrowdown':
-                this.localInputRight.down = true;
-                e.preventDefault();
-                break;
+        
+        if (this.isOnlineGame) {
+            // Send input to server for online games
+            this.handleOnlineInput(e.key, true);
+        } else {
+            // Handle local input for local games
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    this.localInputLeft.up = true;
+                    e.preventDefault();
+                    break;
+                case 's':
+                    this.localInputLeft.down = true;
+                    e.preventDefault();
+                    break;
+                case 'arrowup':
+                    this.localInputRight.up = true;
+                    e.preventDefault();
+                    break;
+                case 'arrowdown':
+                    this.localInputRight.down = true;
+                    e.preventDefault();
+                    break;
+            }
         }
     }
 
     private keyupHandler = (e: KeyboardEvent) => {
-        switch(e.key.toLowerCase()) {
-            case 'w':
-                this.localInputLeft.up = false;
-                break;
-            case 's':
-                this.localInputLeft.down = false;
-                break;
-            case 'arrowup':
-                this.localInputRight.up = false;
-                break;
-            case 'arrowdown':
-                this.localInputRight.down = false;
-                break;
+        if (this.isOnlineGame) {
+            // Send input to server for online games
+            this.handleOnlineInput(e.key, false);
+        } else {
+            // Handle local input for local games
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    this.localInputLeft.up = false;
+                    break;
+                case 's':
+                    this.localInputLeft.down = false;
+                    break;
+                case 'arrowup':
+                    this.localInputRight.up = false;
+                    break;
+                case 'arrowdown':
+                    this.localInputRight.down = false;
+                    break;
+            }
+        }
+    }
+    
+    private handleOnlineInput(key: string, isPressed: boolean): void {
+        if (!this.gameManager || !this.sessionId) return;
+        
+        const validKeys = this.isLeftPlayer ? ['w', 's'] : ['arrowup', 'arrowdown'];
+        const normalizedKey = key.toLowerCase();
+        
+        if (validKeys.includes(normalizedKey)) {
+            this.gameManager.sendGameInput(this.sessionId, {
+                key: normalizedKey,
+                pressed: isPressed,
+                player: this.isLeftPlayer ? 'left' : 'right'
+            });
         }
     }
 

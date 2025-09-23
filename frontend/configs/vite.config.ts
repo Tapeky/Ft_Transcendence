@@ -27,7 +27,7 @@ export default defineConfig({
       }
     },
     // HTTPS configuration (conditional)
-    ...(process.env.ENABLE_HTTPS === 'true' && {
+    ...(process.env.ENABLE_HTTPS === 'true' && fs.existsSync('/app/ssl/key.pem') && fs.existsSync('/app/ssl/cert.pem') && {
       https: {
         key: fs.readFileSync('/app/ssl/key.pem'),
         cert: fs.readFileSync('/app/ssl/cert.pem'),
