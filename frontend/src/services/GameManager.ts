@@ -64,9 +64,11 @@ export interface GameManagerEvents {
 
   // Game events
   onGameStarted: ((sessionId: string) => void) | null;
+  onGameActuallyStarted: (() => void) | null;
   onGameStateUpdate: ((state: OnlineGameState) => void) | null;
   onGameEvent: ((event: string, data: any) => void) | null;
   onGameEnded: ((result: any) => void) | null;
+  onCountdown: ((count: number) => void) | null;
 
   // Network events
   onNetworkUpdate: ((metrics: NetworkMetrics) => void) | null;
@@ -93,9 +95,11 @@ export class GameManager implements GameManagerEvents {
   public onInviteResponse: ((response: GameInviteResponse) => void) | null = null;
   public onSessionCreated: ((session: GameSessionCreated) => void) | null = null;
   public onGameStarted: ((sessionId: string) => void) | null = null;
+  public onGameActuallyStarted: (() => void) | null = null;
   public onGameStateUpdate: ((state: OnlineGameState) => void) | null = null;
   public onGameEvent: ((event: string, data: any) => void) | null = null;
   public onGameEnded: ((result: any) => void) | null = null;
+  public onCountdown: ((count: number) => void) | null = null;
   public onNetworkUpdate: ((metrics: NetworkMetrics) => void) | null = null;
 
   private constructor() {
@@ -187,10 +191,9 @@ export class GameManager implements GameManagerEvents {
 
     // Forward game service events
     this.gameService.onStateUpdate = (state) => {
-      console.log('🎮 [GameManager] onStateUpdate received:', state);
+      // Reduce logs: only log significant state changes
       if (this.onGameStateUpdate) {
         const onlineState = convertLocalToOnlineGameState(state);
-        console.log('🎮 [GameManager] Converted to online state:', onlineState);
         this.onGameStateUpdate(onlineState);
       }
     };
@@ -224,6 +227,18 @@ export class GameManager implements GameManagerEvents {
           data.message || 'Chat service error',
           'CHAT_ERROR'
         ));
+      }
+    });
+
+    this.chatService.on('game_countdown', (data) => {
+      if (this.onCountdown) {
+        this.onCountdown(data.count);
+      }
+    });
+
+    this.chatService.on('game_starting', (data) => {
+      if (this.onGameActuallyStarted) {
+        this.onGameActuallyStarted();
       }
     });
   }
@@ -306,7 +321,17 @@ export class GameManager implements GameManagerEvents {
       return;
     }
 
+    console.log(`🎮 GameManager.sendInput: ${input.key}=${input.pressed}, sessionId=${this.currentSessionId}`);
     this.gameService.sendInput(input);
+  }
+
+  sendReady(ready: boolean): void {
+    if (!this.currentSessionId) {
+      console.warn('Cannot send ready status - no active game session');
+      return;
+    }
+
+    this.gameService.sendReady(ready);
   }
 
   getCurrentGameState(): OnlineGameState | null {
@@ -350,6 +375,12 @@ export class GameManager implements GameManagerEvents {
   // ============================================================================
 
   private handleGameEnded(data: any): void {
+    // Prevent duplicate game end processing
+    if (!this.currentSessionId) {
+      console.log('🔄 Game already ended, skipping duplicate end event');
+      return;
+    }
+
     console.log('🏁 Game ended:', data);
 
     // Clean up current session
@@ -380,9 +411,9 @@ export class GameManager implements GameManagerEvents {
 
     console.log(`🚪 Leaving game session: ${this.currentSessionId}`);
 
-    // Use legacy chat service for leaving if it's an online game
+    // Always notify server for online games with timeout and retry
     if (this.isOnlineGame()) {
-      this.chatService.leaveGame();
+      this.leaveGameWithRetry();
     }
 
     // Disconnect from game service
@@ -392,12 +423,43 @@ export class GameManager implements GameManagerEvents {
     this.currentSessionId = null;
   }
 
+  private leaveGameWithRetry(retryCount: number = 0): void {
+    const maxRetries = 3;
+    const retryDelay = 500; // 500ms
+
+    try {
+      console.log(`📤 Attempting to leave game (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      this.chatService.leaveGame();
+
+      // If successful, we're done
+      console.log('✅ Game leave notification sent successfully');
+    } catch (error) {
+      console.warn(`⚠️ Game leave attempt ${retryCount + 1} failed:`, error);
+
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Retrying game leave in ${retryDelay}ms...`);
+        setTimeout(() => {
+          this.leaveGameWithRetry(retryCount + 1);
+        }, retryDelay * (retryCount + 1)); // Exponential backoff
+      } else {
+        console.error('❌ All game leave attempts failed - server may not be notified');
+        // Force local cleanup even if server notification failed
+        try {
+          this.chatService.forceResetGameState();
+        } catch (cleanupError) {
+          console.error('Force cleanup also failed:', cleanupError);
+        }
+      }
+    }
+  }
+
   async disconnect(): Promise<void> {
     console.log('🔌 Disconnecting GameManager...');
 
-    // Leave current game if any
+    // Leave current game if any with forced cleanup
     if (this.currentSessionId) {
-      this.leaveCurrentGame();
+      console.log('🚪 Forcing game leave during disconnect');
+      this.forceLeaveGame();
     }
 
     // Disconnect services
@@ -410,8 +472,36 @@ export class GameManager implements GameManagerEvents {
     this.isInitialized = false;
   }
 
+  // Force leave game - used during disconnect/destroy to ensure cleanup
+  private forceLeaveGame(): void {
+    if (!this.currentSessionId) return;
+
+    console.log(`💥 Force leaving game session: ${this.currentSessionId}`);
+
+    try {
+      // Immediate server notification without retries
+      if (this.isOnlineGame() && this.chatService.isConnected()) {
+        this.chatService.leaveGame();
+      }
+
+      // Force reset game state
+      this.chatService.forceResetGameState();
+    } catch (error) {
+      console.warn('Error during force leave:', error);
+    } finally {
+      // Always clean up local state
+      this.gameService.disconnect();
+      this.currentSessionId = null;
+    }
+  }
+
   async destroy(): Promise<void> {
     console.log('💥 Destroying GameManager...');
+
+    // Force immediate cleanup
+    if (this.currentSessionId) {
+      this.forceLeaveGame();
+    }
 
     await this.disconnect();
 
@@ -427,10 +517,14 @@ export class GameManager implements GameManagerEvents {
     this.onInviteResponse = null;
     this.onSessionCreated = null;
     this.onGameStarted = null;
+    this.onGameActuallyStarted = null;
     this.onGameStateUpdate = null;
     this.onGameEvent = null;
     this.onGameEnded = null;
+    this.onCountdown = null;
     this.onNetworkUpdate = null;
+
+    console.log('✅ GameManager destroyed');
   }
 
   // ============================================================================
@@ -448,5 +542,9 @@ export class GameManager implements GameManagerEvents {
       activeSessions: this.invitationManager.getActiveSessions().length,
       networkMetrics: this.getNetworkMetrics()
     };
+  }
+
+  getGameService(): GameService {
+    return this.gameService;
   }
 }

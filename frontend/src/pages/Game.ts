@@ -48,16 +48,24 @@ export class GamePage {
     private readonly ARENA_HEIGHT = 500;
     private readonly PADDLE_WIDTH = 8;
     private readonly PADDLE_HEIGHT = 80;
+    private leftPlayerReady: boolean = false;
+    private rightPlayerReady: boolean = false;
+    private isPlayerReady: boolean = false;
     private readonly BALL_RADIUS = 8;
     private readonly INITIAL_BALL_SPEED = 4;
     private readonly SPEED_INCREASE = 0.3;
     private readonly MAX_BALL_SPEED = 12;
     
+    // Debug utilities to reduce log spam
+    private lastRenderLog = 0;
+    private readonly LOG_THROTTLE = 5000; // 5s
+    private previousState: GameState | null = null;
+    
     // Online game properties
     private gameManager?: GameManager;
     private isOnlineGame: boolean = false;
     private sessionId?: string;
-    private isLeftPlayer: boolean = true;
+    private isLeftPlayer: boolean = true; // Legacy fallback - use getPlayerSide() instead
 
     constructor() {
         this.element = this.createElement();
@@ -65,6 +73,7 @@ export class GamePage {
         this.subscribeToAuth();
         this.checkTournamentContext();
         this.checkOnlineGameContext();
+        this.setupCleanupHandlers();
     }
 
     private createElement(): HTMLElement {
@@ -119,9 +128,19 @@ export class GamePage {
     }
 
     private checkOnlineGameContext(): void {
+        // Check for sessionId in query params first
         const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('sessionId');
-        
+        let sessionId = urlParams.get('sessionId');
+
+        // If not found in query params, check URL path for /game/:gameId format
+        if (!sessionId) {
+            const pathSegments = window.location.pathname.split('/');
+            if (pathSegments.length >= 3 && pathSegments[1] === 'game' && pathSegments[2]) {
+                sessionId = pathSegments[2];
+                console.log(`🎮 Game ID found in URL path: ${sessionId}`);
+            }
+        }
+
         if (sessionId) {
             this.isOnlineGame = true;
             this.sessionId = sessionId;
@@ -146,12 +165,33 @@ export class GamePage {
             
             this.gameManager.onGameStarted = (sessionId) => {
                 console.log('🚀 Online game started!', sessionId);
+                // Log utile : Game start with details
+                const playerSide = this.getPlayerSide();
+                const initialState = this.gameState;
+                console.log(`🎮 Game Started: Session=${sessionId}, Side=${playerSide}, Initial State: Scores 0-0, Ball @ ${initialState?.ball.pos.x.toFixed(2) || 'unknown'},${initialState?.ball.pos.y.toFixed(2) || 'unknown'}`);
                 this.startOnlineGame();
             };
             
             this.gameManager.onGameEnded = (result) => {
                 console.log('🏁 Online game ended', result);
                 this.handleOnlineGameEnd(result);
+            };
+
+            this.gameManager.onGameEvent = (event, data) => {
+                if (event === 'ready_status_update') {
+                    this.handleReadyStatusUpdate(data);
+                } else if (event === 'player_side_assigned') {
+                    console.log(`🎯 [GamePage] Player side assigned: ${data.playerSide}`);
+                    this.render(); // Force UI update when side is assigned
+                }
+            };
+
+            this.gameManager.onCountdown = (count) => {
+                this.handleServerCountdown(count);
+            };
+
+            this.gameManager.onGameActuallyStarted = () => {
+                this.handleGameActuallyStarted();
             };
             
             // Join the game session
@@ -180,17 +220,21 @@ export class GamePage {
         
         this.setupKeyboardListeners();
         this.render();
-        
+
+        // Initialize Ready Check UI for online games
+        this.updateReadyCheckUI();
+
         // Start render-only loop for online games
         this.startOnlineRenderLoop();
     }
     
     private startOnlineGame(): void {
         if (!this.gameState) return;
-        
+
+        console.log('🚀 Online game starting - waiting for server countdown');
         this.gameState.state = 1; // Game active
         this.render();
-        this.startCountdown();
+        // Server will send countdown events - no local countdown needed
     }
     
     private startOnlineRenderLoop(): void {
@@ -222,24 +266,44 @@ export class GamePage {
     
     private handleOnlineGameUpdate(gameData: any): void {
         if (!this.gameState) return;
-        
-        console.log('🎮 [Game.ts] Received server state update:', {
-            leftPaddleX: gameData.leftPaddle?.pos?.x,
-            rightPaddleX: gameData.rightPaddle?.pos?.x,
-            ballX: gameData.ball?.pos?.x,
-            leftScore: gameData.leftScore,
-            rightScore: gameData.rightScore
-        });
-        
+
+        // Only log score changes and significant events
+        const scoreChanged = (this.gameState.leftScore !== gameData.leftScore ||
+                            this.gameState.rightScore !== gameData.rightScore);
+        if (scoreChanged) {
+            console.log(`🏓 Score: ${gameData.leftScore}-${gameData.rightScore}`);
+        }
+
         // Update game state from server
+        const oldLeftY = this.gameState.leftPaddle?.pos?.y || 0;
+        const oldRightY = this.gameState.rightPaddle?.pos?.y || 0;
+
         this.gameState.leftPaddle = gameData.leftPaddle;
         this.gameState.rightPaddle = gameData.rightPaddle;
-        this.gameState.ball = gameData.ball;
+
+        // Log paddle movements
+        const newLeftY = gameData.leftPaddle?.pos?.y || 0;
+        const newRightY = gameData.rightPaddle?.pos?.y || 0;
+
+        if (Math.abs(newLeftY - oldLeftY) > 1) {
+            console.log(`🏓 LEFT PADDLE MOVED: ${oldLeftY.toFixed(1)} → ${newLeftY.toFixed(1)}`);
+        }
+        if (Math.abs(newRightY - oldRightY) > 1) {
+            console.log(`🏓 RIGHT PADDLE MOVED: ${oldRightY.toFixed(1)} → ${newRightY.toFixed(1)}`);
+        }
+
+        // TEST: Block ball updates during countdown instead of blocking keys
+        if (this.isCountingDown) {
+            console.log(`⚠️ BALL BLOCKED: Ball update blocked by countdown (isCountingDown=${this.isCountingDown})`);
+            // Don't update ball position during countdown
+        } else {
+            this.gameState.ball = gameData.ball;
+        }
+
         this.gameState.leftScore = gameData.leftScore;
         this.gameState.rightScore = gameData.rightScore;
         this.gameState.state = gameData.state;
-        
-        console.log('🎮 [Game.ts] Applied server state to local gameState');
+
         this.render();
         
         // Check for game end
@@ -253,8 +317,160 @@ export class GamePage {
     }
     
     private handleOnlineGameEnd(result: any): void {
+        if (this.gameEnded) {
+            console.log('🔄 Game already ended, skipping duplicate end');
+            return;
+        }
+
         this.gameEnded = true;
         console.log('Game ended with result:', result);
+
+        // Stop the rendering loop
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+
+        // Show game end screen
+        if (result.winner) {
+            this.showGameEnd(result.winner).catch(console.error);
+        }
+    }
+
+    private handleReadyStatusUpdate(data: any): void {
+        console.log('🟢 [GamePage] Ready status update:', data);
+        console.log('🔍 [GamePage] Ready status data structure:', JSON.stringify(data, null, 2));
+        console.log('🔍 [GamePage] leftPlayerReady from data:', data.leftPlayerReady);
+        console.log('🔍 [GamePage] rightPlayerReady from data:', data.rightPlayerReady);
+
+        this.leftPlayerReady = data.leftPlayerReady || false;
+        this.rightPlayerReady = data.rightPlayerReady || false;
+
+        console.log(`🔍 [GamePage] Updated ready states: left=${this.leftPlayerReady}, right=${this.rightPlayerReady}`);
+        this.updateReadyCheckUI();
+    }
+
+    private handleServerCountdown(count: number): void {
+        console.log(`⏰ [GamePage] Server countdown: ${count}, gameState=${this.gameState?.state}, isCountingDown=${this.isCountingDown}`);
+
+        // ✅ FIX: Ne pas remettre isCountingDown à true si le jeu a déjà commencé
+        if (count > 0) {
+            this.isCountingDown = true;
+            this.countdownValue = count;
+        } else {
+            // count === 0 signifie "GO!"
+            console.log('🏁 [GamePage] Countdown reached 0 - calling handleGameActuallyStarted');
+            this.handleGameActuallyStarted();
+            return; // ✅ Important: sortir ici pour éviter le render
+        }
+
+        this.render();
+    }
+
+    private handleGameActuallyStarted(): void {
+        console.log('🚀 [STEP 1] handleGameActuallyStarted called');
+        
+        // ✅ Déblocage forcé de tous les états
+        this.isCountingDown = false;
+        this.countdownValue = 0;
+        console.log('🚀 [STEP 2] States reset - isCountingDown:', this.isCountingDown, 'countdownValue:', this.countdownValue);
+        
+        // ✅ Activer explicitement le jeu
+        if (this.gameState) {
+            this.gameState.state = 1; // PongState.Running
+            console.log('🚀 [STEP 3] Game state explicitly set to Running:', this.gameState.state);
+        } else {
+            console.error('🚀 [STEP 3 ERROR] gameState is null!');
+        }
+
+        // ✅ Mise à jour UI immédiate
+        const container = this.element.querySelector('#ready-check-container');
+        if (container) {
+            console.log('🚀 [STEP 4] Found ready-check-container, updating HTML');
+            container.innerHTML = `
+                <div class="text-green-300 font-bold animate-pulse">
+                    🎮 Game Started! Controls active!
+                </div>
+            `;
+        } else {
+            console.error('🚀 [STEP 4 ERROR] ready-check-container not found in DOM!');
+        }
+
+        // ✅ Force render pour appliquer les changements
+        console.log('🚀 [STEP 5] Calling render()...');
+        this.render();
+        console.log('🚀 [STEP 6] Render completed');
+        
+        // ✅ Log de confirmation
+        console.log(`🚀 [STEP 7] Final state check: countdown=${this.isCountingDown}, gameState=${this.gameState?.state}`);
+        
+        // ✅ NOUVEAU: Test si le DOM a bien été mis à jour
+        setTimeout(() => {
+            const checkContainer = this.element.querySelector('#ready-check-container');
+            console.log('🚀 [STEP 8] DOM check after render:', {
+                containerExists: !!checkContainer,
+                containerHTML: checkContainer?.innerHTML,
+                isCountingDown: this.isCountingDown
+            });
+        }, 100);
+    }
+
+    private updateReadyCheckUI(): void {
+        const container = this.element.querySelector('#ready-check-container');
+        if (!container) return;
+
+        const bothReady = this.leftPlayerReady && this.rightPlayerReady;
+
+        if (bothReady) {
+            container.innerHTML = `
+                <div class="text-green-300 font-bold mb-2">
+                    ✅ Both players ready - Starting countdown!
+                </div>
+            `;
+        } else {
+            const playerReadyText = this.isPlayerReady ? '✅ You are ready' : '⏳ Click Ready to start';
+            const opponentReadyText = this.getIsLeftPlayer()
+                ? (this.rightPlayerReady ? '✅ Opponent ready' : '⏳ Waiting for opponent')
+                : (this.leftPlayerReady ? '✅ Opponent ready' : '⏳ Waiting for opponent');
+
+            container.innerHTML = `
+                <div class="mb-3">
+                    <div class="text-white mb-2">${playerReadyText}</div>
+                    <div class="text-gray-300 text-sm">${opponentReadyText}</div>
+                </div>
+                ${!this.isPlayerReady ? `
+                    <button id="ready-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded border-2 border-green-400 transition-colors">
+                        Ready!
+                    </button>
+                ` : `
+                    <button id="unready-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded border-2 border-red-400 transition-colors">
+                        Not Ready
+                    </button>
+                `}
+            `;
+
+            // Add click handlers
+            const readyButton = container.querySelector('#ready-button');
+            const unreadyButton = container.querySelector('#unready-button');
+
+            if (readyButton) {
+                readyButton.addEventListener('click', () => this.setPlayerReady(true));
+            }
+            if (unreadyButton) {
+                unreadyButton.addEventListener('click', () => this.setPlayerReady(false));
+            }
+        }
+    }
+
+    private setPlayerReady(ready: boolean): void {
+        if (!this.gameManager) {
+            console.warn('Cannot set ready status - GameManager not available');
+            return;
+        }
+
+        this.isPlayerReady = ready;
+        this.gameManager.sendReady(ready);
+        this.updateReadyCheckUI();
     }
 
     private subscribeToAuth(): void {
@@ -302,17 +518,24 @@ export class GamePage {
     private updateInstructions(): void {
         const instructionsElement = this.element.querySelector('#game-instructions');
         if (!instructionsElement) return;
-        
+
         if (this.isOnlineGame) {
             instructionsElement.innerHTML = `
                 <div class="text-xl font-bold mb-2 text-green-300">
                     🌐 Online Game
                 </div>
                 <div class="text-lg">
-                    ${this.isLeftPlayer ? 'You are Left Player (W/S Keys)' : 'You are Right Player (↑/↓ Keys)'}
+                    ${(() => {
+                        const isLeft = this.getIsLeftPlayer();
+                        const side = this.getPlayerSide();
+                        console.log(`🖥️ [GamePage] UI Rendering: side=${side}, isLeft=${isLeft}`);
+                        return isLeft ? 'You are Left Player (W/S Keys)' : 'You are Right Player (↑/↓ Keys)';
+                    })()}
                 </div>
-                <div class="text-sm text-gray-300 mt-2">
-                    Waiting for opponent...
+                <div id="ready-check-container" class="mt-4">
+                    <div class="text-sm text-gray-300 mb-2">
+                        Waiting for ready check...
+                    </div>
                 </div>
             `;
         } else if (this.tournamentContext) {
@@ -423,24 +646,58 @@ export class GamePage {
 
     private updateLocalGame(): void {
         if (!this.gameState) return;
+        
+        // En mode online, ne simule que les paddles pour responsivité
+        // Ball simulation = server only
         this.updateLocalPaddles();
-        this.updateBall();
+        
+        if (!this.isOnlineGame) {
+            // Simulation de la balle seulement en mode local
+            this.updateBall();
+        }
     }
 
     private updateLocalPaddles(): void {
         if (!this.gameState) return;
-        const speed = 6;
-        if (this.localInputLeft.up && this.gameState.leftPaddle.pos.y > 0) {
-            this.gameState.leftPaddle.pos.y -= speed;
-        }
-        if (this.localInputLeft.down && this.gameState.leftPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
-            this.gameState.leftPaddle.pos.y += speed;
-        }
-        if (this.localInputRight.up && this.gameState.rightPaddle.pos.y > 0) {
-            this.gameState.rightPaddle.pos.y -= speed;
-        }
-        if (this.localInputRight.down && this.gameState.rightPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
-            this.gameState.rightPaddle.pos.y += speed;
+        
+        // Pour jeu en ligne, ne simule que ton paddle pour responsivité
+        // L'autre paddle est mis à jour par le serveur uniquement
+        if (this.isOnlineGame) {
+            const speed = 6;
+            if (this.getIsLeftPlayer()) {
+                // Simulation locale seulement pour left paddle
+                if (this.localInputLeft.up && this.gameState.leftPaddle.pos.y > 0) {
+                    this.gameState.leftPaddle.pos.y -= speed;
+                }
+                if (this.localInputLeft.down && this.gameState.leftPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+                    this.gameState.leftPaddle.pos.y += speed;
+                }
+                // Right paddle: server-only, pas de simulation locale
+            } else {
+                // Simulation locale seulement pour right paddle
+                if (this.localInputRight.up && this.gameState.rightPaddle.pos.y > 0) {
+                    this.gameState.rightPaddle.pos.y -= speed;
+                }
+                if (this.localInputRight.down && this.gameState.rightPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+                    this.gameState.rightPaddle.pos.y += speed;
+                }
+                // Left paddle: server-only, pas de simulation locale
+            }
+        } else {
+            // Jeu local : simule les deux paddles
+            const speed = 6;
+            if (this.localInputLeft.up && this.gameState.leftPaddle.pos.y > 0) {
+                this.gameState.leftPaddle.pos.y -= speed;
+            }
+            if (this.localInputLeft.down && this.gameState.leftPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+                this.gameState.leftPaddle.pos.y += speed;
+            }
+            if (this.localInputRight.up && this.gameState.rightPaddle.pos.y > 0) {
+                this.gameState.rightPaddle.pos.y -= speed;
+            }
+            if (this.localInputRight.down && this.gameState.rightPaddle.pos.y < this.ARENA_HEIGHT - this.PADDLE_HEIGHT) {
+                this.gameState.rightPaddle.pos.y += speed;
+            }
         }
     }
 
@@ -506,13 +763,24 @@ export class GamePage {
     }
 
     private keydownHandler = (e: KeyboardEvent) => {
-        if (this.isCountingDown) return;
+        // ✅ Debug avec logs colorés pour ressortir
+        console.log(`%c🎮 [INPUT STEP 1] Key pressed: ${e.key}`, 'background: #ff0000; color: white; font-weight: bold; padding: 2px;');
+        console.log(`%c🎮 [INPUT STEP 2] Game state check:`, 'background: #ff4500; color: white; font-weight: bold; padding: 2px;', {
+            isCountingDown: this.isCountingDown,
+            isOnlineGame: this.isOnlineGame,
+            gameState: this.gameState?.state,
+            playerSide: this.getPlayerSide(),
+            hasGameManager: !!this.gameManager,
+            hasSessionId: !!this.sessionId
+        });
         
         if (this.isOnlineGame) {
-            // Send input to server for online games
+            console.log(`🎮 [INPUT STEP 3] Online game - calling handleOnlineInput`);
             this.handleOnlineInput(e.key, true);
+            console.log('🎮 [INPUT STEP 4] handleOnlineInput completed');
         } else {
-            // Handle local input for local games
+            // Local game logic
+            console.log('� [INPUT STEP 3] Local game input');
             switch(e.key.toLowerCase()) {
                 case 'w':
                     this.localInputLeft.up = true;
@@ -532,6 +800,8 @@ export class GamePage {
                     break;
             }
         }
+        
+        console.log(`🎮 [INPUT STEP 5] Input processing completed for ${e.key}`);
     }
 
     private keyupHandler = (e: KeyboardEvent) => {
@@ -558,19 +828,50 @@ export class GamePage {
     }
     
     private handleOnlineInput(key: string, isPressed: boolean): void {
-        if (!this.gameManager || !this.sessionId) return;
+        console.log(`🎮 [ONLINE INPUT STEP 1] handleOnlineInput called: ${key}, pressed=${isPressed}`);
         
-        const validKeys = this.isLeftPlayer ? ['w', 's'] : ['arrowup', 'arrowdown'];
+        if (!this.gameManager) {
+            console.error('🎮 [ONLINE INPUT ERROR] gameManager is null!');
+            return;
+        }
+        if (!this.sessionId) {
+            console.error('🎮 [ONLINE INPUT ERROR] sessionId is null!');
+            return;
+        }
+        
+        console.log(`🎮 [ONLINE INPUT STEP 2] Validation passed - gameManager and sessionId exist`);
+        
+        const playerSide = this.getPlayerSide();
         const normalizedKey = key.toLowerCase();
         
+        console.log(`🎮 [ONLINE INPUT STEP 3] Player side: ${playerSide}, normalized key: ${normalizedKey}`);
+        
+        // Validation des touches par side
+        let validKeys: string[] = [];
+        if (playerSide === 'left') {
+            validKeys = ['w', 's'];
+        } else if (playerSide === 'right') {
+            validKeys = ['arrowup', 'arrowdown'];
+        }
+        
+        console.log(`🎮 [ONLINE INPUT STEP 4] Valid keys for ${playerSide}:`, validKeys);
+        
         if (validKeys.includes(normalizedKey)) {
-            // Use the correct method name from GameManager
+            // ✅ Log plus détaillé
+            const action = normalizedKey === 'w' || normalizedKey === 'arrowup' ? 'Up' : 'Down';
+            console.log(`🎮 [ONLINE INPUT STEP 5] Key ${normalizedKey} is valid - Action: ${action} ${isPressed ? 'pressed' : 'released'} [${playerSide}]`);
+            
+            console.log(`🎮 [ONLINE INPUT STEP 6] Calling gameManager.sendInput...`);
             this.gameManager.sendInput({
                 key: normalizedKey,
                 pressed: isPressed,
-                player: this.isLeftPlayer ? 'left' : 'right',
-                timestamp: Date.now()
+                player: playerSide,
+                timestamp: Date.now(),
+                type: isPressed ? 'PADDLE_MOVE' : 'PADDLE_STOP'  // ✅ Type dynamique
             });
+            console.log(`🎮 [ONLINE INPUT STEP 7] gameManager.sendInput completed`);
+        } else {
+            console.warn(`🎮 [ONLINE INPUT WARNING] Key ${normalizedKey} is not valid for player ${playerSide}. Valid keys:`, validKeys);
         }
     }
 
@@ -690,16 +991,16 @@ export class GamePage {
     }
 
     private render(): void {
-        if (!this.gameState || !this.ctx) return;
+        // console.log(`🎨 [RENDER STEP 1] render() called - gameState exists: ${!!this.gameState}, ctx exists: ${!!this.ctx}, isCountingDown: ${this.isCountingDown}`);
         
-        console.log('🎨 [Game.ts] Rendering state:', {
-            leftPaddleX: this.gameState.leftPaddle.pos.x,
-            rightPaddleX: this.gameState.rightPaddle.pos.x,
-            ballX: this.gameState.ball.pos.x,
-            leftScore: this.gameState.leftScore,
-            rightScore: this.gameState.rightScore
-        });
+        if (!this.gameState || !this.ctx) {
+            console.error(`🎨 [RENDER ERROR] Missing requirements - gameState: ${!!this.gameState}, ctx: ${!!this.ctx}`);
+            return;
+        }
         
+        // console.log(`🎨 [RENDER STEP 2] Starting canvas rendering...`);
+        
+        // Clear canvas and draw game elements
         this.ctx.clearRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
         this.ctx.setLineDash([8, 8]);
         this.ctx.beginPath();
@@ -759,6 +1060,7 @@ export class GamePage {
             );
         }
         if (this.isCountingDown) {
+            // console.log(`🎨 [COUNTDOWN DEBUG] Rendering countdown overlay - isCountingDown: ${this.isCountingDown}, countdownValue: ${this.countdownValue}`);
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(0, 0, this.ARENA_WIDTH, this.ARENA_HEIGHT);
             const elapsedTime = performance.now() - this.countdownStartTime;
@@ -769,6 +1071,7 @@ export class GamePage {
             this.ctx.scale(scale, scale);
             this.ctx.textAlign = 'center';
             if (this.countdownValue > 0) {
+                console.log(`🎨 RENDERING COUNTDOWN: ${this.countdownValue}`);
                 const colors = ['#FF0000', '#FF4500', '#FFD700', '#32CD32', '#1E90FF'];
                 this.ctx.fillStyle = colors[this.countdownValue - 1] || '#FFD700';
                 this.ctx.font = 'bold 120px Iceland, monospace';
@@ -802,31 +1105,204 @@ export class GamePage {
                 );
             }
         }
+        
+        // Render logs disabled for cleaner debugging
+
+        // Log utile : Detect changes (pour debug desync)
+        if (this.previousState) {
+            const deltaLeftY = Math.abs(this.gameState.leftPaddle.pos.y - this.previousState.leftPaddle.pos.y);
+            const deltaRightY = Math.abs(this.gameState.rightPaddle.pos.y - this.previousState.rightPaddle.pos.y);
+            const deltaBallX = Math.abs(this.gameState.ball.pos.x - this.previousState.ball.pos.x);
+            if (deltaLeftY > 0.1 || deltaRightY > 0.1 || deltaBallX > 1) {  // Threshold pour move
+                const playerSide = this.getPlayerSide();
+                console.log(`🔄 State Change Detected: LeftΔY=${deltaLeftY.toFixed(2)}, RightΔY=${deltaRightY.toFixed(2)}, BallΔX=${deltaBallX.toFixed(2)} | Side: ${playerSide}`);
+            }
+        }
+
+        // Log utile : Score change (seulement si new score)
+        if (this.previousState && (this.gameState.leftScore !== this.previousState.leftScore || this.gameState.rightScore !== this.previousState.rightScore)) {
+            console.log(`⚽ Score Updated: ${this.previousState.leftScore || 0}-${this.previousState.rightScore || 0} → ${this.gameState.leftScore}-${this.gameState.rightScore} | Winner? ${this.gameState.state === 2 ? 'Left' : this.gameState.state === 3 ? 'Right' : 'No'}`);
+        }
+
+        this.previousState = { ...this.gameState };  // Shallow copy pour compare
     }
 
     getElement(): HTMLElement {
         return this.element;
     }
 
+    /**
+     * Get the actual player side from GameService (server-assigned)
+     * Falls back to legacy isLeftPlayer if GameService not available
+     */
+    private getPlayerSide(): 'left' | 'right' {
+        if (this.isOnlineGame && this.gameManager) {
+            const gameService = this.gameManager.getGameService();
+            const serverSide = gameService.getPlayerSide();
+            if (serverSide) {
+                console.log(`🎯 [GamePage] Using server-assigned side: ${serverSide}`);
+                return serverSide;
+            }
+            console.warn(`⚠️ [GamePage] No server side assigned yet, using fallback: ${this.isLeftPlayer ? 'left' : 'right'}`);
+        }
+        // Fallback to legacy behavior
+        return this.isLeftPlayer ? 'left' : 'right';
+    }
+
+    /**
+     * Check if current player is left player (using server-assigned side)
+     */
+    private getIsLeftPlayer(): boolean {
+        return this.getPlayerSide() === 'left';
+    }
+
+    private setupCleanupHandlers(): void {
+        // Setup browser navigation event handlers
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
+        window.addEventListener('pagehide', this.handlePageHide);
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', this.handlePopState);
+    }
+
+    private handleBeforeUnload = (event: BeforeUnloadEvent) => {
+        if (this.isOnlineGame && this.gameManager?.isInGame()) {
+            // Prompt user about leaving active game
+            event.preventDefault();
+            event.returnValue = 'You are in an active game. Are you sure you want to leave?';
+
+            // Perform immediate cleanup
+            this.performGameCleanup(true);
+
+            return event.returnValue;
+        }
+    };
+
+    private handlePageHide = () => {
+        // Page is being unloaded (more reliable than beforeunload)
+        if (this.isOnlineGame && this.gameManager?.isInGame()) {
+            console.log('🚪 Page hiding - performing game cleanup');
+            this.performGameCleanup(true);
+        }
+    };
+
+    private handlePopState = () => {
+        // Browser navigation detected
+        if (this.isOnlineGame && this.gameManager?.isInGame()) {
+            console.log('🚪 Browser navigation detected - cleaning up game');
+            this.performGameCleanup(false);
+        }
+    };
+
+    private performGameCleanup(immediate: boolean = false): void {
+        try {
+            console.log(`🧹 GamePage cleanup starting (immediate: ${immediate})`);
+
+            // Stop any ongoing game loops
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+
+            // Notify server we're leaving the game
+            if (this.isOnlineGame && this.gameManager) {
+                try {
+                    console.log('📤 Notifying server about leaving game');
+                    this.gameManager.leaveCurrentGame();
+                } catch (error) {
+                    console.warn('Error leaving game via GameManager:', error);
+                }
+            }
+
+            // Additional server notification via ChatService for redundancy
+            if (this.isOnlineGame && immediate) {
+                try {
+                    const { chatService } = require('../features/friends/services/ChatService');
+                    if (chatService.isCurrentlyInGame()) {
+                        console.log('📤 Additional server notification via ChatService');
+                        chatService.leaveGame();
+                    }
+                } catch (error) {
+                    console.warn('Error accessing ChatService for cleanup:', error);
+                }
+            }
+
+            // Mark game as ended
+            this.gameEnded = true;
+
+            console.log('✅ GamePage cleanup completed');
+        } catch (error) {
+            console.error('Error during game cleanup:', error);
+        }
+    }
+
     destroy(): void {
+        console.log('💥 GamePage destroy() called');
+
+        // Remove browser event handlers first
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
+        window.removeEventListener('pagehide', this.handlePageHide);
+        window.removeEventListener('popstate', this.handlePopState);
+
+        // Perform comprehensive game cleanup
+        this.performGameCleanup(true);
+
+        // Remove keyboard event handlers
         document.removeEventListener('keydown', this.keydownHandler);
         document.removeEventListener('keyup', this.keyupHandler);
+
+        // Cancel animation frames
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
+            this.animationId = null;
         }
+
+        // Remove game end overlay
         if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
             document.body.removeChild(this.gameEndOverlay);
+            this.gameEndOverlay = null;
         }
+
+        // Unsubscribe from auth
         if (this.authUnsubscribe) {
             this.authUnsubscribe();
+            this.authUnsubscribe = undefined;
         }
+
+        // Clean up GameManager event handlers
+        if (this.gameManager) {
+            this.gameManager.onGameStateUpdate = null;
+            this.gameManager.onGameStarted = null;
+            this.gameManager.onGameActuallyStarted = null;
+            this.gameManager.onGameEnded = null;
+            this.gameManager.onGameEvent = null;
+            this.gameManager.onCountdown = null;
+
+            // Final attempt to leave game
+            try {
+                if (this.gameManager.isInGame()) {
+                    console.log('🚪 Final attempt to leave game in destroy()');
+                    this.gameManager.leaveCurrentGame();
+                }
+            } catch (error) {
+                console.warn('Final game leave attempt failed:', error);
+            }
+        }
+
+        // Clean up UI components
         if (this.header) {
             this.header.destroy();
         }
         if (this.banner) {
             this.banner.destroy();
         }
-        this.element.remove();
+
+        // Remove DOM element
+        if (this.element && this.element.parentNode) {
+            this.element.parentNode.removeChild(this.element);
+        }
+
+        console.log('✅ GamePage destroy() completed');
     }
 }
 

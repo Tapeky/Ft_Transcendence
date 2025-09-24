@@ -261,14 +261,23 @@ export class GameManager {
         // N'envoyer les game_state que si le jeu est en cours
         if (game.gameState === 'playing') {
           // Handle socket send errors gracefully
-          game.leftPlayer.socket.send(JSON.stringify({
-            type: 'game_state',
-            data: game.repr(game.leftPlayer.id)
-          }));
-          game.rightPlayer.socket.send(JSON.stringify({
-            type: 'game_state',
-            data: game.repr(game.rightPlayer.id)
-          }));
+          try {
+            game.leftPlayer.socket.send(JSON.stringify({
+              type: 'game_state',
+              data: game.repr(game.leftPlayer.id)
+            }));
+          } catch (error) {
+            console.error(`❌ Failed to send game_state to left player (game ${game.id}):`, error);
+          }
+          
+          try {
+            game.rightPlayer.socket.send(JSON.stringify({
+              type: 'game_state',
+              data: game.repr(game.rightPlayer.id)
+            }));
+          } catch (error) {
+            console.error(`❌ Failed to send game_state to right player (game ${game.id}):`, error);
+          }
         }
         if (game.pong.state !== PongState.Running) {
           console.log(`game ${game.id} finished with state ${game.pong.state} !`);

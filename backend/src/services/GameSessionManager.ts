@@ -305,6 +305,7 @@ export interface IGameSessionManager {
 
   addPlayer(sessionId: string, playerId: string): void;
   removePlayer(sessionId: string, playerId: string): void;
+  setPlayerReady(sessionId: string, playerId: string, ready: boolean): void;
 
   getGameState(sessionId: string): any;
   updateGameState(sessionId: string, state: any): void;
@@ -431,6 +432,166 @@ export class GameSessionManager implements IGameSessionManager {
       player.connected = true;
       player.lastPing = Date.now();
       console.log(`👤 Player ${playerId} connected to session ${sessionId}`);
+
+      // Check if both players are connected and ready to start countdown
+      this.checkReadyState(sessionId);
+    }
+  }
+
+  // ============================================================================
+  // Ready Check System
+  // ============================================================================
+
+  setPlayerReady(sessionId: string, playerId: string, ready: boolean): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    // Only allow ready changes in waiting state
+    if (session.state !== 'waiting') {
+      console.warn(`Cannot set ready - session ${sessionId} state is ${session.state}`);
+      return;
+    }
+
+    const player = session.players.find(p => p.id === playerId);
+    if (!player || !player.connected) {
+      console.warn(`Player ${playerId} not found or disconnected in session ${sessionId}`);
+      return;
+    }
+
+    const wasReady = player.ready;
+    player.ready = ready;
+
+    console.log(`🎮 Player ${playerId} ready state: ${ready} in session ${sessionId}`);
+
+    // Broadcast ready update to all players
+    this.broadcastReadyUpdate(sessionId);
+
+    // Check if we can start countdown
+    if (ready && !wasReady) {
+      this.checkReadyState(sessionId);
+    }
+  }
+
+  private checkReadyState(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session || session.state !== 'waiting') return;
+
+    const connectedPlayers = session.players.filter(p => p.connected);
+    const readyPlayers = session.players.filter(p => p.connected && p.ready);
+
+    // Need exactly 2 connected players, both ready
+    if (connectedPlayers.length === 2 && readyPlayers.length === 2) {
+      this.startCountdown(sessionId);
+    }
+  }
+
+  private startCountdown(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    session.state = 'countdown';
+    console.log(`⏱️  Starting countdown for session ${sessionId}`);
+
+    // Broadcast countdown start
+    this.broadcastCountdownStart(sessionId);
+
+    // Start 3-second countdown
+    setTimeout(() => {
+      this.startGame(sessionId);
+    }, 3000);
+  }
+
+  private startGame(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session || session.state !== 'countdown') return;
+
+    // Verify both players are still connected and ready
+    const connectedPlayers = session.players.filter(p => p.connected);
+    if (connectedPlayers.length < 2) {
+      console.warn(`Cannot start game - insufficient players in session ${sessionId}`);
+      session.state = 'waiting';
+      // Reset all ready states
+      session.players.forEach(p => p.ready = false);
+      this.broadcastReadyUpdate(sessionId);
+      return;
+    }
+
+    session.state = 'playing';
+    session.startedAt = new Date();
+    console.log(`🚀 Started game in session ${sessionId}`);
+
+    // Broadcast game start
+    this.broadcastGameStart(sessionId);
+  }
+
+  private broadcastReadyUpdate(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    const message = {
+      type: 'READY_UPDATE',
+      timestamp: Date.now(),
+      payload: {
+        sessionId,
+        leftReady: session.players.find(p => p.side === 'left')?.ready || false,
+        rightReady: session.players.find(p => p.side === 'right')?.ready || false,
+        sessionState: session.state
+      }
+    };
+
+    this.broadcastToSession(sessionId, message);
+  }
+
+  private broadcastCountdownStart(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    const message = {
+      type: 'COUNTDOWN_START',
+      timestamp: Date.now(),
+      payload: {
+        sessionId,
+        countdownDuration: 3000 // 3 seconds
+      }
+    };
+
+    this.broadcastToSession(sessionId, message);
+  }
+
+  private broadcastGameStart(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    const engine = this.gameEngines.get(sessionId);
+    const gameState = engine?.getGameState();
+
+    const message = {
+      type: 'GAME_START',
+      timestamp: Date.now(),
+      payload: {
+        sessionId,
+        gameState,
+        serverTime: Date.now()
+      }
+    };
+
+    this.broadcastToSession(sessionId, message);
+  }
+
+  private broadcastToSession(sessionId: string, message: any): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    // Send to all connected players
+    for (const player of session.players) {
+      if (player.connected && player.socket) {
+        try {
+          player.socket.send(JSON.stringify(message));
+        } catch (error) {
+          console.error(`Failed to send message to player ${player.id}:`, error);
+          player.connected = false;
+        }
+      }
     }
   }
 
@@ -441,11 +602,19 @@ export class GameSessionManager implements IGameSessionManager {
     const player = session.players.find(p => p.id === playerId);
     if (player) {
       player.connected = false;
+      player.ready = false; // Reset ready state on disconnect
       console.log(`👤 Player ${playerId} disconnected from session ${sessionId}`);
 
       // If game is in progress, pause it
       if (session.state === 'playing') {
         session.state = 'paused';
+      }
+      // If in countdown or waiting, reset to waiting and broadcast ready update
+      else if (session.state === 'countdown' || session.state === 'waiting') {
+        session.state = 'waiting';
+        // Reset all ready states when someone disconnects during ready check
+        session.players.forEach(p => p.ready = false);
+        this.broadcastReadyUpdate(sessionId);
       }
     }
   }

@@ -52,6 +52,9 @@ export class GameInvitationManager {
   private gameService: GameService;
   private pendingInvites = new Map<string, GameInviteData>();
   private activeSessions = new Map<string, GameSession>();
+  private isInitializingSession = false;
+  private isGameStarting = false;
+  private isProcessingInvite = false;
 
   // Event handlers
   public onInviteReceived: ((invite: GameInviteData) => void) | null = null;
@@ -118,9 +121,9 @@ export class GameInvitationManager {
       this.handleGameStart(data);
     });
 
-    // Handle legacy game started events (bridge to new system)
+    // Handle game started events from backend
     this.chatService.on('game_started', (data) => {
-      this.handleLegacyGameStarted(data);
+      this.handleGameStart(data);
     });
 
     // Handle legacy game success (session creation)
@@ -137,6 +140,12 @@ export class GameInvitationManager {
   }
 
   private handleInviteReceived(data: any): void {
+    // Guard against duplicate invites
+    if (this.pendingInvites.has(data.id)) {
+      console.log(`🔍 [GameInvitationManager] Duplicate invite ${data.id} ignored`);
+      return;
+    }
+
     const invite: GameInviteData = {
       id: data.id || generateId(),
       from_user_id: data.from_user_id,
@@ -258,6 +267,18 @@ export class GameInvitationManager {
   // ============================================================================
 
   private handleSessionCreated(data: any): void {
+    if (this.isGameStarting) {
+      console.log('🔄 Game start already in progress, skipping');
+      return;
+    }
+    this.isGameStarting = true;
+
+    if (this.isInitializingSession) {
+      console.log(`🔄 Session ${data.session_id} already initializing, skipping duplicate`);
+      return;
+    }
+    this.isInitializingSession = true;
+
     console.log('🎮 GameInvitationManager: Game session created:', data);
     console.log('🔍 [DEBUG] SessionCreated data structure:', JSON.stringify(data, null, 2));
 
@@ -282,9 +303,23 @@ export class GameInvitationManager {
     } catch (error) {
       console.error('❌ Failed to auto-join session:', error);
     }
+
+    setTimeout(() => { this.isInitializingSession = false; }, 2000);  // Buffer 2s pour async
+    setTimeout(() => { this.isGameStarting = false; }, 3000);  // Buffer 3s pour game start
   }
 
   public handleGameStart(data: any): void {
+    if (this.isGameStarting) {
+      console.log('🔄 Game start already in progress, skipping duplicate');
+      return;
+    }
+
+    if (this.gameService.isConnected()) {
+      console.log('🎮 Game already connected, skipping start');
+      return;
+    }
+
+    this.isGameStarting = true;
     console.log('🎮 [GameInvitationManager] Handling game start:', data);
     console.log('🔍 [DEBUG] Game start data structure:', JSON.stringify(data, null, 2));
 
@@ -295,6 +330,7 @@ export class GameInvitationManager {
 
     if (!gameId) {
       console.error('❌ No gameId in game_start message');
+      this.isGameStarting = false;
       return;
     }
 
@@ -308,32 +344,42 @@ export class GameInvitationManager {
 
       if (this.gameService) {
         // Initialize the online game session
-        this.gameService.initializeSession(gameId, 'online').then(() => {
+        this.gameService.initializeSession(gameId.toString(), 'online').then(() => {
           console.log('✅ Game session initialized successfully');
-          
+
           // Store game metadata for later use
           (this.gameService as any).gameMetadata = {
             gameId,
             opponent,
             playerSide: side
           };
-          
+
+          // Trigger onGameStarted callback
+          if (this.onGameStarted) {
+            this.onGameStarted(gameId.toString());
+          }
+
           // Navigate to the game page
           console.log('🚀 [GameInvitationManager] Navigating to game page...');
           router.navigate(`/game/${gameId}`).then(() => {
             console.log('✅ Successfully navigated to game page');
+            this.isGameStarting = false;
           }).catch((error: any) => {
             console.error('❌ Failed to navigate to game page:', error);
+            this.isGameStarting = false;
           });
-          
+
         }).catch((error) => {
           console.error('❌ Failed to initialize game session:', error);
+          this.isGameStarting = false;
         });
       } else {
         console.error('❌ GameService not available');
+        this.isGameStarting = false;
       }
     } catch (error) {
       console.error('❌ Failed to start game session:', error);
+      this.isGameStarting = false;
     }
   }
 
@@ -430,6 +476,11 @@ export class GameInvitationManager {
   }
 
   respondToInvite(inviteId: string, response: 'accept' | 'decline'): void {
+    if (this.isProcessingInvite) {
+      console.log('Invite already processing, skipping');
+      return;
+    }
+
     const invite = this.pendingInvites.get(inviteId);
     if (!invite) {
       console.warn(`Invite ${inviteId} not found`);
@@ -439,18 +490,29 @@ export class GameInvitationManager {
     console.log(`🎮 [GameInvitationManager] Responding to invite ${inviteId}: ${response}`);
     console.log(`🔍 [DEBUG] Invite details:`, JSON.stringify(invite, null, 2));
     
+    this.isProcessingInvite = true;
+    
     // Send response to server via ChatService
     this.chatService.respondToGameInvite(inviteId, response)
       .then(() => {
         console.log(`✅ [GameInvitationManager] Response sent to server: ${response}`);
         invite.status = response === 'accept' ? 'accepted' : 'declined';
-        
+
         if (response === 'decline') {
           this.pendingInvites.delete(inviteId);
         }
       })
       .catch((error) => {
-        console.error(`❌ [GameInvitationManager] Failed to send response:`, error);
+        // For acceptance responses, ignore timeout errors if game already started
+        if (response === 'accept' && (error.message.includes('timeout') || error.message.includes('expired'))) {
+          console.log(`ℹ️ [GameInvitationManager] Accept response timeout ignored - game may have started successfully`);
+          invite.status = 'accepted';
+        } else {
+          console.error(`❌ [GameInvitationManager] Failed to send response:`, error);
+        }
+      })
+      .finally(() => {
+        this.isProcessingInvite = false;
       });
   }
 
@@ -468,14 +530,38 @@ export class GameInvitationManager {
   // ============================================================================
 
   async joinGameSession(sessionId: string): Promise<void> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {
-      throw new OnlineGameError('Game session not found', 'SESSION_NOT_FOUND', sessionId);
-    }
+    console.log(`🎮 [GameInvitationManager] Joining game session: ${sessionId}`);
 
     try {
-      await this.initializeGameSession(sessionId);
+      // For the old system, the game is already created on the backend
+      // We just need to initialize our frontend to connect to it
+      const gameId = parseInt(sessionId);
+      if (!isNaN(gameId)) {
+        console.log(`🎮 [GameInvitationManager] Connecting to existing game with ID: ${gameId}`);
+
+        // Initialize the game service for this session
+        await this.gameService.initializeSession(sessionId, 'online');
+
+        // The connection is already established via ChatService WebSocket
+        // No need to send additional join_game message - backend already knows about both players
+        console.log(`✅ Successfully connected to game session: ${sessionId}`);
+
+        // Store the session for tracking
+        const session: GameSession = {
+          session_id: sessionId,
+          player1_id: 0,
+          player2_id: 0,
+          game_type: 'pong',
+          created_at: new Date().toISOString()
+        };
+        this.activeSessions.set(sessionId, session);
+
+      } else {
+        throw new Error(`Invalid session ID format: ${sessionId}`);
+      }
+
     } catch (error) {
+      console.error(`❌ Failed to join game session ${sessionId}:`, error);
       if (this.onError) {
         this.onError(new OnlineGameError(
           `Failed to join game session: ${error}`,

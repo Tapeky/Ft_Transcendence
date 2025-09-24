@@ -70,15 +70,24 @@ function createVector2(x: number, y: number): Vector2 {
 function convertOnlineStateToLocal(onlineState: OnlineGameState): GameState {
   return {
     leftPaddle: {
-      pos: createVector2(onlineState.leftPaddle.pos.x, onlineState.leftPaddle.pos.y),
+      pos: createVector2(
+        Math.round(onlineState.leftPaddle.pos.x * 100) / 100,
+        Math.round(onlineState.leftPaddle.pos.y * 100) / 100
+      ),
       hitCount: onlineState.leftPaddle.hitCount
     },
     rightPaddle: {
-      pos: createVector2(onlineState.rightPaddle.pos.x, onlineState.rightPaddle.pos.y),
+      pos: createVector2(
+        Math.round(onlineState.rightPaddle.pos.x * 100) / 100,
+        Math.round(onlineState.rightPaddle.pos.y * 100) / 100
+      ),
       hitCount: onlineState.rightPaddle.hitCount
     },
     ball: {
-      pos: createVector2(onlineState.ball.pos.x, onlineState.ball.pos.y),
+      pos: createVector2(
+        Math.round(onlineState.ball.pos.x * 100) / 100,
+        Math.round(onlineState.ball.pos.y * 100) / 100
+      ),
       direction: createVector2(onlineState.ball.direction.x, onlineState.ball.direction.y)
     },
     state: onlineState.state as any, // Cast enum conversion
@@ -104,6 +113,35 @@ function convertLocalStateToOnline(localState: GameState): OnlineGameState {
     state: localState.state as any, // Cast enum conversion
     leftScore: localState.leftScore || 0,
     rightScore: localState.rightScore || 0
+  };
+}
+
+function lerpStates(oldState: GameState, newState: GameState, factor: number): GameState {
+  return {
+    leftPaddle: {
+      pos: createVector2(
+        oldState.leftPaddle.pos.x + (newState.leftPaddle.pos.x - oldState.leftPaddle.pos.x) * factor,
+        oldState.leftPaddle.pos.y + (newState.leftPaddle.pos.y - oldState.leftPaddle.pos.y) * factor
+      ),
+      hitCount: newState.leftPaddle.hitCount // snap hitCount
+    },
+    rightPaddle: {
+      pos: createVector2(
+        oldState.rightPaddle.pos.x + (newState.rightPaddle.pos.x - oldState.rightPaddle.pos.x) * factor,
+        oldState.rightPaddle.pos.y + (newState.rightPaddle.pos.y - oldState.rightPaddle.pos.y) * factor
+      ),
+      hitCount: newState.rightPaddle.hitCount // snap hitCount
+    },
+    ball: {
+      pos: createVector2(
+        oldState.ball.pos.x + (newState.ball.pos.x - oldState.ball.pos.x) * factor,
+        oldState.ball.pos.y + (newState.ball.pos.y - oldState.ball.pos.y) * factor
+      ),
+      direction: newState.ball.direction // snap direction
+    },
+    state: newState.state, // snap state
+    leftScore: newState.leftScore, // snap scores
+    rightScore: newState.rightScore
   };
 }
 
@@ -264,6 +302,7 @@ export interface IGameService {
 
   // Input handling
   sendInput(input: PlayerInput): void;
+  sendReady(ready: boolean): void;
   applyPrediction(input: PlayerInput): GameState | null;
   reconcileState(serverState: GameState, timestamp: number): void;
 
@@ -294,6 +333,7 @@ export class GameService implements IGameService {
   // Mode and state
   public mode: 'local' | 'online' = 'local';
   public currentState: GameState | null = null;
+  public previousState: GameState | null = null;
   public stateHistory: StateSnapshot[] = [];
 
   // Server authoritative mode
@@ -419,21 +459,20 @@ export class GameService implements IGameService {
       if (!this.chatService.isConnected()) {
         await this.chatService.connect();
       }
-      
+
       this.setupChatServiceGameListeners();
-      
-      // Switch to server authoritative mode for online games
+
+      // ✅ MODE SIMPLE : Serveur autoritaire, pas de simulation locale
       this.isServerAuthoritative = true;
-      this.stopLocalSimulation();
-      
-      // Notifier ChatService qu'on rejoint une session de jeu
-      this.chatService.joinGame(sessionId);
+      this.stopLocalSimulation(); // On stoppe tout, on ne garde que le serveur
+
+      console.log(`🎮 Connected to game ${sessionId} - Simple server mode`);
       
       // Simuler une connexion réussie pour compatibilité
       this.ws = {} as WebSocket; // Mock object pour éviter les null checks
       this.sessionId = sessionId;
       
-      console.log(`✅ Switched to server authoritative mode for game ${sessionId}`);
+      console.log(`✅ Switched to simple server authoritative mode for game ${sessionId}`);
       
       return Promise.resolve(this.ws);
     } catch (error) {
@@ -448,6 +487,30 @@ export class GameService implements IGameService {
       clearInterval(this.localUpdateInterval);
       this.localUpdateInterval = null;
       console.log('🔇 Local simulation stopped');
+    }
+  }
+
+  private startPaddlePrediction(): void {
+    // ✅ Simulation légère uniquement pour les paddles du joueur
+    this.localUpdateInterval = setInterval(() => {
+      if (this.currentState && this.playerSide) {
+        this.applyLocalPaddlePrediction();
+      }
+    }, 16); // 60fps pour la réactivité
+    console.log('🎯 Paddle prediction started for local responsiveness');
+  }
+
+  private applyLocalPaddlePrediction(): void {
+    // Simulation légère pour réactivité des paddles seulement
+    if (!this.currentState) return;
+    
+    // Applique les inputs locaux immédiatement pour la réactivité
+    // Le serveur restera autoritaire pour la position finale
+    const paddle = this.playerSide === 'left' ? this.currentState.leftPaddle : this.currentState.rightPaddle;
+    if (paddle) {
+      // La prédiction locale sera écrasée par les updates du serveur
+      // Mais elle donne une réactivité immédiate
+      this.notifyStateUpdate(this.currentState);
     }
   }
 
@@ -469,25 +532,32 @@ export class GameService implements IGameService {
     this.chatService.on('player_disconnected', (data: any) => {
       this.handlePlayerDisconnected(data);
     });
+
+    // Listen for ready status updates
+    this.chatService.on('ready_status_update', (data: any) => {
+      this.handleReadyStatusUpdate(data);
+    });
   }
 
   private handleChatServiceStateUpdate(gameState: any): void {
-    console.log('🎮 [GameService] handleChatServiceStateUpdate called with:', gameState);
     
     // Extract player side assignment if present
     if (gameState.playerSide) {
       this.playerSide = gameState.playerSide;
       console.log(`🎮 [GameService] Player side assigned: ${this.playerSide}`);
+
+      // Notify about player side assignment for UI update
+      if (this.onGameEvent) {
+        this.onGameEvent('player_side_assigned', { playerSide: this.playerSide });
+      }
     }
     
     // Convertir le format ChatService vers le format GameState
     const convertedState = this.convertChatServiceState(gameState);
-    console.log('🎮 [GameService] Converted state:', convertedState);
     
     // Force server state in authoritative mode
     if (this.isServerAuthoritative) {
       this.currentState = convertedState;
-      console.log('🔄 [GameService] Server state applied directly (authoritative mode)');
       this.notifyStateUpdate(convertedState);
     } else {
       // Use prediction/reconciliation for local mode
@@ -555,6 +625,13 @@ export class GameService implements IGameService {
     console.log('🎮 Player disconnected:', data);
     if (this.onGameEvent) {
       this.onGameEvent('player_disconnected', data);
+    }
+  }
+
+  private handleReadyStatusUpdate(data: any): void {
+    console.log('🟢 [GameService] Ready status update:', data);
+    if (this.onGameEvent) {
+      this.onGameEvent('ready_status_update', data);
     }
   }
 
@@ -681,30 +758,42 @@ export class GameService implements IGameService {
   // ============================================================================
 
   sendInput(input: PlayerInput): void {
+    console.log(`🎮 [GAMESERVICE SIMPLE] sendInput called:`, input);
+    
     if (this.mode === 'local') {
+      console.log(`🎮 [GAMESERVICE SIMPLE] Local mode - calling handleLocalInput`);
       this.handleLocalInput(input);
       return;
     }
 
-    // Online mode input handling
-    input.id = generateId();
-    input.sequenceNumber = ++this.inputSequence;
-    input.timestamp = this.getServerTime();
+    console.log(`🎮 [GAMESERVICE SIMPLE] Online mode - direct server send`);
+    
+    // ✅ SIMPLICITÉ MAXIMALE : Envoi direct au serveur sans prédiction ni buffer
+    this.sendInputToServer(input);
+    console.log(`🎮 [GAMESERVICE SIMPLE] Direct send completed`);
+  }
 
-    // Apply prediction immediately
-    if (this.predictionSettings.enabled) {
-      const predictedState = this.applyPrediction(input);
-      if (predictedState) {
-        this.currentState = predictedState;
-        this.notifyStateUpdate(predictedState);
-      }
+  sendReady(ready: boolean): void {
+    if (!this.sessionId) {
+      console.warn('Cannot send ready status - no active session');
+      return;
     }
 
-    // Buffer input for reconciliation
-    this.inputBuffer.add(input);
+    // For local games, we don't need ready check
+    if (this.mode === 'local') {
+      console.log('Local game - skipping ready check');
+      return;
+    }
 
-    // Send to server
-    this.sendInputToServer(input);
+    // Send ready status through ChatService
+    try {
+      // Parse gameId from sessionId if it contains it, otherwise use a default
+      const gameId = parseInt(this.sessionId) || 0;
+      this.chatService.sendPlayerReady(gameId, ready);
+      console.log(`🎮 [GameService] Sent ready status: ${ready} for session ${this.sessionId}`);
+    } catch (error) {
+      console.error('Failed to send ready status:', error);
+    }
   }
 
   private handleLocalInput(input: PlayerInput): void {
@@ -716,13 +805,46 @@ export class GameService implements IGameService {
   }
 
   private sendInputToServer(input: PlayerInput): void {
+    console.log(`🎮 [SERVER SIMPLE] sendInputToServer:`, { key: input.key, pressed: input.pressed });
+    
     if (!this.chatService.isConnected()) {
-      console.warn('Cannot send input - ChatService WebSocket not connected');
+      console.error('🎮 [SERVER SIMPLE] ChatService not connected!');
       return;
     }
 
-    // Use ChatService's existing sendGameInput method
-    this.chatService.sendGameInput(input as any);
+    // ✅ CONVERSION SIMPLE ET DIRECTE
+    const convertedInput = {
+      up: (input.key === 'w' || input.key === 'arrowup') && input.pressed,
+      down: (input.key === 's' || input.key === 'arrowdown') && input.pressed
+    };
+
+    console.log(`🎮 [SERVER SIMPLE] Sending:`, convertedInput);
+    this.chatService.sendGameInput(convertedInput);
+    console.log(`🎮 [SERVER SIMPLE] ✅ Sent to ChatService`);
+  }
+
+  public sendGameInput(input: { up: boolean; down: boolean }): void {
+    const playerSide = this.getPlayerSide();
+    if (!playerSide) {
+      console.warn('No side assigned, ignoring input');
+      return;
+    }
+
+    // Only send input if we have actual movement
+    if (!input.up && !input.down) {
+      return;
+    }
+
+    // Route input par side - envoie seulement ton input
+    console.log(`⌨️ Input Sent [Side=${playerSide}]: Up=${input.up}, Down=${input.down}`);
+
+    const playerInput: PlayerInput = {
+      key: input.up ? (playerSide === 'left' ? 'w' : 'arrowup') : (playerSide === 'left' ? 's' : 'arrowdown'),
+      pressed: true,
+      player: playerSide,
+      timestamp: Date.now()
+    };
+    this.sendInputToServer(playerInput);
   }
 
   // ============================================================================
@@ -950,8 +1072,16 @@ export class GameService implements IGameService {
   }
 
   private notifyStateUpdate(state: GameState): void {
+    // Apply simple lerp for smooth rendering
+    if (this.previousState) {
+      this.currentState = lerpStates(this.previousState, state, 0.2);
+    } else {
+      this.currentState = state;
+    }
+    this.previousState = { ...this.currentState }; // clone
+
     if (this.onStateUpdate) {
-      this.onStateUpdate(state);
+      this.onStateUpdate(this.currentState);
     }
   }
 

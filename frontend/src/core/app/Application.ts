@@ -3,16 +3,19 @@ import { router } from './Router';
 import { AuthManager } from '../../core/auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
 import { gameNotificationService } from '../../shared/services/GameNotificationService';
+import { GameManager } from '../../services/GameManager';
 
 export class Application {
   private static instance: Application;
   private routeGuard: RouteGuard;
   private authManager: AuthManager;
+  private gameManager: GameManager;
   private isInitialized = false;
 
   private constructor() {
     this.authManager = AuthManager.getInstance();
     this.routeGuard = new RouteGuard();
+    this.gameManager = GameManager.getInstance();
   }
 
   public static getInstance(): Application {
@@ -28,6 +31,7 @@ export class Application {
     this.initializeRouteProtection();
     this.setupErrorHandling();
     await gameNotificationService.initialize();
+    await this.gameManager.initialize(); // Initialize GameManager
     this.isInitialized = true;
   }
 
@@ -69,6 +73,7 @@ export class Application {
 
   public getRouteGuard(): RouteGuard { return this.routeGuard; }
   public getAuthManager(): AuthManager { return this.authManager; }
+  public getGameManager(): GameManager { return this.gameManager; }
   public shutdown(): void { this.isInitialized = false; }
 }
 
@@ -78,8 +83,10 @@ declare global {
   interface Window {
     router: typeof router;
     application: typeof application;
+    GameManager: typeof GameManager;
   }
 }
 
 window.router = router;
 window.application = application;
+window.GameManager = GameManager;

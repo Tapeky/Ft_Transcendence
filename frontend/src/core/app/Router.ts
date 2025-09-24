@@ -1,13 +1,20 @@
 import { RouteGuard } from './RouteGuard';
+import { PongRenderer } from '../../features/game/PongRenderer';
+import { GameManager } from '../../services/GameManager';
+
+let pongRenderer: PongRenderer | null = null;
 
 export class Router {
   private routes: Map<string, (path?: string) => Promise<HTMLElement>> = new Map();
   private routeGuard: RouteGuard | null = null;
+  private currentPath: string = '';
+  private gameManager: GameManager | null = null;
 
   constructor() {
     this.setupRoutes();
     this.handleInitialRoute();
     this.setupPopState();
+    this.setupGameCleanup();
   }
 
   public setRouteGuard(guard: RouteGuard): void {
@@ -77,6 +84,43 @@ export class Router {
       return new GamePage().getElement();
     });
 
+    this.routes.set('/game-vanilla', async (path?: string) => {
+      // Extract session ID from path /game/:id
+      const segments = (path || '').split('/');
+      const sessionId = segments.length >= 3 ? segments[2] : 'test-session';
+
+      // Destroy existing renderer if any
+      if (pongRenderer) {
+        pongRenderer.destroy();
+      }
+
+      // Create container for PongRenderer
+      const container = document.createElement('div');
+      container.id = 'game-root';
+      container.style.width = '100%';
+      container.style.height = '100vh';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
+      container.style.backgroundColor = '#000';
+
+      // Create new PongRenderer singleton
+      pongRenderer = new PongRenderer('game-root');
+      pongRenderer.setSessionId(sessionId);
+
+      // Cleanup on page leave
+      const cleanup = () => {
+        if (pongRenderer) {
+          pongRenderer.destroy();
+          pongRenderer = null;
+        }
+        window.removeEventListener('beforeunload', cleanup);
+      };
+      window.addEventListener('beforeunload', cleanup);
+
+      return container;
+    });
+
     this.routes.set('/404', async () => {
       const { NotFoundPage } = await import('../../pages/NotFound');
       return new NotFoundPage().getElement();
@@ -95,6 +139,12 @@ export class Router {
     }
 
     if (path.startsWith('/game')) {
+      const segments = path.split('/');
+      if (segments.length >= 3 && segments[2] === 'vanilla') {
+        // /game/vanilla/:id format - redirect to game-vanilla
+        return (path?: string) => this.routes.get('/game-vanilla')!(path);
+      }
+      // All other /game paths (including /game/:id) go to regular game
       return this.routes.get('/game');
     }
 
@@ -113,9 +163,13 @@ export class Router {
         return;
 
     try {
+      // Check if navigating away from game page - trigger cleanup
+      await this.handleNavigationCleanup(this.currentPath, path);
+
       if (window.location.pathname + window.location.search !== path)
         window.history.pushState(null, '', path);
 
+      this.currentPath = path;
       await this.renderPath(path);
     } catch (error) {
       this.renderError(`Erreur de navigation: ${error}`);
@@ -137,10 +191,13 @@ export class Router {
 
   private setupPopState(): void {
     window.addEventListener('popstate', async () => {
-      const currentPath = window.location.pathname + window.location.search;
+      const newPath = window.location.pathname + window.location.search;
 
       try {
-        await this.renderPath(currentPath);
+        // Handle cleanup for back/forward navigation
+        await this.handleNavigationCleanup(this.currentPath, newPath);
+        this.currentPath = newPath;
+        await this.renderPath(newPath);
       } catch (error) {
         this.renderError(`Erreur navigation historique: ${error}`);
       }
@@ -167,10 +224,126 @@ export class Router {
     `;
   }
 
+  private setupGameCleanup(): void {
+    // Setup browser event handlers for cleanup
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
+    window.addEventListener('unload', this.handleUnload);
+
+    // Handle visibility change (tab switch, minimize)
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
+  private handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    // Only prompt if user is in an active online game
+    if (this.isInGamePage() && this.isInOnlineGame()) {
+      event.preventDefault();
+      event.returnValue = 'You are in an active game. Are you sure you want to leave?';
+
+      // Attempt immediate cleanup
+      this.performGameCleanup(true);
+
+      return event.returnValue;
+    }
+  };
+
+  private handleUnload = () => {
+    // Final cleanup attempt when page unloads
+    if (this.isInGamePage()) {
+      this.performGameCleanup(true);
+    }
+  };
+
+  private handleVisibilityChange = () => {
+    // If tab becomes hidden while in game, this could indicate navigation
+    if (document.hidden && this.isInGamePage()) {
+      console.log('🔄 Tab hidden while in game - preparing for potential cleanup');
+      // Don't cleanup immediately, just prepare
+    }
+  };
+
+  private async handleNavigationCleanup(fromPath: string, toPath: string): Promise<void> {
+    // Check if leaving a game page
+    if (this.isGamePath(fromPath) && !this.isGamePath(toPath)) {
+      console.log(`🧹 Navigating away from game (${fromPath} → ${toPath}) - triggering cleanup`);
+      await this.performGameCleanup(false);
+    }
+  }
+
+  private isGamePath(path: string): boolean {
+    return path.startsWith('/game') || path.includes('game');
+  }
+
+  private isInGamePage(): boolean {
+    return this.isGamePath(this.currentPath || window.location.pathname);
+  }
+
+  private isInOnlineGame(): boolean {
+    try {
+      if (!this.gameManager) {
+        this.gameManager = GameManager.getInstance();
+      }
+      return this.gameManager.isOnlineGame();
+    } catch (error) {
+      console.warn('Could not check online game status:', error);
+      return false;
+    }
+  }
+
+  private performGameCleanup(immediate: boolean = false): void {
+    try {
+      console.log(`🧹 Performing game cleanup (immediate: ${immediate})`);
+
+      // Get GameManager instance
+      if (!this.gameManager) {
+        this.gameManager = GameManager.getInstance();
+      }
+
+      // Leave current game if any
+      if (this.gameManager.isInGame()) {
+        console.log('🚪 Leaving current game via GameManager');
+        this.gameManager.leaveCurrentGame();
+      }
+
+      // Cleanup PongRenderer if exists
+      if (pongRenderer) {
+        console.log('🧹 Cleaning up PongRenderer');
+        pongRenderer.destroy();
+        pongRenderer = null;
+      }
+
+      // Additional cleanup for immediate mode (page unload)
+      if (immediate) {
+        // Force server notification via ChatService
+        try {
+          const { ChatService } = require('../../features/friends/services/ChatService');
+          const chatService = ChatService.getInstance();
+          if (chatService.isCurrentlyInGame()) {
+            chatService.leaveGame();
+          }
+        } catch (error) {
+          console.warn('Could not access ChatService for cleanup:', error);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error during game cleanup:', error);
+    }
+  }
+
   public getCurrentPath(): string { return window.location.pathname; }
-  
+
   public getAvailableRoutes(): string[] {
     return Array.from(this.routes.keys());
+  }
+
+  // Cleanup method for proper router destruction
+  public destroy(): void {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    window.removeEventListener('unload', this.handleUnload);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+
+    // Final cleanup
+    this.performGameCleanup(true);
   }
 }
 

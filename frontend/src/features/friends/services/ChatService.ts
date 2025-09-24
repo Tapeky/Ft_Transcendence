@@ -279,10 +279,14 @@ export class ChatService {
 
       case 'game_state':
         // Le serveur envoie game_state avec les mises à jour de jeu en temps réel
-        console.log('🚀 GAME_STATE RECEIVED FROM SERVER:', data);
         this.handleGameUpdate(data);
         // Also emit for GameService compatibility
         this.emit('game_state_update', data.data || data);
+        break;
+
+      case 'ready_status':
+        console.log('🟢 [ChatService] Ready status:', data);
+        this.emit('ready_status_update', data.data);
         break;
 
       case 'countdown':
@@ -292,6 +296,10 @@ export class ChatService {
 
       case 'game_start':
         console.log('🎮 [ChatService] Game starting:', data);
+        if (this.isInGame) {
+          console.log('🎮 [ChatService] Skipping duplicate game start - already in game');
+          return;
+        }
         // Fallback gameId if not provided in message
         const gameStartData = data.data || {};
         if (!gameStartData.gameId && this.currentGameId) {
@@ -336,11 +344,6 @@ export class ChatService {
         this.emit('game_session_created', data);
         break;
 
-      case 'ready_status':
-        console.log('🎮 [ChatService] Received ready_status:', data);
-        this.emit('game_ready_status', data.data);
-        break;
-
       case 'game_end':
         console.log('🏁 [ChatService] Game ended:', data);
         this.handleGameEnded(data);
@@ -355,6 +358,17 @@ export class ChatService {
         // Heartbeat response - no action needed
         break;
 
+      case 'input_ack':
+        console.log('Input acknowledged');
+        break;
+
+      case 'sync':
+        this.emit('game_sync', data.data);
+        break;
+
+      case 'heartbeat':
+        break; // Ignore
+
       case 'err_self':
       case 'err_game_started':
       case 'err_unknown_id':
@@ -365,13 +379,8 @@ export class ChatService {
         break;
 
       default:
-        // Only log warnings for unknown message types that aren't system/heartbeat messages
-        if (data.type !== 'pong' && 
-            !data.type.startsWith('internal_') && 
-            !data.type.includes('ready_status') &&
-            !data.type.includes('heartbeat')) {
-          console.warn('🔍 [DEBUG] Unhandled WebSocket message:', { type: data.type });
-          // Emit as unhandled_message instead of error to avoid error pollution
+        if (data.type && !data.type.startsWith('internal_') && data.type !== 'pong') {
+          console.warn('🔍 Unhandled WS:', data.type);
           this.emit('unhandled_message', data);
         }
         break;
@@ -426,7 +435,7 @@ export class ChatService {
 
   private handleGameUpdate(data: { data: GameState }): void {
     if (!this.isInGame || !this.currentGameId) {
-      console.warn('Received game update but not in game');
+      console.warn('Early game update ignored');
       return;
     }
     this.gameState = data.data;
@@ -466,12 +475,10 @@ export class ChatService {
     });
     
     this.emit('game_started', { gameId, opponent, playerSide: side });
-    
-    // Send ready message to server to transition game from 'waiting_ready' to 'playing' state
-    console.log('🎮 [ChatService] About to send player ready for game:', gameId);
-    this.sendPlayerReady(gameId, true);
-    console.log('🎮 [ChatService] Player ready message sent for game:', gameId);
-    
+
+    // Navigate to game page - players will manually click ready when they're prepared
+    console.log('🎮 [ChatService] Navigating to game page, waiting for manual ready check');
+
     router.navigate(`/game/${gameId}`).catch(error => {
       console.error('Failed to navigate to game:', error);
       this.emit('game_navigation_error', { error, gameId });
@@ -486,6 +493,13 @@ export class ChatService {
     this.isHandlingGameEnd = true;
     
     console.log('🏁 Game ended with data:', data.data);
+    console.log('🔍 [GAME END DEBUG] Final scores:', {
+      leftScore: data.data.finalScore?.left || data.data.finalScore?.leftScore || 'UNKNOWN',
+      rightScore: data.data.finalScore?.right || data.data.finalScore?.rightScore || 'UNKNOWN',
+      winner: data.data.winner,
+      gameId: data.data.gameId,
+      state: data.data.state
+    });
     this.emit('game_ended', data.data);
     this.resetGameState();
     
@@ -497,19 +511,15 @@ export class ChatService {
 
   private resetGameState(): void {
     console.log(`🧹 [DEBUG] Resetting game state - was: isInGame=${this.isInGame}, currentGameId=${this.currentGameId}`);
-    
-    // If we were in a game, inform the server we're leaving
-    if (this.isInGame && this.currentGameId && this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log(`📤 [DEBUG] Informing server we're leaving game ${this.currentGameId}`);
-      this.ws.send(JSON.stringify({
-        type: 'leave_game',
-        gameId: this.currentGameId
-      }));
-    }
-    
+
+    // Only send server notification if called directly (not from leaveGame which handles this)
+    const wasInGame = this.isInGame && this.currentGameId;
+
+    // Reset state first
     this.currentGameId = null;
     this.gameState = null;
     this.isInGame = false;
+
     console.log(`✅ [DEBUG] Game state reset - now: isInGame=${this.isInGame}, currentGameId=${this.currentGameId}`);
   }
 
@@ -775,10 +785,16 @@ export class ChatService {
         const errorMessage = data.message || 'Failed to send game invite response';
         
         // Skip retry if invitation is not found/expired or we're already in game
-        if (errorMessage.includes('not found') || errorMessage.includes('expired') || this.isInGame) {
+        if (errorMessage.includes('not found') || errorMessage.includes('expired')) {
           console.log('ℹ️ [ChatService] Invite already processed or expired, skipping retry');
           const error = new Error(errorMessage);
           reject(error);
+          return;
+        }
+        
+        if (this.isInGame) {
+          console.log('ℹ️ Already in game after accept – resolving silently');
+          resolve();
           return;
         }
         
@@ -806,12 +822,11 @@ export class ChatService {
         
         // Skip retry if we're already in a game (invitation was processed)
         if (this.isInGame) {
-          console.log('ℹ️ [ChatService] Already in game, skipping retry');
-          const error = new Error('Response timeout - already in game');
-          reject(error);
+          console.log(`ℹ️ [ChatService] Invite response timeout but game is running - considering success`);
+          resolve();
           return;
         }
-        
+
         if (retryCount < maxRetries && this.ws && this.ws.readyState === WebSocket.OPEN) {
           retryCount++;
           console.log(`🔄 [ChatService] Retrying invite response ${retryCount}/${maxRetries} for ${inviteId}`);
@@ -824,22 +839,105 @@ export class ChatService {
             inviteId: inviteId,
             accept: response === 'accept'
           }));
-          setTimeout(onTimeout, 5000);  // Retry after 5s
+          setTimeout(onTimeout, 6000);  // Shorter retry timeout
         } else {
-          const error = new Error('Response timeout after retries - invite may have expired');
-          console.error(`⏰ [ChatService] Final timeout for ${inviteId}:`, error);
-          reject(error);
+          // For accept responses that timeout, it's often because the game started successfully
+          if (response === 'accept') {
+            console.log(`ℹ️ [ChatService] Accept response timeout for ${inviteId} - game may have started successfully`);
+            resolve();
+          } else {
+            const error = new Error('Response timeout after retries - invite may have expired');
+            console.error(`⏰ [ChatService] Final timeout for ${inviteId}:`, error);
+            reject(error);
+          }
         }
       };
-      setTimeout(onTimeout, 10000);  // Initial timeout increased to 10s
+      setTimeout(onTimeout, 8000);  // Initial timeout set to 8s
     });
   }
 
   leaveGame(): void {
+    console.log('🚪 [ChatService] Leaving current game...');
+
+    // Send leave game message to server with retry logic
+    this.leaveGameWithTimeout();
+
+    // Reset local game state
     if (this.isInGame && this.currentGameId) {
       this.emit('game_left', { gameId: this.currentGameId });
-      this.resetGameState();
     }
+    this.resetGameState();
+  }
+
+  private leaveGameWithTimeout(retryCount: number = 0): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const maxRetries = 3;
+      const timeout = 2000; // 2 seconds
+
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        console.warn('🚪 [ChatService] Cannot send leave message: WebSocket not connected');
+        resolve(); // Don't fail if WebSocket is not connected
+        return;
+      }
+
+      // Setup timeout handler
+      const timeoutId = setTimeout(() => {
+        if (retryCount < maxRetries) {
+          console.log(`🔄 [ChatService] Leave game timeout, retrying (${retryCount + 1}/${maxRetries})...`);
+          this.leaveGameWithTimeout(retryCount + 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          console.warn('⚠️ [ChatService] Leave game timed out after all retries');
+          resolve(); // Don't fail, just warn
+        }
+      }, timeout);
+
+      // Setup success handler
+      const onGameLeft = (data: any) => {
+        clearTimeout(timeoutId);
+        this.off('game_left', onGameLeft);
+        console.log('✅ [ChatService] Successfully left game');
+        resolve();
+      };
+
+      // Setup error handler
+      const onError = (data: any) => {
+        clearTimeout(timeoutId);
+        this.off('game_left', onGameLeft);
+        this.off('game_error', onError);
+
+        if (retryCount < maxRetries) {
+          console.log(`🔄 [ChatService] Leave game error, retrying (${retryCount + 1}/${maxRetries})...`);
+          setTimeout(() => {
+            this.leaveGameWithTimeout(retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, 500 * (retryCount + 1)); // Exponential backoff
+        } else {
+          console.error('❌ [ChatService] Leave game failed after all retries:', data);
+          resolve(); // Don't fail the cleanup process
+        }
+      };
+
+      // Register handlers
+      this.on('game_left', onGameLeft);
+      this.on('game_error', onError);
+
+      try {
+        // Send leave game message
+        this.ws.send(JSON.stringify({
+          type: 'leave_game'
+        }));
+        console.log(`📤 [ChatService] Leave game message sent (attempt ${retryCount + 1})`);
+      } catch (sendError) {
+        clearTimeout(timeoutId);
+        this.off('game_left', onGameLeft);
+        this.off('game_error', onError);
+        console.error('❌ [ChatService] Error sending leave game message:', sendError);
+        resolve(); // Don't fail the cleanup process
+      }
+    });
   }
 
   // Public method to force leave game (for debugging and manual cleanup)
@@ -866,6 +964,12 @@ export class ChatService {
   // Debug method - can be called from browser console
   forceResetGameState(): void {
     console.log('🔧 [MANUAL] Force resetting game state');
+
+    // Emit game left event if we were in a game
+    if (this.isInGame && this.currentGameId) {
+      this.emit('game_left', { gameId: this.currentGameId });
+    }
+
     this.resetGameState();
   }
 
@@ -873,10 +977,24 @@ export class ChatService {
   forceServerReset(): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.log('🔧 [MANUAL] Forcing server to reset our game state');
-      this.ws.send(JSON.stringify({
-        type: 'leave_game'
-      }));
+
+      // Send multiple leave messages to ensure server gets the message
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+              type: 'leave_game'
+            }));
+            console.log(`📤 [MANUAL] Force leave message ${i + 1}/3 sent`);
+          }
+        }, i * 100); // Send every 100ms
+      }
+    } else {
+      console.warn('🔧 [MANUAL] Cannot force server reset - WebSocket not connected');
     }
+
+    // Force local state reset regardless
+    this.forceResetGameState();
   }
 
   formatMessageTime(timestamp: string): string {

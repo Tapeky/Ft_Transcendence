@@ -30,15 +30,19 @@ export class Paddle {
 	}
 	
 	public move(deltaTime: number, input: Input) {
+		let newY = this.rect.pos.y;
 		if (input.up)
-			this.rect.pos.y -= paddleSpeed * deltaTime;
+			newY -= paddleSpeed * deltaTime;
 		if (input.down)
-			this.rect.pos.y += paddleSpeed * deltaTime;
+			newY += paddleSpeed * deltaTime;
 		
-		if (this.rect.top < 0)
-			this.rect.pos.y = 0;
-		else if (this.rect.bottom > arenaSize.height)
-			this.rect.pos.y = arenaSize.height - this.rect.size.y;
+		if (newY < 0)
+			newY = 0;
+		else if (newY + this.rect.size.y > arenaSize.height)
+			newY = arenaSize.height - this.rect.size.y;
+
+		// Round position to 2 decimal places to prevent float desync
+		this.rect.pos.y = Math.round(newY * 100) / 100;
 	}
 
 	public increaseHitCount() { this._hitCount++ }
@@ -59,7 +63,9 @@ export class Ball {
 	}
 
 	public move(deltaTime: number) {
-		this.circle.pos = this.circle.pos.add(this._direction.scale(deltaTime * ballSpeed));
+		// Round position to 2 decimal places to prevent float desync
+		this.circle.pos.x = Math.round((this.circle.pos.x + this._direction.x * ballSpeed * deltaTime) * 100) / 100;
+		this.circle.pos.y = Math.round((this.circle.pos.y + this._direction.y * ballSpeed * deltaTime) * 100) / 100;
 
 		if (this.applyPaddleCollision(this._parent.leftPaddle, Vector2.one))
 			this._parent.leftPaddle.increaseHitCount();
