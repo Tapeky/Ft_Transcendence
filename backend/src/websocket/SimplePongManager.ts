@@ -31,6 +31,8 @@ export class SimplePongManager {
   }
 
   startGame(gameId: string, leftPlayerId: number, rightPlayerId: number): void {
+    console.log(`🎮 [SimplePongManager] Création jeu: ${gameId}, left: ${leftPlayerId}, right: ${rightPlayerId}`);
+    
     // Nettoyer anciennes parties
     this.endGameForPlayer(leftPlayerId);
     this.endGameForPlayer(rightPlayerId);
@@ -77,6 +79,22 @@ export class SimplePongManager {
     if (!game) return null;
 
     return game.pong.getState();
+  }
+
+  getPlayerSide(playerId: number, gameId: string): 'left' | 'right' | null {
+    console.log(`🔍 [SimplePongManager] getPlayerSide: playerId=${playerId}, gameId=${gameId}`);
+    const game = this.games.get(gameId);
+    if (!game) {
+      console.log(`❌ [SimplePongManager] Jeu ${gameId} non trouvé`);
+      console.log(`🎯 [SimplePongManager] Jeux disponibles:`, Array.from(this.games.keys()));
+      return null;
+    }
+
+    console.log(`✅ [SimplePongManager] Jeu trouvé: left=${game.leftPlayerId}, right=${game.rightPlayerId}`);
+    
+    if (game.leftPlayerId === playerId) return 'left';
+    if (game.rightPlayerId === playerId) return 'right';
+    return null;
   }
 
   private updateAllGames(): void {

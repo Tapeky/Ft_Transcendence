@@ -139,12 +139,21 @@ export class MessageRouter {
 
         case 'join_simple_pong':
           if (userId && message.gameId) {
-            // Pour SimplePong, on envoie juste une confirmation
-            connection.socket.send(JSON.stringify({
-              type: 'simple_pong_joined',
-              gameId: message.gameId,
-              player: 'left' // TODO: déterminer left/right correctement
-            }));
+            const simplePongManager = SimplePongManager.getInstance();
+            const playerSide = simplePongManager.getPlayerSide(userId, message.gameId);
+            
+            if (playerSide) {
+              connection.socket.send(JSON.stringify({
+                type: 'simple_pong_joined',
+                gameId: message.gameId,
+                player: playerSide
+              }));
+            } else {
+              connection.socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Could not join SimplePong game - player not found in game'
+              }));
+            }
           }
           break;
 
