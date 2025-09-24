@@ -1,8 +1,10 @@
 import { authManager } from '../../../core/auth/AuthManager';
 import { router } from '../../../core/app/Router';
+import { PongInviteModal } from '../components/PongInviteModal';
 
 export class FriendsPage {
   private element: HTMLElement;
+  private pongInviteModal?: PongInviteModal;
 
   constructor() {
     this.element = this.createElement();
@@ -42,9 +44,14 @@ export class FriendsPage {
             <div class="mb-6">
               <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold">Friends List</h2>
-                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors">
-                  Add Friend
-                </button>
+                <div class="flex space-x-3">
+                  <button id="pong-invite-btn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                    🎮 Inviter au Pong
+                  </button>
+                  <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                    Add Friend
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -104,6 +111,13 @@ export class FriendsPage {
       });
     }
 
+    const pongInviteBtn = container.querySelector('#pong-invite-btn');
+    if (pongInviteBtn) {
+      pongInviteBtn.addEventListener('click', () => {
+        this.openPongInviteModal();
+      });
+    }
+
     const logoutBtn = container.querySelector('#logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
@@ -118,7 +132,22 @@ export class FriendsPage {
     return container;
   }
 
+  private openPongInviteModal(): void {
+    if (!this.pongInviteModal) {
+      this.pongInviteModal = new PongInviteModal(() => {
+        this.pongInviteModal = undefined;
+      });
+    }
+    this.pongInviteModal.open();
+  }
+
   public getElement(): HTMLElement {
     return this.element;
+  }
+
+  public destroy(): void {
+    if (this.pongInviteModal) {
+      this.pongInviteModal.destroy();
+    }
   }
 }

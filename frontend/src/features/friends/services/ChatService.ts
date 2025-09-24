@@ -1,4 +1,5 @@
-import { apiService } from '../../../shared/services/api';
+import { Friend, apiService } from '../../../shared/services/api';
+import { PongInviteNotification, PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
 
@@ -230,6 +231,11 @@ export class ChatService {
         this.emit('game_invite_response', data.data);
         break;
 
+      case 'friend_pong_invite':
+        console.log('[ChatService] Invitation Pong reçue:', data);
+        this.handlePongInvite(data);
+        break;
+
       case 'success':
         this.handleGameSuccess(data);
         break;
@@ -257,6 +263,22 @@ export class ChatService {
       case 'pong':
         break;
 
+      case 'friend_pong_start':
+        this.handlePongGameStart(data);
+        break;
+
+      case 'friend_pong_state':
+        this.handlePongGameState(data);
+        break;
+
+      case 'friend_pong_end':
+        this.handlePongGameEnd(data);
+        break;
+
+      case 'connected':
+        this.handleConnected(data);
+        break;
+
       default:
         console.warn('Unhandled message type:', data.type);
     }
@@ -279,6 +301,29 @@ export class ChatService {
       
       this.emit('message_received', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+    }
+  }
+
+  private handlePongInvite(data: PongInviteData): void {
+    // Ajouter le nom d'utilisateur si on peut le récupérer
+    // TODO: Récupérer le nom d'utilisateur depuis fromUserId si besoin
+    
+    // Créer et afficher la modale d'invitation
+    const inviteModal = new PongInviteNotification(data, () => {
+      console.log('[ChatService] Modale d\'invitation fermée');
+    });
+    
+    inviteModal.show();
+    
+    // Émettre l'événement pour d'autres composants qui pourraient l'écouter
+    this.emit('friend_pong_invite', data);
+    
+    // Notification navigateur optionnelle
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Invitation Pong de ${data.fromUsername || 'un ami'}`, {
+        body: 'Cliquez pour voir l\'invitation',
+        icon: '/favicon.png'
+      });
     }
   }
 
@@ -337,6 +382,34 @@ export class ChatService {
     this.currentGameId = null;
     this.gameState = null;
     this.isInGame = false;
+  }
+
+  private handlePongGameStart(data: any): void {
+    console.log('Pong game started:', data);
+    // Rediriger vers la page de jeu
+    if (data.gameId) {
+      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+    }
+  }
+
+  private handlePongGameState(data: any): void {
+    console.log('Pong game state update:', data);
+    // Émettre l'état du jeu pour les composants qui l'écoutent
+    this.emit('pong_game_state', data);
+  }
+
+  private handlePongGameEnd(data: any): void {
+    console.log('Pong game ended:', data);
+    // Émettre la fin du jeu
+    this.emit('pong_game_end', data);
+    // Optionnel: rediriger vers la page principale
+    // window.location.href = '/';
+  }
+
+  private handleConnected(data: any): void {
+    console.log('WebSocket connected:', data.message || 'Connection established');
+    // Émettre un événement pour notifier que la connexion est établie
+    this.emit('websocket_connected', data);
   }
 
   async sendMessage(toUserId: number, content: string): Promise<void> {

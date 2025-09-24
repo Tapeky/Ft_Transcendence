@@ -121,7 +121,7 @@ class ApiService {
 			const response = await fetch(url, config);
 			const data = await response.json();
 			if (!response.ok) {
-				throw new Error(data.error || 'An error occurred');
+				throw new Error(data.message || data.error || 'An error occurred');
 			}
 			return data;
 		} catch (error) {
@@ -313,6 +313,25 @@ class ApiService {
 		await this.request(`/api/friends/${id}`, {
 			method: 'DELETE',
 		});
+	}
+
+	async inviteFriendToPong(id: number): Promise<{ success: boolean; message: string }> {
+		try {
+			const response = await this.request<{ success: boolean; message: string }>(`/api/friends/pong-invite/${id}`, {
+				method: 'POST',
+			});
+			// Si la réponse a une propriété data, l'utiliser, sinon utiliser la réponse directe
+			if ('data' in response && response.data) {
+				return response.data;
+			}
+			return response as { success: boolean; message: string };
+		} catch (error) {
+			// Si c'est une erreur HTTP avec un message, la retourner
+			if (error instanceof Error) {
+				return { success: false, message: error.message };
+			}
+			return { success: false, message: 'Erreur lors de l\'envoi de l\'invitation' };
+		}
 	}
 
 	async getFriends(): Promise<Friend[]> {
