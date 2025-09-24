@@ -8,11 +8,17 @@ import { MessageRouter } from './MessageRouter';
 import { GameManager } from './game_manager';
 import { Input } from '../game/Input';
 import { simpleGameInvites } from './SimpleGameInvites';
+import { FriendPongInvites } from './FriendPongInvites';
+import { SimplePongManager } from './SimplePongManager';
 
 export function setupWebSocket(server: FastifyInstance) {
   const wsManager = WebSocketManager.getInstance();
   const gameManager = GameManager.instance;
   const messageRouter = new MessageRouter(server, wsManager, gameManager);
+  const friendPongInvites = new FriendPongInvites(wsManager);
+  const simplePongManager = SimplePongManager.getInstance();
+  
+  server.decorate('friendPongInvites', friendPongInvites);
   
   // Attach WebSocketManager to Fastify for routes
   server.decorate('websocketManager', wsManager);
