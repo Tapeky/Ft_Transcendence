@@ -22,20 +22,68 @@
 </head>
 <body>
   <div id="status">En attente...</div>
+  <div id="invite-section" style="text-align: center; margin: 10px;">
+    <input type="number" id="friend-id" placeholder="ID de l'ami à inviter" style="padding: 8px; margin-right: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+    <button id="send-invite" class="button">Inviter un ami</button>
+  </div>
+  <div style="text-align: center; color: white; font-family: monospace; font-size: 14px; margin: 10px;">
+    Contrôles: ↑/↓ pour bouger votre paddle
+  </div>
   <canvas id="game" width="800" height="400"></canvas>
   
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const status = document.getElementById('status');
+    const sendInviteBtn = document.getElementById('send-invite');
+    const friendIdInput = document.getElementById('friend-id');
     
     let ws = null;
     let gameState = null;
     let myRole = null;
     let keys = { up: false, down: false };
+    let authToken = null;
+    
+    // Gestionnaire d'invitation
+    sendInviteBtn?.addEventListener('click', async () => {
+      const friendId = friendIdInput.value;
+      if (!friendId || !authToken) {
+        status.textContent = 'Veuillez entrer un ID d\'ami valide et vous connecter';
+        return;
+      }
+
+      try {
+        sendInviteBtn.disabled = true;
+        sendInviteBtn.textContent = 'Envoi...';
+        
+        const response = await fetch(`/api/friends/pong-invite/${friendId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          status.textContent = `Invitation envoyée à l'ami ${friendId}!`;
+          friendIdInput.value = '';
+        } else {
+          status.textContent = result.message || 'Erreur lors de l\'envoi de l\'invitation';
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        status.textContent = 'Erreur de connexion';
+      } finally {
+        sendInviteBtn.disabled = false;
+        sendInviteBtn.textContent = 'Inviter un ami';
+      }
+    });
     
     // Connexion WebSocket
     function connect(token) {
+      authToken = token; // Stocker le token pour les requêtes API
       ws = new WebSocket('ws://localhost:8000/ws');
       
       ws.onopen = () => {
@@ -67,12 +115,27 @@
             
           case 'friend_pong_start':
             myRole = msg.role;
-            status.textContent = `Partie commencée! Vous êtes ${myRole === 'left' ? 'à gauche' : 'à droite'}`;
+            gameId = msg.gameId;
+            status.textContent = `Partie commencée! Vous êtes ${myRole === 'left' ? 'le joueur de gauche' : 'le joueur de droite'}`;
             break;
             
           case 'friend_pong_state':
-            gameState = msg.state;
-            render();
+            if (msg.gameId) {
+              gameState = msg.state;
+              render();
+              
+              if (gameState.gameOver) {
+                const won = gameState.winner === myRole;
+                status.textContent = `Partie terminée! ${won ? '🎉 Vous avez gagné!' : '😢 Vous avez perdu.'} Score: ${gameState.leftScore}-${gameState.rightScore}`;
+              }
+            }
+            break;
+            
+          case 'friend_pong_end':
+            gameState = null;
+            myRole = null;
+            status.textContent = 'Partie terminée. En attente d\'une nouvelle invitation...';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             break;
         }
       };

@@ -518,4 +518,56 @@ export async function friendRoutes(server : FastifyInstance) {
 			});
 		}
 	});
+
+	// Ajouter à la fin du fichier
+
+	// POST /api/friends/pong-invite/:id - Inviter un ami au SimplePong
+	server.post('/pong-invite/:id', {
+		preHandler: authenticateToken
+	}, async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const currentUser = request.user as { id: number; username: string; email: string };
+			const { id: friendIdStr } = request.params as { id: string };
+			const friendId = parseInt(friendIdStr, 10);
+			
+			console.log(`🎮 Invitation Pong: ${currentUser.username} (${currentUser.id}) -> ami ${friendId}`);
+			
+			// Vérifier que friendId est un nombre valide
+			if (isNaN(friendId)) {
+				return reply.status(400).send({
+					success: false,
+					message: 'ID ami invalide'
+				});
+			}
+			
+			// Obtenir l'instance du gestionnaire d'invitations
+			const wsManager = (server as any).websocketManager;
+			const inviteManager = (server as any).friendPongInvites;
+			
+			const inviteId = await inviteManager.createInvite(currentUser.id, friendId);
+			
+			console.log(`🎯 Résultat création invitation: ${inviteId ? 'SUCCESS' : 'FAIL'}`);
+			
+			if (!inviteId) {
+				return reply.status(400).send({
+					success: false,
+					message: 'Impossible d\'inviter cet utilisateur (pas ami ou déjà une invitation en cours)'
+				});
+			}
+			
+			console.log(`✅ Invitation Pong créée avec succès: ${inviteId}`);
+			
+			reply.send({
+				success: true,
+				message: 'Invitation envoyée avec succès!'
+			});
+			
+		} catch (error: any) {
+			request.log.error('Erreur invitation SimplePong:', error);
+			reply.status(500).send({
+				success: false,
+				message: 'Erreur lors de l\'envoi de l\'invitation'
+			});
+		}
+	});
 }

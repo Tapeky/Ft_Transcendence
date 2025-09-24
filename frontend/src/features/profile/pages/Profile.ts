@@ -23,7 +23,6 @@ export class ProfilePage {
   }
 
   private createElement(): HTMLElement {
-    // Main container with React exact styling
     const container = document.createElement('div');
     container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white';
 
@@ -32,39 +31,32 @@ export class ProfilePage {
     this.header = new Header(true);
     container.appendChild(this.header.getElement());
 
-    // Center container with React exact gradient and borders
     const centerContainer = document.createElement('div');
     centerContainer.className = 'w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4 overflow-auto';
 
-    // Header section with BackBtn (React exact)
     const headerSection = document.createElement('div');
     headerSection.className = 'text-center text-[4rem] border-b-2 w-full flex';
 
     this.backBtn = new BackBtn();
     headerSection.appendChild(this.backBtn.getElement());
 
-    // Title (React exact)
     const title = document.createElement('h1');
     title.className = 'flex-1';
     title.textContent = 'Profile';
     headerSection.appendChild(title);
 
-    // Right spacer (React exact)
     const rightSpacer = document.createElement('div');
     rightSpacer.className = 'flex-1';
     headerSection.appendChild(rightSpacer);
 
     centerContainer.appendChild(headerSection);
 
-    // Main content layout (React exact 2-columns)
     const mainContent = document.createElement('div');
     mainContent.className = 'flex m-10 flex-grow';
 
-    // Left column: User info + forms (React exact)
     const leftColumn = document.createElement('div');
     leftColumn.className = 'flex flex-col flex-[1.5] text-[2rem] gap-10';
 
-    // Username section (React exact)
     const usernameSection = document.createElement('div');
     usernameSection.className = 'flex gap-[9.5rem]';
     usernameSection.innerHTML = `
@@ -73,7 +65,6 @@ export class ProfilePage {
     `;
     leftColumn.appendChild(usernameSection);
 
-    // Display Name section (functional)
     const displayNameSection = document.createElement('div');
     displayNameSection.className = 'flex justify-between';
     displayNameSection.innerHTML = `
@@ -97,7 +88,6 @@ export class ProfilePage {
     `;
     leftColumn.appendChild(displayNameSection);
 
-    // Password section (functional)
     const passwordSection = document.createElement('div');
     passwordSection.className = 'flex justify-center';
     passwordSection.innerHTML = `
@@ -116,11 +106,9 @@ export class ProfilePage {
 
     mainContent.appendChild(leftColumn);
 
-    // Right column: Avatar (React exact)
     const rightColumn = document.createElement('div');
     rightColumn.className = 'flex-[0.5] flex justify-center relative';
     
-    // Avatar (functional with proper URL handling)
     rightColumn.innerHTML = `
       <img 
         id="profile-main-avatar"
@@ -145,18 +133,14 @@ export class ProfilePage {
   }
 
   private setupEventListeners(): void {
-    // Display Name Save Button
     const saveDisplayNameBtn = this.element.querySelector('#save-display-name');
     saveDisplayNameBtn?.addEventListener('click', () => this.handleSaveDisplayName());
 
-    // Change Password Button
     const changePasswordBtn = this.element.querySelector('#change-password-btn');
     changePasswordBtn?.addEventListener('click', () => this.openPasswordModal());
 
-    // Edit Avatar Button
     const editAvatarBtn = this.element.querySelector('#edit-avatar-btn');
     editAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
-
   }
 
   private async handleSaveDisplayName(): Promise<void> {
@@ -167,7 +151,6 @@ export class ProfilePage {
     const user = authManager.getCurrentUser();
     const currentDisplayName = user?.display_name?.trim() ?? '';
 
-    // Validation
     if (newDisplayName.length < 3) {
       alert('Display name must be at least 3 characters long');
       return;
@@ -180,10 +163,8 @@ export class ProfilePage {
     try {
       await apiService.updateProfileDisplayName(newDisplayName);
       
-      // Refresh user data
       await authManager.refreshUser();
       
-      // Update Header display name too!
       if (this.header) {
         this.header.refresh();
       }
@@ -191,7 +172,7 @@ export class ProfilePage {
       this.showFeedback('Display name updated successfully!', 'success');
       
     } catch (error) {
-      console.error('Error updating display name:', error);
+      console.error('Failed to update display name:', error);
       this.showFeedback('Error updating display name', 'error');
     }
   }
@@ -207,19 +188,16 @@ export class ProfilePage {
   }
 
   private renderPasswordModal(): void {
-    // Create modal overlay
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'password-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
+    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
-    // Modal container
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
 
-    // Modal content
     const modalContent = document.createElement('div');
     modalContent.className = 'flex flex-col justify-center items-center mt-6 gap-4 px-8';
     modalContent.innerHTML = `
@@ -264,7 +242,6 @@ export class ProfilePage {
     modalOverlay.appendChild(modalContainer);
     document.body.appendChild(modalOverlay);
 
-    // Bind events
     this.setupPasswordModalEvents();
   }
 
@@ -272,7 +249,6 @@ export class ProfilePage {
     const modal = document.getElementById('password-modal');
     if (!modal) return;
 
-    // Toggle password visibility (React exact)
     const toggles = ['current', 'new', 'confirm'];
     toggles.forEach(type => {
       const toggleBtn = modal.querySelector(`#toggle-${type}`);
@@ -286,7 +262,6 @@ export class ProfilePage {
       });
     });
 
-    // Save password
     const saveBtn = modal.querySelector('#save-password');
     saveBtn?.addEventListener('click', () => this.handleSavePassword());
   }
@@ -298,9 +273,7 @@ export class ProfilePage {
     const currentPassword = (modal.querySelector('#current-password') as HTMLInputElement)?.value;
     const newPassword = (modal.querySelector('#new-password') as HTMLInputElement)?.value;
     const confirmPassword = (modal.querySelector('#confirm-password') as HTMLInputElement)?.value;
-    const statusElement = modal.querySelector('#password-status');
 
-    // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       this.updatePasswordStatus('Please fill all fields', 'error');
       return;
@@ -319,7 +292,6 @@ export class ProfilePage {
     try {
       this.updatePasswordStatus('Updating password...', 'info');
       
-      // Use actual API call (React exact)
       await apiService.changePassword(currentPassword, newPassword);
       
       this.updatePasswordStatus('Password updated successfully!', 'success');
@@ -329,7 +301,7 @@ export class ProfilePage {
       }, 1500);
       
     } catch (error) {
-      console.error('Error updating password:', error);
+      console.error('Failed to update password:', error);
       this.updatePasswordStatus('Error updating password', 'error');
     }
   }
@@ -337,9 +309,8 @@ export class ProfilePage {
   private renderAvatarModal(): void {
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'avatar-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center font-iceland text-white';
+    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
-    // Modal container
     const modalContainer = document.createElement('div');
     modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
@@ -347,12 +318,10 @@ export class ProfilePage {
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
 
     this.avatarSelect = new AvatarSelect(() => {
-      // Avatar change callback - update main avatar
       this.updateMainAvatar();
     });
     modalContainer.appendChild(this.avatarSelect.getElement());
 
-    // Upload section (like React but with AvatarSelect above)
     const uploadSection = document.createElement('div');
     uploadSection.className = 'flex-grow flex items-center justify-center';
     uploadSection.innerHTML = `
@@ -378,7 +347,6 @@ export class ProfilePage {
     const modal = document.getElementById('avatar-modal');
     if (!modal) return;
 
-    // Upload button
     const uploadBtn = modal.querySelector('#upload-avatar-btn');
     const fileInput = modal.querySelector('#avatar-file-input') as HTMLInputElement;
     
@@ -393,14 +361,12 @@ export class ProfilePage {
   }
 
   private updateMainAvatar(): void {
-    // Update the main avatar image when avatar changes (permanent)
     const user = authManager.getCurrentUser();
     const mainAvatar = document.querySelector('#profile-main-avatar') as HTMLImageElement;
     
     if (mainAvatar) {
       const newAvatarUrl = getAvatarUrl(user?.avatar_url);
       
-      // Force refresh by adding cache buster
       const hasQueryParams = newAvatarUrl.includes('?');
       const cacheBuster = hasQueryParams ? `&t=${Date.now()}` : `?t=${Date.now()}`;
       const finalUrl = newAvatarUrl + cacheBuster;
@@ -408,7 +374,6 @@ export class ProfilePage {
       mainAvatar.src = finalUrl;
     }
     
-    // CRUCIAL: Update Header avatar too!
     if (this.header) {
       this.header.refresh();
     }
@@ -420,19 +385,14 @@ export class ProfilePage {
       
       const result = await apiService.uploadAvatar(file);
       
-      // Refresh user data (React exact)
       await authManager.refreshUser();
       
-      // Update main avatar
       this.updateMainAvatar();
       
       this.updateUploadStatus('Avatar updated successfully!', 'success');
       
-      // Note: Modal stays open like with predefined avatars
-      // User can close manually or select another avatar
-      
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      console.error('Failed to upload avatar:', error);
       this.updateUploadStatus('Error uploading avatar', 'error');
     }
   }
@@ -499,7 +459,6 @@ export class ProfilePage {
     
     document.body.appendChild(feedback);
     
-    // Remove after 3 seconds
     setTimeout(() => {
       feedback.remove();
     }, 3000);

@@ -1,6 +1,7 @@
 import { appState } from '../state/AppState';
 import { apiService, LoginCredentials, RegisterCredentials, User } from '../../shared/services/api';
 import { router } from '../app/Router';
+import { chatService } from '../../features/friends/services/ChatService';
 
 export class AuthManager {
   private static instance: AuthManager;
@@ -30,6 +31,9 @@ export class AuthManager {
           loading: false
         });
         this.notifyAuthStateChange(true);
+        
+        // Connecter automatiquement le ChatService pour recevoir les invitations
+        this.connectChatService();
         
       } else {
         appState.setState({
@@ -69,6 +73,9 @@ export class AuthManager {
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
       
+      // Connecter automatiquement le ChatService pour recevoir les invitations
+      this.connectChatService();
+      
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
@@ -92,6 +99,9 @@ export class AuthManager {
       
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
+      
+      // Connecter automatiquement le ChatService pour recevoir les invitations
+      this.connectChatService();
       
     } catch (error) {
       appState.setLoading(false);
@@ -117,6 +127,9 @@ export class AuthManager {
     try {
       await apiService.logout();
       
+      // Déconnecter le ChatService
+      chatService.disconnect();
+      
       appState.setState({
         user: null,
         isAuthenticated: false,
@@ -128,6 +141,9 @@ export class AuthManager {
       
     } catch (error) {
       console.error('AuthManager logout error:', this.getErrorMessage(error));
+      
+      // Déconnecter le ChatService même en cas d'erreur
+      chatService.disconnect();
       
       appState.setState({
         user: null,
@@ -194,6 +210,20 @@ export class AuthManager {
         console.error('Error in auth state change callback:', error);
       }
     });
+  }
+
+  private async connectChatService(): Promise<void> {
+    try {
+      console.log('[AuthManager] Connexion automatique du ChatService...');
+      await chatService.connect();
+      
+      // Rendre le chatService accessible globalement pour les modales
+      (window as any).chatService = chatService;
+      
+      console.log('[AuthManager] ChatService connecté avec succès');
+    } catch (error) {
+      console.error('[AuthManager] Erreur lors de la connexion du ChatService:', error);
+    }
   }
 }
 

@@ -108,10 +108,11 @@ export class MessageRouter {
           if (userId) {
             const inviteManager = (this.server as any).friendPongInvites;
             const success = inviteManager.acceptInvite(message.inviteId, userId);
-            if (success) {
-              // Démarrer la partie
-              const simplePongManager = SimplePongManager.getInstance();
-              simplePongManager.startGame(message.inviteId, message.fromUserId, userId);
+            if (!success) {
+              connection.socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Invalid or expired invitation'
+              }));
             }
           }
           break;
@@ -127,6 +128,30 @@ export class MessageRouter {
           if (userId) {
             const simplePongManager = SimplePongManager.getInstance();
             simplePongManager.updateInput(userId, message.up, message.down);
+          }
+          break;
+
+        case 'authenticate':
+          const authResult2 = await this.authHandler.handleAuth(connection, { token: message.token });
+          userState.userId = authResult2.userId;
+          userState.username = authResult2.username;
+          break;
+
+        case 'join_simple_pong':
+          if (userId && message.gameId) {
+            // Pour SimplePong, on envoie juste une confirmation
+            connection.socket.send(JSON.stringify({
+              type: 'simple_pong_joined',
+              gameId: message.gameId,
+              player: 'left' // TODO: déterminer left/right correctement
+            }));
+          }
+          break;
+
+        case 'simple_pong_input':
+          if (userId && message.gameId && message.input) {
+            const simplePongManager = SimplePongManager.getInstance();
+            simplePongManager.updateInput(userId, message.input.up || false, message.input.down || false);
           }
           break;
 

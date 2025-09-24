@@ -18,6 +18,9 @@ export function setupWebSocket(server: FastifyInstance) {
   const friendPongInvites = new FriendPongInvites(wsManager);
   const simplePongManager = SimplePongManager.getInstance();
   
+  // Injecter le WebSocketManager dans SimplePongManager
+  simplePongManager.setWebSocketManager(wsManager);
+  
   server.decorate('friendPongInvites', friendPongInvites);
   
   // Attach WebSocketManager to Fastify for routes
@@ -53,6 +56,9 @@ export function setupWebSocket(server: FastifyInstance) {
           } catch (error) {
           }
           
+          // Gérer les déconnexions Pong
+          simplePongManager.handlePlayerDisconnect(userId);
+          
           wsManager.removeUser(userId);
           simpleGameInvites.removeUser(userId);
         }
@@ -62,6 +68,9 @@ export function setupWebSocket(server: FastifyInstance) {
       connection.socket.on('error', (error: any) => {
         const { userId } = userState;
         if (userId) {
+          // Gérer les déconnexions Pong en cas d'erreur
+          simplePongManager.handlePlayerDisconnect(userId);
+          
           wsManager.removeUser(userId);
           simpleGameInvites.removeUser(userId);
         }

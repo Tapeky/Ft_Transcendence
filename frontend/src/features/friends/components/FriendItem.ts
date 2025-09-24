@@ -63,7 +63,62 @@ export class FriendItem {
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
+    inviteBtn?.addEventListener('click', () => this.inviteToPong());
     optionsBtn?.addEventListener('click', () => this.openOptions());
+  }
+
+  private async inviteToPong(): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+        inviteBtn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mx-auto"></div>';
+      }
+
+      const result = await apiService.inviteFriendToPong(this.props.id);
+      
+      if (result.success) {
+        this.showNotification(`Invitation envoyée à ${this.props.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || 'Erreur lors de l\'envoi de l\'invitation', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+      this.showNotification('Erreur lors de l\'envoi de l\'invitation', 'error');
+    } finally {
+      // Restaurer le bouton
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+        inviteBtn.innerHTML = '<img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />';
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    // Créer une notification temporaire
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-0 ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Animation d'apparition
+    setTimeout(() => {
+      notification.classList.add('opacity-100');
+    }, 10);
+    
+    // Supprimer après 3 secondes
+    setTimeout(() => {
+      notification.classList.add('translate-x-full', 'opacity-0');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   private openOptions(): void {

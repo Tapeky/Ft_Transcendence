@@ -1,4 +1,5 @@
 import { SimplePong, SimplePongState } from '../game/SimplePong';
+import { WebSocketManager } from './WebSocketManager';
 
 interface SimplePongGame {
   id: string;
@@ -15,12 +16,18 @@ export class SimplePongManager {
   private games = new Map<string, SimplePongGame>();
   private playerToGame = new Map<number, string>();
   private updateInterval: NodeJS.Timeout | null = null;
+  private wsManager: WebSocketManager | null = null;
 
   static getInstance(): SimplePongManager {
     if (!SimplePongManager.instance) {
       SimplePongManager.instance = new SimplePongManager();
     }
     return SimplePongManager.instance;
+  }
+
+  // Méthode pour injecter le WebSocketManager
+  setWebSocketManager(wsManager: WebSocketManager): void {
+    this.wsManager = wsManager;
   }
 
   startGame(gameId: string, leftPlayerId: number, rightPlayerId: number): void {
@@ -89,21 +96,24 @@ export class SimplePongManager {
 
       // Envoyer l'état aux joueurs via WebSocket
       const state = game.pong.getState();
-      const wsManager = require('./WebSocketManager').WebSocketManager.getInstance();
       
-      wsManager.sendToUser(game.leftPlayerId, {
-        type: 'friend_pong_state',
-        state
-      });
-      
-      wsManager.sendToUser(game.rightPlayerId, {
-        type: 'friend_pong_state',
-        state
-      });
+      if (this.wsManager) {
+        this.wsManager.sendToUser(game.leftPlayerId, {
+          type: 'friend_pong_state',
+          gameId: game.id,
+          state
+        });
+        
+        this.wsManager.sendToUser(game.rightPlayerId, {
+          type: 'friend_pong_state',
+          gameId: game.id,
+          state
+        });
+      }
 
-      // Si partie terminée, nettoyer
+      // Si partie terminée, nettoyer après 3 secondes
       if (state.gameOver) {
-        this.endGame(game.id);
+        setTimeout(() => this.endGame(game.id), 3000);
       }
     }
 
@@ -125,8 +135,31 @@ export class SimplePongManager {
     const game = this.games.get(gameId);
     if (!game) return;
 
+    console.log(`Fin de partie SimplePong: ${gameId}`);
+
+    // Notifier les joueurs de la fin
+    if (this.wsManager) {
+      this.wsManager.sendToUser(game.leftPlayerId, {
+        type: 'friend_pong_end',
+        gameId
+      });
+      
+      this.wsManager.sendToUser(game.rightPlayerId, {
+        type: 'friend_pong_end',
+        gameId
+      });
+    }
+
     this.playerToGame.delete(game.leftPlayerId);
     this.playerToGame.delete(game.rightPlayerId);
     this.games.delete(gameId);
+  }
+
+  // Méthode pour gérer les déconnexions
+  handlePlayerDisconnect(playerId: number): void {
+    const gameId = this.playerToGame.get(playerId);
+    if (gameId) {
+      this.endGame(gameId);
+    }
   }
 }
