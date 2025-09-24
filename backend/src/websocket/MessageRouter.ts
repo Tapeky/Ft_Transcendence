@@ -5,6 +5,7 @@ import { GameManager } from './game_manager';
 import { AuthHandler, ChatHandler, GameHandler } from './handlers';
 import { simpleGameInvites } from './SimpleGameInvites';
 import { Input } from '../game/Input';
+import { SimplePongManager } from './SimplePongManager';
 
 export class MessageRouter {
   private authHandler: AuthHandler;
@@ -100,6 +101,32 @@ export class MessageRouter {
         case 'leave_game':
           if (userId) {
             this.gameHandler.handleLeaveGame(connection, userId);
+          }
+          break;
+
+        case 'friend_pong_accept':
+          if (userId) {
+            const inviteManager = (this.server as any).friendPongInvites;
+            const success = inviteManager.acceptInvite(message.inviteId, userId);
+            if (success) {
+              // Démarrer la partie
+              const simplePongManager = SimplePongManager.getInstance();
+              simplePongManager.startGame(message.inviteId, message.fromUserId, userId);
+            }
+          }
+          break;
+
+        case 'friend_pong_decline':
+          if (userId) {
+            const inviteManager = (this.server as any).friendPongInvites;
+            inviteManager.declineInvite(message.inviteId, userId);
+          }
+          break;
+
+        case 'friend_pong_input':
+          if (userId) {
+            const simplePongManager = SimplePongManager.getInstance();
+            simplePongManager.updateInput(userId, message.up, message.down);
           }
           break;
 

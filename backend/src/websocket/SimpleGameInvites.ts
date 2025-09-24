@@ -1,4 +1,3 @@
-// 🎯 KISS Backend Game Invites - Intégré avec GameManager existant
 import { SocketStream } from '@fastify/websocket';
 import { GameManager } from './game_manager';
 
@@ -18,32 +17,27 @@ interface PendingInvite {
 
 export class SimpleGameInvites {
   private invites = new Map<string, PendingInvite>();
-  private wsManager: any = null; // Référence au WebSocketManager principal
+  private wsManager: any = null;
 
-  // 🔗 Définir la référence au WebSocketManager principal
   setWebSocketManager(wsManager: any): void {
     this.wsManager = wsManager;
-    // KISS: Simple startup cleanup when manager is set
     this.startupCleanup();
   }
 
-  // KISS: Clean up any stale invitations
   private startupCleanup(): void {
-    console.log('🎮 KISS: Starting cleanup of stale invitations');
+    console.log('Starting cleanup of stale invitations');
     this.invites.clear();
-    console.log('🎮 KISS: Startup cleanup complete');
+    console.log('Startup cleanup complete');
   }
 
-  // 👤 Ces méthodes sont maintenues pour compatibilité mais n'utilisent plus de liste locale
   addUser(userId: number, username: string, socket: SocketStream): void {
-    console.log(`🎮 KISS: ${username} connected (using main WebSocketManager)`);
+    console.log(`${username} connected (using main WebSocketManager)`);
   }
 
   removeUser(userId: number): void {
-    console.log(`🎮 KISS: User ${userId} disconnected (using main WebSocketManager)`);
+    console.log(`User ${userId} disconnected (using main WebSocketManager)`);
   }
 
-  // 📨 Traitement des messages WebSocket
   handleMessage(userId: number, data: any): boolean {
     if (!this.wsManager) return false;
     
@@ -60,10 +54,9 @@ export class SimpleGameInvites {
         return true;
     }
     
-    return false; // Message non traité par ce module
+    return false;
   }
 
-  // 📤 Envoyer invitation
   private handleSendInvite(sender: ConnectedUser, toUserId: number): void {
     if (!this.wsManager) return;
     
@@ -76,7 +69,6 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Éviter les invitations à soi-même
     if (sender.id === toUserId) {
       this.sendToUser(sender.id, { 
         type: 'invite_error', 
@@ -85,7 +77,6 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Vérifier si déjà en jeu
     if (GameManager.instance.getFromPlayerId(sender.id)) {
       this.sendToUser(sender.id, { 
         type: 'invite_error', 
@@ -102,7 +93,6 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Vérifier invitation existante
     const existingInvite = Array.from(this.invites.values())
       .find(inv => inv.fromId === sender.id && inv.toId === toUserId);
     
@@ -114,19 +104,17 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Créer invitation
     const inviteId = `${sender.id}_${toUserId}_${Date.now()}`;
     const invite: PendingInvite = {
       id: inviteId,
       fromId: sender.id,
       toId: toUserId,
       fromUsername: sender.username,
-      expires: Date.now() + 60000 // 60 secondes
+      expires: Date.now() + 60000
     };
 
     this.invites.set(inviteId, invite);
 
-    // Envoyer au destinataire
     this.sendToUser(toUserId, {
       type: 'game_invite_received',
       inviteId: inviteId,
@@ -135,18 +123,15 @@ export class SimpleGameInvites {
       expiresAt: invite.expires
     });
 
-    // Confirmation à l'expéditeur
     this.sendToUser(sender.id, {
       type: 'invite_sent',
       toUsername: receiver.username,
       inviteId: inviteId
     });
 
-    // Auto-cleanup
     setTimeout(() => {
       if (this.invites.has(inviteId)) {
         this.invites.delete(inviteId);
-        // Notifier l'expiration
         this.sendToUser(toUserId, {
           type: 'invite_expired',
           inviteId: inviteId
@@ -154,10 +139,9 @@ export class SimpleGameInvites {
       }
     }, 60000);
 
-    console.log(`🎮 KISS: ${sender.username} invited ${receiver.username}`);
+    console.log(`${sender.username} invited ${receiver.username}`);
   }
 
-  // ✅ Répondre à invitation
   private handleRespondInvite(user: ConnectedUser, inviteId: string, accept: boolean): void {
     const invite = this.invites.get(inviteId);
     if (!invite) {
@@ -168,7 +152,6 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Vérifier que c'est le bon destinataire
     if (invite.toId !== user.id) {
       this.sendToUser(user.id, {
         type: 'invite_error',
@@ -177,7 +160,6 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Vérifier expiration
     if (Date.now() > invite.expires) {
       this.invites.delete(inviteId);
       this.sendToUser(user.id, {
@@ -187,12 +169,10 @@ export class SimpleGameInvites {
       return;
     }
 
-    // Supprimer l'invitation
     this.invites.delete(inviteId);
     const sender = this.wsManager ? this.wsManager.getUser(invite.fromId) : null;
 
     if (accept && sender) {
-      // Vérifications finales avant de démarrer le jeu
       if (GameManager.instance.getFromPlayerId(invite.fromId) || 
           GameManager.instance.getFromPlayerId(user.id)) {
         this.sendToUser(user.id, {
@@ -207,7 +187,6 @@ export class SimpleGameInvites {
       }
 
       try {
-        // 🎮 Démarrer la partie avec GameManager existant
         const gameId = GameManager.instance.startGame(
           invite.fromId,
           user.id, 
@@ -215,7 +194,6 @@ export class SimpleGameInvites {
           user.socket.socket
         );
         
-        // Notifier les deux joueurs avec les données du vrai jeu
         this.sendToUser(invite.fromId, {
           type: 'game_started',
           gameId: gameId,
@@ -236,10 +214,10 @@ export class SimpleGameInvites {
           side: 'right'
         });
 
-        console.log(`🚀 KISS: Game ${gameId} started: ${invite.fromUsername} vs ${user.username}`);
+        console.log(`Game ${gameId} started: ${invite.fromUsername} vs ${user.username}`);
         
       } catch (error) {
-        console.error('🎮 KISS: Error starting game:', error);
+        console.error('Error starting game:', error);
         this.sendToUser(user.id, {
           type: 'invite_error',
           message: 'Failed to start game'
@@ -250,26 +228,21 @@ export class SimpleGameInvites {
         });
       }
     } else if (sender) {
-      // 📢 Notifier le refus
       this.sendToUser(invite.fromId, {
         type: 'invite_declined',
         byUserId: user.id,
         byUsername: user.username
       });
 
-      console.log(`❌ KISS: ${user.username} declined ${invite.fromUsername}'s invite`);
+      console.log(`${user.username} declined ${invite.fromUsername}'s invite`);
     }
   }
 
-  // 📡 Envoyer message à un utilisateur
   private sendToUser(userId: number, message: any): void {
     if (!this.wsManager) return;
-    
-    // Utiliser le WebSocketManager principal pour envoyer le message
     this.wsManager.sendToUser(userId, message);
   }
 
-  // 🧹 Cleanup périodique des invitations expirées
   cleanupExpiredInvites(): void {
     const now = Date.now();
     for (const [id, invite] of this.invites.entries()) {
@@ -279,7 +252,6 @@ export class SimpleGameInvites {
     }
   }
 
-  // 📊 Stats pour debug
   getStats(): { users: number, invites: number } {
     const userCount = this.wsManager ? this.wsManager.getConnectedUsers().length : 0;
     return {
@@ -289,5 +261,4 @@ export class SimpleGameInvites {
   }
 }
 
-// Export singleton
 export const simpleGameInvites = new SimpleGameInvites();

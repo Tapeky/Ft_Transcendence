@@ -6,25 +6,20 @@ import multipart from '@fastify/multipart';
 import staticFiles from '@fastify/static';
 import fs from 'fs';
 import path from 'path';
+
 import { DatabaseManager } from './database/DatabaseManager';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
-import { GameManager } from './websocket/game_manager';
 
 // Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('❌ JWT_SECRET environment variable is required');
-  process.exit(1);
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
 
 // HTTPS configuration
-
 const httpsOptions = ENABLE_HTTPS ? {
   https: {
     key: fs.readFileSync('/app/ssl/key.pem'),
@@ -36,19 +31,22 @@ const server = Fastify({
   logger: {
     level: NODE_ENV === 'development' ? 'info' : 'warn'
   },
+  bodyLimit: 2 * 1024 * 1024, // 2MB body limit for security
   ...httpsOptions
 });
 
 async function start() {
   try {
-    // Database setup
+    // 1. Configuration de la base de données
+    console.log('🔌 Connexion à la base de données...');
     const dbManager = DatabaseManager.getInstance();
     const dbPath = path.join(process.env.DB_PATH || './db', process.env.DB_NAME || 'ft_transcendence.db');
     await dbManager.connect(dbPath);
     await dbManager.initialize();
     await dbManager.cleanupExpiredTokens();
     
-    // Register plugins
+    // 2. Plugins Fastify
+    console.log('🔧 Configuration des plugins...');
     
     // CORS
     const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
@@ -61,7 +59,7 @@ async function start() {
     
     // JWT
     await server.register(jwt, {
-      secret: JWT_SECRET as string,
+      secret: JWT_SECRET,
       sign: {
         expiresIn: process.env.JWT_EXPIRES_IN || '24h'
       }
@@ -84,14 +82,16 @@ async function start() {
       prefix: '/uploads/'
     });
     
-    // Setup middleware
+    // 3. Middleware global
+    console.log('🔒 Configuration des middlewares...');
     setupMiddleware(server);
     
-    // WebSocket setup
-    const wsManager = setupWebSocket(server);
-    (server as any).websocketManager = wsManager;
+    // 4. WebSocket handlers
+    console.log('🌐 Configuration des WebSockets...');
+    setupWebSocket(server);
     
-    // Register routes
+    // 5. Routes
+    console.log('🛣️ Configuration des routes...');
     setupRoutes(server);
     
     // 6. Routes de santé et monitoring
@@ -116,7 +116,7 @@ async function start() {
           health: '/health',
           auth: '/api/auth/*',
           users: '/api/users/*',
-          local_tournaments: '/api/local-tournament/*',
+          tournaments: '/api/tournaments/*',
           matches: '/api/matches/*',
           websocket: '/ws'
         }
@@ -162,64 +162,47 @@ async function start() {
       });
     });
     
-    // Start server
+    // 8. Démarrage du serveur
     await server.listen({ port: PORT, host: HOST });
     const protocol = ENABLE_HTTPS ? 'https' : 'http';
     const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
     
-    if (NODE_ENV === 'development') {
-      console.log(`
+    console.log(`
 🚀 Serveur ft_transcendence démarré !
 📍 URL: ${protocol}://localhost:${PORT}
 🌍 Environnement: ${NODE_ENV}
 🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
 📊 Health check: ${protocol}://localhost:${PORT}/health
 📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
-      `);
-    }
+    `);
     
     if (NODE_ENV === 'production') {
       setInterval(async () => {
         try {
           await dbManager.cleanupExpiredTokens();
         } catch (error) {
-          server.log.error('Erreur lors du nettoyage des tokens:', error as any);
+          server.log.error('Erreur lors du nettoyage des tokens:', error);
         }
       }, 60 * 60 * 1000);
     }
-
-    setInterval(async () => {
-      try {
-        const db = DatabaseManager.getInstance().getDb();
-        const result = await db.run(`
-          UPDATE users 
-          SET is_online = false 
-          WHERE is_online = true 
-          AND last_login < datetime('now', '-5 minutes')
-        `);
-        
-        if (result.changes && result.changes > 0) {
-          server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
-        }
-      } catch (error) {
-        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error as any);
-      }
-    }, 5 * 60 * 1000);
-
-    GameManager.instance.registerLoop();
+    
   } catch (err) {
-    // Server startup error - always log critical errors
+    console.error('❌ Erreur de démarrage du serveur:', err);
     server.log.error('❌ Erreur de démarrage du serveur:', err);
     process.exit(1);
   }
 }
 
 async function gracefulShutdown(signal: string) {
+  console.log(`\n🛑 Signal ${signal} reçu, arrêt du serveur...`);
+  
   try {
     await server.close();
     await DatabaseManager.getInstance().close();
+    console.log('✅ Serveur arrêté proprement');
     process.exit(0);
   } catch (error) {
+    console.error('❌ Erreur lors de l\'arrêt:', error);
     process.exit(1);
   }
 }
@@ -228,12 +211,12 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason, promise) => {
-  server.log.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 
 process.on('uncaughtException', (error) => {
-  server.log.error('❌ Uncaught Exception:', error);
+  console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 

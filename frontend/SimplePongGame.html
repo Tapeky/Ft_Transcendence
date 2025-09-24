@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Pong avec Ami</title>
+  <style>
+    canvas {
+      border: 2px solid white;
+      background: black;
+      display: block;
+      margin: 20px auto;
+    }
+    #status {
+      text-align: center;
+      color: white;
+      font-family: monospace;
+      font-size: 20px;
+    }
+    body {
+      background: #222;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">En attente...</div>
+  <canvas id="game" width="800" height="400"></canvas>
+  
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+    
+    let ws = null;
+    let gameState = null;
+    let myRole = null;
+    let keys = { up: false, down: false };
+    
+    // Connexion WebSocket
+    function connect(token) {
+      ws = new WebSocket('ws://localhost:8000/ws');
+      
+      ws.onopen = () => {
+        // S'authentifier
+        ws.send(JSON.stringify({
+          type: 'auth',
+          token: token
+        }));
+      };
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        
+        switch(msg.type) {
+          case 'friend_pong_invite':
+            if (confirm(`Invitation de jeu reçue! Accepter?`)) {
+              ws.send(JSON.stringify({
+                type: 'friend_pong_accept',
+                inviteId: msg.inviteId,
+                fromUserId: msg.fromUserId
+              }));
+            } else {
+              ws.send(JSON.stringify({
+                type: 'friend_pong_decline',
+                inviteId: msg.inviteId
+              }));
+            }
+            break;
+            
+          case 'friend_pong_start':
+            myRole = msg.role;
+            status.textContent = `Partie commencée! Vous êtes ${myRole === 'left' ? 'à gauche' : 'à droite'}`;
+            break;
+            
+          case 'friend_pong_state':
+            gameState = msg.state;
+            render();
+            break;
+        }
+      };
+    }
+    
+    // Contrôles
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') keys.up = true;
+      if (e.key === 'ArrowDown') keys.down = true;
+      sendInput();
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowUp') keys.up = false;
+      if (e.key === 'ArrowDown') keys.down = false;
+      sendInput();
+    });
+    
+    function sendInput() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'friend_pong_input',
+          up: keys.up,
+          down: keys.down
+        }));
+      }
+    }
+    
+    // Rendu
+    function render() {
+      if (!gameState) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Paddles
+      ctx.fillStyle = 'white';
+      ctx.fillRect(10, gameState.leftPaddleY - 40, 10, 80);
+      ctx.fillRect(780, gameState.rightPaddleY - 40, 10, 80);
+      
+      // Balle
+      ctx.fillRect(gameState.ballX - 5, gameState.ballY - 5, 10, 10);
+      
+      // Score
+      ctx.font = '30px monospace';
+      ctx.fillText(gameState.leftScore, 350, 50);
+      ctx.fillText(gameState.rightScore, 430, 50);
+      
+      // Ligne centrale
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(400, 0);
+      ctx.lineTo(400, 400);
+      ctx.strokeStyle = 'white';
+      ctx.stroke();
+      
+      // État de fin
+      if (gameState.gameOver) {
+        status.textContent = `Partie terminée! ${gameState.winner === myRole ? 'Vous avez gagné!' : 'Vous avez perdu.'}`;
+      }
+    }
+    
+    // Démarrer avec le token depuis l'URL ou stockage
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      connect(token);
+    }
+  </script>
+</body>
+</html>
