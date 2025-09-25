@@ -11,20 +11,28 @@ import { simpleGameInvites } from './SimpleGameInvites';
 import { FriendPongInvites } from './FriendPongInvites';
 import { SimplePongManager } from './SimplePongManager';
 
+// Import the interface from MessageRouter
+interface FastifyWithPongServices extends FastifyInstance {
+  friendPongInvites: FriendPongInvites;
+  websocketManager: WebSocketManager;
+}
+
 export function setupWebSocket(server: FastifyInstance) {
   const wsManager = WebSocketManager.getInstance();
   const gameManager = GameManager.instance;
-  const messageRouter = new MessageRouter(server, wsManager, gameManager);
   const friendPongInvites = new FriendPongInvites(wsManager);
   const simplePongManager = SimplePongManager.getInstance();
-  
+
   // Injecter le WebSocketManager dans SimplePongManager
   simplePongManager.setWebSocketManager(wsManager);
-  
+
+  // Decorate server with required services
   server.decorate('friendPongInvites', friendPongInvites);
-  
-  // Attach WebSocketManager to Fastify for routes
   server.decorate('websocketManager', wsManager);
+
+  // Now we can safely cast and create MessageRouter
+  const extendedServer = server as FastifyWithPongServices;
+  const messageRouter = new MessageRouter(extendedServer, wsManager, gameManager);
   
   // Connect KISS system to main WebSocketManager
   simpleGameInvites.setWebSocketManager(wsManager);

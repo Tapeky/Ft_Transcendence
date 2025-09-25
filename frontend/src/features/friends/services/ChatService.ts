@@ -267,12 +267,32 @@ export class ChatService {
         this.handlePongGameStart(data);
         break;
 
+      case 'friend_pong_accepted':
+        this.handlePongGameAccepted(data);
+        break;
+
+      case 'simple_pong_start':
+        this.handleSimplePongStart(data);
+        break;
+
       case 'friend_pong_state':
         this.handlePongGameState(data);
         break;
 
+      case 'simple_pong_state':
+        this.handleSimplePongState(data);
+        break;
+
       case 'friend_pong_end':
         this.handlePongGameEnd(data);
+        break;
+
+      case 'simple_pong_end':
+        this.handleSimplePongEnd(data);
+        break;
+
+      case 'friend_pong_error':
+        this.handlePongError(data);
         break;
 
       case 'connected':
@@ -406,10 +426,67 @@ export class ChatService {
     // window.location.href = '/';
   }
 
+  private handlePongGameAccepted(data: any): void {
+    console.log('Pong invitation accepted:', data);
+    // Rediriger vers la page de jeu avec l'URL fournie
+    if (data.gameUrl) {
+      console.log('Redirecting to game:', data.gameUrl);
+      window.location.href = data.gameUrl;
+    } else if (data.gameId) {
+      // Fallback si gameUrl n'est pas fournie
+      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+    }
+    // Émettre l'événement pour les composants qui l'écoutent
+    this.emit('pong_game_accepted', data);
+  }
+
+  private handleSimplePongStart(data: any): void {
+    console.log('Simple Pong game started:', data);
+    // Rediriger vers la page de jeu si pas déjà dessus
+    if (data.gameId && !window.location.href.includes('simple-pong.html')) {
+      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+    }
+    // Émettre l'événement pour les composants qui l'écoutent
+    this.emit('simple_pong_start', data);
+  }
+
+  private handleSimplePongState(data: any): void {
+    // Ne pas logger chaque mise à jour d'état (trop verbeux)
+    // console.log('Simple Pong game state update:', data);
+    // Émettre l'état du jeu pour les composants qui l'écoutent
+    this.emit('simple_pong_state', data);
+  }
+
+  private handleSimplePongEnd(data: any): void {
+    console.log('Simple Pong game ended:', data);
+    // Émettre la fin du jeu
+    this.emit('simple_pong_end', data);
+    // Optionnel: rediriger vers la page principale après un délai
+    // setTimeout(() => {
+    //   window.location.href = '/';
+    // }, 3000);
+  }
+
   private handleConnected(data: any): void {
     console.log('WebSocket connected:', data.message || 'Connection established');
     // Émettre un événement pour notifier que la connexion est établie
     this.emit('websocket_connected', data);
+  }
+
+  private handlePongError(data: any): void {
+    console.error('Pong game error:', data.message);
+    // Afficher une notification d'erreur à l'utilisateur
+    if (data.message) {
+      // Utiliser l'API Notification si disponible
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Erreur Pong', {
+          body: data.message,
+          icon: '/favicon.png'
+        });
+      }
+      // Émettre l'événement pour les composants qui l'écoutent
+      this.emit('pong_error', data);
+    }
   }
 
   async sendMessage(toUserId: number, content: string): Promise<void> {

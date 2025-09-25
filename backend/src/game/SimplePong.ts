@@ -48,11 +48,14 @@ export class SimplePong {
   public update(deltaTime: number, leftUp: boolean, leftDown: boolean, rightUp: boolean, rightDown: boolean): void {
     if (this.state.gameOver) return;
 
+    // Protection contre les deltaTime trop importants qui peuvent causer des bugs
+    const safeDeltaTime = Math.min(deltaTime, 1/30); // Limite à ~33ms max
+
     // Déplacement des paddles
-    if (leftUp) this.state.leftPaddleY -= SimplePong.PADDLE_SPEED * deltaTime;
-    if (leftDown) this.state.leftPaddleY += SimplePong.PADDLE_SPEED * deltaTime;
-    if (rightUp) this.state.rightPaddleY -= SimplePong.PADDLE_SPEED * deltaTime;
-    if (rightDown) this.state.rightPaddleY += SimplePong.PADDLE_SPEED * deltaTime;
+    if (leftUp) this.state.leftPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
+    if (leftDown) this.state.leftPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
+    if (rightUp) this.state.rightPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
+    if (rightDown) this.state.rightPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
 
     // Limites des paddles (utilisation de PADDLE_HEIGHT)
     const halfPaddle = SimplePong.PADDLE_HEIGHT / 2;
@@ -62,8 +65,8 @@ export class SimplePong {
                                Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.rightPaddleY));
 
     // Déplacement de la balle
-    this.state.ballX += this.state.ballVX * deltaTime;
-    this.state.ballY += this.state.ballVY * deltaTime;
+    this.state.ballX += this.state.ballVX * safeDeltaTime;
+    this.state.ballY += this.state.ballVY * safeDeltaTime;
 
     // Rebond haut/bas
     if (this.state.ballY <= SimplePong.BALL_SIZE || 
