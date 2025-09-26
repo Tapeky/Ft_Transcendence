@@ -178,7 +178,11 @@ export class FriendPongInvites {
     invite!.status = 'accepted';
 
     // Notifier les deux joueurs avec les URLs de jeu
-    const gameUrl = `https://localhost:3000/simple-pong.html?gameId=${gameId}`;
+    const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
+    const frontendUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.FRONTEND_URL 
+      : `${protocol}://localhost:3000`;
+    const gameUrl = `${frontendUrl}/simple-pong?gameId=${gameId}`;
 
     this.wsManager.sendToUser(invite.fromUserId, {
       type: 'friend_pong_accepted',

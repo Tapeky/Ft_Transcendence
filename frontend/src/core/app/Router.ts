@@ -77,6 +77,11 @@ export class Router {
       return new GamePage().getElement();
     });
 
+    this.routes.set('/simple-pong', async () => {
+      const { SimplePongPage } = await import('../../pages/SimplePongPage');
+      return new SimplePongPage().getElement();
+    });
+
     this.routes.set('/404', async () => {
       const { NotFoundPage } = await import('../../pages/NotFound');
       return new NotFoundPage().getElement();
@@ -96,6 +101,10 @@ export class Router {
 
     if (path.startsWith('/game')) {
       return this.routes.get('/game');
+    }
+
+    if (path.startsWith('/simple-pong')) {
+      return this.routes.get('/simple-pong');
     }
 
     return undefined;
