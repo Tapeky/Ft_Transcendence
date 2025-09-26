@@ -406,9 +406,9 @@ export class ChatService {
 
   private handlePongGameStart(data: any): void {
     console.log('Pong game started:', data);
-    // Rediriger vers la page de jeu
+    // Rediriger vers la page de jeu via le router statique
     if (data.gameId) {
-      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
     }
   }
 
@@ -428,13 +428,11 @@ export class ChatService {
 
   private handlePongGameAccepted(data: any): void {
     console.log('Pong invitation accepted:', data);
-    // Rediriger vers la page de jeu avec l'URL fournie
-    if (data.gameUrl) {
-      console.log('Redirecting to game:', data.gameUrl);
-      window.location.href = data.gameUrl;
-    } else if (data.gameId) {
-      // Fallback si gameUrl n'est pas fournie
-      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+    // Utiliser le router statique déjà importé
+    if (data.gameId) {
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
+    } else {
+      router.navigate('/simple-pong');
     }
     // Émettre l'événement pour les composants qui l'écoutent
     this.emit('pong_game_accepted', data);
@@ -442,9 +440,9 @@ export class ChatService {
 
   private handleSimplePongStart(data: any): void {
     console.log('Simple Pong game started:', data);
-    // Rediriger vers la page de jeu si pas déjà dessus
-    if (data.gameId && !window.location.href.includes('simple-pong.html')) {
-      window.location.href = `/simple-pong.html?gameId=${data.gameId}`;
+    // Rediriger vers la page de jeu si pas déjà dessus via le router statique
+    if (data.gameId && !window.location.href.includes('simple-pong')) {
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
     }
     // Émettre l'événement pour les composants qui l'écoutent
     this.emit('simple_pong_start', data);
