@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
+import { LocalTournamentService } from '../tournament/LocalTournamentService';
 
 interface TournamentCreateRequest {
   name: string;
@@ -10,73 +11,9 @@ interface TournamentJoinRequest {
   alias: string;
 }
 
-function generateTournamentBracket(players: any[]) {
-  const playerCount = players.length;
-  console.log(
-    `🏆 Generating bracket for ${playerCount} players:`,
-    players.map(p => p.alias)
-  );
-  if (![4, 8, 16].includes(playerCount)) {
-    throw new Error(
-      `Invalid player count for bracket generation: ${playerCount} players (need 4, 8, or 16)`
-    );
-  }
-
-  const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-
-  const firstRoundMatches = [];
-  const tournamentId = shuffledPlayers[0].tournament_id.toString();
-
-  for (let i = 0; i < shuffledPlayers.length; i += 2) {
-    const player1 = shuffledPlayers[i];
-    const player2 = shuffledPlayers[i + 1];
-
-    firstRoundMatches.push({
-      id: `match_${tournamentId}_${Math.floor(i / 2) + 1}_1`, // match_37_1_1, match_37_2_1, etc.
-      tournamentId: tournamentId,
-      round: 1,
-      matchNumber: Math.floor(i / 2) + 1,
-      player1Alias: player1.alias,
-      player2Alias: player2.alias,
-      player1Score: 0,
-      player2Score: 0,
-      status: 'pending',
-    });
-  }
-
-  const totalRounds = Math.log2(playerCount);
-  const rounds = [firstRoundMatches];
-
-  for (let round = 2; round <= totalRounds; round++) {
-    const matchesInRound = Math.pow(2, totalRounds - round);
-    const roundMatches = [];
-
-    for (let matchNum = 1; matchNum <= matchesInRound; matchNum++) {
-      roundMatches.push({
-        id: `match_${tournamentId}_${matchNum}_${round}`,
-        tournamentId: tournamentId,
-        round: round,
-        matchNumber: matchNum,
-        player1Alias: 'TBD',
-        player2Alias: 'TBD',
-        player1Score: 0,
-        player2Score: 0,
-        status: 'pending',
-      });
-    }
-
-    rounds.push(roundMatches);
-  }
-
-  return {
-    rounds: rounds,
-    currentRound: 1,
-    currentMatch: firstRoundMatches[0]?.id,
-  };
-}
-
 export async function localTournamentRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
+  const tournamentService = new LocalTournamentService(db);
 
   server.post<{ Body: TournamentCreateRequest }>(
     '/create',
@@ -326,7 +263,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         console.log(`🏆 Starting tournament ${id} with ${players.length} players`);
 
-        const bracket = generateTournamentBracket(players);
+        const bracket = tournamentService.generateTournamentBracket(players);
 
         for (const round of bracket.rounds) {
           for (const match of round) {
