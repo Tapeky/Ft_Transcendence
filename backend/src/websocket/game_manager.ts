@@ -222,64 +222,85 @@ export class GameManager {
 
     const deltaTime = 1 / serverFps;
     this._intervalId = setInterval(() => {
-      for (const game of this._games.values()) {
-        game.update(deltaTime);
-
-        if (game.gameState === 'playing') {
-          game.leftPlayer.socket.send(
-            JSON.stringify({
-              type: 'game_state',
-              data: game.repr(game.leftPlayer.id),
-            })
-          );
-          game.rightPlayer.socket.send(
-            JSON.stringify({
-              type: 'game_state',
-              data: game.repr(game.rightPlayer.id),
-            })
-          );
-        }
-        if (game.pong.state !== PongState.Running) {
-          console.log(`game ${game.id} finished with state ${game.pong.state} !`);
-
-          let winner = 'Unknown';
-          if (game.pong.state === PongState.LeftWins) {
-            winner = 'Left Player';
-          } else if (game.pong.state === PongState.RightWins) {
-            winner = 'Right Player';
-          } else if (game.pong.state === PongState.Aborted) {
-            winner = 'Game Aborted';
-          }
-
-          const gameEndMessage = {
-            type: 'game_end',
-            data: {
-              winner: winner,
-              finalScore: {
-                left: game.pong.leftScore,
-                right: game.pong.rightScore,
-              },
-              gameId: game.id,
-              state: game.pong.state,
-            },
-          };
-
-          try {
-            game.leftPlayer.socket.send(JSON.stringify(gameEndMessage));
-          } catch (error) {
-            console.error(`Failed to send game_end to left player:`, error);
-          }
-
-          try {
-            game.rightPlayer.socket.send(JSON.stringify(gameEndMessage));
-          } catch (error) {
-            console.error(`Failed to send game_end to right player:`, error);
-          }
-
-          this._games.delete(game.id);
-        }
-      }
+      this.executeGameLoop(deltaTime);
     }, 1000 / serverFps);
+  }
+
+  private executeGameLoop(deltaTime: number): void {
+    for (const game of this._games.values()) {
+      this.updateGame(game, deltaTime);
+      this.broadcastGameState(game);
+      this.handleGameEnd(game);
+    }
+  }
+
+  private updateGame(game: PongGame, deltaTime: number): void {
+    game.update(deltaTime);
+  }
+
+  private broadcastGameState(game: PongGame): void {
+    if (game.gameState !== 'playing') return;
+
+    this.sendGameStateToPlayer(game.leftPlayer, game.repr(game.leftPlayer.id));
+    this.sendGameStateToPlayer(game.rightPlayer, game.repr(game.rightPlayer.id));
+  }
+
+  private sendGameStateToPlayer(player: PongPlayer, gameData: any): void {
+    try {
+      player.socket.send(
+        JSON.stringify({
+          type: 'game_state',
+          data: gameData,
+        })
+      );
+    } catch (error) {
+      console.error(`Failed to send game state to player ${player.id}:`, error);
+    }
+  }
+
+  private handleGameEnd(game: PongGame): void {
+    if (game.pong.state === PongState.Running) return;
+
+    console.log(`game ${game.id} finished with state ${game.pong.state} !`);
+
+    const gameEndMessage = this.createGameEndMessage(game);
+    this.broadcastGameEnd(game, gameEndMessage);
+    this._games.delete(game.id);
+  }
+
+  private createGameEndMessage(game: PongGame): any {
+    return {
+      type: 'game_end',
+      data: {
+        winner: this.determineWinner(game.pong.state),
+        finalScore: {
+          left: game.pong.leftScore,
+          right: game.pong.rightScore,
+        },
+        gameId: game.id,
+        state: game.pong.state,
+      },
+    };
+  }
+
+  private determineWinner(state: PongState): string {
+    if (state === PongState.LeftWins) return 'Left Player';
+    if (state === PongState.RightWins) return 'Right Player';
+    if (state === PongState.Aborted) return 'Game Aborted';
+    return 'Unknown';
+  }
+
+  private broadcastGameEnd(game: PongGame, message: any): void {
+    this.sendGameEndToPlayer(game.leftPlayer, message);
+    this.sendGameEndToPlayer(game.rightPlayer, message);
+  }
+
+  private sendGameEndToPlayer(player: PongPlayer, message: any): void {
+    try {
+      player.socket.send(JSON.stringify(message));
+    } catch (error) {
+      console.error(`Failed to send game_end to player ${player.id}:`, error);
+    }
   }
 
   public deregisterLoop() {
