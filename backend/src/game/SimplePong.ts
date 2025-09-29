@@ -24,7 +24,6 @@ export class SimplePong {
   private state: SimplePongState;
 
   constructor() {
-    // Initialisation directe dans le constructeur pour éviter l'erreur TS
     this.state = {
       ballX: SimplePong.ARENA_WIDTH / 2,
       ballY: SimplePong.ARENA_HEIGHT / 2,
@@ -34,7 +33,7 @@ export class SimplePong {
       rightPaddleY: SimplePong.ARENA_HEIGHT / 2,
       leftScore: 0,
       rightScore: 0,
-      gameOver: false
+      gameOver: false,
     };
   }
 
@@ -45,50 +44,58 @@ export class SimplePong {
     this.state.ballVY = (Math.random() - 0.5) * SimplePong.BALL_SPEED * 0.5;
   }
 
-  public update(deltaTime: number, leftUp: boolean, leftDown: boolean, rightUp: boolean, rightDown: boolean): void {
+  public update(
+    deltaTime: number,
+    leftUp: boolean,
+    leftDown: boolean,
+    rightUp: boolean,
+    rightDown: boolean
+  ): void {
     if (this.state.gameOver) return;
 
-    // Protection contre les deltaTime trop importants qui peuvent causer des bugs
-    const safeDeltaTime = Math.min(deltaTime, 1/30); // Limite à ~33ms max
+    const safeDeltaTime = Math.min(deltaTime, 1 / 30); // Limite à ~33ms max
 
-    // Déplacement des paddles
     if (leftUp) this.state.leftPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
     if (leftDown) this.state.leftPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
     if (rightUp) this.state.rightPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
     if (rightDown) this.state.rightPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
 
-    // Limites des paddles (utilisation de PADDLE_HEIGHT)
     const halfPaddle = SimplePong.PADDLE_HEIGHT / 2;
-    this.state.leftPaddleY = Math.max(halfPaddle, 
-                              Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.leftPaddleY));
-    this.state.rightPaddleY = Math.max(halfPaddle,
-                               Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.rightPaddleY));
+    this.state.leftPaddleY = Math.max(
+      halfPaddle,
+      Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.leftPaddleY)
+    );
+    this.state.rightPaddleY = Math.max(
+      halfPaddle,
+      Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.rightPaddleY)
+    );
 
-    // Déplacement de la balle
     this.state.ballX += this.state.ballVX * safeDeltaTime;
     this.state.ballY += this.state.ballVY * safeDeltaTime;
 
-    // Rebond haut/bas
-    if (this.state.ballY <= SimplePong.BALL_SIZE || 
-        this.state.ballY >= SimplePong.ARENA_HEIGHT - SimplePong.BALL_SIZE) {
+    if (
+      this.state.ballY <= SimplePong.BALL_SIZE ||
+      this.state.ballY >= SimplePong.ARENA_HEIGHT - SimplePong.BALL_SIZE
+    ) {
       this.state.ballVY = -this.state.ballVY;
     }
 
-    // Collision paddle gauche (utilisation de PADDLE_HEIGHT et PADDLE_WIDTH)
-    if (this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
-        Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE) {
+    if (
+      this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
+      Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+    ) {
       this.state.ballVX = Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.leftPaddleY) * 5;
     }
 
-    // Collision paddle droit
-    if (this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
-        Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE) {
+    if (
+      this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
+      Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+    ) {
       this.state.ballVX = -Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.rightPaddleY) * 5;
     }
 
-    // Points
     if (this.state.ballX < 0) {
       this.state.rightScore++;
       this.resetBallPosition();
@@ -97,7 +104,6 @@ export class SimplePong {
       this.resetBallPosition();
     }
 
-    // Vérifier victoire
     if (this.state.leftScore >= SimplePong.WINNING_SCORE) {
       this.state.gameOver = true;
       this.state.winner = 'left';
@@ -121,7 +127,7 @@ export class SimplePong {
       rightPaddleY: SimplePong.ARENA_HEIGHT / 2,
       leftScore: 0,
       rightScore: 0,
-      gameOver: false
+      gameOver: false,
     };
   }
 }

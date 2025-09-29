@@ -28,21 +28,21 @@ export class BracketGenerator {
 
   static generateBracket(players: TournamentPlayer[]): TournamentBracket {
     const playerCount = players.length;
-    
+
     if (!this.VALID_PLAYER_COUNTS.includes(playerCount as any)) {
       throw new Error(`Invalid player count: ${playerCount}. Must be 4, 8, or 16 players`);
     }
 
     const shuffledPlayers = this.shufflePlayers(players);
     const tournamentId = shuffledPlayers[0].tournament_id.toString();
-    
+
     const firstRoundMatches = this.generateFirstRound(shuffledPlayers, tournamentId);
     const totalRounds = Math.log2(playerCount);
-    
+
     return {
       rounds: [firstRoundMatches, ...this.generateEmptyRounds(tournamentId, totalRounds)],
       currentRound: 1,
-      currentMatch: firstRoundMatches[0]?.id
+      currentMatch: firstRoundMatches[0]?.id,
     };
   }
 
@@ -50,36 +50,39 @@ export class BracketGenerator {
     return [...players].sort(() => crypto.randomBytes(1)[0] - 128);
   }
 
-  private static generateFirstRound(players: TournamentPlayer[], tournamentId: string): BracketMatch[] {
+  private static generateFirstRound(
+    players: TournamentPlayer[],
+    tournamentId: string
+  ): BracketMatch[] {
     const matches: BracketMatch[] = [];
-    
+
     for (let i = 0; i < players.length; i += 2) {
       const player1 = players[i];
       const player2 = players[i + 1];
-      
+
       matches.push({
-        id: `match_${tournamentId}_${Math.floor(i/2) + 1}_1`,
+        id: `match_${tournamentId}_${Math.floor(i / 2) + 1}_1`,
         tournamentId,
         round: 1,
-        matchNumber: Math.floor(i/2) + 1,
+        matchNumber: Math.floor(i / 2) + 1,
         player1Alias: player1.alias,
         player2Alias: player2.alias,
         player1Score: 0,
         player2Score: 0,
-        status: 'pending'
+        status: 'pending',
       });
     }
-    
+
     return matches;
   }
 
   private static generateEmptyRounds(tournamentId: string, totalRounds: number): BracketMatch[][] {
     const rounds: BracketMatch[][] = [];
-    
+
     for (let round = 2; round <= totalRounds; round++) {
       const matchesInRound = Math.pow(2, totalRounds - round);
       const roundMatches: BracketMatch[] = [];
-      
+
       for (let matchNum = 1; matchNum <= matchesInRound; matchNum++) {
         roundMatches.push({
           id: `match_${tournamentId}_${matchNum}_${round}`,
@@ -90,13 +93,13 @@ export class BracketGenerator {
           player2Alias: 'TBD',
           player1Score: 0,
           player2Score: 0,
-          status: 'pending'
+          status: 'pending',
         });
       }
-      
+
       rounds.push(roundMatches);
     }
-    
+
     return rounds;
   }
 }

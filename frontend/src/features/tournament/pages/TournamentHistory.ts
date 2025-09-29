@@ -32,7 +32,7 @@ export class TournamentHistory {
       this.render();
     } catch (error) {
       console.error('Failed to load tournament history:', error);
-      this.renderError('Impossible de charger l\'historique des tournois');
+      this.renderError("Impossible de charger l'historique des tournois");
     } finally {
       this.isLoading = false;
     }
@@ -76,16 +76,15 @@ export class TournamentHistory {
           this.updateLoadingState();
 
           const result = await TournamentService.clearHistory();
-          console.log('History cleared:', result);
-          
+
           await this.loadTournaments();
-          
+
           this.showMessage('✅ Historique supprimé avec succès !', 'success');
-          
+
           resolve();
         } catch (error) {
           console.error('Failed to clear tournament history:', error);
-          this.showMessage('❌ Erreur lors de la suppression de l\'historique', 'error');
+          this.showMessage("❌ Erreur lors de la suppression de l'historique", 'error');
           reject(error);
         }
       });
@@ -96,7 +95,7 @@ export class TournamentHistory {
       });
 
       const overlay = confirmationEl.firstElementChild as HTMLElement;
-      overlay?.addEventListener('click', (e) => {
+      overlay?.addEventListener('click', e => {
         if (e.target === overlay) {
           cleanup();
           resolve();
@@ -127,13 +126,15 @@ export class TournamentHistory {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
+    container.className =
+      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
     this.header = new Header(true);
     this.banner = new Banner();
 
     const mainContent = document.createElement('div');
-    mainContent.className = 'tournament-history-main flex-grow bg-gradient-to-r from-blue-800 to-red-700';
+    mainContent.className =
+      'tournament-history-main flex-grow bg-gradient-to-r from-blue-800 to-red-700';
     mainContent.id = 'tournament-content';
 
     container.appendChild(this.header.getElement());
@@ -144,7 +145,7 @@ export class TournamentHistory {
   }
 
   private subscribeToAuth(): void {
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+    this.authUnsubscribe = authManager.subscribeToAuth(authState => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
         router.navigate('/');
       }
@@ -257,7 +258,9 @@ export class TournamentHistory {
   private renderTournamentCard(tournament: Tournament): string {
     const statusIcon = this.getStatusIcon(tournament.status);
     const statusColorClass = this.getStatusColorClass(tournament.status);
-    const completedDate = tournament.completedAt ? new Date(tournament.completedAt).toLocaleString('fr-FR') : 'Non terminé';
+    const completedDate = tournament.completedAt
+      ? new Date(tournament.completedAt).toLocaleString('fr-FR')
+      : 'Non terminé';
     const winner = tournament.winnerAlias;
 
     return `
@@ -279,7 +282,9 @@ export class TournamentHistory {
             <span class="font-bold text-white/90">📅 Créé:</span>
             <span class="font-medium text-white">${new Date(tournament.createdAt).toLocaleDateString('fr-FR')}</span>
           </div>
-          ${tournament.status === 'completed' ? `
+          ${
+            tournament.status === 'completed'
+              ? `
             <div class="bg-green-600/30 p-3 rounded-lg border-l-4 border-green-400">
               <div class="flex justify-between items-center mb-1">
                 <span class="font-bold text-green-200">🏆 Gagnant:</span>
@@ -290,7 +295,9 @@ export class TournamentHistory {
                 <span class="font-medium text-white/80 text-sm">${completedDate}</span>
               </div>
             </div>
-          ` : tournament.status !== 'cancelled' ? `
+          `
+              : tournament.status !== 'cancelled'
+                ? `
             <div class="bg-blue-600/30 p-3 rounded-lg border-l-4 border-blue-400">
               <div class="flex justify-between items-center">
                 <span class="font-bold text-blue-200">⚡ Tournoi actif</span>
@@ -299,71 +306,115 @@ export class TournamentHistory {
                 </button>
               </div>
             </div>
-          ` : ''}
+          `
+                : ''
+          }
         </div>
         
-        ${tournament.players && tournament.players.length > 0 ? `
+        ${
+          tournament.players && tournament.players.length > 0
+            ? `
           <div class="mb-4">
             <h4 class="font-bold text-white/90 mb-2">Participants:</h4>
             <div class="flex flex-wrap gap-2">
-              ${tournament.players.map(player => `
+              ${tournament.players
+                .map(
+                  player => `
                 <span class="bg-blue-600/40 px-2 py-1 rounded-lg text-sm font-medium border border-blue-400/30">${player.alias}</span>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${tournament.matches && tournament.matches.length > 0 ? `
+        ${
+          tournament.matches && tournament.matches.length > 0
+            ? `
           <div class="mt-4">
             <h4 class="font-bold text-white/90 mb-2">Matchs (${tournament.matches.length}):</h4>
             <div class="space-y-1 text-sm text-white/80">
-              ${tournament.matches.slice(0, 3).map((match) => `
+              ${tournament.matches
+                .slice(0, 3)
+                .map(
+                  match => `
                 <div class="border-b border-white/10 pb-1">
                   ${match.player1Alias} vs ${match.player2Alias}
                   ${match.status === 'completed' ? `<span class="font-bold text-white">(${match.player1Score}-${match.player2Score})</span>` : `<span class="text-yellow-300">(${match.status})</span>`}
                 </div>
-              `).join('')}
-              ${tournament.matches.length > 3 ? `
+              `
+                )
+                .join('')}
+              ${
+                tournament.matches.length > 3
+                  ? `
                 <div class="text-white/60 text-xs">... et ${tournament.matches.length - 3} autres matchs</div>
-              ` : ''}
+              `
+                  : ''
+              }
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
   }
 
   private getStatusIcon(status: string): string {
     switch (status) {
-      case 'completed': return '✅';
-      case 'in_progress': case 'running': return '🎮';
-      case 'ready': return '⏳';
-      case 'registration': return '📝';
-      case 'cancelled': return '❌';
-      default: return '❓';
+      case 'completed':
+        return '✅';
+      case 'in_progress':
+      case 'running':
+        return '🎮';
+      case 'ready':
+        return '⏳';
+      case 'registration':
+        return '📝';
+      case 'cancelled':
+        return '❌';
+      default:
+        return '❓';
     }
   }
 
   private getStatusColorClass(status: string): string {
     switch (status) {
-      case 'completed': return 'text-green-300';
-      case 'in_progress': case 'running': return 'text-blue-300';
-      case 'ready': return 'text-yellow-300';
-      case 'registration': return 'text-cyan-300';
-      case 'cancelled': return 'text-red-300';
-      default: return 'text-gray-300';
+      case 'completed':
+        return 'text-green-300';
+      case 'in_progress':
+      case 'running':
+        return 'text-blue-300';
+      case 'ready':
+        return 'text-yellow-300';
+      case 'registration':
+        return 'text-cyan-300';
+      case 'cancelled':
+        return 'text-red-300';
+      default:
+        return 'text-gray-300';
     }
   }
 
   private getStatusText(status: string): string {
     switch (status) {
-      case 'completed': return 'Terminé';
-      case 'in_progress': return 'En cours';
-      case 'running': return 'En cours';
-      case 'ready': return 'Prêt';
-      case 'registration': return 'Inscription';
-      case 'cancelled': return 'Annulé';
-      default: return status;
+      case 'completed':
+        return 'Terminé';
+      case 'in_progress':
+        return 'En cours';
+      case 'running':
+        return 'En cours';
+      case 'ready':
+        return 'Prêt';
+      case 'registration':
+        return 'Inscription';
+      case 'cancelled':
+        return 'Annulé';
+      default:
+        return status;
     }
   }
 
@@ -398,7 +449,7 @@ export class TournamentHistory {
 
     const resumeBtns = mainContent.querySelectorAll('.resume-tournament-btn');
     resumeBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', e => {
         e.stopPropagation();
         const tournamentId = btn.getAttribute('data-tournament-id');
         if (tournamentId) {
@@ -429,7 +480,7 @@ export class TournamentHistory {
     if (this.header) {
       this.header.destroy();
     }
-    
+
     if (this.banner) {
       this.banner.destroy();
     }
@@ -437,7 +488,7 @@ export class TournamentHistory {
     if (this.authUnsubscribe) {
       this.authUnsubscribe();
     }
-    
+
     if (this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
     }

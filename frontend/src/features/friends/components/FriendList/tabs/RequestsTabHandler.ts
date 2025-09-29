@@ -54,8 +54,9 @@ export class RequestsTabHandler {
 
   private createRequestItem(request: FriendRequest): HTMLElement {
     const item = document.createElement('div');
-    item.className = 'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
-    
+    item.className =
+      'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
+
     item.innerHTML = `
       <!-- Avatar Section -->
       <div class="flex items-center justify-center min-w-[120px]">
@@ -123,8 +124,7 @@ export class RequestsTabHandler {
 
   private removeRequestFromState(requestId: number): void {
     this.requests = this.requests.filter(r => r.id !== requestId);
-    
-    // If no more requests, show empty message
+
     if (this.requests.length === 0) {
       this.renderRequestsContent();
     }
@@ -140,14 +140,11 @@ export class RequestsTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderRequests();
-    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   getRequests(): FriendRequest[] {
     return [...this.requests];
   }
 
-  destroy(): void {
-    // No specific cleanup needed for this handler
-  }
+  destroy(): void {}
 }

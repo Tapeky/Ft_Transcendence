@@ -1,4 +1,9 @@
-import { Tournament, TournamentMatch, TournamentBracket, TournamentPlayer } from '../types/tournament';
+import {
+  Tournament,
+  TournamentMatch,
+  TournamentBracket,
+  TournamentPlayer,
+} from '../types/tournament';
 
 export interface BracketPosition {
   round: number;
@@ -24,9 +29,11 @@ export class BracketEngine {
     const rounds: TournamentMatch[][] = [firstRoundMatches];
     for (let round = 2; round <= totalRounds; round++) {
       const matchesInRound = Math.pow(2, totalRounds - round);
-      rounds.push(Array.from({ length: matchesInRound }, (_, i) => 
-        this.createPlaceholderMatch('', round, i + 1)
-      ));
+      rounds.push(
+        Array.from({ length: matchesInRound }, (_, i) =>
+          this.createPlaceholderMatch('', round, i + 1)
+        )
+      );
     }
     return { rounds, currentRound: 1, currentMatch: firstRoundMatches[0]?.id };
   }
@@ -34,13 +41,20 @@ export class BracketEngine {
   private static generateFirstRound(shuffledPlayers: TournamentPlayer[]): TournamentMatch[] {
     return shuffledPlayers.reduce((matches, player, i) => {
       if (i % 2 === 0) {
-        matches.push(this.createMatch(player.alias, shuffledPlayers[i + 1].alias, 1, Math.floor(i / 2) + 1));
+        matches.push(
+          this.createMatch(player.alias, shuffledPlayers[i + 1].alias, 1, Math.floor(i / 2) + 1)
+        );
       }
       return matches;
     }, [] as TournamentMatch[]);
   }
 
-  private static createMatch(player1Alias: string, player2Alias: string, round: number, matchNumber: number): TournamentMatch {
+  private static createMatch(
+    player1Alias: string,
+    player2Alias: string,
+    round: number,
+    matchNumber: number
+  ): TournamentMatch {
     return {
       id: this.generateMatchId(),
       tournamentId: '',
@@ -50,11 +64,15 @@ export class BracketEngine {
       player2Alias,
       player1Score: 0,
       player2Score: 0,
-      status: 'pending'
+      status: 'pending',
     };
   }
 
-  private static createPlaceholderMatch(tournamentId: string, round: number, matchNumber: number): TournamentMatch {
+  private static createPlaceholderMatch(
+    tournamentId: string,
+    round: number,
+    matchNumber: number
+  ): TournamentMatch {
     return {
       id: this.generateMatchId(),
       tournamentId,
@@ -64,11 +82,15 @@ export class BracketEngine {
       player2Alias: 'TBD',
       player1Score: 0,
       player2Score: 0,
-      status: 'pending'
+      status: 'pending',
     };
   }
 
-  static advanceWinner(bracket: TournamentBracket, completedMatchId: string, winnerAlias: string): TournamentBracket {
+  static advanceWinner(
+    bracket: TournamentBracket,
+    completedMatchId: string,
+    winnerAlias: string
+  ): TournamentBracket {
     const newBracket = this.deepCloneBracket(bracket);
     const completedMatch = newBracket.rounds.flat().find(m => m.id === completedMatchId);
     if (!completedMatch) throw new Error('Match not found in bracket');
@@ -83,16 +105,22 @@ export class BracketEngine {
     const nextMatchNumber = Math.ceil(matchNumber / 2);
     const nextMatch = newBracket.rounds[nextRound - 1][nextMatchNumber - 1];
     if (!nextMatch) throw new Error('Invalid next match position');
-    const position = (matchNumber % 2 === 1) ? 'player1Alias' : 'player2Alias';
+    const position = matchNumber % 2 === 1 ? 'player1Alias' : 'player2Alias';
     (nextMatch as any)[position] = winnerAlias;
     this.updateCurrentMatchPointer(newBracket);
     return newBracket;
   }
 
   static findNextMatch(bracket: TournamentBracket): TournamentMatch | null {
-    return bracket.rounds.flat().find(m => m.status === 'in_progress') ||
-           bracket.rounds.flat().find(m => m.status === 'pending' && m.player1Alias !== 'TBD' && m.player2Alias !== 'TBD') ||
-           null;
+    return (
+      bracket.rounds.flat().find(m => m.status === 'in_progress') ||
+      bracket.rounds
+        .flat()
+        .find(
+          m => m.status === 'pending' && m.player1Alias !== 'TBD' && m.player2Alias !== 'TBD'
+        ) ||
+      null
+    );
   }
 
   static getBracketStatistics(bracket: TournamentBracket): {
@@ -102,11 +130,15 @@ export class BracketEngine {
     inProgressMatches: number;
     progressPercentage: number;
   } {
-    let total = 0, completed = 0, pending = 0, inProgress = 0;
+    let total = 0,
+      completed = 0,
+      pending = 0,
+      inProgress = 0;
     bracket.rounds.flat().forEach(m => {
       total++;
       if (m.status === 'completed') completed++;
-      else if (m.status === 'pending' && m.player1Alias !== 'TBD' && m.player2Alias !== 'TBD') pending++;
+      else if (m.status === 'pending' && m.player1Alias !== 'TBD' && m.player2Alias !== 'TBD')
+        pending++;
       else if (m.status === 'in_progress') inProgress++;
     });
     return {
@@ -114,7 +146,7 @@ export class BracketEngine {
       completedMatches: completed,
       pendingMatches: pending,
       inProgressMatches: inProgress,
-      progressPercentage: total > 0 ? Math.round((completed / total) * 100) : 0
+      progressPercentage: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
   }
 
@@ -128,7 +160,9 @@ export class BracketEngine {
   }
 
   static getChampion(bracket: TournamentBracket): string | null {
-    return this.isBracketComplete(bracket) ? bracket.rounds[bracket.rounds.length - 1][0].winnerAlias || null : null;
+    return this.isBracketComplete(bracket)
+      ? bracket.rounds[bracket.rounds.length - 1][0].winnerAlias || null
+      : null;
   }
 
   static validateBracket(bracket: TournamentBracket): { isValid: boolean; errors: string[] } {
@@ -140,13 +174,16 @@ export class BracketEngine {
     const totalRounds = bracket.rounds.length;
     bracket.rounds.forEach((round, i) => {
       const expected = Math.pow(2, totalRounds - i - 1);
-      if (round.length !== expected) errors.push(`Round ${i + 1} should have ${expected} matches, but has ${round.length}`);
+      if (round.length !== expected)
+        errors.push(`Round ${i + 1} should have ${expected} matches, but has ${round.length}`);
       round.forEach((match, j) => {
         if (match.round !== i + 1) errors.push(`Match ${match.id} has incorrect round number`);
-        if (match.matchNumber !== j + 1) errors.push(`Match ${match.id} has incorrect match number`);
+        if (match.matchNumber !== j + 1)
+          errors.push(`Match ${match.id} has incorrect match number`);
       });
     });
-    if (bracket.rounds[totalRounds - 1].length !== 1) errors.push('Final round must have exactly one match');
+    if (bracket.rounds[totalRounds - 1].length !== 1)
+      errors.push('Final round must have exactly one match');
     return { isValid: !errors.length, errors };
   }
 
@@ -165,7 +202,7 @@ export class BracketEngine {
     return {
       rounds: bracket.rounds.map(r => r.map(m => ({ ...m }))),
       currentRound: bracket.currentRound,
-      currentMatch: bracket.currentMatch
+      currentMatch: bracket.currentMatch,
     };
   }
 
@@ -203,9 +240,9 @@ export class BracketEngine {
           player2: { alias: m.player2Alias, score: m.player2Score },
           winner: m.winnerAlias,
           status: m.status,
-          isNext: m.id === bracket.currentMatch
-        }))
-      }))
+          isNext: m.id === bracket.currentMatch,
+        })),
+      })),
     };
   }
 

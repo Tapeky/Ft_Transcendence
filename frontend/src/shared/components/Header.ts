@@ -19,7 +19,7 @@ export class Header {
   private createElement(): HTMLElement {
     const header = document.createElement('header');
     const user = authManager.getCurrentUser();
-    
+
     header.className = `flex bg-[url("./img/city.png")] bg-cover bg-center min-h-[150px] 
       items-center justify-center border-black border-solid border-b-[5px] border-[5px] sticky top-0 z-40`;
 
@@ -66,14 +66,14 @@ export class Header {
 
   private bindEvents(): void {
     const profileCard = this.element.querySelector('#profile-card');
-    
+
     if (profileCard && this.userVisible) {
       profileCard.addEventListener('mouseenter', () => this.showClickIndicator());
       profileCard.addEventListener('mouseleave', () => this.hideClickIndicator());
       profileCard.addEventListener('click', () => this.toggleOptions());
     }
 
-    authManager.subscribeToAuth((authState) => {
+    authManager.subscribeToAuth(authState => {
       this.updateUserInfo(authState.user);
     });
   }
@@ -94,7 +94,7 @@ export class Header {
 
   private toggleOptions(): void {
     this.isOptionsVisible = !this.isOptionsVisible;
-    
+
     if (this.isOptionsVisible) {
       this.showOptions();
     } else {
@@ -135,7 +135,7 @@ export class Header {
   public setUserVisible(visible: boolean): void {
     this.userVisible = visible;
     const profileCard = this.element.querySelector('#profile-card');
-    
+
     if (profileCard) {
       if (visible) {
         profileCard.classList.remove('hidden');
@@ -153,15 +153,15 @@ export class Header {
 
   public refresh(): void {
     const user = authManager.getCurrentUser();
-    
+
     const avatar = this.element.querySelector('#user-avatar') as HTMLImageElement;
     if (avatar) {
       avatar.src = getAvatarUrl(user?.avatar_url);
     }
-    
+
     const displayName = this.element.querySelector('#user-display-name');
     const username = this.element.querySelector('#user-username');
-    
+
     if (displayName) displayName.textContent = user?.display_name || user?.username || 'User';
     if (username) username.textContent = user?.username || 'username';
   }
@@ -170,7 +170,7 @@ export class Header {
     if (this.optionsInstance) {
       this.optionsInstance.destroy();
     }
-    
+
     this.element.remove();
   }
 }
@@ -233,15 +233,15 @@ export class Options {
 
   private openFriends(): void {
     this.onClose();
-    
+
     if (!this.friendListInstance) {
       this.friendListInstance = new FriendListModal({
         onClose: () => {
           this.friendListInstance = undefined;
-        }
+        },
       });
     }
-    
+
     document.body.appendChild(this.friendListInstance.getElement());
   }
 
@@ -262,7 +262,7 @@ export class Options {
     if (this.friendListInstance) {
       this.friendListInstance.destroy();
     }
-    
+
     this.element.remove();
   }
 }

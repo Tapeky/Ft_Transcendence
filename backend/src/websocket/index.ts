@@ -1,4 +1,3 @@
-
 import { FastifyInstance } from 'fastify';
 import { SocketStream } from '@fastify/websocket';
 import { DatabaseManager } from '../database/DatabaseManager';
@@ -11,7 +10,6 @@ import { simpleGameInvites } from './SimpleGameInvites';
 import { FriendPongInvites } from './FriendPongInvites';
 import { SimplePongManager } from './SimplePongManager';
 
-// Import the interface from MessageRouter
 interface FastifyWithPongServices extends FastifyInstance {
   friendPongInvites: FriendPongInvites;
   websocketManager: WebSocketManager;
@@ -23,21 +21,16 @@ export function setupWebSocket(server: FastifyInstance) {
   const friendPongInvites = new FriendPongInvites(wsManager);
   const simplePongManager = SimplePongManager.getInstance();
 
-  // Injecter le WebSocketManager dans SimplePongManager
   simplePongManager.setWebSocketManager(wsManager);
 
-  // Decorate server with required services
   server.decorate('friendPongInvites', friendPongInvites);
   server.decorate('websocketManager', wsManager);
 
-  // Now we can safely cast and create MessageRouter
   const extendedServer = server as FastifyWithPongServices;
   const messageRouter = new MessageRouter(extendedServer, wsManager, gameManager);
-  
-  // Connect KISS system to main WebSocketManager
+
   simpleGameInvites.setWebSocketManager(wsManager);
-  
-  // Start GameManager loop
+
   gameManager.registerLoop();
 
   server.register(async function (server) {
@@ -45,15 +38,13 @@ export function setupWebSocket(server: FastifyInstance) {
       const userState = {
         userId: null as number | null,
         username: null as string | null,
-        userInput: new Input()
+        userInput: new Input(),
       };
 
-      // Handle incoming messages
       connection.socket.on('message', async (data: any) => {
         await messageRouter.handleMessage(connection, data, userState);
       });
 
-      // Handle disconnection
       connection.socket.on('close', async () => {
         const { userId, username } = userState;
         if (userId && username) {
@@ -61,36 +52,33 @@ export function setupWebSocket(server: FastifyInstance) {
             const db = DatabaseManager.getInstance().getDb();
             const userRepo = new UserRepository(db);
             await userRepo.updateOnlineStatus(userId, false);
-          } catch (error) {
-          }
-          
-          // Gérer les déconnexions Pong
+          } catch (error) {}
+
           simplePongManager.handlePlayerDisconnect(userId);
-          
+
           wsManager.removeUser(userId);
           simpleGameInvites.removeUser(userId);
         }
       });
 
-      // Handle errors
       connection.socket.on('error', (error: any) => {
         const { userId } = userState;
         if (userId) {
-          // Gérer les déconnexions Pong en cas d'erreur
           simplePongManager.handlePlayerDisconnect(userId);
-          
+
           wsManager.removeUser(userId);
           simpleGameInvites.removeUser(userId);
         }
       });
 
-      // Welcome message
-      connection.socket.send(JSON.stringify({
-        type: 'connected',
-        message: 'WebSocket connection established. Please authenticate.'
-      }));
+      connection.socket.send(
+        JSON.stringify({
+          type: 'connected',
+          message: 'WebSocket connection established. Please authenticate.',
+        })
+      );
     });
   });
-  
+
   return wsManager;
 }

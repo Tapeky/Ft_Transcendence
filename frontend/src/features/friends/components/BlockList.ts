@@ -18,7 +18,8 @@ export class BlockList {
 
     this.buttonElement = document.createElement('button');
     this.buttonElement.id = 'toggle-btn';
-    this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
+    this.buttonElement.className =
+      'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
     this.buttonElement.setAttribute('title', 'Blocked Users');
     this.buttonElement.innerHTML = '<img src="/src/img/blocklist.svg" alt="block list" />';
 

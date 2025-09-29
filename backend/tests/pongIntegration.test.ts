@@ -94,7 +94,7 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
       
       // 1. Créer le jeu
       console.log('Étape 1: Création du jeu');
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       // 2. Vérifier que le jeu existe immédiatement
@@ -126,7 +126,7 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
       console.log('🔍 Test: État du jeu pendant les délais WebSocket');
       
       // Créer jeu
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       // Simuler délai réseau d'authentification (2 secondes)
@@ -203,8 +203,8 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
   describe('3. SimplePongManager Lifecycle - Tests du Cycle de Vie', () => {
     it('should keep game active until players connect', async () => {
       console.log('🔍 Test: Le jeu doit rester actif jusqu\'à ce que les joueurs se connectent');
-      
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       // Vérifier que le jeu reste en Map pendant 5 secondes sans updates
@@ -220,8 +220,8 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
 
     it('should handle concurrent game joining', async () => {
       console.log('🔍 Test: Gestion des connexions concurrentes');
-      
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       // Les deux joueurs tentent de joindre simultanément
@@ -241,9 +241,9 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
   describe('4. WebSocket Timing Issues - Tests de Timing WebSocket', () => {
     it('should maintain game state during network delays', async () => {
       console.log('🔍 Test: Maintien de l\'état pendant les délais réseau');
-      
+
       // Créer le jeu
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       let messagesReceived: any[] = [];
@@ -277,7 +277,7 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
   });
 
   describe('5. Performance and Memory Tests - Tests de Performance', () => {
-    it('should handle multiple games without memory leaks', () => {
+    it('should handle multiple games without memory leaks', async () => {
       console.log('🔍 Test: Gestion de plusieurs jeux sans fuites mémoire');
       
       const initialGamesCount = (simplePongManager as any).games.size;
@@ -290,12 +290,12 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
         const gameId = `test_game_${i}`;
         const player1Id = 100 + i * 2;
         const player2Id = 100 + i * 2 + 1;
-        
+
         // Ajouter les joueurs au WebSocketManager
         wsManager.addUser(player1Id, `player${player1Id}`, new MockSocketStream() as any);
         wsManager.addUser(player2Id, `player${player2Id}`, new MockSocketStream() as any);
-        
-        const created = simplePongManager.startGame(gameId, player1Id, player2Id);
+
+        const created = await simplePongManager.startGame(gameId, player1Id, player2Id);
         expect(created).toBe(true);
       }
       
@@ -332,11 +332,11 @@ describe('Pong Online Integration Tests - Race Condition Bug', () => {
       expect(result2).toBeNull();
     });
 
-    it('should handle disconnected players', () => {
+    it('should handle disconnected players', async () => {
       console.log('🔍 Test: Gestion des joueurs déconnectés');
-      
+
       // Créer le jeu
-      const gameCreated = simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
+      const gameCreated = await simplePongManager.startGame(GAME_ID, PLAYER1_ID, PLAYER2_ID);
       expect(gameCreated).toBe(true);
       
       // Déconnecter un joueur

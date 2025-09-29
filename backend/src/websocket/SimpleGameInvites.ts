@@ -40,7 +40,7 @@ export class SimpleGameInvites {
 
   handleMessage(userId: number, data: any): boolean {
     if (!this.wsManager) return false;
-    
+
     const user = this.wsManager.getUser(userId);
     if (!user) return false;
 
@@ -48,58 +48,59 @@ export class SimpleGameInvites {
       case 'send_game_invite':
         this.handleSendInvite(user, data.toUserId);
         return true;
-        
+
       case 'respond_game_invite':
         this.handleRespondInvite(user, data.inviteId, data.accept);
         return true;
     }
-    
+
     return false;
   }
 
   private handleSendInvite(sender: ConnectedUser, toUserId: number): void {
     if (!this.wsManager) return;
-    
+
     const receiver = this.wsManager.getUser(toUserId);
     if (!receiver) {
-      this.sendToUser(sender.id, { 
-        type: 'invite_error', 
-        message: 'User not online' 
+      this.sendToUser(sender.id, {
+        type: 'invite_error',
+        message: 'User not online',
       });
       return;
     }
 
     if (sender.id === toUserId) {
-      this.sendToUser(sender.id, { 
-        type: 'invite_error', 
-        message: 'Cannot invite yourself' 
+      this.sendToUser(sender.id, {
+        type: 'invite_error',
+        message: 'Cannot invite yourself',
       });
       return;
     }
 
     if (GameManager.instance.getFromPlayerId(sender.id)) {
-      this.sendToUser(sender.id, { 
-        type: 'invite_error', 
-        message: 'You are already in a game' 
+      this.sendToUser(sender.id, {
+        type: 'invite_error',
+        message: 'You are already in a game',
       });
       return;
     }
 
     if (GameManager.instance.getFromPlayerId(toUserId)) {
-      this.sendToUser(sender.id, { 
-        type: 'invite_error', 
-        message: 'User is already in a game' 
+      this.sendToUser(sender.id, {
+        type: 'invite_error',
+        message: 'User is already in a game',
       });
       return;
     }
 
-    const existingInvite = Array.from(this.invites.values())
-      .find(inv => inv.fromId === sender.id && inv.toId === toUserId);
-    
+    const existingInvite = Array.from(this.invites.values()).find(
+      inv => inv.fromId === sender.id && inv.toId === toUserId
+    );
+
     if (existingInvite) {
-      this.sendToUser(sender.id, { 
-        type: 'invite_error', 
-        message: 'Invitation already sent' 
+      this.sendToUser(sender.id, {
+        type: 'invite_error',
+        message: 'Invitation already sent',
       });
       return;
     }
@@ -110,7 +111,7 @@ export class SimpleGameInvites {
       fromId: sender.id,
       toId: toUserId,
       fromUsername: sender.username,
-      expires: Date.now() + 60000
+      expires: Date.now() + 60000,
     };
 
     this.invites.set(inviteId, invite);
@@ -120,13 +121,13 @@ export class SimpleGameInvites {
       inviteId: inviteId,
       fromUserId: sender.id,
       fromUsername: sender.username,
-      expiresAt: invite.expires
+      expiresAt: invite.expires,
     });
 
     this.sendToUser(sender.id, {
       type: 'invite_sent',
       toUsername: receiver.username,
-      inviteId: inviteId
+      inviteId: inviteId,
     });
 
     setTimeout(() => {
@@ -134,7 +135,7 @@ export class SimpleGameInvites {
         this.invites.delete(inviteId);
         this.sendToUser(toUserId, {
           type: 'invite_expired',
-          inviteId: inviteId
+          inviteId: inviteId,
         });
       }
     }, 60000);
@@ -147,7 +148,7 @@ export class SimpleGameInvites {
     if (!invite) {
       this.sendToUser(user.id, {
         type: 'invite_error',
-        message: 'Invitation not found or expired'
+        message: 'Invitation not found or expired',
       });
       return;
     }
@@ -155,7 +156,7 @@ export class SimpleGameInvites {
     if (invite.toId !== user.id) {
       this.sendToUser(user.id, {
         type: 'invite_error',
-        message: 'Not your invitation'
+        message: 'Not your invitation',
       });
       return;
     }
@@ -164,7 +165,7 @@ export class SimpleGameInvites {
       this.invites.delete(inviteId);
       this.sendToUser(user.id, {
         type: 'invite_error',
-        message: 'Invitation expired'
+        message: 'Invitation expired',
       });
       return;
     }
@@ -173,15 +174,17 @@ export class SimpleGameInvites {
     const sender = this.wsManager ? this.wsManager.getUser(invite.fromId) : null;
 
     if (accept && sender) {
-      if (GameManager.instance.getFromPlayerId(invite.fromId) || 
-          GameManager.instance.getFromPlayerId(user.id)) {
+      if (
+        GameManager.instance.getFromPlayerId(invite.fromId) ||
+        GameManager.instance.getFromPlayerId(user.id)
+      ) {
         this.sendToUser(user.id, {
           type: 'invite_error',
-          message: 'One of the players is already in a game'
+          message: 'One of the players is already in a game',
         });
         this.sendToUser(invite.fromId, {
           type: 'invite_error',
-          message: 'Game could not start - player already in game'
+          message: 'Game could not start - player already in game',
         });
         return;
       }
@@ -189,49 +192,48 @@ export class SimpleGameInvites {
       try {
         const gameId = GameManager.instance.startGame(
           invite.fromId,
-          user.id, 
+          user.id,
           sender.socket.socket,
           user.socket.socket
         );
-        
+
         this.sendToUser(invite.fromId, {
           type: 'game_started',
           gameId: gameId,
           opponent: {
             id: user.id,
-            username: user.username
+            username: user.username,
           },
-          side: 'left'
+          side: 'left',
         });
-        
+
         this.sendToUser(user.id, {
           type: 'game_started',
           gameId: gameId,
           opponent: {
             id: invite.fromId,
-            username: invite.fromUsername
+            username: invite.fromUsername,
           },
-          side: 'right'
+          side: 'right',
         });
 
         console.log(`Game ${gameId} started: ${invite.fromUsername} vs ${user.username}`);
-        
       } catch (error) {
         console.error('Error starting game:', error);
         this.sendToUser(user.id, {
           type: 'invite_error',
-          message: 'Failed to start game'
+          message: 'Failed to start game',
         });
         this.sendToUser(invite.fromId, {
           type: 'invite_error',
-          message: 'Failed to start game'
+          message: 'Failed to start game',
         });
       }
     } else if (sender) {
       this.sendToUser(invite.fromId, {
         type: 'invite_declined',
         byUserId: user.id,
-        byUsername: user.username
+        byUsername: user.username,
       });
 
       console.log(`${user.username} declined ${invite.fromUsername}'s invite`);
@@ -252,11 +254,11 @@ export class SimpleGameInvites {
     }
   }
 
-  getStats(): { users: number, invites: number } {
+  getStats(): { users: number; invites: number } {
     const userCount = this.wsManager ? this.wsManager.getConnectedUsers().length : 0;
     return {
       users: userCount,
-      invites: this.invites.size
+      invites: this.invites.size,
     };
   }
 }

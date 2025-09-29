@@ -255,16 +255,18 @@ describe('Pong Invitation E2E Flow Tests', () => {
       const invitee = 207;
 
       // Étape 1: Simuler base de données (amitié existe)
-      jest.spyOn(require('../src/database/DatabaseManager'), 'getInstance').mockImplementation(() => ({
-        getDb: () => ({
-          get: (query: string, params: any[]) => {
-            if (query.includes('friendship')) {
-              return Promise.resolve({ username: 'TestUser', friendship_status: 'accepted' });
-            }
-            return Promise.resolve({ username: 'TestUser' });
-          }
-        })
-      }));
+      jest
+        .spyOn(require('../src/database/DatabaseManager'), 'getInstance')
+        .mockImplementation(() => ({
+          getDb: () => ({
+            get: (query: string, params: any[]) => {
+              if (query.includes('friendship')) {
+                return Promise.resolve({ username: 'TestUser', friendship_status: 'accepted' });
+              }
+              return Promise.resolve({ username: 'TestUser' });
+            },
+          }),
+        }));
 
       // Étape 2: Connecter les utilisateurs
       mockWSManager.connect(inviter);
@@ -387,9 +389,7 @@ describe('Pong Invitation E2E Flow Tests', () => {
         mockWSManager.connect(player1);
         mockWSManager.connect(player2);
 
-        gamePromises.push(
-          Promise.resolve(simplePongManager.startGame(gameId, player1, player2))
-        );
+        gamePromises.push(Promise.resolve(simplePongManager.startGame(gameId, player1, player2)));
       }
 
       const results = await Promise.all(gamePromises);
@@ -410,11 +410,13 @@ describe('Pong Invitation E2E Flow Tests', () => {
       mockWSManager.connect(target);
 
       // Mock DB pour éviter les vraies requêtes
-      jest.spyOn(require('../src/database/DatabaseManager'), 'getInstance').mockImplementation(() => ({
-        getDb: () => ({
-          get: () => Promise.resolve({ username: 'TestUser', friendship_status: 'accepted' })
-        })
-      }));
+      jest
+        .spyOn(require('../src/database/DatabaseManager'), 'getInstance')
+        .mockImplementation(() => ({
+          getDb: () => ({
+            get: () => Promise.resolve({ username: 'TestUser', friendship_status: 'accepted' }),
+          }),
+        }));
 
       const invitePromises: Promise<string | null>[] = [];
 
@@ -436,7 +438,9 @@ describe('Pong Invitation E2E Flow Tests', () => {
         expect(allSameId).toBe(true);
       }
 
-      console.log(`🛡️ Spam protection: ${validInvites.length} invitations uniques sur 5 tentatives`);
+      console.log(
+        `🛡️ Spam protection: ${validInvites.length} invitations uniques sur 5 tentatives`
+      );
     });
   });
 });

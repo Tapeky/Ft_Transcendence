@@ -79,7 +79,7 @@ class InvitationManager {
   }
 
   private setupWebSocketHandlers(): void {
-    this.websocket.addMessageHandler((data) => {
+    this.websocket.addMessageHandler(data => {
       switch (data.type) {
         case 'invitation_response':
           this.handleInvitationResponse(data);
@@ -103,8 +103,9 @@ class InvitationManager {
     }
 
     // Vérifier si une invitation en cours existe déjà
-    const existingInvitation = Array.from(this.invitations.values())
-      .find(inv => inv.fromUserId === fromUserId && inv.toUserId === toUserId && inv.status === 'pending');
+    const existingInvitation = Array.from(this.invitations.values()).find(
+      inv => inv.fromUserId === fromUserId && inv.toUserId === toUserId && inv.status === 'pending'
+    );
 
     if (existingInvitation) {
       return existingInvitation.id;
@@ -117,19 +118,21 @@ class InvitationManager {
       toUserId,
       status: 'pending',
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + this.EXPIRATION_TIME)
+      expiresAt: new Date(Date.now() + this.EXPIRATION_TIME),
     };
 
     this.invitations.set(invitationId, invitation);
 
     // Simuler l'envoi via WebSocket
-    this.websocket.send(JSON.stringify({
-      type: 'pong_invitation',
-      invitationId,
-      fromUserId,
-      toUserId,
-      expiresAt: invitation.expiresAt
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'pong_invitation',
+        invitationId,
+        fromUserId,
+        toUserId,
+        expiresAt: invitation.expiresAt,
+      })
+    );
 
     // Auto-expiration
     setTimeout(() => {
@@ -163,12 +166,14 @@ class InvitationManager {
     invitation.status = 'accepted';
 
     // Notifier l'acceptation via WebSocket
-    this.websocket.send(JSON.stringify({
-      type: 'invitation_accepted',
-      invitationId,
-      fromUserId: invitation.fromUserId,
-      toUserId: invitation.toUserId
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'invitation_accepted',
+        invitationId,
+        fromUserId: invitation.fromUserId,
+        toUserId: invitation.toUserId,
+      })
+    );
 
     return true;
   }
@@ -192,12 +197,14 @@ class InvitationManager {
     invitation.status = 'declined';
 
     // Notifier le refus via WebSocket
-    this.websocket.send(JSON.stringify({
-      type: 'invitation_declined',
-      invitationId,
-      fromUserId: invitation.fromUserId,
-      toUserId: invitation.toUserId
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'invitation_declined',
+        invitationId,
+        fromUserId: invitation.fromUserId,
+        toUserId: invitation.toUserId,
+      })
+    );
 
     return true;
   }
@@ -220,7 +227,11 @@ class InvitationManager {
   private handleUserOffline(data: any): void {
     // Gérer les utilisateurs déconnectés
     Array.from(this.invitations.values())
-      .filter(inv => (inv.fromUserId === data.userId || inv.toUserId === data.userId) && inv.status === 'pending')
+      .filter(
+        inv =>
+          (inv.fromUserId === data.userId || inv.toUserId === data.userId) &&
+          inv.status === 'pending'
+      )
       .forEach(inv => {
         inv.status = 'expired';
       });
@@ -231,8 +242,9 @@ class InvitationManager {
   }
 
   getPendingInvitations(userId: number): Invitation[] {
-    return Array.from(this.invitations.values())
-      .filter(inv => inv.toUserId === userId && inv.status === 'pending');
+    return Array.from(this.invitations.values()).filter(
+      inv => inv.toUserId === userId && inv.status === 'pending'
+    );
   }
 }
 
@@ -251,7 +263,12 @@ class GameSession {
   private readonly BALL_SPEED = 5;
   private readonly WINNING_SCORE = 3;
 
-  constructor(sessionId: string, leftPlayerId: number, rightPlayerId: number, websocket: MockWebSocket) {
+  constructor(
+    sessionId: string,
+    leftPlayerId: number,
+    rightPlayerId: number,
+    websocket: MockWebSocket
+  ) {
     this.id = sessionId;
     this.leftPlayerId = leftPlayerId;
     this.rightPlayerId = rightPlayerId;
@@ -266,18 +283,18 @@ class GameSession {
         x: this.GAME_WIDTH / 2,
         y: this.GAME_HEIGHT / 2,
         dx: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
-        dy: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1)
+        dy: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
       },
       leftScore: 0,
       rightScore: 0,
-      gameOver: false
+      gameOver: false,
     };
 
     this.setupWebSocketHandlers();
   }
 
   private setupWebSocketHandlers(): void {
-    this.websocket.addMessageHandler((data) => {
+    this.websocket.addMessageHandler(data => {
       if (data.type === 'player_input' && data.sessionId === this.id) {
         this.handlePlayerInput(data.playerId, data.input);
       }
@@ -293,13 +310,15 @@ class GameSession {
     this.status = 'active';
 
     // Notifier le début de partie via WebSocket
-    this.websocket.send(JSON.stringify({
-      type: 'game_started',
-      sessionId: this.id,
-      leftPlayerId: this.leftPlayerId,
-      rightPlayerId: this.rightPlayerId,
-      gameState: this.gameState
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'game_started',
+        sessionId: this.id,
+        leftPlayerId: this.leftPlayerId,
+        rightPlayerId: this.rightPlayerId,
+        gameState: this.gameState,
+      })
+    );
 
     // Démarrer la boucle de jeu à 60 FPS
     this.gameLoopInterval = setInterval(() => {
@@ -330,16 +349,20 @@ class GameSession {
     const paddleWidth = 8;
 
     // Raquette gauche
-    if (this.gameState.ball.x <= paddleWidth &&
-        this.gameState.ball.y >= this.gameState.leftPaddle.y &&
-        this.gameState.ball.y <= this.gameState.leftPaddle.y + this.PADDLE_HEIGHT) {
+    if (
+      this.gameState.ball.x <= paddleWidth &&
+      this.gameState.ball.y >= this.gameState.leftPaddle.y &&
+      this.gameState.ball.y <= this.gameState.leftPaddle.y + this.PADDLE_HEIGHT
+    ) {
       this.gameState.ball.dx = Math.abs(this.gameState.ball.dx);
     }
 
     // Raquette droite
-    if (this.gameState.ball.x >= this.GAME_WIDTH - paddleWidth &&
-        this.gameState.ball.y >= this.gameState.rightPaddle.y &&
-        this.gameState.ball.y <= this.gameState.rightPaddle.y + this.PADDLE_HEIGHT) {
+    if (
+      this.gameState.ball.x >= this.GAME_WIDTH - paddleWidth &&
+      this.gameState.ball.y >= this.gameState.rightPaddle.y &&
+      this.gameState.ball.y <= this.gameState.rightPaddle.y + this.PADDLE_HEIGHT
+    ) {
       this.gameState.ball.dx = -Math.abs(this.gameState.ball.dx);
     }
 
@@ -353,7 +376,10 @@ class GameSession {
     }
 
     // Vérifier la fin de partie
-    if (this.gameState.leftScore >= this.WINNING_SCORE || this.gameState.rightScore >= this.WINNING_SCORE) {
+    if (
+      this.gameState.leftScore >= this.WINNING_SCORE ||
+      this.gameState.rightScore >= this.WINNING_SCORE
+    ) {
       this.endGame();
     }
   }
@@ -363,7 +389,7 @@ class GameSession {
       x: this.GAME_WIDTH / 2,
       y: this.GAME_HEIGHT / 2,
       dx: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
-      dy: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1)
+      dy: this.BALL_SPEED * (Math.random() > 0.5 ? 1 : -1),
     };
   }
 
@@ -376,17 +402,20 @@ class GameSession {
       this.gameLoopInterval = null;
     }
 
-    const winner = this.gameState.leftScore >= this.WINNING_SCORE ? this.leftPlayerId : this.rightPlayerId;
+    const winner =
+      this.gameState.leftScore >= this.WINNING_SCORE ? this.leftPlayerId : this.rightPlayerId;
 
-    this.websocket.send(JSON.stringify({
-      type: 'game_ended',
-      sessionId: this.id,
-      winner,
-      finalScore: {
-        left: this.gameState.leftScore,
-        right: this.gameState.rightScore
-      }
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'game_ended',
+        sessionId: this.id,
+        winner,
+        finalScore: {
+          left: this.gameState.leftScore,
+          right: this.gameState.rightScore,
+        },
+      })
+    );
   }
 
   private handlePlayerInput(playerId: number, input: { up: boolean; down: boolean }): void {
@@ -410,11 +439,13 @@ class GameSession {
   }
 
   private broadcastGameState(): void {
-    this.websocket.send(JSON.stringify({
-      type: 'game_state_update',
-      sessionId: this.id,
-      gameState: this.gameState
-    }));
+    this.websocket.send(
+      JSON.stringify({
+        type: 'game_state_update',
+        sessionId: this.id,
+        gameState: this.gameState,
+      })
+    );
   }
 
   getId(): string {
@@ -472,17 +503,16 @@ describe('Pong Online Invitation System', () => {
     it('should reject self-invitation', async () => {
       const userId = 1;
 
-      await expect(invitationManager.sendInvitation(userId, userId))
-        .rejects.toThrow('Cannot invite yourself');
+      await expect(invitationManager.sendInvitation(userId, userId)).rejects.toThrow(
+        'Cannot invite yourself'
+      );
     });
 
     // Test 3: Rejet d'ID utilisateur invalide
     it('should reject invalid user IDs', async () => {
-      await expect(invitationManager.sendInvitation(-1, 2))
-        .rejects.toThrow('Invalid user ID');
+      await expect(invitationManager.sendInvitation(-1, 2)).rejects.toThrow('Invalid user ID');
 
-      await expect(invitationManager.sendInvitation(1, 0))
-        .rejects.toThrow('Invalid user ID');
+      await expect(invitationManager.sendInvitation(1, 0)).rejects.toThrow('Invalid user ID');
     });
 
     // Test 4: Acceptation d'invitation valide
@@ -671,7 +701,7 @@ describe('Pong Online Invitation System', () => {
       const messages: any[] = [];
 
       // Capturer les messages WebSocket
-      mockWebSocket.addMessageHandler((data) => {
+      mockWebSocket.addMessageHandler(data => {
         if (data.type === 'game_started') {
           messages.push(data);
         }
@@ -721,7 +751,7 @@ describe('Pong Online Invitation System', () => {
         type: 'player_input',
         sessionId: 'unit_test_1',
         playerId: 10,
-        input: { up: true, down: false }
+        input: { up: true, down: false },
       });
 
       // Attendre que l'input soit traité
@@ -793,7 +823,7 @@ describe('Pong Online Invitation System', () => {
       gameSession.startGame();
 
       // Capturer tous les messages WebSocket
-      mockWebSocket.addMessageHandler((data) => {
+      mockWebSocket.addMessageHandler(data => {
         messages.push(data);
       });
     });
@@ -808,7 +838,7 @@ describe('Pong Online Invitation System', () => {
         type: 'player_input',
         sessionId: 'input_test_1',
         playerId: 100,
-        input: { up: true, down: false }
+        input: { up: true, down: false },
       });
 
       setTimeout(() => {
@@ -828,7 +858,7 @@ describe('Pong Online Invitation System', () => {
         type: 'player_input',
         sessionId: 'input_test_1',
         playerId: 200,
-        input: { up: false, down: true }
+        input: { up: false, down: true },
       });
 
       setTimeout(() => {
@@ -847,7 +877,7 @@ describe('Pong Online Invitation System', () => {
         type: 'player_input',
         sessionId: 'input_test_1',
         playerId: 999, // Joueur inexistant
-        input: { up: true, down: false }
+        input: { up: true, down: false },
       });
 
       setTimeout(() => {
@@ -865,7 +895,7 @@ describe('Pong Online Invitation System', () => {
         type: 'player_input',
         sessionId: 'input_test_1',
         playerId: 100,
-        input: { up: true, down: true }
+        input: { up: true, down: true },
       });
 
       setTimeout(() => {
@@ -887,7 +917,7 @@ describe('Pong Online Invitation System', () => {
       // Mock WebSocket qui capture tous les messages
       const capturingWebSocket = new MockWebSocket();
       const originalSend = capturingWebSocket.send;
-      capturingWebSocket.send = function(data: string) {
+      capturingWebSocket.send = function (data: string) {
         const message = JSON.parse(data);
         capturedMessages.push(message);
         return originalSend.call(this, data);
@@ -911,7 +941,7 @@ describe('Pong Online Invitation System', () => {
     });
 
     // Test 26: Messages de mise à jour d'état
-    it('should continuously send game state updates', (done) => {
+    it('should continuously send game state updates', done => {
       gameSession.startGame();
 
       // Attendre quelques mises à jour
@@ -957,7 +987,9 @@ describe('Pong Online Invitation System', () => {
     // Test 28: Session avec WebSocket défaillant (identification du comportement actuel)
     it('should identify current WebSocket error behavior', () => {
       const brokenWebSocket = new MockWebSocket();
-      brokenWebSocket.send = () => { throw new Error('WebSocket failed'); };
+      brokenWebSocket.send = () => {
+        throw new Error('WebSocket failed');
+      };
 
       const gameSession = new GameSession('broken_ws_test', 1, 2, brokenWebSocket);
 

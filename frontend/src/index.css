@@ -4,11 +4,11 @@
 
 /* Animation pour les notifications d'invitation de jeu */
 @keyframes fade-in {
-  0% { 
+  0% {
     opacity: 0;
     transform: translateX(100%);
   }
-  100% { 
+  100% {
     opacity: 1;
     transform: translateX(0);
   }
@@ -19,89 +19,89 @@
 }
 
 @keyframes ball-realistic {
-  0% { 
+  0% {
     left: 50%;
     top: 50%;
   }
-  
+
   8% {
     left: 94%;
     top: 25%;
   }
-  
+
   16% {
     left: 6%;
     top: 75%;
   }
-  
+
   24% {
     left: 94%;
     top: 50%;
   }
-  
+
   32% {
     left: 6%;
     top: 20%;
   }
-  
+
   36% {
     left: 30%;
     top: 5%;
   }
-  
+
   40% {
     left: 94%;
     top: 35%;
   }
-  
+
   48% {
     left: 6%;
     top: 60%;
   }
-  
+
   56% {
     left: 94%;
     top: 80%;
   }
-  
+
   60% {
     left: 70%;
     top: 95%;
   }
-  
+
   64% {
     left: 6%;
     top: 70%;
   }
-  
+
   72% {
     left: -5%;
     top: 40%;
     opacity: 1;
   }
-  
+
   73% {
     left: 50%;
     top: 50%;
     opacity: 0;
   }
-  
+
   74% {
     left: 50%;
     top: 50%;
     opacity: 1;
   }
-  
+
   82% {
     left: 6%;
     top: 30%;
   }
-  
+
   90% {
     left: 94%;
     top: 65%;
   }
-  
+
   100% {
     left: 50%;
     top: 50%;
@@ -109,663 +109,1347 @@
 }
 
 @keyframes paddle-realistic-left {
-  0% { top: 50%; transform: translateY(-50%); }
-  8% { top: 50%; transform: translateY(-50%); }
-  12% { top: 75%; transform: translateY(-50%); }
-  20% { top: 75%; transform: translateY(-50%); }
-  24% { top: 20%; transform: translateY(-50%); }
-  32% { top: 20%; transform: translateY(-50%); }
-  40% { top: 60%; transform: translateY(-50%); }
-  48% { top: 60%; transform: translateY(-50%); }
-  56% { top: 70%; transform: translateY(-50%); }
-  64% { top: 70%; transform: translateY(-50%); }
-  72% { top: 40%; transform: translateY(-50%); }
-  82% { top: 30%; transform: translateY(-50%); }
-  90% { top: 50%; transform: translateY(-50%); }
-  100% { top: 50%; transform: translateY(-50%); }
+  0% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  8% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  12% {
+    top: 75%;
+    transform: translateY(-50%);
+  }
+  20% {
+    top: 75%;
+    transform: translateY(-50%);
+  }
+  24% {
+    top: 20%;
+    transform: translateY(-50%);
+  }
+  32% {
+    top: 20%;
+    transform: translateY(-50%);
+  }
+  40% {
+    top: 60%;
+    transform: translateY(-50%);
+  }
+  48% {
+    top: 60%;
+    transform: translateY(-50%);
+  }
+  56% {
+    top: 70%;
+    transform: translateY(-50%);
+  }
+  64% {
+    top: 70%;
+    transform: translateY(-50%);
+  }
+  72% {
+    top: 40%;
+    transform: translateY(-50%);
+  }
+  82% {
+    top: 30%;
+    transform: translateY(-50%);
+  }
+  90% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  100% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 @keyframes paddle-realistic-right {
-  0% { top: 50%; transform: translateY(-50%); }
-  4% { top: 25%; transform: translateY(-50%); }
-  12% { top: 25%; transform: translateY(-50%); }
-  20% { top: 50%; transform: translateY(-50%); }
-  28% { top: 50%; transform: translateY(-50%); }
-  36% { top: 35%; transform: translateY(-50%); }
-  44% { top: 35%; transform: translateY(-50%); }
-  52% { top: 80%; transform: translateY(-50%); }
-  60% { top: 80%; transform: translateY(-50%); }
-  68% { top: 50%; transform: translateY(-50%); }
-  76% { top: 50%; transform: translateY(-50%); }
-  86% { top: 65%; transform: translateY(-50%); }
-  94% { top: 65%; transform: translateY(-50%); }
-  100% { top: 50%; transform: translateY(-50%); }
+  0% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  4% {
+    top: 25%;
+    transform: translateY(-50%);
+  }
+  12% {
+    top: 25%;
+    transform: translateY(-50%);
+  }
+  20% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  28% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  36% {
+    top: 35%;
+    transform: translateY(-50%);
+  }
+  44% {
+    top: 35%;
+    transform: translateY(-50%);
+  }
+  52% {
+    top: 80%;
+    transform: translateY(-50%);
+  }
+  60% {
+    top: 80%;
+    transform: translateY(-50%);
+  }
+  68% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  76% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  86% {
+    top: 65%;
+    transform: translateY(-50%);
+  }
+  94% {
+    top: 65%;
+    transform: translateY(-50%);
+  }
+  100% {
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 @keyframes collision-left {
-  0%, 15%, 17%, 100% { opacity: 0; }
-  16% { opacity: 1; }
-  32% { opacity: 1; }
-  33% { opacity: 0; }
-  48% { opacity: 1; }
-  49% { opacity: 0; }
-  64% { opacity: 1; }
-  65% { opacity: 0; }
-  82% { opacity: 1; }
-  83% { opacity: 0; }
+  0%,
+  15%,
+  17%,
+  100% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 1;
+  }
+  32% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0;
+  }
+  48% {
+    opacity: 1;
+  }
+  49% {
+    opacity: 0;
+  }
+  64% {
+    opacity: 1;
+  }
+  65% {
+    opacity: 0;
+  }
+  82% {
+    opacity: 1;
+  }
+  83% {
+    opacity: 0;
+  }
 }
 
 @keyframes collision-right {
-  0%, 7%, 9%, 100% { opacity: 0; }
-  8% { opacity: 1; }
-  24% { opacity: 1; }
-  25% { opacity: 0; }
-  40% { opacity: 1; }
-  41% { opacity: 0; }
-  56% { opacity: 1; }
-  57% { opacity: 0; }
-  90% { opacity: 1; }
-  91% { opacity: 0; }
+  0%,
+  7%,
+  9%,
+  100% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  41% {
+    opacity: 0;
+  }
+  56% {
+    opacity: 1;
+  }
+  57% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 1;
+  }
+  91% {
+    opacity: 0;
+  }
 }
 
 @keyframes score-flash {
-  0%, 70%, 75%, 100% { opacity: 0.4; transform: scale(1); }
-  72% { opacity: 1; transform: scale(2); }
+  0%,
+  70%,
+  75%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(2);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  33% { transform: translateY(-20px) translateX(10px); }
-  66% { transform: translateY(10px) translateX(-5px); }
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  66% {
+    transform: translateY(10px) translateX(-5px);
+  }
 }
 
 @keyframes float-delayed {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  33% { transform: translateY(15px) translateX(-10px); }
-  66% { transform: translateY(-10px) translateX(15px); }
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(15px) translateX(-10px);
+  }
+  66% {
+    transform: translateY(-10px) translateX(15px);
+  }
 }
 
 @keyframes float-slow {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-30px) scale(1.1); }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.1);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes tournament-trophy {
-  0%, 100% { opacity: 0; transform: scale(0.5) translateY(20px); }
-  10% { opacity: 1; transform: scale(1.2) translateY(-5px); }
-  20%, 80% { opacity: 1; transform: scale(1) translateY(0); }
-  90% { opacity: 1; transform: scale(1.1) translateY(-2px); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.2) translateY(-5px);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-2px);
+  }
 }
 
 @keyframes tournament-confetti {
-  0%, 65% { opacity: 0; }
-  70%, 100% { opacity: 1; }
+  0%,
+  65% {
+    opacity: 0;
+  }
+  70%,
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes confetti-1 {
-  0%, 65% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
-  70% { opacity: 1; transform: translateY(-10px) translateX(-5px) rotate(45deg); }
-  100% { opacity: 0; transform: translateY(-25px) translateX(-15px) rotate(180deg); }
+  0%,
+  65% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-10px) translateX(-5px) rotate(45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-25px) translateX(-15px) rotate(180deg);
+  }
 }
 
 @keyframes confetti-2 {
-  0%, 65% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
-  72% { opacity: 1; transform: translateY(-8px) translateX(3px) rotate(-30deg); }
-  100% { opacity: 0; transform: translateY(-20px) translateX(10px) rotate(-90deg); }
+  0%,
+  65% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-8px) translateX(3px) rotate(-30deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) translateX(10px) rotate(-90deg);
+  }
 }
 
 @keyframes confetti-3 {
-  0%, 65% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
-  68% { opacity: 1; transform: translateY(-12px) translateX(2px) rotate(60deg); }
-  100% { opacity: 0; transform: translateY(-30px) translateX(8px) rotate(240deg); }
+  0%,
+  65% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(-12px) translateX(2px) rotate(60deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) translateX(8px) rotate(240deg);
+  }
 }
 
 @keyframes confetti-4 {
-  0%, 65% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
-  71% { opacity: 1; transform: translateY(-9px) translateX(-3px) rotate(-45deg); }
-  100% { opacity: 0; transform: translateY(-22px) translateX(-12px) rotate(-135deg); }
+  0%,
+  65% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  71% {
+    opacity: 1;
+    transform: translateY(-9px) translateX(-3px) rotate(-45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) translateX(-12px) rotate(-135deg);
+  }
 }
 
 @keyframes confetti-5 {
-  0%, 65% { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
-  69% { opacity: 1; transform: translateY(-11px) translateX(4px) rotate(75deg); }
-  100% { opacity: 0; transform: translateY(-28px) translateX(15px) rotate(300deg); }
+  0%,
+  65% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  69% {
+    opacity: 1;
+    transform: translateY(-11px) translateX(4px) rotate(75deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) translateX(15px) rotate(300deg);
+  }
 }
 
 @keyframes tournament-final {
-  0%, 70% { opacity: 0.3; stroke-dashoffset: 10; }
-  75%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  70% {
+    opacity: 0.3;
+    stroke-dashoffset: 10;
+  }
+  75%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-semi-1 {
-  0%, 60% { opacity: 0.4; stroke-dashoffset: 10; }
-  65%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  60% {
+    opacity: 0.4;
+    stroke-dashoffset: 10;
+  }
+  65%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-semi-2 {
-  0%, 62% { opacity: 0.4; stroke-dashoffset: 10; }
-  67%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  62% {
+    opacity: 0.4;
+    stroke-dashoffset: 10;
+  }
+  67%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-quarter-1 {
-  0%, 40% { opacity: 0.5; stroke-dashoffset: 10; }
-  45%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  40% {
+    opacity: 0.5;
+    stroke-dashoffset: 10;
+  }
+  45%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-quarter-2 {
-  0%, 42% { opacity: 0.5; stroke-dashoffset: 10; }
-  47%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  42% {
+    opacity: 0.5;
+    stroke-dashoffset: 10;
+  }
+  47%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-quarter-3 {
-  0%, 44% { opacity: 0.5; stroke-dashoffset: 10; }
-  49%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  44% {
+    opacity: 0.5;
+    stroke-dashoffset: 10;
+  }
+  49%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-quarter-4 {
-  0%, 46% { opacity: 0.5; stroke-dashoffset: 10; }
-  51%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  46% {
+    opacity: 0.5;
+    stroke-dashoffset: 10;
+  }
+  51%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-1 {
-  0%, 10% { opacity: 0.6; stroke-dashoffset: 10; }
-  15%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  10% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  15%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-2 {
-  0%, 12% { opacity: 0.6; stroke-dashoffset: 10; }
-  17%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  12% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  17%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-3 {
-  0%, 14% { opacity: 0.6; stroke-dashoffset: 10; }
-  19%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  14% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  19%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-4 {
-  0%, 16% { opacity: 0.6; stroke-dashoffset: 10; }
-  21%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  16% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  21%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-5 {
-  0%, 18% { opacity: 0.6; stroke-dashoffset: 10; }
-  23%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  18% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  23%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-first-6 {
-  0%, 20% { opacity: 0.6; stroke-dashoffset: 10; }
-  25%, 100% { opacity: 1; stroke-dashoffset: 0; }
+  0%,
+  20% {
+    opacity: 0.6;
+    stroke-dashoffset: 10;
+  }
+  25%,
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes tournament-player-1 {
-  0%, 5% { opacity: 0.6; transform: scale(1); }
-  10%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  5% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  10%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-2 {
-  0%, 7% { opacity: 0.6; transform: scale(1); }
-  12%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  7% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  12%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-3 {
-  0%, 9% { opacity: 0.6; transform: scale(1); }
-  14%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  9% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  14%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-4 {
-  0%, 11% { opacity: 0.6; transform: scale(1); }
-  16%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  11% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  16%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-5 {
-  0%, 13% { opacity: 0.6; transform: scale(1); }
-  18%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  13% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  18%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-6 {
-  0%, 15% { opacity: 0.6; transform: scale(1); }
-  20%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  15% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  20%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-player-7 {
-  0%, 17% { opacity: 0.6; transform: scale(1); }
-  22%, 100% { opacity: 1; transform: scale(1.2); }
+  0%,
+  17% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  22%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes tournament-winner-path-1 {
-  0%, 25% { opacity: 0; stroke-width: 2; }
-  30% { opacity: 1; stroke-width: 3; }
-  35%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  25% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  30% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  35%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-2 {
-  0%, 30% { opacity: 0; stroke-width: 2; }
-  35% { opacity: 1; stroke-width: 3; }
-  40%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  30% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  35% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  40%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-3 {
-  0%, 35% { opacity: 0; stroke-width: 2; }
-  40% { opacity: 1; stroke-width: 3; }
-  45%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  35% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  40% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  45%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-4 {
-  0%, 40% { opacity: 0; stroke-width: 2; }
-  45% { opacity: 1; stroke-width: 3; }
-  50%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  40% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  45% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  50%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-5 {
-  0%, 45% { opacity: 0; stroke-width: 2; }
-  50% { opacity: 1; stroke-width: 3; }
-  55%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  45% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  50% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  55%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-6 {
-  0%, 50% { opacity: 0; stroke-width: 2; }
-  55% { opacity: 1; stroke-width: 3; }
-  60%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  50% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  55% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  60%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-path-7 {
-  0%, 55% { opacity: 0; stroke-width: 2; }
-  60% { opacity: 1; stroke-width: 3; }
-  65%, 100% { opacity: 0.8; stroke-width: 2; }
+  0%,
+  55% {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  60% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  65%,
+  100% {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
 }
 
 @keyframes tournament-winner-glow {
-  0%, 20% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
-  25% { opacity: 1; transform: scale(1.5); filter: drop-shadow(0 0 8px #fbbf24); }
-  30%, 100% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 4px #fbbf24); }
+  0%,
+  20% {
+    opacity: 0.6;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.5);
+    filter: drop-shadow(0 0 8px #fbbf24);
+  }
+  30%,
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px #fbbf24);
+  }
 }
 
 @keyframes chat-status {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
 }
 
 @keyframes chat-message-1 {
-  0%, 10% { opacity: 0; transform: translateY(10px) translateX(-10px); }
-  15%, 100% { opacity: 1; transform: translateY(0) translateX(0); }
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateY(10px) translateX(-10px);
+  }
+  15%,
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
 }
 
 @keyframes chat-message-2 {
-  0%, 20% { opacity: 0; transform: translateY(10px) translateX(10px); }
-  25%, 100% { opacity: 1; transform: translateY(0) translateX(0); }
+  0%,
+  20% {
+    opacity: 0;
+    transform: translateY(10px) translateX(10px);
+  }
+  25%,
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
 }
 
 @keyframes chat-message-3 {
-  0%, 30% { opacity: 0; transform: translateY(10px) translateX(-10px); }
-  35%, 100% { opacity: 1; transform: translateY(0) translateX(0); }
+  0%,
+  30% {
+    opacity: 0;
+    transform: translateY(10px) translateX(-10px);
+  }
+  35%,
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
 }
 
 @keyframes chat-invite {
-  0%, 40% { opacity: 0; transform: scale(0.9) translateY(10px); }
-  45% { opacity: 1; transform: scale(1.05) translateY(-2px); }
-  50%, 100% { opacity: 1; transform: scale(1) translateY(0); }
+  0%,
+  40% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-2px);
+  }
+  50%,
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes chat-accept {
-  0%, 50% { background-color: rgba(34, 197, 94, 0.3); transform: scale(1); }
-  55% { background-color: rgba(34, 197, 94, 0.6); transform: scale(1.1); }
-  60%, 100% { background-color: rgba(34, 197, 94, 0.4); transform: scale(1); }
+  0%,
+  50% {
+    background-color: rgba(34, 197, 94, 0.3);
+    transform: scale(1);
+  }
+  55% {
+    background-color: rgba(34, 197, 94, 0.6);
+    transform: scale(1.1);
+  }
+  60%,
+  100% {
+    background-color: rgba(34, 197, 94, 0.4);
+    transform: scale(1);
+  }
 }
 
 @keyframes chat-typing {
-  0%, 60% { opacity: 0; transform: translateY(10px); }
-  65%, 100% { opacity: 1; transform: translateY(0); }
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  65%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes chat-dot-1 {
-  0%, 60% { opacity: 0.3; transform: scale(1); }
-  70% { opacity: 1; transform: scale(1.3); }
-  80%, 100% { opacity: 0.6; transform: scale(1); }
+  0%,
+  60% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  80%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
 }
 
 @keyframes chat-dot-2 {
-  0%, 65% { opacity: 0.3; transform: scale(1); }
-  75% { opacity: 1; transform: scale(1.3); }
-  85%, 100% { opacity: 0.6; transform: scale(1); }
+  0%,
+  65% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  85%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
 }
 
 @keyframes chat-dot-3 {
-  0%, 70% { opacity: 0.3; transform: scale(1); }
-  80% { opacity: 1; transform: scale(1.3); }
-  90%, 100% { opacity: 0.6; transform: scale(1); }
+  0%,
+  70% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  90%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
 }
 
 @keyframes chat-send {
-  0%, 80% { background-color: rgba(59, 130, 246, 0.3); transform: scale(1); }
-  85% { background-color: rgba(59, 130, 246, 0.6); transform: scale(1.05); }
-  90%, 100% { background-color: rgba(59, 130, 246, 0.3); transform: scale(1); }
+  0%,
+  80% {
+    background-color: rgba(59, 130, 246, 0.3);
+    transform: scale(1);
+  }
+  85% {
+    background-color: rgba(59, 130, 246, 0.6);
+    transform: scale(1.05);
+  }
+  90%,
+  100% {
+    background-color: rgba(59, 130, 246, 0.3);
+    transform: scale(1);
+  }
 }
 
 @keyframes chat-particle-1 {
-  0%, 100% { opacity: 0; transform: translateY(0) scale(1); }
-  25% { opacity: 1; transform: translateY(-10px) scale(1.2); }
-  50% { opacity: 0.6; transform: translateY(-5px) scale(0.8); }
-  75% { opacity: 1; transform: translateY(-15px) scale(1.1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.2);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-5px) scale(0.8);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-15px) scale(1.1);
+  }
 }
 
 @keyframes chat-particle-2 {
-  0%, 100% { opacity: 0; transform: translateY(0) scale(1); }
-  30% { opacity: 1; transform: translateY(-8px) scale(1.1); }
-  60% { opacity: 0.7; transform: translateY(-12px) scale(0.9); }
-  90% { opacity: 1; transform: translateY(-6px) scale(1.2); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.1);
+  }
+  60% {
+    opacity: 0.7;
+    transform: translateY(-12px) scale(0.9);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.2);
+  }
 }
 
 @keyframes chat-particle-3 {
-  0%, 100% { opacity: 0; transform: translateY(0) scale(1); }
-  20% { opacity: 1; transform: translateY(-12px) scale(1.3); }
-  40% { opacity: 0.5; transform: translateY(-8px) scale(0.7); }
-  80% { opacity: 1; transform: translateY(-18px) scale(1.1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1.3);
+  }
+  40% {
+    opacity: 0.5;
+    transform: translateY(-8px) scale(0.7);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-18px) scale(1.1);
+  }
 }
 
 @keyframes chat-particle-4 {
-  0%, 100% { opacity: 0; transform: translateY(0) scale(1); }
-  35% { opacity: 1; transform: translateY(-14px) scale(1.2); }
-  70% { opacity: 0.8; transform: translateY(-10px) scale(0.8); }
-  95% { opacity: 1; transform: translateY(-20px) scale(1.1); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1.2);
+  }
+  70% {
+    opacity: 0.8;
+    transform: translateY(-10px) scale(0.8);
+  }
+  95% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.1);
+  }
 }
 
 @keyframes chat-connection-1 {
-  0%, 100% { opacity: 0.2; stroke-dashoffset: 0; }
-  50% { opacity: 0.6; stroke-dashoffset: 5; }
+  0%,
+  100% {
+    opacity: 0.2;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    opacity: 0.6;
+    stroke-dashoffset: 5;
+  }
 }
 
 @keyframes chat-connection-2 {
-  0%, 100% { opacity: 0.2; stroke-dashoffset: 0; }
-  60% { opacity: 0.6; stroke-dashoffset: 7; }
+  0%,
+  100% {
+    opacity: 0.2;
+    stroke-dashoffset: 0;
+  }
+  60% {
+    opacity: 0.6;
+    stroke-dashoffset: 7;
+  }
 }
 
 @keyframes chat-connection-3 {
-  0%, 100% { opacity: 0.2; stroke-dashoffset: 0; }
-  40% { opacity: 0.6; stroke-dashoffset: 4; }
+  0%,
+  100% {
+    opacity: 0.2;
+    stroke-dashoffset: 0;
+  }
+  40% {
+    opacity: 0.6;
+    stroke-dashoffset: 4;
+  }
 }
 
 @keyframes chat-connection-4 {
-  0%, 100% { opacity: 0.2; stroke-dashoffset: 0; }
-  70% { opacity: 0.6; stroke-dashoffset: 6; }
+  0%,
+  100% {
+    opacity: 0.2;
+    stroke-dashoffset: 0;
+  }
+  70% {
+    opacity: 0.6;
+    stroke-dashoffset: 6;
+  }
 }
 
 @keyframes chat-hub {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes chat-hub-ring {
-  0%, 100% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
 }
 
 @layer utilities {
   .animate-paddle-realistic-left {
     animation: paddle-realistic-left 20s ease-in-out infinite;
   }
-  
+
   .animate-paddle-realistic-right {
     animation: paddle-realistic-right 20s ease-in-out infinite;
   }
-  
+
   .animate-ball-realistic {
     animation: ball-realistic 20s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  
+
   .animate-collision-left {
     animation: collision-left 20s ease-out infinite;
   }
-  
+
   .animate-collision-right {
     animation: collision-right 20s ease-out infinite;
   }
-  
+
   .animate-score-flash {
     animation: score-flash 20s ease-in-out infinite;
   }
-  
+
   .animate-float {
     animation: float 8s ease-in-out infinite;
   }
-  
+
   .animate-float-delayed {
     animation: float-delayed 10s ease-in-out infinite;
     animation-delay: 1s;
   }
-  
+
   .animate-float-slow {
     animation: float-slow 12s ease-in-out infinite;
   }
-  
+
   .animate-fade-in {
     animation: fade-in 0.8s ease-out forwards;
   }
-  
+
   .animate-tournament-trophy {
     animation: tournament-trophy 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-confetti {
     animation: tournament-confetti 15s ease-in-out infinite;
   }
-  
+
   .animate-confetti-1 {
     animation: confetti-1 15s ease-out infinite;
   }
-  
+
   .animate-confetti-2 {
     animation: confetti-2 15s ease-out infinite;
   }
-  
+
   .animate-confetti-3 {
     animation: confetti-3 15s ease-out infinite;
   }
-  
+
   .animate-confetti-4 {
     animation: confetti-4 15s ease-out infinite;
   }
-  
+
   .animate-confetti-5 {
     animation: confetti-5 15s ease-out infinite;
   }
-  
+
   .animate-tournament-final {
     animation: tournament-final 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-semi-1 {
     animation: tournament-semi-1 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-semi-2 {
     animation: tournament-semi-2 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-quarter-1 {
     animation: tournament-quarter-1 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-quarter-2 {
     animation: tournament-quarter-2 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-quarter-3 {
     animation: tournament-quarter-3 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-quarter-4 {
     animation: tournament-quarter-4 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-1 {
     animation: tournament-first-1 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-2 {
     animation: tournament-first-2 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-3 {
     animation: tournament-first-3 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-4 {
     animation: tournament-first-4 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-5 {
     animation: tournament-first-5 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-first-6 {
     animation: tournament-first-6 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-1 {
     animation: tournament-player-1 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-2 {
     animation: tournament-player-2 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-3 {
     animation: tournament-player-3 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-4 {
     animation: tournament-player-4 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-5 {
     animation: tournament-player-5 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-6 {
     animation: tournament-player-6 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-player-7 {
     animation: tournament-player-7 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-1 {
     animation: tournament-winner-path-1 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-2 {
     animation: tournament-winner-path-2 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-3 {
     animation: tournament-winner-path-3 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-4 {
     animation: tournament-winner-path-4 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-5 {
     animation: tournament-winner-path-5 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-6 {
     animation: tournament-winner-path-6 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-path-7 {
     animation: tournament-winner-path-7 15s ease-in-out infinite;
   }
-  
+
   .animate-tournament-winner-glow {
     animation: tournament-winner-glow 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-status {
     animation: chat-status 3s ease-in-out infinite;
   }
-  
+
   .animate-chat-message-1 {
     animation: chat-message-1 15s ease-out infinite;
   }
-  
+
   .animate-chat-message-2 {
     animation: chat-message-2 15s ease-out infinite;
   }
-  
+
   .animate-chat-message-3 {
     animation: chat-message-3 15s ease-out infinite;
   }
-  
+
   .animate-chat-invite {
     animation: chat-invite 15s ease-out infinite;
   }
-  
+
   .animate-chat-accept {
     animation: chat-accept 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-typing {
     animation: chat-typing 15s ease-out infinite;
   }
-  
+
   .animate-chat-dot-1 {
     animation: chat-dot-1 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-dot-2 {
     animation: chat-dot-2 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-dot-3 {
     animation: chat-dot-3 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-send {
     animation: chat-send 15s ease-in-out infinite;
   }
-  
+
   .animate-chat-particle-1 {
     animation: chat-particle-1 6s ease-in-out infinite;
   }
-  
+
   .animate-chat-particle-2 {
     animation: chat-particle-2 7s ease-in-out infinite;
   }
-  
+
   .animate-chat-particle-3 {
     animation: chat-particle-3 8s ease-in-out infinite;
   }
-  
+
   .animate-chat-particle-4 {
     animation: chat-particle-4 9s ease-in-out infinite;
   }
-  
+
   .animate-chat-connection-1 {
     animation: chat-connection-1 4s ease-in-out infinite;
   }
-  
+
   .animate-chat-connection-2 {
     animation: chat-connection-2 5s ease-in-out infinite;
   }
-  
+
   .animate-chat-connection-3 {
     animation: chat-connection-3 3s ease-in-out infinite;
   }
-  
+
   .animate-chat-connection-4 {
     animation: chat-connection-4 6s ease-in-out infinite;
   }
-  
+
   .animate-chat-hub {
     animation: chat-hub 4s ease-in-out infinite;
   }
-  
+
   .animate-chat-hub-ring {
     animation: chat-hub-ring 5s ease-in-out infinite;
   }
@@ -802,25 +1486,45 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(100%); }
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
 }
 
 @layer utilities {
   .animate-slide-down {
     animation: slide-down 0.3s ease-out;
   }
-  
+
   .animate-shake {
     animation: shake 0.5s ease-in-out;
   }
-  
+
   .error-shake {
     animation: shake 0.5s ease-in-out;
   }

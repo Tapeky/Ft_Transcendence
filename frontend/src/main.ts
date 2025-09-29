@@ -14,15 +14,14 @@ class App {
 
     try {
       await application.initialize();
-      
+
       if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
         const { initUserSwitcher } = await import('./dev/components/UserSwitcher');
         initUserSwitcher();
       }
-      
     } catch (error) {
       console.error('App init failed:', error);
-      
+
       root.innerHTML = `
         <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626); 
                     display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">

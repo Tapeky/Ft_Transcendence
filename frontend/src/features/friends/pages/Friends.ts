@@ -15,7 +15,7 @@ export class FriendsPage {
     container.className = 'min-h-screen bg-gray-900 text-white';
 
     const user = authManager.getCurrentUser();
-    
+
     container.innerHTML = `
       <div class="min-h-screen flex flex-col">
         <!-- Header -->
