@@ -1,0 +1,322 @@
+#include "term.h"
+#include <X11/keysym.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <signal.h>
+#include <unistd.h>
+#include <assert.h>
+
+u16 				c_y = 0;
+u16 				c_x = 0;
+float				c_pixel_ratio = 1;
+term_window			term_windows[term_window_type__MAX] = {0};
+term_window			*cur_term_window = NULL;
+term_window_type	cur_term_window_type;
+
+static int has_initiated = 0;
+static struct termios orig_termios;
+static struct 
+{
+	term_window_type stack[term_window_type__MAX];
+	int cursor;
+} window_stack = {0};
+
+static void fetch_term_sz()
+{
+	struct winsize wz;
+	ioctl(STDIN_FILENO, TIOCGWINSZ, &wz);
+	c_x = wz.ws_col;
+	c_y = wz.ws_row;
+
+	// this escape sequence allows to fetch the size in pixels of the terminal. the
+	// return format is '\e[4;{y};{x}t'
+	PUTS("\e[14t");
+	fflush(stdout);
+
+	u32 pixel_x, pixel_y;
+	if (scanf("\e[4;%u;%ut", &pixel_y, &pixel_x) != 2 || !pixel_x || !pixel_y)
+		c_pixel_ratio = 7.0 / 21.0; // most common ratio for terminals
+	else
+	{
+		int sz_tile_x = pixel_x / c_x;
+		int sz_tile_y = pixel_y / c_y;
+		c_pixel_ratio = (float)sz_tile_x / sz_tile_y;
+	}
+}
+
+static void winch(int sig)
+{
+	(void)sig;
+	fetch_term_sz();
+}
+
+static void cinit_window(term_window_type window_type);
+
+void cinit()
+{
+	if (has_initiated)
+		return ;
+	
+	// set the terminal in raw mode
+	tcgetattr(STDIN_FILENO, &orig_termios);
+	struct termios raw_info;
+	raw_info = orig_termios;
+	cfmakeraw(&raw_info);
+	tcsetattr(STDIN_FILENO, TCSANOW,&raw_info);
+
+	PUTS(ESC_DISABLE_CURSOR);
+	PUTS(ESC_CLEAR_SCREEN);
+	fflush(stdout);
+	fetch_term_sz();
+	signal(SIGWINCH, winch);
+
+	cur_term_window_type = (term_window_type)0;
+	cinit_window(cur_term_window_type);
+	cur_term_window = &term_windows[cur_term_window_type];
+	window_stack.cursor = 0;
+	window_stack.stack[0] = 0;
+	has_initiated = 1;
+}
+
+void cdeinit()
+{
+	if (!has_initiated)
+		return ;
+	PUTS(ESC_ENABLE_CURSOR);
+	PUTS(ESC_CLEAR_SCREEN);
+	fflush(stdout);
+	signal(SIGWINCH, SIG_DFL);
+	for (size_t i = 0; i < term_window_type__MAX; i++)
+	{
+		term_window *win = &term_windows[i];
+		if (!win->has_initiated)
+			continue ;
+		for (size_t j = 0; j < win->components_count; j++)
+		{
+			console_component *c = &win->components[j];
+			if (c->type == TEXT_AREA)
+				free(c->u.c_text_area.buf);
+			else if (c->type == LABEL)
+			{
+				component_label *label = &c->u.c_label;
+				if (label->str && label->str_is_allocated)
+					free((void *)label->str);
+			}
+		}
+	}
+	memset(term_windows, 0, sizeof(term_windows));
+	cur_term_window = NULL;
+
+	// restore terminal attributes
+	tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+	has_initiated = 0;
+}
+
+void chandle_key_event(KeySym key, int on_press)
+{
+	console_component *cur = ccurrent_component();
+	if (!cur)
+		return;
+	if (on_press)
+	{
+		if (key < 256 && isprint(key) && cur->type == TEXT_AREA)
+			text_area_addc(cur, (unsigned char)key);
+		else if (key == XK_BackSpace && cur->type == TEXT_AREA)
+			text_area_back(cur);
+		else if (key == XK_Down && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(DOWN);
+		else if (key == XK_Up && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(UP);
+		else if (key == XK_Right && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(RIGHT);
+		else if (key == XK_Left && (cur->type != BUTTON || !cur->u.c_button.held))
+			cnext_component(LEFT);
+
+		crefresh(0);
+	}
+	if (key == XK_Return && cur->type == BUTTON)
+	{
+		component_button *button = &cur->u.c_button;
+		button->held = on_press;
+		if (button->func)
+			button->func(cur, on_press, button->func_param);
+	}
+}
+
+void crefresh(int force_redraw)
+{
+	if (force_redraw)
+		PUTS(ESC_CLEAR_SCREEN);
+
+	for (size_t i = 0; i < cur_term_window->components_count; i++)
+	{
+		console_component *c = &cur_term_window->components[i];
+		if (!c->is_hidden && (c->is_dirty || force_redraw))
+		{
+			if (i == cur_term_window->selected_component)
+				PUTS(ESC_MAGENTA_BACKGROUND ESC_BOLD);
+			switch (c->type)
+			{
+				case LABEL:
+					label_draw(c);
+					break;
+				case TEXT_AREA:
+					text_area_draw(c, force_redraw);
+					break;
+				case BOX:
+					box_draw(c);
+					break;
+				case BUTTON:
+					button_draw(c);
+					break;
+				default:
+					fprintf(stderr, "Invalid component type %d\n", c->type);
+					abort();
+			}
+			if (i == cur_term_window->selected_component)
+				PUTS(ESC_RESET_ATTR);
+			c->is_dirty = 0;
+		}
+	}
+
+	fflush(stdout);
+}
+
+static void cinit_window(term_window_type window_type)
+{
+	assert(window_type >= 0 && window_type < term_window_type__MAX);
+	term_window *win = &term_windows[window_type];
+	if (!win->has_initiated)
+	{
+		memset(win, 0, sizeof(*win));
+		win->selected_component = -1u;
+	}
+	win->has_initiated = 1;
+}
+
+static void _cswitch_window(term_window_type window_type, int refresh)
+{
+	console_component *cur = ccurrent_component();
+	if (cur && cur->type == BUTTON)
+		cur->u.c_button.held = 0;
+
+	term_window *win = &term_windows[window_type];
+	if (!win->has_initiated)
+		cinit_window(window_type);
+	cur_term_window = win;
+	cur_term_window_type = window_type;
+	if (refresh)
+		crefresh(1);
+}
+
+void cswitch_window(term_window_type window_type, int refresh)
+{
+	assert(window_type >= 0 && window_type < term_window_type__MAX);
+	if (window_type == cur_term_window_type)
+		return;
+	assert(window_stack.cursor < term_window_type__MAX);
+	window_stack.stack[++window_stack.cursor] = cur_term_window_type;
+	_cswitch_window(window_type, refresh);
+}
+
+int cprevious_window(int refresh)
+{
+	if (window_stack.cursor >= 1)
+	{
+		term_window_type previous_window = window_stack.stack[window_stack.cursor--];
+		_cswitch_window(previous_window, refresh);
+		return (1);
+	}
+	return (0);
+}
+
+void creset_window_stack()
+{
+	window_stack.cursor = -1;
+}
+
+console_component *ccomponent_add(console_component component)
+{
+	assert(component.type > 0 && component.type < COMPONENT_TYPE_MAX);
+	assert(cur_term_window->components_count < MAX_COMPONENT_NUMBER);
+
+	console_component *new_component = &cur_term_window->components[cur_term_window->components_count];
+	*new_component = component;
+	if (cur_term_window->selected_component == -1u && is_selectable(&component))
+		cur_term_window->selected_component = cur_term_window->components_count;
+	cur_term_window->components_count++;
+	return (new_component);
+}
+
+void cnext_component(direction dir)
+{
+	if (!cur_term_window->components_count)
+		return ;
+	size_t new_selected = find_best_component(dir);
+	if (new_selected != -1u)
+	{
+		mark_dirty(ccurrent_component(), 1);
+		mark_dirty(&cur_term_window->components[new_selected], 1);
+		cur_term_window->selected_component = new_selected;
+	}
+}
+
+void cursor_goto(u16 x, u16 y)
+{
+	printf("\e[%hd;%hdH", y, x);
+}
+
+console_component *add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, int text_hidden)
+{
+	console_component text_area, box;
+	text_area_init(&text_area, x + 1, y + 1, len, hint, text_hidden);
+
+	box_init(&box,
+		x, y, len + 2, 3,
+		'-', '-', '|', '|',
+		'+', '+', '+', '+'
+	);
+
+	console_component *result = ccomponent_add(text_area);
+	ccomponent_add(box);
+	return (result);
+}
+
+console_component	*add_pretty_button(u16 x, u16 y, char *text, button_action_func *func, void *param)
+{
+	assert(text);
+
+	console_component button, box;
+	button_init(&button, x + 1, y + 1, text, func, param);
+
+	box_init(&box,
+		x, y, strlen(text) + 2, 3,
+		'-', '-', '|', '|',
+		'+', '+', '+', '+'
+	);
+
+	console_component *result = ccomponent_add(button);
+	ccomponent_add(box);
+	return (result);
+}
+
+aabb	component_bouding_box(console_component *c)
+{
+	switch (c->type)
+	{
+		case LABEL:
+			return (aabb_create(c->x, c->y, c->u.c_label.str_len, 1));
+		case BUTTON:
+			return (aabb_create(c->x, c->y, c->u.c_button.str_len, 1));
+		case TEXT_AREA:
+			return (aabb_create(c->x, c->y, c->u.c_text_area.len, 1));
+		case BOX:
+			return (aabb_create(c->x, c->y, c->u.c_box.w, c->u.c_box.h));
+		default:
+			fprintf(stderr, "Invalid component type %d\n", c->type);
+			abort();
+	}
+}
