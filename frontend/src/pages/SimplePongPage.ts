@@ -3,6 +3,7 @@ import { Banner } from '../shared/components/Banner';
 import { router } from '../core/app/Router';
 import { authManager } from '../core/auth/AuthManager';
 import type { User as AppUser } from '../core/state/AppState';
+import { config } from '../config/environment';
 
 interface PongState {
   ballX: number;
@@ -382,11 +383,7 @@ export class SimplePongPage {
   private connect(token: string): void {
     this.authToken = token;
 
-    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
-    const wsUrl = apiUrl.replace(
-      /^https?:/,
-      window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    );
+    const wsUrl = config.WS_BASE_URL;
     const webSocketUrl = `${wsUrl}/ws`;
 
     this.ws = new WebSocket(webSocketUrl);

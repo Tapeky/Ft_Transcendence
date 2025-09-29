@@ -1,3 +1,5 @@
+import { config, avatarUtils } from '../../config/environment';
+
 export const DEFAULT_AVATAR_URL =
   'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=b6e3f4';
 
@@ -6,7 +8,7 @@ export const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
     return DEFAULT_AVATAR_URL;
   }
   if (avatarUrl.startsWith('/uploads/')) {
-    return `https://localhost:8000${avatarUrl}`;
+    return `${config.API_BASE_URL}${avatarUrl}`;
   }
   return avatarUrl;
 };

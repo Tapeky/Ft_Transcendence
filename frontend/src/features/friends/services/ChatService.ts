@@ -2,6 +2,7 @@ import { Friend, apiService } from '../../../shared/services/api';
 import { PongInviteNotification, PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
+import { config } from '../../../config/environment';
 
 export interface Conversation {
   id: number;
@@ -100,7 +101,7 @@ export class ChatService {
   private syncInterval: number | null = null;
 
   private getApiUrl(endpoint: string): string {
-    const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
+    const API_BASE_URL = config.API_BASE_URL;
     return `${API_BASE_URL}${endpoint}`;
   }
 
