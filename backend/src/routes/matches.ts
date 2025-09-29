@@ -29,6 +29,23 @@ interface RecordMatchBody {
   match_data?: string; // JSON pour données supplémentaires
 }
 
+interface MatchRecord {
+  id: number;
+  player1_id?: number | null;
+  player2_id?: number | null;
+  player1_guest_name?: string | null;
+  player2_guest_name?: string | null;
+  player1_score: number;
+  player2_score: number;
+  winner_id?: number | null;
+  status: string;
+  tournament_id?: number | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_seconds?: number | null;
+  [key: string]: any;
+}
+
 interface CreateMatchBody {
   player2_id: number;
   game_type?: string;
@@ -151,6 +168,9 @@ export async function matchRoutes(server: FastifyInstance) {
         );
 
         const matchId = result.lastID;
+        if (!matchId) {
+          throw new Error('Failed to get match ID after insert');
+        }
 
         if (finalP1Id) {
           const p1IsWinner = winner_id === finalP1Id;
@@ -453,10 +473,8 @@ export async function matchRoutes(server: FastifyInstance) {
         const { player1_score, player2_score, winner_id } = request.body;
         const userId = (request as any).user.id;
 
-        const match = await db.query(
-          `
-        SELECT * FROM matches WHERE id = ?
-      `,
+        const match = await db.query<MatchRecord>(
+          `SELECT * FROM matches WHERE id = ?`,
           [matchId]
         );
 
@@ -575,10 +593,8 @@ export async function matchRoutes(server: FastifyInstance) {
         const matchId = parseInt(request.params.id);
         const userId = (request as any).user.id;
 
-        const match = await db.query(
-          `
-        SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)
-      `,
+        const match = await db.query<MatchRecord>(
+          `SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)`,
           [matchId, userId, userId]
         );
 

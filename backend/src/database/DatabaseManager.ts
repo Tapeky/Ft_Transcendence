@@ -117,14 +117,18 @@ export class DatabaseManager {
     return await this.db.all(sql, params);
   }
 
-  async queryOne<T = unknown>(sql: string, params: unknown[] = []): Promise<T> {
+  async queryOne<T = unknown>(sql: string, params: unknown[] = []): Promise<T | undefined> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.get(sql, params);
   }
 
-  async execute(sql: string, params: unknown[] = []): Promise<{ lastID: number; changes: number }> {
+  async execute(sql: string, params: unknown[] = []): Promise<{ lastID?: number; changes: number }> {
     if (!this.db) throw new Error('Database not connected');
-    return await this.db.run(sql, params);
+    const result = await this.db.run(sql, params);
+    return {
+      lastID: result.lastID,
+      changes: result.changes ?? 0,
+    };
   }
 
   async transaction<T>(callback: (db: Database) => Promise<T>): Promise<T> {
@@ -165,6 +169,7 @@ export class DatabaseManager {
     tournaments: number;
     matches: number;
     activeTokens: number;
+    timestamp: string;
   }> {
     if (!this.db) throw new Error('Database not connected');
 
@@ -178,10 +183,10 @@ export class DatabaseManager {
     ]);
 
     return {
-      users: stats[0].users,
-      tournaments: stats[1].tournaments,
-      matches: stats[2].matches,
-      active_tokens: stats[3].active_tokens,
+      users: stats[0]?.users ?? 0,
+      tournaments: stats[1]?.tournaments ?? 0,
+      matches: stats[2]?.matches ?? 0,
+      activeTokens: stats[3]?.active_tokens ?? 0,
       timestamp: new Date().toISOString(),
     };
   }
