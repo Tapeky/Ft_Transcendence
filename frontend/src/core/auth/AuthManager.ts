@@ -157,11 +157,11 @@ export class AuthManager {
     }
   }
 
-  public getGitHubAuthUrl(): string {
-    return apiService.getGitHubAuthUrl();
+  public async getGitHubAuthUrl(): Promise<string> {
+    return await apiService.getGitHubAuthUrl();
   }
-  public getGoogleAuthUrl(): string {
-    return apiService.getGoogleAuthUrl();
+  public async getGoogleAuthUrl(): Promise<string> {
+    return await apiService.getGoogleAuthUrl();
   }
 
   private navigateToMenu(): void {
