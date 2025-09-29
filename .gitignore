@@ -80,8 +80,8 @@ temp/
 test-results/
 playwright-report/
 coverage/
-package-lock.json
-*/package-lock.json
+# package-lock.json
+# */package-lock.json
 yarn.lock
 */yarn.lock
 *.md

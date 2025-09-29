@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
+import { config, endpoints } from '../../config/environment';
 
 export interface User {
   id: number;
@@ -108,7 +108,7 @@ class ApiService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${config.API_BASE_URL}${endpoint}`;
     const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
     if (options.body && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
@@ -196,11 +196,11 @@ class ApiService {
   }
 
   getGitHubAuthUrl(): string {
-    return `${API_BASE_URL}/api/auth/github`;
+    return `${config.API_BASE_URL}${endpoints.auth.github}`;
   }
 
   getGoogleAuthUrl(): string {
-    return `${API_BASE_URL}/api/auth/google`;
+    return `${config.API_BASE_URL}${endpoints.auth.google}`;
   }
 
   handleAuthCallback(): string | null {

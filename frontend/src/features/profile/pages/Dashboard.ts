@@ -2,6 +2,7 @@ import { Header } from '../../../shared/components/Header';
 import { BackBtn } from '../../../shared/components/BackBtn';
 import { apiService, User, Match } from '../../../shared/services/api';
 import { appState } from '../../../core/state/AppState';
+import { config } from '../../../config/environment';
 
 export class Dashboard {
   private container: HTMLElement;
@@ -315,7 +316,7 @@ export class Dashboard {
     }
 
     if (avatarUrl.startsWith('/uploads/')) {
-      return `https://localhost:8000${avatarUrl}`;
+      return `${config.API_BASE_URL}${avatarUrl}`;
     }
 
     return avatarUrl;
