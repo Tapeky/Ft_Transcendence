@@ -621,9 +621,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           let winner = null; // tournament.winnerId serait un ID, pas un alias
           if (tournament.bracketData) {
             try {
-              const bracketData = JSON.parse(tournament.bracketData);
-              if (bracketData.winner && !winner) {
-                winner = bracketData.winner;
+              tournament.bracketData = JSON.parse(tournament.bracketData);
+              if (tournament.bracketData.winner && !winner) {
+                winner = tournament.bracketData.winner;
               }
             } catch (e) {
               console.warn('Failed to parse bracket data:', e);
@@ -721,9 +721,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         if (tournament.bracketData) {
           try {
-            const bracketData = JSON.parse(tournament.bracketData);
-            if (bracketData.winner) {
-              winner = bracketData.winner;
+            tournament.bracketData = JSON.parse(tournament.bracketData);
+            if (tournament.bracketData.winner) {
+              winner = tournament.bracketData.winner;
             }
           } catch (e) {
             console.warn('Failed to parse bracket data:', e);
