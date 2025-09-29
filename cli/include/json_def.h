@@ -125,12 +125,21 @@ typedef struct json_def
 
 typedef enum
 {
-	json_content_error_INVALID_JSON = 1,
-	json_content_error_INCORRECT_TYPE,
-	json_content_error_PARTIALLY_PARSED,
+	json_error_kind_INVALID_JSON = 1,
+	json_error_kind_INCORRECT_TYPE,
+	json_error_kind_PARTIALLY_PARSED,
+}	json_error_kind;
+
+typedef struct
+{
+	json_error_kind	kind;
+	cJSON			*node;
 }	json_content_error;
 
-const char *json_content_error_to_string(json_content_error err);
+# define json_content_error_make(_kind, ...) (json_content_error){.kind = _kind __VA_OPT__(, .node = __VA_ARGS__)}
+# define json_content_error_none (json_content_error){0}
+
+void json_content_error_print(FILE *stream, json_content_error err);
 
 /*
  parses the cJSON object, following directions from `defs`, outputting values to `out`
