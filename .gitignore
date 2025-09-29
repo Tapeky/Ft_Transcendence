@@ -74,8 +74,8 @@ public
 .vscode-test
 tmp/
 temp/
-*.sqlite
-*.db
+# *.sqlite
+# *.db
 .dockerignore
 test-results/
 playwright-report/
