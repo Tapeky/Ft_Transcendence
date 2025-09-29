@@ -25,17 +25,13 @@ export class SimpleGameInvites {
   }
 
   private startupCleanup(): void {
-    console.log('Starting cleanup of stale invitations');
     this.invites.clear();
-    console.log('Startup cleanup complete');
   }
 
   addUser(userId: number, username: string, socket: SocketStream): void {
-    console.log(`${username} connected (using main WebSocketManager)`);
   }
 
   removeUser(userId: number): void {
-    console.log(`User ${userId} disconnected (using main WebSocketManager)`);
   }
 
   handleMessage(userId: number, data: any): boolean {
@@ -139,8 +135,6 @@ export class SimpleGameInvites {
         });
       }
     }, 60000);
-
-    console.log(`${sender.username} invited ${receiver.username}`);
   }
 
   private handleRespondInvite(user: ConnectedUser, inviteId: string, accept: boolean): void {
@@ -216,8 +210,6 @@ export class SimpleGameInvites {
           },
           side: 'right',
         });
-
-        console.log(`Game ${gameId} started: ${invite.fromUsername} vs ${user.username}`);
       } catch (error) {
         console.error('Error starting game:', error);
         this.sendToUser(user.id, {
