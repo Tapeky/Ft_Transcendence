@@ -98,3 +98,8 @@ CLAUDE.md
 SERENA.md
 *.claude.md
 *.serena.md
+
+## cli
+*.o
+*.d
+trans_cli
