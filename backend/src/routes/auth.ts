@@ -16,7 +16,7 @@ export async function authRoutes(server: FastifyInstance) {
         success: false,
         error: 'Vous êtes déjà connecté',
       });
-    } catch (error) {
+    } catch (error: unknown) {
       return;
     }
   };
