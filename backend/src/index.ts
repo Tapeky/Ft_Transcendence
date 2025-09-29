@@ -83,7 +83,7 @@ async function start() {
     setupWebSocket(server);
     setupRoutes(server);
 
-    server.get('/health', async (request, reply) => {
+    server.get('/health', async () => {
       const dbStats = await dbManager.getStats();
       return {
         status: 'healthy',
@@ -94,7 +94,7 @@ async function start() {
       };
     });
 
-    server.get('/', async (request, reply) => {
+    server.get('/', async () => {
       return {
         name: 'ft_transcendence API',
         version: '1.0.0',
@@ -111,32 +111,34 @@ async function start() {
       };
     });
 
-    server.setErrorHandler(async (error, request, reply) => {
+    server.setErrorHandler(async (error, _request, reply) => {
       server.log.error(error);
 
-      if ((error as any).code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
+      const errorWithCode = error as Error & { code?: string; validation?: unknown };
+
+      if (errorWithCode.code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
           success: false,
           error: "Token d'authentification requis",
         });
       }
 
-      if ((error as any).code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
+      if (errorWithCode.code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
         return reply.status(401).send({
           success: false,
           error: "Token d'authentification invalide",
         });
       }
 
-      if ((error as any).validation) {
+      if (errorWithCode.validation) {
         return reply.status(400).send({
           success: false,
           error: 'Données invalides',
-          details: (error as any).validation,
+          details: errorWithCode.validation,
         });
       }
 
-      if ((error as any).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (errorWithCode.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return reply.status(409).send({
           success: false,
           error: 'Cette ressource existe déjà',
