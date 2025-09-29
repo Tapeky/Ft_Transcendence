@@ -21,21 +21,17 @@ export class DatabaseManager {
       return this.db;
     }
 
-    try {
-      const dbDir = path.dirname(dbPath);
-      await fs.mkdir(dbDir, { recursive: true });
+    const dbDir = path.dirname(dbPath);
+    await fs.mkdir(dbDir, { recursive: true });
 
-      this.db = await open({
-        filename: dbPath,
-        driver: sqlite3.Database,
-      });
+    this.db = await open({
+      filename: dbPath,
+      driver: sqlite3.Database,
+    });
 
-      await this.db.exec('PRAGMA foreign_keys = ON;');
+    await this.db.exec('PRAGMA foreign_keys = ON;');
 
-      return this.db;
-    } catch (error) {
-      throw error;
-    }
+    return this.db;
   }
 
   async initialize(): Promise<void> {
@@ -43,16 +39,12 @@ export class DatabaseManager {
       throw new Error('Database not connected');
     }
 
-    try {
-      const schemaPath = path.join(__dirname, 'schema.sql');
-      const schema = await fs.readFile(schemaPath, 'utf8');
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schema = await fs.readFile(schemaPath, 'utf8');
 
-      await this.db.exec(schema);
+    await this.db.exec(schema);
 
-      await this.seedIfEmpty();
-    } catch (error) {
-      throw error;
-    }
+    await this.seedIfEmpty();
   }
 
   private async seedIfEmpty(): Promise<void> {
@@ -120,17 +112,17 @@ export class DatabaseManager {
     }
   }
 
-  async query(sql: string, params: any[] = []): Promise<any[]> {
+  async query<T = unknown>(sql: string, params: unknown[] = []): Promise<T[]> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.all(sql, params);
   }
 
-  async queryOne(sql: string, params: any[] = []): Promise<any> {
+  async queryOne<T = unknown>(sql: string, params: unknown[] = []): Promise<T> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.get(sql, params);
   }
 
-  async execute(sql: string, params: any[] = []): Promise<any> {
+  async execute(sql: string, params: unknown[] = []): Promise<{ lastID: number; changes: number }> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.run(sql, params);
   }
@@ -162,20 +154,25 @@ export class DatabaseManager {
   async cleanupExpiredTokens(): Promise<void> {
     if (!this.db) return;
 
-    const result = await this.db.run(`
-      DELETE FROM jwt_tokens 
+    await this.db.run(`
+      DELETE FROM jwt_tokens
       WHERE expires_at < datetime('now') OR revoked = true
     `);
   }
 
-  async getStats(): Promise<any> {
+  async getStats(): Promise<{
+    users: number;
+    tournaments: number;
+    matches: number;
+    activeTokens: number;
+  }> {
     if (!this.db) throw new Error('Database not connected');
 
     const stats = await Promise.all([
-      this.db.get('SELECT COUNT(*) as users FROM users'),
-      this.db.get('SELECT COUNT(*) as tournaments FROM tournaments'),
-      this.db.get('SELECT COUNT(*) as matches FROM matches'),
-      this.db.get(
+      this.db.get<{ users: number }>('SELECT COUNT(*) as users FROM users'),
+      this.db.get<{ tournaments: number }>('SELECT COUNT(*) as tournaments FROM tournaments'),
+      this.db.get<{ matches: number }>('SELECT COUNT(*) as matches FROM matches'),
+      this.db.get<{ active_tokens: number }>(
         'SELECT COUNT(*) as active_tokens FROM jwt_tokens WHERE expires_at > datetime("now") AND revoked = false'
       ),
     ]);

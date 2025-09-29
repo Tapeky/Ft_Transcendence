@@ -5,7 +5,7 @@ COMPOSE_FILE_PROD = docker-compose.prod.yml
 ENV_FILE = .env
 
 help:
-	@echo "Available targets: help dev prod build stop clean logs logs-backend logs-frontend shell-backend shell-frontend db-reset db-migrate db-migrate-github db-seed db-clean-tournaments"
+	@echo "Available targets: help dev prod build stop clean logs logs-backend logs-frontend shell-backend shell-frontend db-reset"
 
 setup:
 	@echo "Initial setup..."
@@ -52,16 +52,3 @@ shell-frontend:
 db-reset:
 	@echo "Resetting database..."
 	docker-compose exec backend npm run db:reset
-
-db-migrate:
-	docker-compose exec backend npm run db:migrate
-
-db-migrate-github:
-	@echo "Running GitHub migration..."
-	docker-compose exec backend npm run db:migrate:github
-
-db-seed:
-	docker-compose exec backend npm run db:seed
-
-db-clean-tournaments:
-	docker-compose exec backend npm run db:clean-tournaments

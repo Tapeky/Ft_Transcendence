@@ -1,13 +1,16 @@
 import { DatabaseManager } from './DatabaseManager';
-import fs from 'fs';
-import path from 'path';
+
+interface ColumnInfo {
+  name: string;
+  type: string;
+}
 
 export async function ensureSchema() {
   const db = DatabaseManager.getInstance();
 
   try {
     const tableInfo = await db.query(`PRAGMA table_info(tournaments)`);
-    const hasCreatedBy = tableInfo.some((col: any) => col.name === 'created_by');
+    const hasCreatedBy = (tableInfo as ColumnInfo[]).some(col => col.name === 'created_by');
 
     if (!hasCreatedBy) {
       console.log('Adding missing created_by column to tournaments...');
@@ -19,9 +22,9 @@ export async function ensureSchema() {
 
       console.log('Database schema updated');
     }
-  } catch (error: any) {
-    if (error.message.includes('duplicate column name')) {
-
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('duplicate column name')) {
+      // Column already exists, ignore
     } else {
       console.error('Schema check failed:', error);
     }

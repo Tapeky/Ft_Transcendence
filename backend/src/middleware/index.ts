@@ -65,7 +65,7 @@ export function setupMiddleware(server: FastifyInstance) {
     reply.header('X-XSS-Protection', '1; mode=block');
   });
 
-  server.addHook('onRequest', async (request, reply) => {
+  server.addHook('onRequest', async (request) => {
     request.log.info({
       method: request.method,
       url: request.url,
