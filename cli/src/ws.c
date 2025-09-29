@@ -140,8 +140,8 @@ static void ws_ctx_print_xfer_result(ws_ctx *ctx, ws_xfer_result res, int is_rec
 			}
 			break;
 		case ws_xfer_error_JSON_CONTENT:
-			fprintf(stream, "Json content wasn't what was expected: %s\n", json_content_error_to_string(res.json_content_error));
-			fprintf(stream, "Json content: %s\n", ctx->recv_buf);
+			fprintf(stream, "Json content wasn't good: ");
+			json_content_error_print(stream, res.json_content_error);
 			break;
 		default:
 			if (!res.err)

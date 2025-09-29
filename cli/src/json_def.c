@@ -43,16 +43,16 @@ json_content_error parse_array(cJSON *base, const json_def *def, void *out)
 	cJSON_ArrayForEach(elem, base)
 	{
 		error = json_parse_from_def(elem, def->recursive_object, ptr);
-		if (error)
+		if (error.kind)
 		{
-			free(ptr);
+			free(*ptr_loc);
 			*ptr_loc = NULL;
 			return error;
 		}
 		ptr += def->element_len;
 	}
 	*size_ptr = sz;
-	return (0);
+	return json_content_error_none;
 }
 
 #define FETCH_IS_NULL_AT_OFFSET(obj, offset) ((u8 *)(obj) + (offset))
@@ -63,14 +63,14 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 	assert(out && defs);
 	*(cJSON **)out = NULL;
 	if (!cJSON_IsObject(obj))
-		return (json_content_error_INVALID_JSON);
+		return (json_content_error_make(json_error_kind_INVALID_JSON, obj));
 	size_t parsed_count = 0;
 	cJSON *cur = obj->child;
 	json_content_error recursive_error;
 	while (cur)
 	{
 		if (cJSON_IsInvalid(cur))
-			return (json_content_error_INVALID_JSON);
+			return (json_content_error_make(json_error_kind_INVALID_JSON, obj));
 		const json_def *def = find_def(defs, cur->string);
 		if (!def)
 		{
@@ -114,21 +114,21 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 				case JSON_OBJECT:
 					assert(def->recursive_object);
 					recursive_error = json_parse_from_def(cur, def->recursive_object, out + def->offset);
-					if (recursive_error)
+					if (recursive_error.kind)
 						return (recursive_error);
 					break;
 				case JSON_OBJECT_N:
 					assert(def->recursive_object);
 					if (cur->type != cJSON_NULL)
 					{
-						recursive_error = json_parse_from_def(cur, def->recursive_object, out + def->offset);
-						if (recursive_error)
+						recursive_error = json_parse_from_def(cur, def->recursive_object, out + def->offset + 1);
+						if (recursive_error.kind)
 							return (recursive_error);
 					}
 					break;
 				case JSON_ARRAY:
 					recursive_error = parse_array(cur, def, out);
-					if (recursive_error)
+					if (recursive_error.kind)
 						return recursive_error;
 					break;
 				// case JSON_ARRAY_N:
@@ -146,22 +146,22 @@ json_content_error json_parse_from_def(cJSON *obj, const json_def *defs, void *o
 			parsed_count++;
 		}
 		else
-			return (json_content_error_INCORRECT_TYPE);
+			return (json_content_error_make(json_error_kind_INCORRECT_TYPE, cur));
 		cur = cur->next;
 	}
 	if (parsed_count != def_count(defs))
-		return (json_content_error_PARTIALLY_PARSED);
+		return (json_content_error_make(json_error_kind_PARTIALLY_PARSED, obj));
 	*(cJSON **)out = obj;
-	return (0);
+	return json_content_error_none;
 }
 
 void json_parse_from_def_force(cJSON *obj, const json_def *defs, void *out)
 {
 	json_content_error err = json_parse_from_def(obj, defs, out);
-	if (err)
+	if (err.kind)
 	{
 		cJSON_Delete(obj);
-		clean_and_fail("%s\n", json_content_error_to_string(err));
+		DO_CLEANUP(json_content_error_print(stderr, err));
 	}
 }
 
@@ -267,19 +267,39 @@ void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, in
 	}
 }
 
-const char *json_content_error_to_string(json_content_error err)
+void json_content_error_print(FILE *stream, json_content_error err)
 {
-	switch (err)
+	switch (err.kind)
 	{
-		case (json_content_error_INVALID_JSON):
-			return ("Invalid JSON");
-		case (json_content_error_PARTIALLY_PARSED):
-			return ("Not all expected entries were found");
-		case (json_content_error_INCORRECT_TYPE):
-			return ("A JSON element was not of the correct type");
+		case (json_error_kind_INVALID_JSON):
+			fprintf (stream, "Invalid JSON");
+			break;
+		case (json_error_kind_PARTIALLY_PARSED):
+			fprintf(stream, "Not all expected entries were found");
+			break;
+		case (json_error_kind_INCORRECT_TYPE):
+			fprintf(stream, "A JSON element was not of the correct type");
+			break;
 		default:
-			if (!err)
-				return ("No error");
-			return ("Unknown error");
+			if (!err.kind)
+				fprintf(stream, "No error");
+			else
+				fprintf(stream, "Unknown error");
+			break;
+	}
+	fprintf(stream, ". Erroring json: ");
+	if (!err.node)
+		fprintf(stream, "<NONE>\n");
+	else
+	{
+		fprintf(stderr, "%s: ", err.node->string);
+		char *repr = cJSON_Print(err.node);
+		if (!repr)
+			fprintf(stream, "<CAN'T DISPLAY>\n");
+		else
+		{
+			fprintf(stream, "%s\n", repr);
+			free(repr);
+		}
 	}
 }
