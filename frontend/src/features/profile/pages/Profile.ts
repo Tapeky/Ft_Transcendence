@@ -24,7 +24,8 @@ export class ProfilePage {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white';
+    container.className =
+      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none gap-8 bg-blue-900 text-white';
 
     const user = authManager.getCurrentUser();
 
@@ -32,7 +33,8 @@ export class ProfilePage {
     container.appendChild(this.header.getElement());
 
     const centerContainer = document.createElement('div');
-    centerContainer.className = 'w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4 overflow-auto';
+    centerContainer.className =
+      'w-[1300px] flex-grow bg-gradient-to-b from-pink-800 to-purple-600 self-center border-x-4 border-t-4 flex flex-col p-4 overflow-auto';
 
     const headerSection = document.createElement('div');
     headerSection.className = 'text-center text-[4rem] border-b-2 w-full flex';
@@ -108,7 +110,7 @@ export class ProfilePage {
 
     const rightColumn = document.createElement('div');
     rightColumn.className = 'flex-[0.5] flex justify-center relative';
-    
+
     rightColumn.innerHTML = `
       <img 
         id="profile-main-avatar"
@@ -162,15 +164,14 @@ export class ProfilePage {
 
     try {
       await apiService.updateProfileDisplayName(newDisplayName);
-      
+
       await authManager.refreshUser();
-      
+
       if (this.header) {
         this.header.refresh();
       }
-      
+
       this.showFeedback('Display name updated successfully!', 'success');
-      
     } catch (error) {
       console.error('Failed to update display name:', error);
       this.showFeedback('Error updating display name', 'error');
@@ -190,10 +191,12 @@ export class ProfilePage {
   private renderPasswordModal(): void {
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'password-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+    modalOverlay.className =
+      'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
     const modalContainer = document.createElement('div');
-    modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+    modalContainer.className =
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
@@ -253,7 +256,7 @@ export class ProfilePage {
     toggles.forEach(type => {
       const toggleBtn = modal.querySelector(`#toggle-${type}`);
       const input = modal.querySelector(`#${type}-password`) as HTMLInputElement;
-      
+
       toggleBtn?.addEventListener('click', () => {
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
@@ -291,15 +294,14 @@ export class ProfilePage {
 
     try {
       this.updatePasswordStatus('Updating password...', 'info');
-      
+
       await apiService.changePassword(currentPassword, newPassword);
-      
+
       this.updatePasswordStatus('Password updated successfully!', 'success');
-      
+
       setTimeout(() => {
         this.closePasswordModal();
       }, 1500);
-      
     } catch (error) {
       console.error('Failed to update password:', error);
       this.updatePasswordStatus('Error updating password', 'error');
@@ -309,10 +311,12 @@ export class ProfilePage {
   private renderAvatarModal(): void {
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'avatar-modal';
-    modalOverlay.className = 'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+    modalOverlay.className =
+      'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
     const modalContainer = document.createElement('div');
-    modalContainer.className = 'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+    modalContainer.className =
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
 
     this.avatarModalCloseBtn = new CloseBtn(() => this.closeAvatarModal());
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
@@ -349,10 +353,10 @@ export class ProfilePage {
 
     const uploadBtn = modal.querySelector('#upload-avatar-btn');
     const fileInput = modal.querySelector('#avatar-file-input') as HTMLInputElement;
-    
+
     uploadBtn?.addEventListener('click', () => fileInput?.click());
-    
-    fileInput?.addEventListener('change', (event) => {
+
+    fileInput?.addEventListener('change', event => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         this.handleAvatarUpload(file);
@@ -363,17 +367,17 @@ export class ProfilePage {
   private updateMainAvatar(): void {
     const user = authManager.getCurrentUser();
     const mainAvatar = document.querySelector('#profile-main-avatar') as HTMLImageElement;
-    
+
     if (mainAvatar) {
       const newAvatarUrl = getAvatarUrl(user?.avatar_url);
-      
+
       const hasQueryParams = newAvatarUrl.includes('?');
       const cacheBuster = hasQueryParams ? `&t=${Date.now()}` : `?t=${Date.now()}`;
       const finalUrl = newAvatarUrl + cacheBuster;
-      
+
       mainAvatar.src = finalUrl;
     }
-    
+
     if (this.header) {
       this.header.refresh();
     }
@@ -382,15 +386,14 @@ export class ProfilePage {
   private async handleAvatarUpload(file: File): Promise<void> {
     try {
       this.updateUploadStatus('Uploading avatar...', 'info');
-      
+
       const result = await apiService.uploadAvatar(file);
-      
+
       await authManager.refreshUser();
-      
+
       this.updateMainAvatar();
-      
+
       this.updateUploadStatus('Avatar updated successfully!', 'success');
-      
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       this.updateUploadStatus('Error uploading avatar', 'error');
@@ -399,29 +402,29 @@ export class ProfilePage {
 
   private closePasswordModal(): void {
     this.showPasswordModal = false;
-    
+
     if (this.passwordModalCloseBtn) {
       this.passwordModalCloseBtn.destroy();
       this.passwordModalCloseBtn = undefined;
     }
-    
+
     const modal = document.getElementById('password-modal');
     modal?.remove();
   }
 
   private closeAvatarModal(): void {
     this.showAvatarModal = false;
-    
+
     if (this.avatarModalCloseBtn) {
       this.avatarModalCloseBtn.destroy();
       this.avatarModalCloseBtn = undefined;
     }
-    
+
     if (this.avatarSelect) {
       this.avatarSelect.destroy();
       this.avatarSelect = undefined;
     }
-    
+
     const modal = document.getElementById('avatar-modal');
     modal?.remove();
   }
@@ -431,9 +434,7 @@ export class ProfilePage {
     if (statusElement) {
       statusElement.textContent = message;
       statusElement.className = `text-[1.5rem] min-h-[2rem] ${
-        type === 'success' ? 'text-green-400' : 
-        type === 'error' ? 'text-red-400' : 
-        'text-blue-400'
+        type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
       }`;
     }
   }
@@ -443,9 +444,7 @@ export class ProfilePage {
     if (statusElement) {
       statusElement.textContent = message;
       statusElement.className = `text-[1.2rem] min-h-[1.5rem] text-center ${
-        type === 'success' ? 'text-green-400' : 
-        type === 'error' ? 'text-red-400' : 
-        'text-blue-400'
+        type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
       }`;
     }
   }
@@ -456,9 +455,9 @@ export class ProfilePage {
       type === 'success' ? 'bg-green-600' : 'bg-red-600'
     }`;
     feedback.textContent = message;
-    
+
     document.body.appendChild(feedback);
-    
+
     setTimeout(() => {
       feedback.remove();
     }, 3000);
@@ -475,7 +474,7 @@ export class ProfilePage {
     if (this.backBtn) {
       this.backBtn.destroy();
     }
-    
+
     this.element.remove();
   }
 }

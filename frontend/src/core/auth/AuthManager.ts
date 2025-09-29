@@ -20,40 +20,38 @@ export class AuthManager {
 
   private async initializeAuth(): Promise<void> {
     appState.setLoading(true);
-    
+
     try {
       if (apiService.isAuthenticated()) {
         const currentUser = await apiService.getCurrentUser();
-        
+
         appState.setState({
           user: currentUser,
           isAuthenticated: true,
-          loading: false
+          loading: false,
         });
         this.notifyAuthStateChange(true);
-        
-        // Connecter automatiquement le ChatService pour recevoir les invitations
+
         this.connectChatService();
-        
       } else {
         appState.setState({
           user: null,
           isAuthenticated: false,
-          loading: false
+          loading: false,
         });
-        
+
         this.notifyAuthStateChange(false);
       }
     } catch (error) {
       console.error('AuthManager user info retrieval error:', this.getErrorMessage(error));
-      
+
       apiService.clearToken();
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
     }
   }
@@ -67,20 +65,18 @@ export class AuthManager {
       appState.setState({
         user: authResponse.user,
         isAuthenticated: true,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
-      
-      // Connecter automatiquement le ChatService pour recevoir les invitations
+
       this.connectChatService();
-      
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
       console.error('AuthManager login failed:', errorMessage);
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -90,33 +86,32 @@ export class AuthManager {
 
     try {
       const authResponse = await apiService.register(credentials);
-      
+
       appState.setState({
         user: authResponse.user,
         isAuthenticated: true,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
-      
-      // Connecter automatiquement le ChatService pour recevoir les invitations
+
       this.connectChatService();
-      
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
-      
-      const isValidationError = errorMessage.includes('déjà pris') || 
-        errorMessage.includes('déjà utilisé') || 
+
+      const isValidationError =
+        errorMessage.includes('déjà pris') ||
+        errorMessage.includes('déjà utilisé') ||
         errorMessage.includes('existe déjà') ||
         errorMessage.includes('invalide') ||
         errorMessage.includes('incorrect');
-      
+
       if (!isValidationError) {
         console.error('AuthManager unexpected registration error:', errorMessage);
       }
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -126,31 +121,28 @@ export class AuthManager {
 
     try {
       await apiService.logout();
-      
-      // Déconnecter le ChatService
+
       chatService.disconnect();
-      
+
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
       this.navigateToHome();
-      
     } catch (error) {
       console.error('AuthManager logout error:', this.getErrorMessage(error));
-      
-      // Déconnecter le ChatService même en cas d'erreur
+
       chatService.disconnect();
-      
+
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
       this.navigateToHome();
     }
@@ -165,11 +157,19 @@ export class AuthManager {
     }
   }
 
-  public getGitHubAuthUrl(): string { return apiService.getGitHubAuthUrl(); }
-  public getGoogleAuthUrl(): string { return apiService.getGoogleAuthUrl(); }
+  public getGitHubAuthUrl(): string {
+    return apiService.getGitHubAuthUrl();
+  }
+  public getGoogleAuthUrl(): string {
+    return apiService.getGoogleAuthUrl();
+  }
 
-  private navigateToMenu(): void { router.navigate('/menu'); }
-  private navigateToHome(): void { router.navigate('/'); }
+  private navigateToMenu(): void {
+    router.navigate('/menu');
+  }
+  private navigateToHome(): void {
+    router.navigate('/');
+  }
 
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
@@ -178,16 +178,24 @@ export class AuthManager {
     return String(error);
   }
 
-  public getCurrentUser(): User | null { return appState.getState().user; }
-  public isAuthenticated(): boolean { return appState.getState().isAuthenticated; }
-  public isLoading(): boolean { return appState.getState().loading; }
+  public getCurrentUser(): User | null {
+    return appState.getState().user;
+  }
+  public isAuthenticated(): boolean {
+    return appState.getState().isAuthenticated;
+  }
+  public isLoading(): boolean {
+    return appState.getState().loading;
+  }
 
-  public subscribeToAuth(callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void): () => void {
+  public subscribeToAuth(
+    callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void
+  ): () => void {
     return appState.subscribe(state => {
       callback({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        loading: state.loading
+        loading: state.loading,
       });
     });
   }
@@ -214,13 +222,9 @@ export class AuthManager {
 
   private async connectChatService(): Promise<void> {
     try {
-      console.log('[AuthManager] Connexion automatique du ChatService...');
       await chatService.connect();
-      
-      // Rendre le chatService accessible globalement pour les modales
+
       (window as any).chatService = chatService;
-      
-      console.log('[AuthManager] ChatService connecté avec succès');
     } catch (error) {
       console.error('[AuthManager] Erreur lors de la connexion du ChatService:', error);
     }

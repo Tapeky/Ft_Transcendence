@@ -155,7 +155,7 @@ export class HomePage {
       { id: 'goto-friends', path: '/friends', label: 'Friends' },
       { id: 'goto-chat', path: '/chat', label: 'Chat' },
       { id: 'goto-tournament', path: '/tournament', label: 'Tournament' },
-      { id: 'goto-menutest', path: '/menutest', label: 'MenuTest' }
+      { id: 'goto-menutest', path: '/menutest', label: 'MenuTest' },
     ];
     routes.forEach(route => {
       const btn = this.element.querySelector(`#${route.id}`);

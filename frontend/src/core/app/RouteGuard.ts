@@ -3,19 +3,14 @@ import { AuthManager } from '../../core/auth/AuthManager';
 
 export class RouteGuard {
   private authManager: AuthManager;
-  
+
   constructor() {
     this.authManager = AuthManager.getInstance();
   }
 
   isProtectedRoute(path: string): boolean {
-    const protectedRoutes = [
-      '/menu',
-      '/profile',
-      '/tournament',
-      '/game'
-    ];
-    
+    const protectedRoutes = ['/menu', '/profile', '/tournament', '/game'];
+
     return protectedRoutes.some(route => path.startsWith(route));
   }
 
@@ -36,14 +31,14 @@ export class RouteGuard {
     if (!isAuthenticated && isProtected) {
       return {
         allowed: false,
-        redirectTo: '/auth'
+        redirectTo: '/auth',
       };
     }
 
     if (isAuthenticated && isGuestOnly) {
       return {
         allowed: false,
-        redirectTo: '/menu'
+        redirectTo: '/menu',
       };
     }
 
@@ -52,7 +47,7 @@ export class RouteGuard {
 
   canNavigateTo(targetPath: string): boolean {
     const validation = this.validateRouteAccess(targetPath);
-    
+
     if (!validation.allowed && validation.redirectTo) {
       if (appState.router) {
         appState.router.navigate(validation.redirectTo, true);
@@ -66,7 +61,7 @@ export class RouteGuard {
     if (!appState.getState().loading && appState.router) {
       const currentPath = appState.router.getCurrentPath();
       const validation = this.validateRouteAccess(currentPath);
-      
+
       if (!validation.allowed && validation.redirectTo) {
         appState.router.navigate(validation.redirectTo, true);
       }
@@ -78,7 +73,7 @@ export class RouteGuard {
       this.redirectIfNeeded();
     });
 
-    appState.subscribe((state) => {
+    appState.subscribe(state => {
       this.redirectIfNeeded();
     });
   }

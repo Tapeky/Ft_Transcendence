@@ -1,6 +1,5 @@
 import { authManager } from '../../../core/auth/AuthManager';
 
-
 export class AuthPage {
   private element: HTMLElement;
   private currentMode: 'login' | 'register' = 'login';
@@ -16,7 +15,6 @@ export class AuthPage {
     this.bindEvents();
     this.subscribeToAuth();
     this.startAnimationCarousel();
-    
   }
 
   private createElement(): HTMLElement {
@@ -336,8 +334,8 @@ export class AuthPage {
     const loginForm = this.element.querySelector('#login-form');
     const registerForm = this.element.querySelector('#register-form');
 
-    loginForm?.addEventListener('submit', (e) => this.handleLogin(e));
-    registerForm?.addEventListener('submit', (e) => this.handleRegister(e));
+    loginForm?.addEventListener('submit', e => this.handleLogin(e));
+    registerForm?.addEventListener('submit', e => this.handleRegister(e));
 
     this.setupFloatingInputs();
 
@@ -353,13 +351,12 @@ export class AuthPage {
     indicators.forEach((indicator, index) => {
       indicator.addEventListener('click', () => this.setAnimation(index));
     });
-
   }
 
   private subscribeToAuth(): void {
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+    this.authUnsubscribe = authManager.subscribeToAuth(authState => {
       this.updateLoadingState(authState.loading);
-      
+
       if (authState.isAuthenticated && authState.user) {
         import('../../../core/app/Router').then(({ router }) => {
           router.navigate('/menu');
@@ -387,7 +384,9 @@ export class AuthPage {
       container.classList.remove('active');
     });
 
-    const currentContainer = this.element.querySelector(`#animation-${this.animations[this.currentAnimation]}`);
+    const currentContainer = this.element.querySelector(
+      `#animation-${this.animations[this.currentAnimation]}`
+    );
     if (currentContainer) {
       currentContainer.classList.remove('hidden');
       currentContainer.classList.add('active');
@@ -408,39 +407,38 @@ export class AuthPage {
   private switchMode(newMode: 'login' | 'register'): void {
     this.isTransitioning = true;
     const formContainer = this.element.querySelector('#form-container');
-    
+
     if (formContainer) {
       formContainer.classList.add('opacity-0', 'scale-95');
     }
-    
+
     setTimeout(() => {
       this.currentMode = newMode;
       this.updateModeDisplay();
       this.isTransitioning = false;
-      
+
       if (formContainer) {
         formContainer.classList.remove('opacity-0', 'scale-95');
         formContainer.classList.add('opacity-100', 'scale-100');
       }
     }, 150);
-
   }
 
   private updateModeDisplay(): void {
     const authConfig = {
       login: {
-        title: "Welcome Back!",
-        subtitle: "Sign in to access your Pong account and compete with players worldwide."
+        title: 'Welcome Back!',
+        subtitle: 'Sign in to access your Pong account and compete with players worldwide.',
       },
       register: {
-        title: "Join the Game!",
-        subtitle: "Create your account and start your journey in the legendary Pong universe."
-      }
+        title: 'Join the Game!',
+        subtitle: 'Create your account and start your journey in the legendary Pong universe.',
+      },
     };
 
     const title = this.element.querySelector('#auth-title');
     const subtitle = this.element.querySelector('#auth-subtitle');
-    
+
     if (title) title.textContent = authConfig[this.currentMode].title;
     if (subtitle) subtitle.textContent = authConfig[this.currentMode].subtitle;
 
@@ -464,14 +462,14 @@ export class AuthPage {
 
   private setupFloatingInputs(): void {
     const floatingInputs = this.element.querySelectorAll('.floating-input');
-    
+
     floatingInputs.forEach(input => {
       const inputElement = input as HTMLInputElement;
       const label = this.element.querySelector(`label[for="${inputElement.id}"]`) as HTMLElement;
-      
+
       const updateInput = () => {
         const hasValue = inputElement.value.length > 0;
-        
+
         if (hasValue) {
           inputElement.classList.add('bg-white');
           inputElement.classList.remove('bg-transparent');
@@ -480,61 +478,60 @@ export class AuthPage {
           inputElement.classList.add('bg-transparent');
         }
       };
-      
+
       inputElement.addEventListener('focus', updateInput);
       inputElement.addEventListener('blur', updateInput);
       inputElement.addEventListener('input', updateInput);
-      
+
       updateInput();
     });
-    
   }
 
   private setupPremiumButtons(): void {
     const premiumButtons = this.element.querySelectorAll('.premium-button');
-    
+
     premiumButtons.forEach(button => {
       const buttonElement = button as HTMLButtonElement;
-      
-      buttonElement.addEventListener('mousemove', (e) => {
+
+      buttonElement.addEventListener('mousemove', e => {
         if (buttonElement.disabled) return;
-        
+
         const rect = buttonElement.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        
+
         const distance = Math.sqrt(x * x + y * y);
         const maxDistance = rect.width / 2;
-        
+
         if (distance < maxDistance) {
           const translateX = (x / maxDistance) * 3;
           const translateY = (y / maxDistance) * 3;
           buttonElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(1.02)`;
         }
       });
-      
+
       buttonElement.addEventListener('mouseleave', () => {
         buttonElement.style.transform = 'translate(0, 0) scale(1)';
       });
-      
-      buttonElement.addEventListener('click', (e) => {
+
+      buttonElement.addEventListener('click', e => {
         if (buttonElement.disabled) return;
-        
+
         const rect = buttonElement.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const id = Date.now();
-        
+
         this.ripples.push({ x, y, id });
-        
+
         const ripple = document.createElement('span');
         ripple.className = 'absolute bg-white/30 rounded-full pointer-events-none animate-ripple';
         ripple.style.left = `${x}px`;
         ripple.style.top = `${y}px`;
         ripple.style.transform = 'translate(-50%, -50%)';
-        
+
         buttonElement.appendChild(ripple);
-        
+
         setTimeout(() => {
           ripple.remove();
           this.ripples = this.ripples.filter(r => r.id !== id);
@@ -548,10 +545,10 @@ export class AuthPage {
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
+
     const credentials = {
       email: formData.get('email') as string,
-      password: formData.get('password') as string
+      password: formData.get('password') as string,
     };
 
     if (!credentials.email || !credentials.password) {
@@ -580,13 +577,13 @@ export class AuthPage {
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
+
     const credentials = {
       username: formData.get('username') as string,
       email: formData.get('email') as string,
       password: formData.get('password') as string,
-      display_name: formData.get('display_name') as string || undefined,
-      data_consent: formData.get('data_consent') === 'on'
+      display_name: (formData.get('display_name') as string) || undefined,
+      data_consent: formData.get('data_consent') === 'on',
     };
 
     if (!credentials.username || !credentials.email || !credentials.password) {
@@ -628,7 +625,7 @@ export class AuthPage {
   private showError(message: string): void {
     const errorDisplay = this.element.querySelector('#error-display');
     const errorMessage = this.element.querySelector('#error-message');
-    
+
     if (errorDisplay && errorMessage) {
       errorMessage.textContent = message;
       errorDisplay.classList.remove('hidden');
@@ -647,7 +644,7 @@ export class AuthPage {
 
     if (submitBtn && submitText && submitSpinner) {
       submitBtn.disabled = loading;
-      
+
       if (loading) {
         submitText.textContent = formType === 'login' ? 'Signing in...' : 'Signing up...';
         submitSpinner.classList.remove('hidden');
@@ -660,7 +657,7 @@ export class AuthPage {
 
   private updateLoadingState(loading: boolean): void {
     const loadingOverlay = this.element.querySelector('#loading-overlay');
-    
+
     if (loading) {
       loadingOverlay?.classList.remove('hidden');
     } else {
@@ -1102,11 +1099,11 @@ export class AuthPage {
     if (this.authUnsubscribe) {
       this.authUnsubscribe();
     }
-    
+
     if (this.animationInterval) {
       clearInterval(this.animationInterval);
     }
-    
+
     this.element.remove();
   }
 }

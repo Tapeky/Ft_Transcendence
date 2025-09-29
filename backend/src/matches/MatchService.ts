@@ -6,20 +6,38 @@ export class MatchService {
 
   async recordMatch(matchData: RecordMatchBody): Promise<{ matchId: number; match: MatchRecord }> {
     const {
-      player1_id, player2_id, player1_guest_name, player2_guest_name,
-      player1_score, player2_score, winner_id, game_type = 'pong',
-      max_score = 3, tournament_id, duration_seconds,
-      player1_touched_ball = 0, player1_missed_ball = 0,
-      player1_touched_ball_in_row = 0, player1_missed_ball_in_row = 0,
-      player2_touched_ball = 0, player2_missed_ball = 0,
-      player2_touched_ball_in_row = 0, player2_missed_ball_in_row = 0
+      player1_id,
+      player2_id,
+      player1_guest_name,
+      player2_guest_name,
+      player1_score,
+      player2_score,
+      winner_id,
+      game_type = 'pong',
+      max_score = 3,
+      tournament_id,
+      duration_seconds,
+      player1_touched_ball = 0,
+      player1_missed_ball = 0,
+      player1_touched_ball_in_row = 0,
+      player1_missed_ball_in_row = 0,
+      player2_touched_ball = 0,
+      player2_missed_ball = 0,
+      player2_touched_ball_in_row = 0,
+      player2_missed_ball_in_row = 0,
     } = matchData;
 
     const validationError = await this.validateMatchData({
-      player1_id, player2_id, player1_guest_name, player2_guest_name,
-      player1_score, player2_score, winner_id, tournament_id
+      player1_id,
+      player2_id,
+      player1_guest_name,
+      player2_guest_name,
+      player1_score,
+      player2_score,
+      winner_id,
+      tournament_id,
     });
-    
+
     if (validationError) {
       throw new Error(validationError);
     }
@@ -29,7 +47,8 @@ export class MatchService {
     const finalP1GuestName = finalP1Id ? null : player1_guest_name;
     const finalP2GuestName = finalP2Id ? null : player2_guest_name;
 
-    const result = await this.db.execute(`
+    const result = await this.db.execute(
+      `
       INSERT INTO matches (
         player1_id, player2_id, player1_guest_name, player2_guest_name,
         player1_score, player2_score, winner_id, game_type, max_score,
@@ -40,15 +59,29 @@ export class MatchService {
         player2_touched_ball_in_row, player2_missed_ball_in_row,
         completed_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `, [
-      finalP1Id, finalP2Id, finalP1GuestName, finalP2GuestName,
-      player1_score, player2_score, winner_id, game_type, max_score,
-      tournament_id, duration_seconds,
-      player1_touched_ball, player1_missed_ball,
-      player1_touched_ball_in_row, player1_missed_ball_in_row,
-      player2_touched_ball, player2_missed_ball,
-      player2_touched_ball_in_row, player2_missed_ball_in_row
-    ]);
+    `,
+      [
+        finalP1Id,
+        finalP2Id,
+        finalP1GuestName,
+        finalP2GuestName,
+        player1_score,
+        player2_score,
+        winner_id,
+        game_type,
+        max_score,
+        tournament_id,
+        duration_seconds,
+        player1_touched_ball,
+        player1_missed_ball,
+        player1_touched_ball_in_row,
+        player1_missed_ball_in_row,
+        player2_touched_ball,
+        player2_missed_ball,
+        player2_touched_ball_in_row,
+        player2_missed_ball_in_row,
+      ]
+    );
 
     const matchId = result.lastID;
 
@@ -64,16 +97,23 @@ export class MatchService {
     return { matchId, match };
   }
 
-  async getMatches(params: MatchStatsRequest & {
-    player_id?: number;
-    tournament_id?: number;
-    game_type?: string;
-    include_guests?: boolean;
-    include_stats?: boolean;
-  }): Promise<MatchRecord[]> {
-    const { 
-      player_id, tournament_id, game_type, limit = 50, offset = 0,
-      include_guests = false, include_stats = false 
+  async getMatches(
+    params: MatchStatsRequest & {
+      player_id?: number;
+      tournament_id?: number;
+      game_type?: string;
+      include_guests?: boolean;
+      include_stats?: boolean;
+    }
+  ): Promise<MatchRecord[]> {
+    const {
+      player_id,
+      tournament_id,
+      game_type,
+      limit = 50,
+      offset = 0,
+      include_guests = false,
+      include_stats = false,
     } = params;
 
     let baseQuery = `
@@ -126,32 +166,42 @@ export class MatchService {
     return await this.db.query(baseQuery, queryParams);
   }
 
-  async createDirectMatch(player1_id: number, player2_id: number, options: {
-    game_type?: string;
-    max_score?: number;
-  } = {}): Promise<MatchRecord> {
+  async createDirectMatch(
+    player1_id: number,
+    player2_id: number,
+    options: {
+      game_type?: string;
+      max_score?: number;
+    } = {}
+  ): Promise<MatchRecord> {
     const { game_type = 'pong', max_score = 3 } = options;
 
     if (player1_id === player2_id) {
       throw new Error('Cannot create match against yourself');
     }
 
-    const opponent = await this.db.query(`
+    const opponent = await this.db.query(
+      `
       SELECT id, username FROM users WHERE id = ?
-    `, [player2_id]);
+    `,
+      [player2_id]
+    );
 
     if (!opponent.length) {
       throw new Error('Opponent not found');
     }
 
-    const result = await this.db.query(`
+    const result = await this.db.query(
+      `
       INSERT INTO matches (player1_id, player2_id, game_type, max_score, status)
       VALUES (?, ?, ?, ?, 'scheduled')
-    `, [player1_id, player2_id, game_type, max_score]);
+    `,
+      [player1_id, player2_id, game_type, max_score]
+    );
 
     const matchId = (result as any).lastInsertRowid;
     const match = await this.getMatchById(matchId);
-    
+
     if (!match) {
       throw new Error('Failed to retrieve created match');
     }
@@ -174,7 +224,8 @@ export class MatchService {
   }
 
   async getMatchById(matchId: number): Promise<MatchRecord | null> {
-    const matches = await this.db.query(`
+    const matches = await this.db.query(
+      `
       SELECT m.*, t.name as tournament_name,
              u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
              u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
@@ -183,7 +234,9 @@ export class MatchService {
       LEFT JOIN users u2 ON m.player2_id = u2.id
       LEFT JOIN tournaments t ON m.tournament_id = t.id
       WHERE m.id = ?
-    `, [matchId]);
+    `,
+      [matchId]
+    );
 
     return matches.length ? matches[0] : null;
   }
@@ -195,9 +248,12 @@ export class MatchService {
   ): Promise<MatchRecord> {
     const { player1_score, player2_score, winner_id } = result;
 
-    const match = await this.db.query(`
+    const match = await this.db.query(
+      `
       SELECT * FROM matches WHERE id = ?
-    `, [matchId]);
+    `,
+      [matchId]
+    );
 
     if (!match.length) {
       throw new Error('Match not found');
@@ -221,13 +277,16 @@ export class MatchService {
     const endTime = new Date();
     const durationSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
-    await this.db.query(`
+    await this.db.query(
+      `
       UPDATE matches 
       SET player1_score = ?, player2_score = ?, winner_id = ?, 
           status = 'completed', completed_at = CURRENT_TIMESTAMP,
           duration_seconds = ?
       WHERE id = ?
-    `, [player1_score, player2_score, winner_id, durationSeconds, matchId]);
+    `,
+      [player1_score, player2_score, winner_id, durationSeconds, matchId]
+    );
 
     if (currentMatch.tournament_id) {
       await this.advanceTournamentBracket(currentMatch.tournament_id, matchId, winner_id);
@@ -242,9 +301,12 @@ export class MatchService {
   }
 
   async startMatch(matchId: number, userId: number): Promise<void> {
-    const match = await this.db.query(`
+    const match = await this.db.query(
+      `
       SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)
-    `, [matchId, userId, userId]);
+    `,
+      [matchId, userId, userId]
+    );
 
     if (!match.length) {
       throw new Error('Match not found or access not authorized');
@@ -254,11 +316,14 @@ export class MatchService {
       throw new Error('Match cannot be started');
     }
 
-    await this.db.query(`
+    await this.db.query(
+      `
       UPDATE matches 
       SET status = 'playing', started_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [matchId]);
+    `,
+      [matchId]
+    );
   }
 
   private async validateMatchData(data: {
@@ -272,8 +337,12 @@ export class MatchService {
     tournament_id?: number | null;
   }): Promise<string | null> {
     const {
-      player1_id, player2_id, player1_guest_name, player2_guest_name,
-      winner_id, tournament_id
+      player1_id,
+      player2_id,
+      player1_guest_name,
+      player2_guest_name,
+      winner_id,
+      tournament_id,
     } = data;
 
     if ((!player1_id && !player1_guest_name) || (!player2_id && !player2_guest_name)) {
@@ -295,25 +364,37 @@ export class MatchService {
     }
 
     if (tournament_id) {
-      const tournament = await this.db.query('SELECT id FROM tournaments WHERE id = ?', [tournament_id]);
+      const tournament = await this.db.query('SELECT id FROM tournaments WHERE id = ?', [
+        tournament_id,
+      ]);
       if (!tournament.length) return `Tournament (ID: ${tournament_id}) not found`;
     }
 
     return null;
   }
 
-  private async advanceTournamentBracket(tournamentId: number, matchId: number, winnerId: number): Promise<void> {
-    const remainingMatches = await this.db.query(`
+  private async advanceTournamentBracket(
+    tournamentId: number,
+    matchId: number,
+    winnerId: number
+  ): Promise<void> {
+    const remainingMatches = await this.db.query(
+      `
       SELECT COUNT(*) as count FROM matches 
       WHERE tournament_id = ? AND status != 'completed'
-    `, [tournamentId]);
+    `,
+      [tournamentId]
+    );
 
     if (remainingMatches[0].count === 0) {
-      await this.db.query(`
+      await this.db.query(
+        `
         UPDATE tournaments 
         SET status = 'completed', completed_at = CURRENT_TIMESTAMP, winner_id = ?
         WHERE id = ?
-      `, [winnerId, tournamentId]);
+      `,
+        [winnerId, tournamentId]
+      );
     }
   }
 }

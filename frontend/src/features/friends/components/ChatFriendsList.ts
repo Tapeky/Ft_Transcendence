@@ -24,7 +24,7 @@ export class ChatFriendsList {
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'flex flex-col items-center gap-4 w-full px-4';
-    
+
     if (this.friends.length === 0) {
       container.innerHTML = `
         <div class="flex flex-col items-center mt-4">
@@ -36,14 +36,15 @@ export class ChatFriendsList {
     } else {
       this.friends.forEach(friend => container.appendChild(this.createChatFriendItem(friend)));
     }
-    
+
     return container;
   }
 
   private createChatFriendItem(friend: Friend): HTMLElement {
     const item = document.createElement('div');
-    item.className = 'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
-    
+    item.className =
+      'border-white border-2 min-h-[120px] w-full flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden';
+
     item.innerHTML = `
       <div class="flex items-center justify-center min-w-[120px]">
         <img src="${getAvatarUrl(friend.avatar_url)}" alt="icon" class="h-[90px] w-[90px] border-2"/>

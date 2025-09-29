@@ -1,6 +1,3 @@
-// UserSwitcher - Interface de développement pour tester les fonctionnalités sociales
-// TEMPORARY: À supprimer avant la production
-
 import { authManager } from '../../core/auth/AuthManager';
 import { apiService } from '../../shared/services/api';
 
@@ -16,13 +13,42 @@ export class UserSwitcher {
   private element: HTMLElement;
   private isVisible: boolean = false;
 
-  // Utilisateurs de test - Auto-création si inexistants
   private testUsers: TestUser[] = [
-    { id: 1, username: 'alice', email: 'alice@test.com', password: 'password123', description: 'Test User 1' },
-    { id: 2, username: 'bob', email: 'bob@test.com', password: 'password123', description: 'Test User 2' },
-    { id: 3, username: 'charlie', email: 'charlie@test.com', password: 'password123', description: 'Test User 3' },
-    { id: 4, username: 'diana', email: 'diana@test.com', password: 'password123', description: 'Test User 4' },
-    { id: 5, username: 'eve', email: 'eve@test.com', password: 'password123', description: 'Test User 5' }
+    {
+      id: 1,
+      username: 'alice',
+      email: 'alice@test.com',
+      password: 'password123',
+      description: 'Test User 1',
+    },
+    {
+      id: 2,
+      username: 'bob',
+      email: 'bob@test.com',
+      password: 'password123',
+      description: 'Test User 2',
+    },
+    {
+      id: 3,
+      username: 'charlie',
+      email: 'charlie@test.com',
+      password: 'password123',
+      description: 'Test User 3',
+    },
+    {
+      id: 4,
+      username: 'diana',
+      email: 'diana@test.com',
+      password: 'password123',
+      description: 'Test User 4',
+    },
+    {
+      id: 5,
+      username: 'eve',
+      email: 'eve@test.com',
+      password: 'password123',
+      description: 'Test User 5',
+    },
   ];
 
   constructor() {
@@ -61,7 +87,9 @@ export class UserSwitcher {
         <div class="p-3">
           <div class="text-sm text-gray-300 mb-3">Switch to test user:</div>
           <div id="users-list" class="space-y-2">
-            ${this.testUsers.map(user => `
+            ${this.testUsers
+              .map(
+                user => `
               <button 
                 data-user-id="${user.id}"
                 data-email="${user.email}"
@@ -71,7 +99,9 @@ export class UserSwitcher {
                 <div class="font-semibold text-blue-400">${user.username}</div>
                 <div class="text-xs text-gray-400">${user.description}</div>
               </button>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
 
@@ -89,14 +119,12 @@ export class UserSwitcher {
   }
 
   private bindEvents(): void {
-    // Toggle panel
     const toggleBtn = this.element.querySelector('#toggle-btn');
     toggleBtn?.addEventListener('click', () => this.togglePanel());
 
-    // User buttons
     const userButtons = this.element.querySelectorAll('[data-user-id]');
     userButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
+      button.addEventListener('click', e => {
         const target = e.currentTarget as HTMLElement;
         const email = target.dataset.email!;
         const password = target.dataset.password!;
@@ -104,11 +132,9 @@ export class UserSwitcher {
       });
     });
 
-    // Logout button
     const logoutBtn = this.element.querySelector('#logout-btn');
     logoutBtn?.addEventListener('click', () => this.handleLogout());
 
-    // Update current user display
     this.updateCurrentUser();
   }
 
@@ -116,37 +142,30 @@ export class UserSwitcher {
     this.isVisible = !this.isVisible;
     const panel = this.element.querySelector('#panel');
     if (panel) {
-      panel.className = this.isVisible ? 
-        'block absolute top-12 left-0 bg-gray-800 text-white rounded-lg shadow-xl border-2 border-yellow-500 w-80 max-h-96 overflow-auto' :
-        'hidden absolute top-12 left-0 bg-gray-800 text-white rounded-lg shadow-xl border-2 border-yellow-500 w-80 max-h-96 overflow-auto';
+      panel.className = this.isVisible
+        ? 'block absolute top-12 left-0 bg-gray-800 text-white rounded-lg shadow-xl border-2 border-yellow-500 w-80 max-h-96 overflow-auto'
+        : 'hidden absolute top-12 left-0 bg-gray-800 text-white rounded-lg shadow-xl border-2 border-yellow-500 w-80 max-h-96 overflow-auto';
     }
   }
 
   private async switchToUser(email: string, password: string): Promise<void> {
     try {
-      
       this.showStatus('Switching user...', 'loading');
 
-      // Login with test user
       await authManager.login({ email, password });
-      
+
       this.showStatus('User switched successfully!', 'success');
       this.updateCurrentUser();
-      
-      // Auto-hide panel after success
+
       setTimeout(() => {
         this.isVisible = false;
         this.togglePanel();
       }, 1500);
-
     } catch (error) {
       console.error('🔧 UserSwitcher: Switch failed:', error);
-      
-      // Si l'utilisateur n'existe pas, essaie de le créer
+
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('Invalid credentials') ||
-          errorMessage.includes('User not found')) {
-        
+      if (errorMessage.includes('Invalid credentials') || errorMessage.includes('User not found')) {
         this.showStatus('User not found, creating...', 'loading');
         await this.createAndLoginUser(email, password);
       } else {
@@ -157,32 +176,26 @@ export class UserSwitcher {
 
   private async createAndLoginUser(email: string, password: string): Promise<void> {
     try {
-      // Extraire le nom d'utilisateur de l'email
       const username = email.split('@')[0];
-      
-      
-      // Créer l'utilisateur
+
       await authManager.register({
         email,
         username,
         password,
-        data_consent: true
+        data_consent: true,
       });
-      
+
       this.showStatus('User created! Logging in...', 'loading');
-      
-      // Se connecter automatiquement après création
+
       await authManager.login({ email, password });
-      
+
       this.showStatus('User created and logged in!', 'success');
       this.updateCurrentUser();
-      
-      // Auto-hide panel
+
       setTimeout(() => {
         this.isVisible = false;
         this.togglePanel();
       }, 2000);
-      
     } catch (createError) {
       console.error('🔧 UserSwitcher: Failed to create user:', createError);
       this.showStatus('Failed to create user: ' + (createError as Error).message, 'error');
@@ -211,7 +224,6 @@ export class UserSwitcher {
   }
 
   private showStatus(message: string, type: 'loading' | 'success' | 'error'): void {
-    // Create/update status message
     let statusEl = this.element.querySelector('#status-message') as HTMLElement;
     if (!statusEl) {
       statusEl = document.createElement('div');
@@ -222,14 +234,13 @@ export class UserSwitcher {
 
     const colors = {
       loading: 'text-blue-400',
-      success: 'text-green-400', 
-      error: 'text-red-400'
+      success: 'text-green-400',
+      error: 'text-red-400',
     };
 
     statusEl.textContent = message;
     statusEl.className = `p-2 text-center text-sm border-t border-gray-600 ${colors[type]}`;
 
-    // Auto-clear after 3 seconds
     if (type !== 'loading') {
       setTimeout(() => {
         statusEl?.remove();
@@ -254,7 +265,6 @@ export class UserSwitcher {
   }
 }
 
-// Auto-initialize in development mode
 let userSwitcherInstance: UserSwitcher | null = null;
 
 export function initUserSwitcher(): void {

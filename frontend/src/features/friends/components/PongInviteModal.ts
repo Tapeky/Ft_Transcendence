@@ -12,8 +12,9 @@ export class PongInviteModal {
 
   private createElement(): HTMLElement {
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden';
-    
+    modal.className =
+      'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden';
+
     modal.innerHTML = `
       <div class="bg-gray-800 text-white rounded-lg p-6 w-96 mx-4">
         <div class="flex justify-between items-center mb-4">
@@ -69,16 +70,14 @@ export class PongInviteModal {
     closeBtn?.addEventListener('click', () => this.close());
     cancelBtn?.addEventListener('click', () => this.close());
     sendBtn?.addEventListener('click', () => this.sendInvite());
-    
-    // Fermer en cliquant sur le fond
-    this.element.addEventListener('click', (e) => {
+
+    this.element.addEventListener('click', e => {
       if (e.target === this.element) {
         this.close();
       }
     });
 
-    // Envoyer avec Entrée
-    input?.addEventListener('keypress', (e) => {
+    input?.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
         this.sendInvite();
       }
@@ -89,9 +88,9 @@ export class PongInviteModal {
     const input = this.element.querySelector('#friend-id-input') as HTMLInputElement;
     const sendBtn = this.element.querySelector('#send-invite') as HTMLButtonElement;
     const statusDiv = this.element.querySelector('#invite-status') as HTMLElement;
-    
+
     const friendId = parseInt(input.value);
-    
+
     if (!friendId || friendId <= 0) {
       this.showStatus('Veuillez entrer un ID valide', 'error');
       return;
@@ -100,9 +99,9 @@ export class PongInviteModal {
     try {
       sendBtn.disabled = true;
       sendBtn.textContent = '⏳ Envoi...';
-      
+
       const result = await apiService.inviteFriendToPong(friendId);
-      
+
       if (result.success) {
         this.showStatus('✅ Invitation envoyée avec succès!', 'success');
         setTimeout(() => {
@@ -116,7 +115,7 @@ export class PongInviteModal {
       this.showStatus('❌ Erreur de connexion', 'error');
     } finally {
       sendBtn.disabled = false;
-      sendBtn.textContent = '🚀 Envoyer l\'invitation';
+      sendBtn.textContent = "🚀 Envoyer l'invitation";
     }
   }
 
@@ -131,8 +130,7 @@ export class PongInviteModal {
     this.isOpen = true;
     this.element.classList.remove('hidden');
     document.body.appendChild(this.element);
-    
-    // Focus sur l'input
+
     const input = this.element.querySelector('#friend-id-input') as HTMLInputElement;
     setTimeout(() => input?.focus(), 100);
   }
@@ -140,18 +138,17 @@ export class PongInviteModal {
   public close(): void {
     this.isOpen = false;
     this.element.classList.add('hidden');
-    
-    // Réinitialiser le formulaire
+
     const input = this.element.querySelector('#friend-id-input') as HTMLInputElement;
     const statusDiv = this.element.querySelector('#invite-status') as HTMLElement;
-    
+
     if (input) input.value = '';
     if (statusDiv) statusDiv.classList.add('hidden');
-    
+
     if (this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
     }
-    
+
     if (this.onClose) {
       this.onClose();
     }

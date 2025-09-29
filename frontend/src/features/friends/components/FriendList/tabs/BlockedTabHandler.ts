@@ -55,7 +55,7 @@ export class BlockedTabHandler {
   private createBlockedItem(user: BlockedUser): HTMLElement {
     const item = document.createElement('div');
     item.className = 'flex items-center gap-2 p-2 text-white border-b border-gray-600 w-full';
-    
+
     item.innerHTML = `
       <img src="${getAvatarUrl(user.avatar_url)}" alt="avatar" class="w-[40px] h-[40px] border-2 border-white"/>
       <div class="flex flex-col flex-grow">
@@ -77,11 +77,9 @@ export class BlockedTabHandler {
       try {
         await apiService.unblockUser(user.id);
         item.remove();
-        
-        // Update local state
+
         this.blockedUsers = this.blockedUsers.filter(u => u.id !== user.id);
-        
-        // If no more blocked users, show empty message
+
         if (this.blockedUsers.length === 0) {
           this.renderBlockedContent();
         }
@@ -101,14 +99,11 @@ export class BlockedTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderBlockedUsers();
-    // Note: onRefresh callback removed to prevent infinite loop
   }
 
   getBlockedUsers(): BlockedUser[] {
     return [...this.blockedUsers];
   }
 
-  destroy(): void {
-    // No specific cleanup needed for this handler
-  }
+  destroy(): void {}
 }

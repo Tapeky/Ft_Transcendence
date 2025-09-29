@@ -59,9 +59,9 @@ export class ChatRepository {
   }
 
   async getConversationMessages(
-    conversationId: number, 
+    conversationId: number,
     userId: number,
-    limit: number = 50, 
+    limit: number = 50,
     offset: number = 0
   ): Promise<Message[]> {
     const conversation = await this.db.get(
@@ -109,7 +109,7 @@ export class ChatRepository {
         data.sender_id,
         data.content,
         data.type || 'text',
-        data.metadata ? JSON.stringify(data.metadata) : null
+        data.metadata ? JSON.stringify(data.metadata) : null,
       ]
     );
 
@@ -132,9 +132,8 @@ export class ChatRepository {
 
     if (!conversation) return false;
 
-    const otherUserId = conversation.user1_id === senderId 
-      ? conversation.user2_id 
-      : conversation.user1_id;
+    const otherUserId =
+      conversation.user1_id === senderId ? conversation.user2_id : conversation.user1_id;
 
     const blocked = await this.db.get(
       `SELECT id FROM friendships 
@@ -155,10 +154,9 @@ export class ChatRepository {
       throw new Error('Conversation not found or access denied');
     }
 
-    await this.db.run(
-      `UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [conversationId]
-    );
+    await this.db.run(`UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [
+      conversationId,
+    ]);
   }
 
   async getConversationById(conversationId: number, userId: number): Promise<Conversation | null> {

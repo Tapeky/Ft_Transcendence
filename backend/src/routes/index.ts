@@ -1,8 +1,6 @@
-
 import { FastifyInstance } from 'fastify';
 import { authRoutes } from './auth';
 import { userRoutes } from './users';
-// Core application routes
 import { matchRoutes } from './matches';
 import { profileRoutes } from './profile';
 import { friendRoutes } from './friends';
@@ -12,36 +10,26 @@ import gameInviteRoutes from './game-invites';
 import { localTournamentRoutes } from './local-tournament';
 
 export async function setupRoutes(server: FastifyInstance) {
-  // Préfixe API
-  await server.register(async function (server) {
-    // Routes d'authentification
-    await server.register(authRoutes, { prefix: '/auth' });
-    
-    // Routes utilisateurs
-    await server.register(userRoutes, { prefix: '/users' });
-    
-    
-    // Routes matches
-    await server.register(matchRoutes, { prefix: '/matches' });
+  await server.register(
+    async function (server) {
+      await server.register(authRoutes, { prefix: '/auth' });
 
-    // Routes pour edit le profil utilisateur
-    await server.register(profileRoutes, { prefix: '/profile' });
+      await server.register(userRoutes, { prefix: '/users' });
 
-    // Routes amis
-    await server.register(friendRoutes, { prefix: '/friends' });
+      await server.register(matchRoutes, { prefix: '/matches' });
 
-    // Routes avatars
-    await server.register(avatarsRoutes, { prefix: '/avatars' });
+      await server.register(profileRoutes, { prefix: '/profile' });
 
-    // Routes chat
-    await server.register(chatRoutes, { prefix: '/chat' });
+      await server.register(friendRoutes, { prefix: '/friends' });
 
-    // Routes game invites
-    await server.register(gameInviteRoutes, { prefix: '/game-invites' });
+      await server.register(avatarsRoutes, { prefix: '/avatars' });
 
-    // Routes local tournaments
-    await server.register(localTournamentRoutes, { prefix: '/local-tournaments' });
+      await server.register(chatRoutes, { prefix: '/chat' });
 
-    
-  }, { prefix: '/api' });
+      await server.register(gameInviteRoutes, { prefix: '/game-invites' });
+
+      await server.register(localTournamentRoutes, { prefix: '/local-tournaments' });
+    },
+    { prefix: '/api' }
+  );
 }

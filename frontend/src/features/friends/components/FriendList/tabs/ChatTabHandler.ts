@@ -10,7 +10,7 @@ export class ChatTabHandler {
   private chatConversation?: ChatConversation;
   private chatFriendsList?: ChatFriendsList;
   private onRefresh?: () => void;
-  
+
   private messagesUpdatedHandler?: (data: { conversationId: number; messages: any[] }) => void;
 
   constructor(config: TabHandlerConfig, chatManager: ChatManager) {
@@ -21,9 +21,8 @@ export class ChatTabHandler {
 
   async initialize(): Promise<void> {
     await this.chatManager.initialize();
-    
-    this.messagesUpdatedHandler = (data) => {
-      
+
+    this.messagesUpdatedHandler = data => {
       const chatState = this.chatManager.getState();
       if (chatState.chatView === 'conversation' && this.chatConversation) {
         this.chatConversation.updateMessages(data.messages);
@@ -31,13 +30,13 @@ export class ChatTabHandler {
     };
 
     this.chatManager.on('messages_updated', this.messagesUpdatedHandler);
-    
+
     await this.renderChatContent();
   }
 
   private async renderChatContent(): Promise<void> {
     const chatState = this.chatManager.getState();
-    
+
     if (chatState.chatView === 'friends') {
       await this.renderChatFriendsList();
     } else if (chatState.chatView === 'conversation' && chatState.currentConversation) {
@@ -57,7 +56,7 @@ export class ChatTabHandler {
 
       this.chatFriendsList = new ChatFriendsList({
         friends: friends,
-        onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend)
+        onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend),
       });
 
       this.container.appendChild(this.chatFriendsList.getElement());
@@ -87,8 +86,7 @@ export class ChatTabHandler {
         this.chatManager.switchToFriendsView();
         this.renderChatContent();
       },
-      onMessageSent: (message) => {
-      }
+      onMessageSent: message => {},
     });
 
     this.container.appendChild(this.chatConversation.getElement());
@@ -118,7 +116,7 @@ export class ChatTabHandler {
 
   updateMessages(): void {
     const chatState = this.chatManager.getState();
-    
+
     if (chatState.chatView === 'conversation' && this.chatConversation) {
       this.chatConversation.updateMessages(chatState.messages);
     }

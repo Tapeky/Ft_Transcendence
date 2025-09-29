@@ -38,11 +38,12 @@ export class AvatarSelect {
       return;
     }
     container.innerHTML = '';
-    this.avatars.forEach((avatar) => {
+    this.avatars.forEach(avatar => {
       const avatarImg = document.createElement('img');
       avatarImg.src = getAvatarUrl(avatar.url);
       avatarImg.alt = 'avatar';
-      avatarImg.className = 'h-[170px] w-[170px] cursor-pointer border-2 border-black hover:scale-125 transition duration-300';
+      avatarImg.className =
+        'h-[170px] w-[170px] cursor-pointer border-2 border-black hover:scale-125 transition duration-300';
       avatarImg.dataset.avatarId = avatar.id;
       avatarImg.addEventListener('click', () => this.handleAvatarClick(avatar.id));
       container.appendChild(avatarImg);
@@ -67,7 +68,8 @@ export class AvatarSelect {
 
   private showFeedback(message: string): void {
     const feedback = document.createElement('div');
-    feedback.className = 'fixed top-4 right-4 z-50 p-4 rounded-lg text-white font-medium bg-green-600';
+    feedback.className =
+      'fixed top-4 right-4 z-50 p-4 rounded-lg text-white font-medium bg-green-600';
     feedback.textContent = message;
     document.body.appendChild(feedback);
     setTimeout(() => feedback.remove(), 2000);

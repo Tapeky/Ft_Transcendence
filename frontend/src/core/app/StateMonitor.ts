@@ -5,7 +5,10 @@ export class StateMonitor {
   private unsubscribe?: () => void;
   private updateCount = 0;
 
-  constructor(private id: string, private position: { x: number; y: number }) {
+  constructor(
+    private id: string,
+    private position: { x: number; y: number }
+  ) {
     this.element = this.createElement();
     this.subscribeToState();
   }
@@ -63,7 +66,6 @@ export class StateMonitor {
       this.updateCount++;
       this.updateDisplay(state);
     });
-
   }
 
   private updateDisplay(state: AppStateData): void {
@@ -89,7 +91,6 @@ export class StateMonitor {
   }
 
   public destroy(): void {
-    
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = undefined;

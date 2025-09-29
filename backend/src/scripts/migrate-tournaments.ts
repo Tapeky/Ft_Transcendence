@@ -1,20 +1,18 @@
 import { Database } from 'sqlite3';
 import * as path from 'path';
 
-// Get database path
 const DB_PATH = path.join(process.cwd(), '../db/ft_transcendence.db');
 
 console.log('Database path:', DB_PATH);
 
-const db = new Database(DB_PATH, (err) => {
+const db = new Database(DB_PATH, err => {
   if (err) {
-    console.error('❌ Error connecting to database:', err);
+    console.error('Error connecting to database:', err);
     process.exit(1);
   }
-  console.log('✅ Connected to database');
+  console.log('Database connected');
 });
 
-// Migration script
 const migrationSql = `
 -- Create new tournaments table with correct schema
 CREATE TABLE IF NOT EXISTS tournaments_local_new (
@@ -67,21 +65,19 @@ CREATE INDEX IF NOT EXISTS idx_tournament_matches_local_new_tournament ON tourna
 CREATE INDEX IF NOT EXISTS idx_tournament_matches_local_new_status ON tournament_matches_local_new(status);
 `;
 
-// Execute migration
-db.exec(migrationSql, (err) => {
+db.exec(migrationSql, err => {
   if (err) {
-    console.error('❌ Migration failed:', err);
+    console.error('Migration failed:', err);
     process.exit(1);
   }
-  
-  console.log('✅ Tournament schema migration completed successfully');
-  console.log('✅ Created tables: tournaments_local_new, tournament_players_local_new, tournament_matches_local_new');
-  
-  db.close((closeErr) => {
+
+  console.log('Migration completed');
+
+  db.close(closeErr => {
     if (closeErr) {
-      console.error('❌ Error closing database:', closeErr);
+      console.error('Error closing database:', closeErr);
     }
-    console.log('✅ Database connection closed');
+    console.log('Database closed');
     process.exit(0);
   });
 });

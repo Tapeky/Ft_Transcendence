@@ -18,7 +18,8 @@ export class MenuPage {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
+    container.className =
+      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
     this.header = new Header(true);
     this.banner = new Banner();
@@ -32,7 +33,7 @@ export class MenuPage {
   }
 
   private subscribeToAuth(): void {
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+    this.authUnsubscribe = authManager.subscribeToAuth(authState => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
         router.navigate('/');
       }

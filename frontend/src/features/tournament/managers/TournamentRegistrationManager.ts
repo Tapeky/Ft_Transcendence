@@ -1,4 +1,9 @@
-import { Tournament, TournamentCreateRequest, TournamentJoinRequest, TournamentSize } from '../types/tournament';
+import {
+  Tournament,
+  TournamentCreateRequest,
+  TournamentJoinRequest,
+  TournamentSize,
+} from '../types/tournament';
 import { TournamentService } from '../services/TournamentService';
 
 export interface RegistrationState {
@@ -19,7 +24,7 @@ export class TournamentRegistrationManager {
       isJoining: false,
       error: null,
       tournament: null,
-      playerAlias: null
+      playerAlias: null,
     };
   }
 
@@ -60,29 +65,32 @@ export class TournamentRegistrationManager {
 
       const request: TournamentCreateRequest = {
         name: name.trim(),
-        maxPlayers
+        maxPlayers,
       };
 
       const tournament = await TournamentService.createTournament(request);
-      
-      this.updateState({ 
-        isCreating: false, 
-        tournament, 
-        error: null 
+
+      this.updateState({
+        isCreating: false,
+        tournament,
+        error: null,
       });
 
       return tournament;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create tournament';
-      this.updateState({ 
-        isCreating: false, 
-        error: errorMessage 
+      this.updateState({
+        isCreating: false,
+        error: errorMessage,
       });
       throw error;
     }
   }
 
-  async joinTournament(tournamentId: string, alias: string): Promise<{
+  async joinTournament(
+    tournamentId: string,
+    alias: string
+  ): Promise<{
     player: { id: string; alias: string; joinedAt: Date };
     tournament: { currentPlayers: number; status: string; ready: boolean };
   }> {
@@ -102,26 +110,26 @@ export class TournamentRegistrationManager {
       }
 
       const request: TournamentJoinRequest = {
-        alias: alias.trim()
+        alias: alias.trim(),
       };
 
       const result = await TournamentService.joinTournament(tournamentId, request);
-      
+
       const updatedTournament = await TournamentService.getTournamentState(tournamentId);
-      
-      this.updateState({ 
-        isJoining: false, 
+
+      this.updateState({
+        isJoining: false,
         tournament: updatedTournament,
         playerAlias: alias.trim(),
-        error: null 
+        error: null,
       });
 
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to join tournament';
-      this.updateState({ 
-        isJoining: false, 
-        error: errorMessage 
+      this.updateState({
+        isJoining: false,
+        error: errorMessage,
       });
       throw error;
     }
@@ -133,10 +141,10 @@ export class TournamentRegistrationManager {
     }
 
     try {
-      this.updateState({ 
-        tournament: null, 
-        playerAlias: null, 
-        error: null 
+      this.updateState({
+        tournament: null,
+        playerAlias: null,
+        error: null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to leave tournament';
@@ -187,7 +195,7 @@ export class TournamentRegistrationManager {
       isJoining: false,
       error: null,
       tournament: null,
-      playerAlias: null
+      playerAlias: null,
     });
   }
 
@@ -213,7 +221,10 @@ export class TournamentRegistrationManager {
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(alias.trim())) {
-      return { isValid: false, error: 'Player alias can only contain letters, numbers, underscore, and dash' };
+      return {
+        isValid: false,
+        error: 'Player alias can only contain letters, numbers, underscore, and dash',
+      };
     }
 
     return { isValid: true };
@@ -226,13 +237,19 @@ export class TournamentRegistrationManager {
 
     if (tournament.status !== 'ready') {
       if (tournament.status === 'registration') {
-        return { canStart: false, reason: `Waiting for players (${tournament.currentPlayers}/${tournament.maxPlayers})` };
+        return {
+          canStart: false,
+          reason: `Waiting for players (${tournament.currentPlayers}/${tournament.maxPlayers})`,
+        };
       }
       return { canStart: false, reason: `Tournament is ${tournament.status}` };
     }
 
     if (tournament.currentPlayers !== tournament.maxPlayers) {
-      return { canStart: false, reason: `Not enough players (${tournament.currentPlayers}/${tournament.maxPlayers})` };
+      return {
+        canStart: false,
+        reason: `Not enough players (${tournament.currentPlayers}/${tournament.maxPlayers})`,
+      };
     }
 
     return { canStart: true };
@@ -254,10 +271,10 @@ export class TournamentRegistrationManager {
     return { canJoin: true };
   }
 
-  static getRegistrationProgress(tournament: Tournament | null): { 
-    current: number; 
-    max: number; 
-    percentage: number; 
+  static getRegistrationProgress(tournament: Tournament | null): {
+    current: number;
+    max: number;
+    percentage: number;
     remaining: number;
   } {
     if (!tournament) {

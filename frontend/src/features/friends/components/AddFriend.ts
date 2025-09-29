@@ -52,7 +52,7 @@ export class AddFriend {
 
     addBtn?.addEventListener('click', () => this.addFriend());
 
-    nameInput?.addEventListener('keypress', (e) => {
+    nameInput?.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
         this.addFriend();
       }
@@ -86,10 +86,9 @@ export class AddFriend {
       }
 
       await apiService.sendFriendRequest(foundUser.id);
-      
+
       this.setStatus('ok');
       nameInput.value = '';
-
     } catch (error) {
       console.error('Failed to send friend request:', error);
       this.setStatus('ko');
@@ -129,11 +128,16 @@ export class AddFriend {
 
   private getStatusMessage(): string {
     switch (this.status) {
-      case 'ok': return 'Request sent !';
-      case 'ko': return 'User not found';
-      case 'len': return '3 characters min';
-      case 'self': return "Can't add yourself";
-      default: return '';
+      case 'ok':
+        return 'Request sent !';
+      case 'ko':
+        return 'User not found';
+      case 'len':
+        return '3 characters min';
+      case 'self':
+        return "Can't add yourself";
+      default:
+        return '';
     }
   }
 
@@ -145,7 +149,7 @@ export class AddFriend {
     if (this.statusTimer) {
       clearTimeout(this.statusTimer);
     }
-    
+
     this.element.remove();
   }
 }

@@ -39,10 +39,10 @@ export class Application {
   }
 
   private setupErrorHandling(): void {
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       this.handleGlobalError(event.error);
     });
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       this.handleGlobalError(event.reason);
     });
   }
@@ -61,13 +61,19 @@ export class Application {
       initialized: this.isInitialized,
       authenticated: this.authManager.isAuthenticated(),
       loading: this.authManager.isLoading(),
-      currentPath: router.getCurrentPath()
+      currentPath: router.getCurrentPath(),
     };
   }
 
-  public getRouteGuard(): RouteGuard { return this.routeGuard; }
-  public getAuthManager(): AuthManager { return this.authManager; }
-  public shutdown(): void { this.isInitialized = false; }
+  public getRouteGuard(): RouteGuard {
+    return this.routeGuard;
+  }
+  public getAuthManager(): AuthManager {
+    return this.authManager;
+  }
+  public shutdown(): void {
+    this.isInitialized = false;
+  }
 }
 
 export const application = Application.getInstance();

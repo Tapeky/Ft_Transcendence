@@ -13,7 +13,7 @@ export class Banner {
   private createElement(): HTMLElement {
     const div = document.createElement('div');
     const user = authManager.getCurrentUser();
-    
+
     div.className = 'text-[30px] p-2 border-b-2 border-black bg-white text-black';
 
     div.innerHTML = `
@@ -34,7 +34,7 @@ export class Banner {
   }
 
   private subscribeToAuth(): void {
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+    this.authUnsubscribe = authManager.subscribeToAuth(authState => {
       this.updateUserStats(authState.user);
     });
   }
@@ -64,16 +64,16 @@ export class Banner {
   private navigateToDashboard(): void {
     const dashboardBtn = this.element.querySelector('#dashboard-btn');
     let userId = dashboardBtn?.getAttribute('data-user-id');
-    
+
     if (!userId || userId === '') {
       const currentUser = authManager.getCurrentUser();
       userId = currentUser?.id ? String(currentUser.id) : null;
-      
+
       if (userId && dashboardBtn) {
         dashboardBtn.setAttribute('data-user-id', userId);
       }
     }
-    
+
     if (userId && userId !== '') {
       router.navigate(`/dashboard/${userId}`);
     }
@@ -87,7 +87,7 @@ export class Banner {
     if (this.authUnsubscribe) {
       this.authUnsubscribe();
     }
-    
+
     this.element.remove();
   }
 }

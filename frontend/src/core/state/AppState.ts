@@ -36,13 +36,27 @@ export class AppState {
     this.state = this.getInitialState();
   }
 
-  public getState(): AppStateData { return { ...this.state }; }
-  public getRouter(): Router | null { return this.router; }
-  public getSubscriberCount(): number { return this.subscribers.length; }
-  public getStateHistory(): AppStateData[] { return [...this.stateHistory]; }
-  public setRouter(router: Router): void { this.router = router; }
-  public setLoading(loading: boolean): void { this.setState({ loading }); }
-  public updateCurrentPath(path: string): void { this.setState({ currentPath: path }); }
+  public getState(): AppStateData {
+    return { ...this.state };
+  }
+  public getRouter(): Router | null {
+    return this.router;
+  }
+  public getSubscriberCount(): number {
+    return this.subscribers.length;
+  }
+  public getStateHistory(): AppStateData[] {
+    return [...this.stateHistory];
+  }
+  public setRouter(router: Router): void {
+    this.router = router;
+  }
+  public setLoading(loading: boolean): void {
+    this.setState({ loading });
+  }
+  public updateCurrentPath(path: string): void {
+    this.setState({ currentPath: path });
+  }
 
   private getInitialState(): AppStateData {
     return {
@@ -51,7 +65,7 @@ export class AppState {
       loading: false,
       currentPath: window.location.pathname,
       lastActivity: new Date(),
-      stateVersion: 1
+      stateVersion: 1,
     };
   }
 
@@ -62,7 +76,7 @@ export class AppState {
       ...this.state,
       ...updates,
       stateVersion: this.state.stateVersion + 1,
-      lastActivity: new Date()
+      lastActivity: new Date(),
     };
     this.notifySubscribers();
   }

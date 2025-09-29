@@ -58,52 +58,51 @@ export class PongInviteNotification {
     acceptBtn?.addEventListener('click', () => this.acceptInvite());
     declineBtn?.addEventListener('click', () => this.declineInvite());
 
-    // Fermer si clic à l'extérieur
-    this.element.addEventListener('click', (e) => {
+    this.element.addEventListener('click', e => {
       if (e.target === this.element) {
         this.declineInvite();
       }
     });
 
-    // Gérer ESC
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         this.declineInvite();
       }
     });
 
-    // Démarrer le countdown
     this.startCountdown();
   }
 
   private async acceptInvite(): Promise<void> {
     try {
-      // Envoyer l'acceptation via WebSocket (sera géré par le ChatService)
       const chatService = (window as any).chatService;
       if (chatService && chatService.ws && chatService.ws.readyState === WebSocket.OPEN) {
-        chatService.ws.send(JSON.stringify({
-          type: 'friend_pong_accept',
-          inviteId: this.inviteData.inviteId
-        }));
+        chatService.ws.send(
+          JSON.stringify({
+            type: 'friend_pong_accept',
+            inviteId: this.inviteData.inviteId,
+          })
+        );
       }
 
       this.showNotification('Invitation acceptée ! Le jeu va commencer...', 'success');
       this.close();
     } catch (error) {
-      console.error('Erreur lors de l\'acceptation:', error);
-      this.showNotification('Erreur lors de l\'acceptation', 'error');
+      console.error("Erreur lors de l'acceptation:", error);
+      this.showNotification("Erreur lors de l'acceptation", 'error');
     }
   }
 
   private async declineInvite(): Promise<void> {
     try {
-      // Envoyer le refus via WebSocket
       const chatService = (window as any).chatService;
       if (chatService && chatService.ws && chatService.ws.readyState === WebSocket.OPEN) {
-        chatService.ws.send(JSON.stringify({
-          type: 'friend_pong_decline',
-          inviteId: this.inviteData.inviteId
-        }));
+        chatService.ws.send(
+          JSON.stringify({
+            type: 'friend_pong_decline',
+            inviteId: this.inviteData.inviteId,
+          })
+        );
       }
 
       this.showNotification('Invitation refusée', 'info');
@@ -144,19 +143,18 @@ export class PongInviteNotification {
 
   private showNotification(message: string, type: 'success' | 'error' | 'info'): void {
     const notification = document.createElement('div');
-    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    const bgColor =
+      type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
     notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-full opacity-0 ${bgColor}`;
     notification.textContent = message;
 
     document.body.appendChild(notification);
 
-    // Animation d'entrée
     setTimeout(() => {
       notification.classList.remove('translate-x-full', 'opacity-0');
       notification.classList.add('opacity-100');
     }, 10);
 
-    // Animation de sortie
     setTimeout(() => {
       notification.classList.add('translate-x-full', 'opacity-0');
       setTimeout(() => {

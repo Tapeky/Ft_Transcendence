@@ -11,22 +11,20 @@ export class ChatManager {
     messages: [],
     allMessages: new Map(),
     chatView: 'friends',
-    initialized: false
+    initialized: false,
   };
 
   private currentUser: User | null = null;
   private messageReceivedHandler?: ChatEventListener;
   private messageSentHandler?: ChatEventListener;
   private conversationsUpdatedHandler?: (conversations: Conversation[]) => void;
-  
-  // ✅ Event system for UI updates
+
   private listeners: Map<string, Function[]> = new Map();
 
   constructor() {
     this.currentUser = authManager.getCurrentUser();
   }
 
-  // ✅ Event subscription methods
   on(event: string, callback: Function): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
@@ -89,7 +87,6 @@ export class ChatManager {
   private handleMessageReceived(data: MessageEvent): void {
     const { message, conversation } = data;
 
-    // Update conversations list
     const index = this.state.conversations.findIndex(c => c.id === conversation.id);
     if (index >= 0) {
       this.state.conversations[index] = conversation;
@@ -97,7 +94,6 @@ export class ChatManager {
       this.state.conversations.unshift(conversation);
     }
 
-    // Store message
     const conversationMessages = this.state.allMessages.get(conversation.id) || [];
     const existingMessage = conversationMessages.find(m => m.id === message.id);
 
@@ -105,14 +101,12 @@ export class ChatManager {
       conversationMessages.push(message);
       this.state.allMessages.set(conversation.id, conversationMessages);
 
-      // Update current conversation if active
       if (this.state.currentConversation?.id === conversation.id) {
         this.state.messages = conversationMessages;
-        
-        // ✅ Emit event to notify UI components
+
         this.emit('messages_updated', {
           conversationId: conversation.id,
-          messages: this.state.messages
+          messages: this.state.messages,
         });
       }
     }
@@ -121,7 +115,6 @@ export class ChatManager {
   private handleMessageSent(data: MessageEvent): void {
     const { message, conversation } = data;
 
-    // Update conversations list
     const index = this.state.conversations.findIndex(c => c.id === conversation.id);
     if (index >= 0) {
       this.state.conversations[index] = conversation;
@@ -129,7 +122,6 @@ export class ChatManager {
       this.state.conversations.unshift(conversation);
     }
 
-    // Store message if not duplicate
     const conversationMessages = this.state.allMessages.get(conversation.id) || [];
     const existingMessage = conversationMessages.find(m => m.id === message.id);
 
@@ -137,20 +129,20 @@ export class ChatManager {
       conversationMessages.push(message);
       this.state.allMessages.set(conversation.id, conversationMessages);
 
-      // Update current conversation if active
       if (this.state.currentConversation?.id === conversation.id) {
         this.state.messages = conversationMessages;
-        
-        // ✅ Emit event to notify UI components
+
         this.emit('messages_updated', {
           conversationId: conversation.id,
-          messages: this.state.messages
+          messages: this.state.messages,
         });
       }
     }
   }
 
-  async openConversation(friendId: number): Promise<{ conversation: Conversation; messages: Message[] }> {
+  async openConversation(
+    friendId: number
+  ): Promise<{ conversation: Conversation; messages: Message[] }> {
     const conversation = await chatService.createOrGetConversation(friendId);
     if (!conversation) {
       throw new Error('Failed to create conversation');
@@ -159,10 +151,9 @@ export class ChatManager {
     this.state.currentConversation = conversation;
     const loadedMessages = await chatService.loadConversationMessages(conversation.id);
     const localMessages = this.state.allMessages.get(conversation.id) || [];
-    
-    // Merge and deduplicate messages
+
     const allMessages = this.mergeMessages(loadedMessages, localMessages);
-    
+
     this.state.messages = allMessages;
     this.state.allMessages.set(conversation.id, allMessages);
     this.state.chatView = 'conversation';
@@ -177,9 +168,9 @@ export class ChatManager {
         allMessages.push(localMsg);
       }
     });
-    
-    return allMessages.sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+
+    return allMessages.sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }
 
@@ -200,14 +191,17 @@ export class ChatManager {
     if (!this.state.currentConversation || !this.currentUser?.id) {
       return null;
     }
-    return chatService.getOtherUserInConversation(this.state.currentConversation, this.currentUser.id);
+    return chatService.getOtherUserInConversation(
+      this.state.currentConversation,
+      this.currentUser.id
+    );
   }
 
   destroy(): void {
     const handlers = [
       { event: 'message_received', handler: this.messageReceivedHandler },
       { event: 'message_sent', handler: this.messageSentHandler },
-      { event: 'conversations_updated', handler: this.conversationsUpdatedHandler }
+      { event: 'conversations_updated', handler: this.conversationsUpdatedHandler },
     ];
 
     handlers.forEach(({ event, handler }) => {

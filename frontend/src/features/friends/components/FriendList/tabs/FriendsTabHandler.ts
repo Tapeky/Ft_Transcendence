@@ -36,27 +36,24 @@ export class FriendsTabHandler {
   }
 
   private renderFriendsList(): void {
-    // Create friends container
     const friendsContainer = document.createElement('div');
     friendsContainer.id = 'friends-container';
     friendsContainer.className = 'flex flex-col items-center gap-4 w-full px-4';
-    
+
     this.clearFriendsList();
-    
+
     if (this.friends.length === 0) {
       this.renderNoFriendsMessage(friendsContainer);
     } else {
       this.renderFriendItems(friendsContainer);
     }
-    
+
     this.container.appendChild(friendsContainer);
   }
 
   private clearFriendsList(): void {
-    // Clean up existing friend items
     this.destroyFriendItems();
-    
-    // Remove existing friends container
+
     const existingContainer = this.container.querySelector('#friends-container');
     if (existingContainer) {
       existingContainer.remove();
@@ -80,7 +77,7 @@ export class FriendsTabHandler {
         displayName: friend.display_name,
         avatar: friend.avatar_url,
         is_online: friend.is_online,
-        id: friend.id
+        id: friend.id,
       });
 
       this.friendItems.push(friendItem);
@@ -102,8 +99,6 @@ export class FriendsTabHandler {
 
   async refresh(): Promise<void> {
     await this.fetchAndRenderFriends();
-    // Note: onRefresh callback removed to prevent infinite loop
-    // The parent FriendListModal already handles the refresh
   }
 
   getFriends(): Friend[] {
@@ -112,7 +107,7 @@ export class FriendsTabHandler {
 
   destroy(): void {
     this.destroyFriendItems();
-    
+
     if (this.addFriendInstance) {
       this.addFriendInstance.destroy();
       this.addFriendInstance = undefined;
