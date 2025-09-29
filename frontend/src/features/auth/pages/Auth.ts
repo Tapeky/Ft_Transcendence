@@ -612,13 +612,13 @@ export class AuthPage {
     }
   }
 
-  private handleGitHubAuth(): void {
-    const githubUrl = authManager.getGitHubAuthUrl();
+  private async handleGitHubAuth(): Promise<void> {
+    const githubUrl = await authManager.getGitHubAuthUrl();
     window.location.href = githubUrl;
   }
 
-  private handleGoogleAuth(): void {
-    const googleUrl = authManager.getGoogleAuthUrl();
+  private async handleGoogleAuth(): Promise<void> {
+    const googleUrl = await authManager.getGoogleAuthUrl();
     window.location.href = googleUrl;
   }
 

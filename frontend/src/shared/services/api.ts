@@ -1,4 +1,30 @@
-import { config, endpoints } from '../../config/environment';
+// Import retardé pour éviter les dépendances circulaires
+let config: any = null;
+let endpoints: any = null;
+
+async function loadConfig() {
+  if (!config || !endpoints) {
+    const configModule = await import('../../config/environment');
+    config = configModule.config;
+    endpoints = configModule.endpoints;
+  }
+  return { config, endpoints };
+}
+
+function getConfig() {
+  if (!config) {
+    // Fallback synchrone - importer directement
+    throw new Error('Config not loaded. Call loadConfig() first or use async methods.');
+  }
+  return config;
+}
+
+function getEndpoints() {
+  if (!endpoints) {
+    throw new Error('Endpoints not loaded. Call loadConfig() first or use async methods.');
+  }
+  return endpoints;
+}
 
 export interface User {
   id: number;
@@ -108,7 +134,8 @@ class ApiService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-    const url = `${config.API_BASE_URL}${endpoint}`;
+    await loadConfig();
+    const url = `${getConfig().API_BASE_URL}${endpoint}`;
     const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
     if (options.body && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
@@ -195,12 +222,14 @@ class ApiService {
     return response.data!;
   }
 
-  getGitHubAuthUrl(): string {
-    return `${config.API_BASE_URL}${endpoints.auth.github}`;
+  async getGitHubAuthUrl(): Promise<string> {
+    await loadConfig();
+    return `${getConfig().API_BASE_URL}${getEndpoints().auth.github}`;
   }
 
-  getGoogleAuthUrl(): string {
-    return `${config.API_BASE_URL}${endpoints.auth.google}`;
+  async getGoogleAuthUrl(): Promise<string> {
+    await loadConfig();
+    return `${getConfig().API_BASE_URL}${getEndpoints().auth.google}`;
   }
 
   handleAuthCallback(): string | null {
