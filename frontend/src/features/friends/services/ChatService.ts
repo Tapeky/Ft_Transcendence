@@ -239,7 +239,6 @@ export class ChatService {
         break;
 
       case 'friend_pong_invite':
-        console.log('[ChatService] Invitation Pong reçue:', data);
         this.handlePongInvite(data);
         break;
 
@@ -332,9 +331,7 @@ export class ChatService {
   }
 
   private handlePongInvite(data: PongInviteData): void {
-    const inviteModal = new PongInviteNotification(data, () => {
-      console.log("[ChatService] Modale d'invitation fermée");
-    });
+    const inviteModal = new PongInviteNotification(data, () => {});
 
     inviteModal.show();
 
@@ -408,24 +405,20 @@ export class ChatService {
   }
 
   private handlePongGameStart(data: any): void {
-    console.log('Pong game started:', data);
     if (data.gameId) {
       router.navigate(`/simple-pong?gameId=${data.gameId}`);
     }
   }
 
   private handlePongGameState(data: any): void {
-    console.log('Pong game state update:', data);
     this.emit('pong_game_state', data);
   }
 
   private handlePongGameEnd(data: any): void {
-    console.log('Pong game ended:', data);
     this.emit('pong_game_end', data);
   }
 
   private handlePongGameAccepted(data: any): void {
-    console.log('Pong invitation accepted:', data);
     if (data.gameId) {
       router.navigate(`/simple-pong?gameId=${data.gameId}`);
     } else {
@@ -435,7 +428,6 @@ export class ChatService {
   }
 
   private handleSimplePongStart(data: any): void {
-    console.log('Simple Pong game started:', data);
     if (data.gameId && !window.location.href.includes('simple-pong')) {
       router.navigate(`/simple-pong?gameId=${data.gameId}`);
     }
@@ -447,12 +439,10 @@ export class ChatService {
   }
 
   private handleSimplePongEnd(data: any): void {
-    console.log('Simple Pong game ended:', data);
     this.emit('simple_pong_end', data);
   }
 
   private handleConnected(data: any): void {
-    console.log('WebSocket connected:', data.message || 'Connection established');
     this.emit('websocket_connected', data);
   }
 
