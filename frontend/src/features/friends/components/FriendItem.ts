@@ -63,7 +63,60 @@ export class FriendItem {
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
+    inviteBtn?.addEventListener('click', () => this.inviteToPong());
     optionsBtn?.addEventListener('click', () => this.openOptions());
+  }
+
+  private async inviteToPong(): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+        inviteBtn.innerHTML =
+          '<div class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mx-auto"></div>';
+      }
+
+      const result = await apiService.inviteFriendToPong(this.props.id);
+
+      if (result.success) {
+        this.showNotification(`Invitation envoyée à ${this.props.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+      this.showNotification("Erreur lors de l'envoi de l'invitation", 'error');
+    } finally {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+        inviteBtn.innerHTML =
+          '<img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />';
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-0 ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.classList.add('opacity-100');
+    }, 10);
+
+    setTimeout(() => {
+      notification.classList.add('translate-x-full', 'opacity-0');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   private openOptions(): void {
@@ -78,7 +131,7 @@ export class FriendItem {
         id: this.props.id,
         isOpen: this.isOptionsOpen,
         setIsOpen: () => this.closeOptions(),
-        setDismiss: () => this.dismissItem()
+        setDismiss: () => this.dismissItem(),
       });
     }
 
@@ -98,7 +151,7 @@ export class FriendItem {
   private dismissItem(): void {
     this.isVisible = false;
     this.updateVisibility();
-    
+
     if (this.isOptionsOpen) {
       this.closeOptions();
     }
@@ -115,7 +168,7 @@ export class FriendItem {
 
   public updateProps(newProps: Partial<FriendItemProps>): void {
     this.props = { ...this.props, ...newProps };
-    
+
     const newElement = this.createElement();
     this.element.parentNode?.replaceChild(newElement, this.element);
     this.element = newElement;
@@ -130,7 +183,7 @@ export class FriendItem {
     if (this.friendOptionsInstance) {
       this.friendOptionsInstance.destroy();
     }
-    
+
     this.element.remove();
   }
 }

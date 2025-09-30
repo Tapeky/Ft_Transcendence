@@ -25,7 +25,7 @@ export class ChatConversation {
     this.messages = options.messages || [];
     this.element = this.createElement();
     this.bindEvents();
-    
+
     if (options.messages && options.messages.length > 0) {
       this.renderMessages();
       this.scrollToBottom();
@@ -37,7 +37,7 @@ export class ChatConversation {
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'flex flex-col w-full h-full';
-    
+
     container.innerHTML = `
       <div class="bg-gray-700 p-2 border-b border-gray-600">
         <button id="back-to-friends" class="text-white text-sm hover:text-blue-400 flex items-center gap-2">
@@ -80,17 +80,17 @@ export class ChatConversation {
 
     const messageInput = this.element.querySelector('#message-input') as HTMLInputElement;
     const sendBtn = this.element.querySelector('#send-btn');
-    
+
     const sendMessage = () => {
       const content = messageInput?.value.trim();
       if (!content) return;
-      
+
       this.sendMessage(content);
       messageInput.value = '';
     };
-    
+
     sendBtn?.addEventListener('click', sendMessage);
-    messageInput?.addEventListener('keypress', (e) => {
+    messageInput?.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         sendMessage();
@@ -111,11 +111,12 @@ export class ChatConversation {
   private renderMessages(): void {
     const messagesList = this.element.querySelector('#messages-list');
     if (!messagesList) return;
-    
-    messagesList.innerHTML = this.messages.map(message => {
-      const isOwn = message.sender_id === this.currentUser?.id;
-      
-      return `
+
+    messagesList.innerHTML = this.messages
+      .map(message => {
+        const isOwn = message.sender_id === this.currentUser?.id;
+
+        return `
         <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
           <div class="max-w-[70%] ${isOwn ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-3 py-1">
             <div class="text-xs">${message.content}</div>
@@ -125,7 +126,8 @@ export class ChatConversation {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   private async sendMessage(content: string): Promise<void> {

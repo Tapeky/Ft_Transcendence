@@ -71,11 +71,12 @@ export class LocalTournament {
 
     if (tournamentId) {
       try {
-        console.log('Resuming tournament:', tournamentId);
         await this.stateManager.resumeTournament(tournamentId);
       } catch (error) {
         console.error('Failed to resume tournament:', error);
-        this.updateErrorState('Impossible de reprendre ce tournoi. Il a peut-être été supprimé ou est terminé.');
+        this.updateErrorState(
+          'Impossible de reprendre ce tournoi. Il a peut-être été supprimé ou est terminé.'
+        );
         await this.initialize();
       }
     } else {
@@ -89,7 +90,9 @@ export class LocalTournament {
       this.checkForTournamentResult();
     } catch (error) {
       console.error('Failed to initialize tournament system:', error);
-      this.showError(error instanceof Error ? error.message : 'Failed to initialize tournament system');
+      this.showError(
+        error instanceof Error ? error.message : 'Failed to initialize tournament system'
+      );
     }
   }
 
@@ -98,7 +101,6 @@ export class LocalTournament {
     if (tournamentResultJson) {
       try {
         const result = JSON.parse(tournamentResultJson);
-        console.log('Tournament result:', result);
         sessionStorage.removeItem('tournamentMatchResult');
         if (!this.currentState?.tournament) {
           await this.stateManager.loadTournament(result.tournamentId);
@@ -108,10 +110,9 @@ export class LocalTournament {
           matchId: result.matchId,
           player1Score: result.player1Score,
           player2Score: result.player2Score,
-          winnerAlias: result.winnerAlias
+          winnerAlias: result.winnerAlias,
         };
 
-        console.log('Sending match result:', { tournamentId: result.tournamentId, matchResult });
         const { TournamentService } = await import('../services/TournamentService');
         await TournamentService.submitMatchResult(result.tournamentId, matchResult);
         await this.stateManager.refreshTournamentState();
@@ -123,14 +124,14 @@ export class LocalTournament {
   }
 
   private setupStateSubscription(): void {
-    this.unsubscribe = this.stateManager.subscribe((state) => {
+    this.unsubscribe = this.stateManager.subscribe(state => {
       this.currentState = state;
       this.updateView(state);
     });
   }
 
   private subscribeToAuth(): void {
-    this.authUnsubscribe = authManager.subscribeToAuth((authState) => {
+    this.authUnsubscribe = authManager.subscribeToAuth(authState => {
       if (!authState.loading && !(authState.isAuthenticated && authState.user)) {
         router.navigate('/');
       }
@@ -143,7 +144,8 @@ export class LocalTournament {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
+    container.className =
+      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
     this.header = new Header(true);
     this.banner = new Banner();
@@ -215,7 +217,6 @@ export class LocalTournament {
     }
 
     if (this.eventManager && this.eventManager.isEnabled()) {
-      console.log('Using TournamentEventManager for event handling');
       return;
     }
 
@@ -266,7 +267,6 @@ export class LocalTournament {
     }
 
     if (this.viewManager && this.viewManager.isEnabled()) {
-      console.log(`Using ViewManager for view: ${state.ui.currentView}`);
       this.viewManager.renderView(state.ui.currentView, contentElement, state);
       return;
     }
@@ -274,7 +274,11 @@ export class LocalTournament {
     console.warn('ViewManager not available - this should not happen with new architecture');
   }
 
-  private async createLocalTournament(name: string, maxPlayers: TournamentSize, players: string[]): Promise<void> {
+  private async createLocalTournament(
+    name: string,
+    maxPlayers: TournamentSize,
+    players: string[]
+  ): Promise<void> {
     try {
       await this.stateManager.createTournament(name, maxPlayers);
       for (const playerName of players) {
@@ -288,18 +292,17 @@ export class LocalTournament {
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
-      console.log('Tournament status before start:', currentTournament?.status);
 
-      if (!currentTournament || (
-        currentTournament.status !== 'ready' &&
-        currentTournament.status !== 'in_progress' &&
-        currentTournament.status !== 'running'
-      )) {
-        throw new Error(`Tournament cannot be started. Current status: ${currentTournament?.status || 'unknown'}`);
+      if (
+        !currentTournament ||
+        (currentTournament.status !== 'ready' &&
+          currentTournament.status !== 'in_progress' &&
+          currentTournament.status !== 'running')
+      ) {
+        throw new Error(
+          `Tournament cannot be started. Current status: ${currentTournament?.status || 'unknown'}`
+        );
       }
-
-      console.log('Tournament created successfully. Navigate to registration view to start.');
-
     } catch (error) {
       console.error('Failed to start local tournament:', error);
       this.showError('Failed to create tournament. Please try again.');
@@ -312,7 +315,6 @@ export class LocalTournament {
 
     if (gameContext) {
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
-      console.log('Redirecting to game with context:', gameContext);
       window.location.href = `/game?tournamentContext=${contextParam}`;
     }
   }

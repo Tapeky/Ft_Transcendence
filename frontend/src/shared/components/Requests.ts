@@ -19,7 +19,8 @@ export class Requests {
 
     this.buttonElement = document.createElement('button');
     this.buttonElement.id = 'toggle-btn';
-    this.buttonElement.className = 'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
+    this.buttonElement.className =
+      'border-2 h-[40px] w-[40px] bg-white border-black hover:bg-gray-100';
     this.buttonElement.setAttribute('title', 'Friend Requests');
     this.buttonElement.innerHTML = '<img src="/src/img/requests.svg" alt="requests" />';
 
@@ -87,7 +88,8 @@ export class Requests {
 
   private createFriendRequestItem(request: FriendRequest): HTMLElement {
     const item = document.createElement('div');
-    item.className = 'border-white border-2 min-h-[120px] w-[320px] flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden mx-2';
+    item.className =
+      'border-white border-2 min-h-[120px] w-[320px] flex bg-blue-800 text-[1.2rem] mt-4 overflow-hidden mx-2';
     item.dataset.requestId = request.id.toString();
     item.innerHTML = `
       <div class="flex items-center justify-center min-w-[120px]">

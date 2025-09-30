@@ -58,7 +58,7 @@ export class Choice {
 
   private setupHoverEffects(): void {
     const choices = this.element.querySelectorAll('[data-route]');
-    
+
     choices.forEach(choice => {
       choice.addEventListener('mouseenter', () => {});
       choice.addEventListener('mouseleave', () => {});

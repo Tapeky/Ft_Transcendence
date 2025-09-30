@@ -12,7 +12,7 @@ export class AuthHandler {
   ) {}
 
   async handleAuth(
-    connection: SocketStream, 
+    connection: SocketStream,
     message: { token: string }
   ): Promise<{ userId: number | null; username: string | null }> {
     try {
@@ -20,39 +20,41 @@ export class AuthHandler {
       const db = DatabaseManager.getInstance().getDb();
       const userRepo = new UserRepository(db);
       const user = await userRepo.findById(decoded.id);
-      
+
       if (user) {
         const userId = user.id;
         const username = user.username;
-        
-        // Update online status
+
         await userRepo.updateOnlineStatus(userId, true);
-        
-        // Add user to active connections
+
         this.wsManager.addUser(userId, username, connection);
-        
-        // Add user to game invitations system
+
         simpleGameInvites.addUser(userId, username, connection);
-        
-        // Confirm authentication
-        connection.socket.send(JSON.stringify({
-          type: 'auth_success',
-          data: { userId, username }
-        }));
+
+        connection.socket.send(
+          JSON.stringify({
+            type: 'auth_success',
+            data: { userId, username },
+          })
+        );
 
         return { userId, username };
       } else {
-        connection.socket.send(JSON.stringify({
-          type: 'auth_error',
-          message: 'User not found'
-        }));
+        connection.socket.send(
+          JSON.stringify({
+            type: 'auth_error',
+            message: 'User not found',
+          })
+        );
         return { userId: null, username: null };
       }
     } catch (error) {
-      connection.socket.send(JSON.stringify({
-        type: 'auth_error',
-        message: 'Invalid token'
-      }));
+      connection.socket.send(
+        JSON.stringify({
+          type: 'auth_error',
+          message: 'Invalid token',
+        })
+      );
       return { userId: null, username: null };
     }
   }

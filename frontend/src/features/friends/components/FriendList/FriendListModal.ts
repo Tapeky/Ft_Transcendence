@@ -12,17 +12,14 @@ export class FriendListModal {
   private visible: boolean = true;
   private activeTab: TabType = 'friends';
 
-  // Components
   private tabManager?: TabManager;
   private chatManager: ChatManager;
-  
-  // Tab handlers
+
   private friendsTabHandler?: FriendsTabHandler;
   private blockedTabHandler?: BlockedTabHandler;
   private requestsTabHandler?: RequestsTabHandler;
   private chatTabHandler?: ChatTabHandler;
 
-  // Navigation cleanup
   private originalPushState?: typeof history.pushState;
   private originalReplaceState?: typeof history.replaceState;
   private navigationCleanup?: () => void;
@@ -89,29 +86,24 @@ export class FriendListModal {
   }
 
   private bindEvents(): void {
-    // Close button
     const closeButton = this.element.querySelector('#close-btn');
     closeButton?.addEventListener('click', () => this.close());
 
-    // Refresh button
     const refreshBtn = this.element.querySelector('#refresh-btn');
     refreshBtn?.addEventListener('click', () => this.refreshCurrentTab());
 
-    // Click outside to close
-    this.element.addEventListener('click', (e) => {
+    this.element.addEventListener('click', e => {
       if (e.target === this.element) {
         this.close();
       }
     });
 
-    // Keyboard accessibility
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && this.visible) {
         this.close();
       }
     });
 
-    // Focus management
     const closeBtnFocus = this.element.querySelector('#close-btn') as HTMLButtonElement;
     if (closeBtnFocus) {
       setTimeout(() => closeBtnFocus.focus(), 100);
@@ -119,49 +111,46 @@ export class FriendListModal {
   }
 
   private initializeComponents(): void {
-    // Initialize TabManager
     this.tabManager = new TabManager({
       tabs: [
         { id: 'friends', label: 'Friends', active: true },
         { id: 'blocked', label: 'Blocked', active: false },
         { id: 'requests', label: 'Requests', active: false },
-        { id: 'chat', label: 'Chat', active: false }
+        { id: 'chat', label: 'Chat', active: false },
       ],
-      onTabChange: (tab: TabType) => this.switchTab(tab)
+      onTabChange: (tab: TabType) => this.switchTab(tab),
     });
 
-    // Insert TabManager into navigation area
     const tabNavigation = this.element.querySelector('#tab-navigation');
     if (tabNavigation) {
       tabNavigation.appendChild(this.tabManager.getElement());
     }
 
-    // Initialize with Friends tab
     this.renderCurrentTab();
   }
 
   private setupNavigationListener(): void {
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
-    
+
     const closeOnNavigation = () => {
       this.close();
     };
-    
-    history.pushState = function(state, title, url) {
+
+    history.pushState = function (state, title, url) {
       const result = originalPushState.call(this, state, title, url);
       closeOnNavigation();
       return result;
     };
-    
-    history.replaceState = function(state, title, url) {
+
+    history.replaceState = function (state, title, url) {
       const result = originalReplaceState.call(this, state, title, url);
       closeOnNavigation();
       return result;
     };
-    
+
     window.addEventListener('popstate', closeOnNavigation);
-    
+
     this.originalPushState = originalPushState;
     this.originalReplaceState = originalReplaceState;
     this.navigationCleanup = closeOnNavigation;
@@ -176,15 +165,13 @@ export class FriendListModal {
     const contentArea = this.element.querySelector('#content-area');
     if (!contentArea) return;
 
-    // Clear content
     contentArea.innerHTML = '';
 
-    // Destroy existing handlers to prevent memory leaks
     this.destroyCurrentHandler();
 
     const handlerConfig: TabHandlerConfig = {
       container: contentArea,
-      onRefresh: () => this.refreshCurrentTab()
+      onRefresh: () => this.refreshCurrentTab(),
     };
 
     try {
@@ -219,7 +206,7 @@ export class FriendListModal {
       this.friendsTabHandler,
       this.blockedTabHandler,
       this.requestsTabHandler,
-      this.chatTabHandler
+      this.chatTabHandler,
     ];
 
     handlers.forEach(handler => {
@@ -228,7 +215,6 @@ export class FriendListModal {
       }
     });
 
-    // Reset handlers
     this.friendsTabHandler = undefined;
     this.blockedTabHandler = undefined;
     this.requestsTabHandler = undefined;
@@ -244,11 +230,16 @@ export class FriendListModal {
 
   private getCurrentHandler(): any {
     switch (this.activeTab) {
-      case 'friends': return this.friendsTabHandler;
-      case 'blocked': return this.blockedTabHandler;
-      case 'requests': return this.requestsTabHandler;
-      case 'chat': return this.chatTabHandler;
-      default: return null;
+      case 'friends':
+        return this.friendsTabHandler;
+      case 'blocked':
+        return this.blockedTabHandler;
+      case 'requests':
+        return this.requestsTabHandler;
+      case 'chat':
+        return this.chatTabHandler;
+      default:
+        return null;
     }
   }
 
@@ -276,12 +267,11 @@ export class FriendListModal {
   destroy(): void {
     this.destroyCurrentHandler();
     this.chatManager.destroy();
-    
+
     if (this.tabManager) {
       this.tabManager.destroy();
     }
 
-    // Cleanup navigation listeners
     if (this.originalPushState) {
       history.pushState = this.originalPushState;
     }

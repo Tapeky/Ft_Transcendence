@@ -1,4 +1,10 @@
-export type TournamentStatus = 'registration' | 'ready' | 'in_progress' | 'running' | 'completed' | 'cancelled';
+export type TournamentStatus =
+  | 'registration'
+  | 'ready'
+  | 'in_progress'
+  | 'running'
+  | 'completed'
+  | 'cancelled';
 
 export type TournamentSize = 4 | 8 | 16;
 

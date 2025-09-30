@@ -28,7 +28,7 @@ export class TabManager {
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'flex gap-1';
-    
+
     this.tabs.forEach(tab => {
       const button = document.createElement('button');
       button.className = this.getTabButtonClass(tab.id);
@@ -41,15 +41,16 @@ export class TabManager {
   }
 
   private getTabButtonClass(tabId: TabType): string {
-    const baseClass = 'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black rounded-t transition-colors';
+    const baseClass =
+      'tab-btn px-3 py-1 text-[1.2rem] border-2 border-black rounded-t transition-colors';
     const activeClass = 'bg-white text-black';
     const inactiveClass = 'bg-gray-300 text-gray-600';
-    
+
     return `${baseClass} ${tabId === this.activeTab ? activeClass : inactiveClass}`;
   }
 
   private bindEvents(): void {
-    this.element.addEventListener('click', (e) => {
+    this.element.addEventListener('click', e => {
       const target = e.target as HTMLElement;
       if (target.classList.contains('tab-btn')) {
         const tabId = target.dataset.tab as TabType;
@@ -60,7 +61,7 @@ export class TabManager {
 
   private switchTab(tabId: TabType): void {
     if (tabId === this.activeTab) return;
-    
+
     this.activeTab = tabId;
     this.updateTabAppearance();
     this.onTabChange(tabId);

@@ -30,7 +30,7 @@ export class MatchOrchestrator {
       isLoading: false,
       isGameActive: false,
       error: null,
-      gameContext: null
+      gameContext: null,
     };
   }
 
@@ -58,12 +58,12 @@ export class MatchOrchestrator {
 
     try {
       const nextMatchData = await TournamentService.getNextMatch(this.tournamentId);
-      
+
       if (!nextMatchData) {
         this.updateState({
           currentMatch: null,
           gameContext: null,
-          isLoading: false
+          isLoading: false,
         });
         return null;
       }
@@ -78,15 +78,15 @@ export class MatchOrchestrator {
         player1Score: 0,
         player2Score: 0,
         status: nextMatchData.status,
-        startedAt: this.parseDate(nextMatchData.startedAt)
+        startedAt: this.parseDate(nextMatchData.startedAt),
       };
-      
+
       const gameContext = this.createGameContext(nextMatch);
-      
+
       this.updateState({
         currentMatch: nextMatch,
         gameContext,
-        isLoading: false
+        isLoading: false,
       });
 
       return nextMatch;
@@ -94,7 +94,7 @@ export class MatchOrchestrator {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load next match';
       this.updateState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       throw error;
     }
@@ -111,11 +111,11 @@ export class MatchOrchestrator {
 
     try {
       const gameContext = this.createGameContext(this.state.currentMatch);
-      
+
       this.updateState({
         isGameActive: true,
         gameContext,
-        error: null
+        error: null,
       });
 
       return gameContext;
@@ -142,7 +142,7 @@ export class MatchOrchestrator {
         matchId: this.state.currentMatch.id,
         player1Score: result.player1Score,
         player2Score: result.player2Score,
-        winnerAlias: result.winnerAlias
+        winnerAlias: result.winnerAlias,
       });
 
       const completedMatch: TournamentMatch = {
@@ -151,16 +151,15 @@ export class MatchOrchestrator {
         player2Score: result.player2Score,
         winnerAlias: result.winnerAlias,
         status: 'completed',
-        completedAt: new Date()
+        completedAt: new Date(),
       };
 
       this.updateState({
         currentMatch: completedMatch,
         isGameActive: false,
         gameContext: null,
-        error: null
+        error: null,
       });
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete match';
       this.updateState({ error: errorMessage });
@@ -176,7 +175,7 @@ export class MatchOrchestrator {
     this.updateState({
       isGameActive: false,
       gameContext: null,
-      error: null
+      error: null,
     });
   }
 
@@ -194,18 +193,19 @@ export class MatchOrchestrator {
     return {
       player1: {
         alias: match.player1Alias,
-        score: match.player1Score
+        score: match.player1Score,
       },
       player2: {
         alias: match.player2Alias,
-        score: match.player2Score
+        score: match.player2Score,
       },
       round: match.round,
       matchNumber: match.matchNumber,
       status: match.status,
-      duration: match.startedAt && match.completedAt
-        ? Math.round((match.completedAt.getTime() - match.startedAt.getTime()) / 1000)
-        : undefined
+      duration:
+        match.startedAt && match.completedAt
+          ? Math.round((match.completedAt.getTime() - match.startedAt.getTime()) / 1000)
+          : undefined,
     };
   }
 
@@ -216,7 +216,7 @@ export class MatchOrchestrator {
       player1Alias: match.player1Alias,
       player2Alias: match.player2Alias,
       round: match.round,
-      matchNumber: match.matchNumber
+      matchNumber: match.matchNumber,
     };
   }
 
@@ -235,12 +235,10 @@ export class MatchOrchestrator {
       throw new Error('Winner must be one of the match players');
     }
 
-    const winnerScore = result.winnerAlias === match.player1Alias 
-      ? result.player1Score 
-      : result.player2Score;
-    const loserScore = result.winnerAlias === match.player1Alias 
-      ? result.player2Score 
-      : result.player1Score;
+    const winnerScore =
+      result.winnerAlias === match.player1Alias ? result.player1Score : result.player2Score;
+    const loserScore =
+      result.winnerAlias === match.player1Alias ? result.player2Score : result.player1Score;
 
     if (winnerScore <= loserScore) {
       throw new Error('Winner must have higher score than loser');
@@ -261,10 +259,13 @@ export class MatchOrchestrator {
   }
 
   isReadyToStart(): boolean {
-    return !!(this.state.currentMatch && 
-              !this.state.isGameActive && 
-              !this.state.isLoading &&
-              (this.state.currentMatch.status === 'in_progress' || this.state.currentMatch.status === 'pending'));
+    return !!(
+      this.state.currentMatch &&
+      !this.state.isGameActive &&
+      !this.state.isLoading &&
+      (this.state.currentMatch.status === 'in_progress' ||
+        this.state.currentMatch.status === 'pending')
+    );
   }
 
   isMatchActive(): boolean {
@@ -288,17 +289,22 @@ export class MatchOrchestrator {
       roundName: this.getRoundName(match.round),
       player1Alias: match.player1Alias,
       player2Alias: match.player2Alias,
-      status: match.status
+      status: match.status,
     };
   }
 
   private getRoundName(round: number): string {
     switch (round) {
-      case 1: return 'First Round';
-      case 2: return 'Second Round';
-      case 3: return 'Semifinal';
-      case 4: return 'Final';
-      default: return `Round ${round}`;
+      case 1:
+        return 'First Round';
+      case 2:
+        return 'Second Round';
+      case 3:
+        return 'Semifinal';
+      case 4:
+        return 'Final';
+      default:
+        return `Round ${round}`;
     }
   }
 
@@ -312,7 +318,7 @@ export class MatchOrchestrator {
       isLoading: false,
       isGameActive: false,
       error: null,
-      gameContext: null
+      gameContext: null,
     });
   }
 
@@ -324,7 +330,7 @@ export class MatchOrchestrator {
     this.updateState({
       currentMatch: null,
       gameContext: null,
-      error: null
+      error: null,
     });
 
     return await this.loadNextMatch();
@@ -345,9 +351,10 @@ export class MatchOrchestrator {
       player1Score: match.player1Score,
       player2Score: match.player2Score,
       winnerAlias: match.winnerAlias!,
-      duration: match.startedAt && match.completedAt
-        ? Math.round((match.completedAt.getTime() - match.startedAt.getTime()) / 1000)
-        : undefined
+      duration:
+        match.startedAt && match.completedAt
+          ? Math.round((match.completedAt.getTime() - match.startedAt.getTime()) / 1000)
+          : undefined,
     };
   }
 
@@ -366,7 +373,7 @@ export class MatchOrchestrator {
       player2Score,
       winnerAlias,
       duration,
-      gameData
+      gameData,
     };
   }
 }

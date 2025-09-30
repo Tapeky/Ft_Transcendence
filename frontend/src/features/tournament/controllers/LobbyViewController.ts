@@ -74,7 +74,7 @@ export class LobbyViewController extends TournamentViewController {
 
     const localForm = this.querySelector('#local-tournament-form');
     if (localForm) {
-      localForm.addEventListener('submit', async (e) => {
+      localForm.addEventListener('submit', async e => {
         e.preventDefault();
         await this.handleTournamentCreation();
       });
@@ -143,7 +143,11 @@ export class LobbyViewController extends TournamentViewController {
     }
   }
 
-  private async createLocalTournament(name: string, maxPlayers: TournamentSize, players: string[]): Promise<void> {
+  private async createLocalTournament(
+    name: string,
+    maxPlayers: TournamentSize,
+    players: string[]
+  ): Promise<void> {
     try {
       await this.stateManager.createTournament(name, maxPlayers);
       const currentState = this.stateManager.getState();
@@ -159,14 +163,13 @@ export class LobbyViewController extends TournamentViewController {
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
-      console.log('Status:', currentTournament?.status);
 
-      if (!currentTournament || !['ready', 'in_progress', 'running'].includes(currentTournament.status)) {
+      if (
+        !currentTournament ||
+        !['ready', 'in_progress', 'running'].includes(currentTournament.status)
+      ) {
         throw new Error(`Can't start. Status: ${currentTournament?.status || 'unknown'}`);
       }
-
-      console.log('Tournament created. Go to registration.');
-
     } catch (error) {
       console.error('Tournament start failed:', error);
       throw error;

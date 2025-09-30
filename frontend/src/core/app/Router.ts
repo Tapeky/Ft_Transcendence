@@ -14,7 +14,10 @@ export class Router {
     this.routeGuard = guard;
   }
 
-  private createComponentContainer<T>(ComponentClass: new (container: HTMLElement, ...args: any[]) => T, ...args: any[]): HTMLElement {
+  private createComponentContainer<T>(
+    ComponentClass: new (container: HTMLElement, ...args: any[]) => T,
+    ...args: any[]
+  ): HTMLElement {
     const container = document.createElement('div');
     new ComponentClass(container, ...args);
     return container;
@@ -54,7 +57,9 @@ export class Router {
     });
 
     this.routes.set('/tournament-history', async () => {
-      const { TournamentHistory } = await import('../../features/tournament/pages/TournamentHistory');
+      const { TournamentHistory } = await import(
+        '../../features/tournament/pages/TournamentHistory'
+      );
       return new TournamentHistory().getElement();
     });
 
@@ -75,6 +80,11 @@ export class Router {
     this.routes.set('/game', async (path?: string) => {
       const { GamePage } = await import('../../pages/Game');
       return new GamePage().getElement();
+    });
+
+    this.routes.set('/simple-pong', async () => {
+      const { SimplePongPage } = await import('../../pages/SimplePongPage');
+      return new SimplePongPage().getElement();
     });
 
     this.routes.set('/404', async () => {
@@ -98,6 +108,10 @@ export class Router {
       return this.routes.get('/game');
     }
 
+    if (path.startsWith('/simple-pong')) {
+      return this.routes.get('/simple-pong');
+    }
+
     return undefined;
   }
 
@@ -108,9 +122,7 @@ export class Router {
   }
 
   public async navigate(path: string, skipGuard: boolean = false): Promise<void> {
-    if (!skipGuard && this.routeGuard)
-      if (!this.routeGuard.canNavigateTo(path))
-        return;
+    if (!skipGuard && this.routeGuard) if (!this.routeGuard.canNavigateTo(path)) return;
 
     try {
       if (window.location.pathname + window.location.search !== path)
@@ -131,8 +143,32 @@ export class Router {
   }
 
   private handleInitialRoute(): void {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      this.handleOAuthCallback(token);
+      return;
+    }
+
     const currentPath = window.location.pathname + window.location.search;
     this.navigate(currentPath);
+  }
+
+  private async handleOAuthCallback(token: string): Promise<void> {
+    try {
+      const { apiService } = await import('../../shared/services/api');
+      apiService.setToken(token);
+
+      window.history.replaceState(null, '', '/menu');
+      await this.navigate('/menu', true);
+
+      window.location.reload();
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      window.history.replaceState(null, '', '/auth');
+      await this.navigate('/auth');
+    }
   }
 
   private setupPopState(): void {
@@ -167,8 +203,10 @@ export class Router {
     `;
   }
 
-  public getCurrentPath(): string { return window.location.pathname; }
-  
+  public getCurrentPath(): string {
+    return window.location.pathname;
+  }
+
   public getAvailableRoutes(): string[] {
     return Array.from(this.routes.keys());
   }

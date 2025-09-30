@@ -1,4 +1,5 @@
-import { apiService } from '../../../shared/services/api';
+import { Friend, apiService } from '../../../shared/services/api';
+import { PongInviteNotification, PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
 
@@ -59,15 +60,20 @@ export interface GameSuccessMessage {
 }
 
 export interface GameErrorMessage {
-  type: 'error' | 'err_game_not_found' | 'err_player_not_in_game' | 'err_game_already_ended' | 'err_invalid_input';
+  type:
+    | 'error'
+    | 'err_game_not_found'
+    | 'err_player_not_in_game'
+    | 'err_game_already_ended'
+    | 'err_invalid_input';
   message: string;
 }
 
-export type GameWebSocketMessage = 
-  | GameStartMessage 
-  | GameInputMessage 
-  | GameUpdateMessage 
-  | GameSuccessMessage 
+export type GameWebSocketMessage =
+  | GameStartMessage
+  | GameInputMessage
+  | GameUpdateMessage
+  | GameSuccessMessage
   | GameErrorMessage;
 
 type ChatEventListener = (data: any) => void;
@@ -80,13 +86,13 @@ export class ChatService {
     messages: new Map(),
     currentConversationId: null,
     isConnected: false,
-    isLoading: false
+    isLoading: false,
   };
-  
+
   private currentGameId: number | null = null;
   private gameState: GameState | null = null;
   private isInGame = false;
-  
+
   private listeners: Map<string, ChatEventListener[]> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -120,7 +126,7 @@ export class ChatService {
 
     try {
       this.ws = apiService.connectWebSocket();
-      
+
       this.ws!.onopen = () => {
         this.state.isConnected = true;
         this.reconnectAttempts = 0;
@@ -128,7 +134,7 @@ export class ChatService {
         this.emit('connected', null);
       };
 
-      this.ws!.onmessage = (event) => {
+      this.ws!.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
           this.handleWebSocketMessage(data);
@@ -143,11 +149,10 @@ export class ChatService {
         this.attemptReconnect();
       };
 
-      this.ws!.onerror = (error) => {
+      this.ws!.onerror = error => {
         console.error('WebSocket error:', error);
         this.emit('error', { error });
       };
-
     } catch (error) {
       console.error('WebSocket connection error:', error);
       throw error;
@@ -156,17 +161,19 @@ export class ChatService {
 
   private authenticateWebSocket(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    
+
     const token = localStorage.getItem('auth_token');
     if (!token) {
       console.error('No token for WebSocket auth');
       return;
     }
 
-    this.ws.send(JSON.stringify({
-      type: 'auth',
-      token: token
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: 'auth',
+        token: token,
+      })
+    );
   }
 
   private attemptReconnect(): void {
@@ -177,7 +184,7 @@ export class ChatService {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
+
     setTimeout(() => {
       this.connect().catch(error => {
         console.error('Reconnect failed:', error);
@@ -230,6 +237,11 @@ export class ChatService {
         this.emit('game_invite_response', data.data);
         break;
 
+      case 'friend_pong_invite':
+        console.log('[ChatService] Invitation Pong reçue:', data);
+        this.handlePongInvite(data);
+        break;
+
       case 'success':
         this.handleGameSuccess(data);
         break;
@@ -257,6 +269,42 @@ export class ChatService {
       case 'pong':
         break;
 
+      case 'friend_pong_start':
+        this.handlePongGameStart(data);
+        break;
+
+      case 'friend_pong_accepted':
+        this.handlePongGameAccepted(data);
+        break;
+
+      case 'simple_pong_start':
+        this.handleSimplePongStart(data);
+        break;
+
+      case 'friend_pong_state':
+        this.handlePongGameState(data);
+        break;
+
+      case 'simple_pong_state':
+        this.handleSimplePongState(data);
+        break;
+
+      case 'friend_pong_end':
+        this.handlePongGameEnd(data);
+        break;
+
+      case 'simple_pong_end':
+        this.handleSimplePongEnd(data);
+        break;
+
+      case 'friend_pong_error':
+        this.handlePongError(data);
+        break;
+
+      case 'connected':
+        this.handleConnected(data);
+        break;
+
       default:
         console.warn('Unhandled message type:', data.type);
     }
@@ -264,39 +312,56 @@ export class ChatService {
 
   private handleMessageReceived(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
-    
+
     this.state.conversations.set(conversation.id, conversation);
-    
+
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
     if (!exists) {
-      const newMessages = [...messages, message].sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      const newMessages = [...messages, message].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       this.state.messages.set(conversation.id, newMessages);
-      
+
       this.saveToLocalStorage();
-      
+
       this.emit('message_received', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
   }
 
+  private handlePongInvite(data: PongInviteData): void {
+    const inviteModal = new PongInviteNotification(data, () => {
+      console.log("[ChatService] Modale d'invitation fermée");
+    });
+
+    inviteModal.show();
+
+    this.emit('friend_pong_invite', data);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Invitation Pong de ${data.fromUsername || 'un ami'}`, {
+        body: "Cliquez pour voir l'invitation",
+        icon: '/favicon.png',
+      });
+    }
+  }
+
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
-    
+
     this.state.conversations.set(conversation.id, conversation);
-    
+
     const messages = this.state.messages.get(conversation.id) || [];
     const exists = messages.find(m => m.id === message.id);
     if (!exists) {
-      const newMessages = [...messages, message].sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      const newMessages = [...messages, message].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       this.state.messages.set(conversation.id, newMessages);
-      
+
       this.saveToLocalStorage();
-      
+
       this.emit('message_sent', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
@@ -317,11 +382,13 @@ export class ChatService {
     this.emit('game_state_update', this.gameState);
   }
 
-  private handleGameStarted(data: { data: { 
-    gameId: number; 
-    opponent: { id: number; username: string; avatar: string }; 
-    playerSide: 'left' | 'right' 
-  } }): void {
+  private handleGameStarted(data: {
+    data: {
+      gameId: number;
+      opponent: { id: number; username: string; avatar: string };
+      playerSide: 'left' | 'right';
+    };
+  }): void {
     const { gameId, opponent, playerSide } = data.data;
     this.currentGameId = gameId;
     this.isInGame = true;
@@ -339,6 +406,68 @@ export class ChatService {
     this.isInGame = false;
   }
 
+  private handlePongGameStart(data: any): void {
+    console.log('Pong game started:', data);
+    if (data.gameId) {
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
+    }
+  }
+
+  private handlePongGameState(data: any): void {
+    console.log('Pong game state update:', data);
+    this.emit('pong_game_state', data);
+  }
+
+  private handlePongGameEnd(data: any): void {
+    console.log('Pong game ended:', data);
+    this.emit('pong_game_end', data);
+  }
+
+  private handlePongGameAccepted(data: any): void {
+    console.log('Pong invitation accepted:', data);
+    if (data.gameId) {
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
+    } else {
+      router.navigate('/simple-pong');
+    }
+    this.emit('pong_game_accepted', data);
+  }
+
+  private handleSimplePongStart(data: any): void {
+    console.log('Simple Pong game started:', data);
+    if (data.gameId && !window.location.href.includes('simple-pong')) {
+      router.navigate(`/simple-pong?gameId=${data.gameId}`);
+    }
+    this.emit('simple_pong_start', data);
+  }
+
+  private handleSimplePongState(data: any): void {
+    this.emit('simple_pong_state', data);
+  }
+
+  private handleSimplePongEnd(data: any): void {
+    console.log('Simple Pong game ended:', data);
+    this.emit('simple_pong_end', data);
+  }
+
+  private handleConnected(data: any): void {
+    console.log('WebSocket connected:', data.message || 'Connection established');
+    this.emit('websocket_connected', data);
+  }
+
+  private handlePongError(data: any): void {
+    console.error('Pong game error:', data.message);
+    if (data.message) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Erreur Pong', {
+          body: data.message,
+          icon: '/favicon.png',
+        });
+      }
+      this.emit('pong_error', data);
+    }
+  }
+
   async sendMessage(toUserId: number, content: string): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error('WebSocket not connected');
@@ -346,11 +475,13 @@ export class ChatService {
     if (!content.trim()) {
       throw new Error('Empty message');
     }
-    this.ws.send(JSON.stringify({
-      type: 'direct_message',
-      toUserId: toUserId,
-      message: content.trim()
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: 'direct_message',
+        toUserId: toUserId,
+        message: content.trim(),
+      })
+    );
   }
 
   async loadConversations(): Promise<Conversation[]> {
@@ -360,8 +491,8 @@ export class ChatService {
       const response = await fetch(this.getApiUrl('/api/chat/conversations'), {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
+          Authorization: token ? `Bearer ${token}` : '',
+        },
       });
       const data = await response.json();
       const conversations = data.conversations || [];
@@ -383,25 +514,28 @@ export class ChatService {
   async loadConversationMessages(conversationId: number, page: number = 1): Promise<Message[]> {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(this.getApiUrl(`/api/chat/conversations/${conversationId}/messages?page=${page}&limit=50`), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+      const response = await fetch(
+        this.getApiUrl(`/api/chat/conversations/${conversationId}/messages?page=${page}&limit=50`),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
         }
-      });
+      );
       const data = await response.json();
       const serverMessages = data.messages || [];
-      
+
       const existingMessages = this.state.messages.get(conversationId) || [];
       const mergedMessages = this.mergeMessages(existingMessages, serverMessages);
-      
+
       this.state.messages.set(conversationId, mergedMessages);
       this.state.currentConversationId = conversationId;
-      
+
       this.saveToLocalStorage();
-      
+
       this.emit('messages_loaded', { conversationId, messages: mergedMessages });
-      
+
       return mergedMessages;
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -416,9 +550,9 @@ export class ChatService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
+          Authorization: token ? `Bearer ${token}` : '',
         },
-        body: JSON.stringify({ withUserId })
+        body: JSON.stringify({ withUserId }),
       });
       const data = await response.json();
       const conversation = data.data?.conversation || data.conversation || data.data || data;
@@ -490,10 +624,12 @@ export class ChatService {
     if (this.isInGame) {
       throw new Error('Already in a game');
     }
-    this.ws.send(JSON.stringify({
-      type: 'start_game',
-      opponentId: opponentId
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: 'start_game',
+        opponentId: opponentId,
+      })
+    );
   }
 
   sendGameInput(input: Input): void {
@@ -505,10 +641,12 @@ export class ChatService {
       console.warn('Cannot send input - not in game');
       return;
     }
-    this.ws.send(JSON.stringify({
-      type: 'update_input',
-      input: input
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: 'update_input',
+        input: input,
+      })
+    );
   }
 
   leaveGame(): void {
@@ -536,7 +674,10 @@ export class ChatService {
     return '';
   }
 
-  getOtherUserInConversation(conversation: Conversation, currentUserId: number): {
+  getOtherUserInConversation(
+    conversation: Conversation,
+    currentUserId: number
+  ): {
     id: number;
     username: string;
     avatar: string;
@@ -545,13 +686,13 @@ export class ChatService {
       return {
         id: conversation.user2_id,
         username: conversation.user2_username,
-        avatar: conversation.user2_avatar
+        avatar: conversation.user2_avatar,
       };
     } else {
       return {
         id: conversation.user1_id,
         username: conversation.user1_username,
-        avatar: conversation.user1_avatar
+        avatar: conversation.user1_avatar,
       };
     }
   }
@@ -560,10 +701,13 @@ export class ChatService {
     try {
       const conversationsArray = Array.from(this.state.conversations.entries());
       const messagesArray = Array.from(this.state.messages.entries());
-      
+
       localStorage.setItem('chat_conversations', JSON.stringify(conversationsArray));
       localStorage.setItem('chat_messages', JSON.stringify(messagesArray));
-      localStorage.setItem('chat_current_conversation', this.state.currentConversationId?.toString() || '');
+      localStorage.setItem(
+        'chat_current_conversation',
+        this.state.currentConversationId?.toString() || ''
+      );
     } catch (error) {
       console.error('Error saving to localStorage:', error);
     }
@@ -571,13 +715,13 @@ export class ChatService {
 
   private mergeMessages(existingMessages: Message[], newMessages: Message[]): Message[] {
     const messageMap = new Map<number, Message>();
-    
+
     existingMessages.forEach(msg => messageMap.set(msg.id, msg));
-    
+
     newMessages.forEach(msg => messageMap.set(msg.id, msg));
-    
-    return Array.from(messageMap.values()).sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+
+    return Array.from(messageMap.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }
 
@@ -623,13 +767,13 @@ export class ChatService {
   private async syncWithServer(): Promise<void> {
     try {
       this.loadFromLocalStorage();
-      
+
       await this.loadConversations();
-      
+
       if (this.state.currentConversationId) {
         await this.loadConversationMessages(this.state.currentConversationId);
       }
-      
+
       this.restoreState();
     } catch (error) {
       console.error('Error syncing with server:', error);
@@ -640,7 +784,7 @@ export class ChatService {
   async refreshMessages(conversationId?: number): Promise<void> {
     try {
       await this.loadConversations();
-      
+
       if (conversationId) {
         await this.loadConversationMessages(conversationId);
       } else if (this.state.currentConversationId) {
@@ -654,7 +798,7 @@ export class ChatService {
 
   startPeriodicSync(): void {
     this.stopPeriodicSync();
-    
+
     this.syncInterval = window.setInterval(() => {
       if (this.state.isConnected && this.state.currentConversationId) {
         this.refreshMessages(this.state.currentConversationId).catch(error => {
@@ -675,12 +819,15 @@ export class ChatService {
     if (this.state.conversations.size > 0) {
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
     }
-    
-    if (this.state.currentConversationId && this.state.messages.has(this.state.currentConversationId)) {
+
+    if (
+      this.state.currentConversationId &&
+      this.state.messages.has(this.state.currentConversationId)
+    ) {
       const messages = this.state.messages.get(this.state.currentConversationId) || [];
-      this.emit('messages_loaded', { 
-        conversationId: this.state.currentConversationId, 
-        messages 
+      this.emit('messages_loaded', {
+        conversationId: this.state.currentConversationId,
+        messages,
       });
     }
   }

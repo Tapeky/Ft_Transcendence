@@ -29,7 +29,8 @@ export class FriendOptions {
     container.className = `${this.props.isOpen ? 'flex' : 'hidden'} fixed top-0 left-0 z-[60] bg-white bg-opacity-20 w-screen h-screen justify-center items-center text-white font-iceland`;
 
     const modalContent = document.createElement('div');
-    modalContent.className = 'z-[65] w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
+    modalContent.className =
+      'z-[65] w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
 
     const flexContainer = document.createElement('div');
     flexContainer.className = 'flex flex-col h-full z-[65]';
@@ -105,7 +106,6 @@ export class FriendOptions {
 
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
-
   }
 
   private handleDashboard(): void {

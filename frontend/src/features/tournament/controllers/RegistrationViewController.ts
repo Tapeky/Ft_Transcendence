@@ -6,8 +6,13 @@ export class RegistrationViewController extends TournamentViewController {
     const tournament = state.tournament;
     if (!tournament) return;
 
-    const progress = state.registration.tournament ?
-      Math.round((state.registration.tournament.currentPlayers / state.registration.tournament.maxPlayers) * 100) : 0;
+    const progress = state.registration.tournament
+      ? Math.round(
+          (state.registration.tournament.currentPlayers /
+            state.registration.tournament.maxPlayers) *
+            100
+        )
+      : 0;
 
     container.innerHTML = `
       <div class="mb-6 text-center">
@@ -39,27 +44,36 @@ export class RegistrationViewController extends TournamentViewController {
           <div class="mb-8">
             <h3 class="text-2xl font-semibold mb-6 text-white font-iceland">Registered Players</h3>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              ${tournament.players.map((player, index) => `
+              ${tournament.players
+                .map(
+                  (player, index) => `
                 <div class="bg-black/30 border border-white rounded-lg p-4 text-center">
                   <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold font-iceland text-lg">
                     ${index + 1}
                   </div>
                   <div class="text-lg font-medium text-white font-iceland">${player.alias}</div>
                 </div>
-              `).join('')}
-              ${Array.from({ length: tournament.maxPlayers - tournament.currentPlayers }, (_, index) => `
+              `
+                )
+                .join('')}
+              ${Array.from(
+                { length: tournament.maxPlayers - tournament.currentPlayers },
+                (_, index) => `
                 <div class="bg-black/10 rounded-lg p-4 text-center border-2 border-dashed border-white/50">
                   <div class="w-10 h-10 bg-gray-600 rounded-full mx-auto mb-3 flex items-center justify-center text-gray-400 font-iceland text-lg">
                     ${tournament.currentPlayers + index + 1}
                   </div>
                   <div class="text-lg text-gray-300 font-iceland">Waiting...</div>
                 </div>
-              `).join('')}
+              `
+              ).join('')}
             </div>
           </div>
 
           <div class="flex gap-6">
-            ${tournament.status === 'ready' ? `
+            ${
+              tournament.status === 'ready'
+                ? `
               <div class="flex-1">
                 <div class="mb-4 text-center text-green-300 text-xl font-iceland">
                   ✅ Tournament ready! Click to start the bracket and begin matches.
@@ -68,11 +82,13 @@ export class RegistrationViewController extends TournamentViewController {
                   Start Tournament
                 </button>
               </div>
-            ` : `
+            `
+                : `
               <div class="flex-1 px-8 py-4 bg-black/20 border border-white rounded font-iceland text-xl text-center text-white">
                 Waiting for ${tournament.maxPlayers - tournament.currentPlayers} more players
               </div>
-            `}
+            `
+            }
             <button id="refresh-tournament" class="text-white border-white border-2 px-6 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
               Refresh
             </button>
@@ -133,13 +149,13 @@ export class RegistrationViewController extends TournamentViewController {
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
-      console.log('Status before start:', currentTournament?.status);
 
-      if (!currentTournament || (
-        currentTournament.status !== 'ready' &&
-        currentTournament.status !== 'in_progress' &&
-        currentTournament.status !== 'running'
-      )) {
+      if (
+        !currentTournament ||
+        (currentTournament.status !== 'ready' &&
+          currentTournament.status !== 'in_progress' &&
+          currentTournament.status !== 'running')
+      ) {
         throw new Error(`Cannot start. Status: ${currentTournament?.status || 'unknown'}`);
       }
 

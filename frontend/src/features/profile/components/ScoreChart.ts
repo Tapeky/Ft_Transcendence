@@ -64,14 +64,17 @@ export class ScoreChart {
         score: match.score,
         opponent: match.opponent_username,
         date: new Date(match.date).toLocaleDateString('fr-FR'),
-        match
+        match,
       };
     });
-    const pathData = points.map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
-    const pointsElements = points.map((point, i) => {
-      const color = point.won ? '#10b981' : '#ef4444';
-      const prevPoint = i > 0 ? points[i - 1] : null;
-      return `
+    const pathData = points
+      .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+      .join(' ');
+    const pointsElements = points
+      .map((point, i) => {
+        const color = point.won ? '#10b981' : '#ef4444';
+        const prevPoint = i > 0 ? points[i - 1] : null;
+        return `
         <g class="chart-point" data-tooltip="${this.escapeHtml(`
           ${point.date}
           Score: ${point.score} - ${point.match.opponent_score}
@@ -82,7 +85,8 @@ export class ScoreChart {
           <circle cx="${point.x}" cy="${point.y}" r="6" fill="${color}" stroke="white" stroke-width="2" class="hover:r-8 transition-all duration-200 cursor-pointer"/>
         </g>
       `;
-    }).join('');
+      })
+      .join('');
     const gridLines = Array.from({ length: 6 }, (_, i) => {
       const y = padding + (i * dataHeight) / 5;
       const scoreValue = Math.round(maxScore - (i * maxScore) / 5);
@@ -109,7 +113,9 @@ export class ScoreChart {
     return `
       <h4 class="text-lg font-semibold text-white mb-3">Dernières Parties</h4>
       <div class="space-y-2">
-        ${recentMatches.map(match => `
+        ${recentMatches
+          .map(
+            match => `
           <div class="flex items-center justify-between bg-gray-800 p-3 rounded">
             <div class="flex items-center space-x-3">
               <div class="w-3 h-3 rounded-full ${match.won ? 'bg-green-500' : 'bg-red-500'}"></div>
@@ -120,7 +126,9 @@ export class ScoreChart {
             </div>
             <div class="text-gray-400 text-sm">${new Date(match.date).toLocaleDateString('fr-FR')}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }

@@ -7,7 +7,8 @@ export class BracketViewController extends TournamentViewController {
     console.log('Rendering bracket for:', tournament?.name);
 
     if (!tournament) {
-      container.innerHTML = '<div class="text-center text-white text-2xl font-iceland">No tournament loaded</div>';
+      container.innerHTML =
+        '<div class="text-center text-white text-2xl font-iceland">No tournament loaded</div>';
       return;
     }
 
@@ -27,13 +28,19 @@ export class BracketViewController extends TournamentViewController {
           <div class="text-3xl font-bold text-blue-300 font-iceland">Round ${tournament.bracket.currentRound}</div>
         </div>
         <div class="text-center">
-          ${tournament.status === 'in_progress' || tournament.status === 'running' ? `
+          ${
+            tournament.status === 'in_progress' || tournament.status === 'running'
+              ? `
             <button id="start-next-match" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold">
               Start Next Match
             </button>
-          ` : tournament.status === 'completed' ? `
+          `
+              : tournament.status === 'completed'
+                ? `
             <div class="text-3xl font-bold text-yellow-300 font-iceland">Tournament Complete!</div>
-          ` : ''}
+          `
+                : ''
+          }
         </div>
       </div>
 
@@ -91,11 +98,15 @@ export class BracketViewController extends TournamentViewController {
     const bracketContainer = this.querySelector('#bracket-display');
     if (!bracketContainer) return;
 
-    const bracketHTML = bracket.rounds.map((round: any, roundIndex: number) => `
+    const bracketHTML = bracket.rounds
+      .map(
+        (round: any, roundIndex: number) => `
       <div class="bracket-round mb-10">
         <h3 class="text-2xl font-bold mb-6 text-center text-white font-iceland">Round ${roundIndex + 1}</h3>
         <div class="grid gap-6 ${round.length <= 2 ? 'max-w-lg mx-auto' : ''}">
-          ${round.map((match: any) => `
+          ${round
+            .map(
+              (match: any) => `
             <div class="match bg-black/20 border border-white rounded-lg p-6 ${match.status === 'in_progress' ? 'border-2 border-blue-300' : ''}">
               <div class="flex justify-between items-center">
                 <div class="flex-1">
@@ -107,16 +118,26 @@ export class BracketViewController extends TournamentViewController {
                   </div>
                 </div>
                 <div class="ml-6 text-2xl">
-                  ${match.status === 'completed' ? '✓' :
-                    match.status === 'in_progress' ? '▶' :
-                    match.player1Alias !== 'TBD' && match.player2Alias !== 'TBD' ? '⏳' : '⏸'}
+                  ${
+                    match.status === 'completed'
+                      ? '✓'
+                      : match.status === 'in_progress'
+                        ? '▶'
+                        : match.player1Alias !== 'TBD' && match.player2Alias !== 'TBD'
+                          ? '⏳'
+                          : '⏸'
+                  }
                 </div>
               </div>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     bracketContainer.innerHTML = bracketHTML;
   }

@@ -19,14 +19,12 @@ export class WebSocketManager {
 
   addUser(userId: number, username: string, socket: SocketStream): void {
     this.connectedUsers.set(userId, { id: userId, username, socket });
-    // Silent operation for production - logging removed
   }
 
   removeUser(userId: number): void {
     const user = this.connectedUsers.get(userId);
     if (user) {
       this.connectedUsers.delete(userId);
-      // Silent operation for production - logging removed
     }
   }
 
@@ -34,13 +32,18 @@ export class WebSocketManager {
     const user = this.connectedUsers.get(userId);
     if (user) {
       try {
-        user.socket.socket.send(JSON.stringify(message));
+        const messageStr = JSON.stringify(message);
+        user.socket.socket.send(messageStr);
         return true;
       } catch (error) {
-        // Error sending message, remove user connection
+        console.error(
+          `[WebSocketManager] ✗ Erreur lors de l'envoi du message à ${user.username}:`,
+          error
+        );
         this.removeUser(userId);
         return false;
       }
+    } else {
     }
     return false;
   }
@@ -59,7 +62,7 @@ export class WebSocketManager {
 
   broadcastToAll(message: any): void {
     const deadConnections: number[] = [];
-    
+
     for (const [userId, user] of this.connectedUsers) {
       try {
         user.socket.socket.send(JSON.stringify(message));
@@ -68,7 +71,6 @@ export class WebSocketManager {
       }
     }
 
-    // Clean up dead connections
     deadConnections.forEach(userId => this.removeUser(userId));
   }
 

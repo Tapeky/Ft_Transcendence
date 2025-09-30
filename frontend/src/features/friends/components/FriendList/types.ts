@@ -32,7 +32,6 @@ export interface FriendListConfig {
   onClose: () => void;
 }
 
-// Event types
 export interface MessageEvent {
   message: Message;
   conversation: Conversation;

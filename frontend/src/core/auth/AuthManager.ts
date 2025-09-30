@@ -1,6 +1,7 @@
 import { appState } from '../state/AppState';
 import { apiService, LoginCredentials, RegisterCredentials, User } from '../../shared/services/api';
 import { router } from '../app/Router';
+import { chatService } from '../../features/friends/services/ChatService';
 
 export class AuthManager {
   private static instance: AuthManager;
@@ -19,37 +20,38 @@ export class AuthManager {
 
   private async initializeAuth(): Promise<void> {
     appState.setLoading(true);
-    
+
     try {
       if (apiService.isAuthenticated()) {
         const currentUser = await apiService.getCurrentUser();
-        
+
         appState.setState({
           user: currentUser,
           isAuthenticated: true,
-          loading: false
+          loading: false,
         });
         this.notifyAuthStateChange(true);
-        
+
+        this.connectChatService();
       } else {
         appState.setState({
           user: null,
           isAuthenticated: false,
-          loading: false
+          loading: false,
         });
-        
+
         this.notifyAuthStateChange(false);
       }
     } catch (error) {
       console.error('AuthManager user info retrieval error:', this.getErrorMessage(error));
-      
+
       apiService.clearToken();
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
     }
   }
@@ -63,17 +65,18 @@ export class AuthManager {
       appState.setState({
         user: authResponse.user,
         isAuthenticated: true,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
-      
+
+      this.connectChatService();
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
       console.error('AuthManager login failed:', errorMessage);
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -83,30 +86,32 @@ export class AuthManager {
 
     try {
       const authResponse = await apiService.register(credentials);
-      
+
       appState.setState({
         user: authResponse.user,
         isAuthenticated: true,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(true);
       this.navigateToMenu();
-      
+
+      this.connectChatService();
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
-      
-      const isValidationError = errorMessage.includes('déjà pris') || 
-        errorMessage.includes('déjà utilisé') || 
+
+      const isValidationError =
+        errorMessage.includes('déjà pris') ||
+        errorMessage.includes('déjà utilisé') ||
         errorMessage.includes('existe déjà') ||
         errorMessage.includes('invalide') ||
         errorMessage.includes('incorrect');
-      
+
       if (!isValidationError) {
         console.error('AuthManager unexpected registration error:', errorMessage);
       }
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -116,25 +121,28 @@ export class AuthManager {
 
     try {
       await apiService.logout();
-      
+
+      chatService.disconnect();
+
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
       this.navigateToHome();
-      
     } catch (error) {
       console.error('AuthManager logout error:', this.getErrorMessage(error));
-      
+
+      chatService.disconnect();
+
       appState.setState({
         user: null,
         isAuthenticated: false,
-        loading: false
+        loading: false,
       });
-      
+
       this.notifyAuthStateChange(false);
       this.navigateToHome();
     }
@@ -149,11 +157,19 @@ export class AuthManager {
     }
   }
 
-  public getGitHubAuthUrl(): string { return apiService.getGitHubAuthUrl(); }
-  public getGoogleAuthUrl(): string { return apiService.getGoogleAuthUrl(); }
+  public getGitHubAuthUrl(): string {
+    return apiService.getGitHubAuthUrl();
+  }
+  public getGoogleAuthUrl(): string {
+    return apiService.getGoogleAuthUrl();
+  }
 
-  private navigateToMenu(): void { router.navigate('/menu'); }
-  private navigateToHome(): void { router.navigate('/'); }
+  private navigateToMenu(): void {
+    router.navigate('/menu');
+  }
+  private navigateToHome(): void {
+    router.navigate('/');
+  }
 
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
@@ -162,16 +178,24 @@ export class AuthManager {
     return String(error);
   }
 
-  public getCurrentUser(): User | null { return appState.getState().user; }
-  public isAuthenticated(): boolean { return appState.getState().isAuthenticated; }
-  public isLoading(): boolean { return appState.getState().loading; }
+  public getCurrentUser(): User | null {
+    return appState.getState().user;
+  }
+  public isAuthenticated(): boolean {
+    return appState.getState().isAuthenticated;
+  }
+  public isLoading(): boolean {
+    return appState.getState().loading;
+  }
 
-  public subscribeToAuth(callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void): () => void {
+  public subscribeToAuth(
+    callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void
+  ): () => void {
     return appState.subscribe(state => {
       callback({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        loading: state.loading
+        loading: state.loading,
       });
     });
   }
@@ -194,6 +218,16 @@ export class AuthManager {
         console.error('Error in auth state change callback:', error);
       }
     });
+  }
+
+  private async connectChatService(): Promise<void> {
+    try {
+      await chatService.connect();
+
+      (window as any).chatService = chatService;
+    } catch (error) {
+      console.error('[AuthManager] Erreur lors de la connexion du ChatService:', error);
+    }
   }
 }
 

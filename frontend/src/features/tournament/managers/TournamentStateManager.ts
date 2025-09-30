@@ -23,17 +23,17 @@ export class TournamentStateManager {
   private registrationManager: TournamentRegistrationManager;
   private matchOrchestrator: MatchOrchestrator | null = null;
   private listeners: TournamentSystemListener[] = [];
-  
+
   private uiState: TournamentUIState = {
     isLoading: false,
     currentView: 'lobby',
-    error: undefined
+    error: undefined,
   };
 
   private systemState = {
     isInitialized: false,
     lastError: null as string | null,
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
   };
 
   constructor() {
@@ -60,10 +60,10 @@ export class TournamentStateManager {
         isLoading: false,
         isGameActive: false,
         error: null,
-        gameContext: null
+        gameContext: null,
       },
       ui: { ...this.uiState },
-      system: { ...this.systemState }
+      system: { ...this.systemState },
     };
   }
 
@@ -76,23 +76,24 @@ export class TournamentStateManager {
   async initialize(): Promise<void> {
     try {
       this.updateUIState({ isLoading: true, error: undefined });
-      
+
       this.systemState.isInitialized = true;
       this.systemState.lastError = null;
-      
-      this.updateUIState({ 
-        isLoading: false, 
+
+      this.updateUIState({
+        isLoading: false,
         currentView: 'lobby',
-        error: undefined 
+        error: undefined,
       });
-      
+
       this.notifyListeners();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize tournament system';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to initialize tournament system';
       this.systemState.lastError = errorMessage;
-      this.updateUIState({ 
-        isLoading: false, 
-        error: errorMessage 
+      this.updateUIState({
+        isLoading: false,
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -104,16 +105,16 @@ export class TournamentStateManager {
 
     try {
       const tournament = await TournamentService.getTournamentState(tournamentId);
-      
+
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
-      
+
       const currentView = this.getViewForStatus(tournament.status, tournament.bracket);
 
       this.updateUIState({
         currentView,
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -122,7 +123,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to resume tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -134,14 +135,14 @@ export class TournamentStateManager {
 
     try {
       const tournament = await this.registrationManager.createTournament(name, maxPlayers);
-      
+
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
-      
+
       this.updateUIState({
         currentView: 'registration',
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -150,7 +151,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -162,13 +163,13 @@ export class TournamentStateManager {
 
     try {
       await this.registrationManager.joinTournament(tournamentId, alias);
-      
+
       this.initializeMatchOrchestrator(tournamentId);
-      
+
       this.updateUIState({
         currentView: 'registration',
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -176,7 +177,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to join tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -188,16 +189,16 @@ export class TournamentStateManager {
 
     try {
       const tournament = await TournamentService.getTournamentState(tournamentId);
-      
+
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
-      
+
       const currentView = this.getViewForStatus(tournament.status, tournament.bracket);
 
       this.updateUIState({
         currentView,
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -206,7 +207,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -227,14 +228,14 @@ export class TournamentStateManager {
 
     try {
       const tournament = await this.registrationManager.startTournament(this.tournament.id);
-      
+
       this.tournament = tournament;
       console.log('Tournament started:', tournament.status);
-      
+
       this.updateUIState({
         currentView: 'bracket',
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -242,7 +243,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -259,11 +260,11 @@ export class TournamentStateManager {
     try {
       await this.matchOrchestrator.loadNextMatch();
       await this.matchOrchestrator.startMatch();
-      
+
       this.updateUIState({
         currentView: 'game',
         isLoading: false,
-        error: undefined
+        error: undefined,
       });
 
       this.notifyListeners();
@@ -271,7 +272,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start match';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -287,15 +288,15 @@ export class TournamentStateManager {
 
     try {
       await this.matchOrchestrator.completeMatch(result);
-      
+
       if (this.tournament) {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
-        
+
         const currentView = this.tournament.status === 'completed' ? 'results' : 'bracket';
         this.updateUIState({
           currentView,
           isLoading: false,
-          error: undefined
+          error: undefined,
         });
       }
 
@@ -304,7 +305,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to complete match';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -316,9 +317,9 @@ export class TournamentStateManager {
       throw new Error(`Cannot navigate to ${view} in current state`);
     }
 
-    this.updateUIState({ 
+    this.updateUIState({
       currentView: view,
-      error: undefined 
+      error: undefined,
     });
     this.notifyListeners();
   }
@@ -338,7 +339,7 @@ export class TournamentStateManager {
       const errorMessage = error instanceof Error ? error.message : 'Failed to refresh tournament';
       this.updateUIState({
         isLoading: false,
-        error: errorMessage
+        error: errorMessage,
       });
       this.notifyListeners();
       throw error;
@@ -361,7 +362,7 @@ export class TournamentStateManager {
       remainingMatches: 0,
       progressPercentage: 0,
       currentRound: undefined as number | undefined,
-      winner: undefined as string | undefined
+      winner: undefined as string | undefined,
     };
 
     if (this.tournament.bracket) {
@@ -392,24 +393,24 @@ export class TournamentStateManager {
     this.registrationManager.reset();
     this.matchOrchestrator?.reset();
     this.matchOrchestrator = null;
-    
+
     this.uiState = {
       isLoading: false,
       currentView: 'lobby',
-      error: undefined
+      error: undefined,
     };
 
     this.systemState = {
       isInitialized: true,
       lastError: null,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
 
     this.notifyListeners();
   }
 
   private setupRegistrationListener(): void {
-    this.registrationManager.subscribe((registrationState) => {
+    this.registrationManager.subscribe(registrationState => {
       if (registrationState.tournament) {
         this.tournament = registrationState.tournament;
       }
@@ -423,7 +424,7 @@ export class TournamentStateManager {
     }
 
     this.matchOrchestrator = new MatchOrchestrator(tournamentId);
-    
+
     this.matchOrchestrator.subscribe(() => {
       this.notifyListeners();
     });
@@ -476,7 +477,7 @@ export class TournamentStateManager {
     if (this.tournament) {
       try {
         this.tournament = await TournamentService.getTournamentState(this.tournament.id);
-        
+
         const currentView = this.getViewForStatus(this.tournament.status, this.tournament.bracket);
         this.updateUIState({ currentView });
         this.notifyListeners();

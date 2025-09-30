@@ -12,8 +12,7 @@ export abstract class TournamentViewController {
 
   abstract bindEvents(): void;
 
-  destroy(): void {
-  }
+  destroy(): void {}
 
   setElement(element: HTMLElement): void {
     this.element = element;
@@ -27,7 +26,9 @@ export abstract class TournamentViewController {
     return this.element?.querySelector(selector) as T | null;
   }
 
-  protected querySelectorAll<T extends HTMLElement = HTMLElement>(selector: string): NodeListOf<T> | null {
+  protected querySelectorAll<T extends HTMLElement = HTMLElement>(
+    selector: string
+  ): NodeListOf<T> | null {
     return this.element?.querySelectorAll(selector) as NodeListOf<T> | null;
   }
 
