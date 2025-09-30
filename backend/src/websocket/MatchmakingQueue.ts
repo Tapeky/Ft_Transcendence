@@ -53,10 +53,6 @@ export class MatchmakingQueue {
       const player1 = this.queue.shift()!;
       const player2 = this.queue.shift()!;
 
-      console.log(
-        `🎮 [MATCHMAKING] Match créé: ${player1.username}(${player1.userId}) vs ${player2.username}(${player2.userId})`
-      );
-
       const matchId = `match_${Date.now()}`;
 
       const message1 = {
@@ -71,9 +67,6 @@ export class MatchmakingQueue {
         opponent: { id: player1.userId, username: player1.username },
       };
 
-      console.log(`📤 [MATCHMAKING] Sending to ${player1.username}:`, JSON.stringify(message1));
-      console.log(`📤 [MATCHMAKING] Sending to ${player2.username}:`, JSON.stringify(message2));
-
       try {
         player1.socket.socket.send(JSON.stringify(message1));
       } catch (error) {
@@ -87,10 +80,6 @@ export class MatchmakingQueue {
       }
 
       this.updateQueuePositions();
-    } else {
-      console.log(
-        `⏳ [MATCHMAKING] Not enough players (${this.queue.length}/2) - waiting for more`
-      );
     }
   }
 

@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { DatabaseManager } from './database/DatabaseManager';
+import { ensureSchema } from './database/init';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
@@ -45,6 +46,7 @@ async function start() {
     );
     await dbManager.connect(dbPath);
     await dbManager.initialize();
+    await ensureSchema();
     await dbManager.cleanupExpiredTokens();
 
     const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
