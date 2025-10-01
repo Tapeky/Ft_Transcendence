@@ -78,26 +78,14 @@ typedef struct json_def
 # define EVALUATE3(...) EVALUATE4(EVALUATE4(__VA_ARGS__))
 # define EVALUATE4(...) __VA_ARGS__
 
-# define _EVALUATE(...) _EVALUATE1(_EVALUATE1(__VA_ARGS__))
-# define _EVALUATE1(...) _EVALUATE2(_EVALUATE2(__VA_ARGS__))
-# define _EVALUATE2(...) _EVALUATE3(_EVALUATE3(__VA_ARGS__))
-# define _EVALUATE3(...) _EVALUATE4(_EVALUATE4(__VA_ARGS__))
-# define _EVALUATE4(...) __VA_ARGS__
-
-
-# define PREPEND_PARAM(param, expr) \
-	(param, _EVALUATE(PREPEND_PARAM_ITER expr))
-
-# define PREPEND_PARAM_ITER(a, ...) \
-	a __VA_OPT__(, PREPEND_PARAM_REPEAT PARENS (__VA_ARGS__))
-
-# define PREPEND_PARAM_REPEAT() PREPEND_PARAM_ITER
+# define _EXPAND(...) __VA_ARGS__
+# define _CALL(m, ...) m(__VA_ARGS__)
 
 # define FOR_EACH(m, additionnal_param, ...) \
 	__VA_OPT__(EVALUATE(FOR_EACH_ITER(m, additionnal_param, __VA_ARGS__)))
 
-# define FOR_EACH_ITER(m, additionnal_param, a, ...) \
-	m PREPEND_PARAM(additionnal_param, a) \
+# define FOR_EACH_ITER(m, additionnal_param, a, ...)	\
+	_CALL(m, additionnal_param, _EXPAND a)				\
 	__VA_OPT__(FOR_EACH_REPEAT PARENS (m, additionnal_param, __VA_ARGS__))
 
 # define FOR_EACH_REPEAT() FOR_EACH_ITER
