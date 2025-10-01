@@ -30,7 +30,13 @@ export class FriendItem {
 
     container.innerHTML = `
       <div class="flex items-center justify-center min-w-[120px]">
-        <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
+        <img 
+          id="avatar-img"
+          src="${getAvatarUrl(this.props.avatar)}" 
+          alt="icon" 
+          class="h-[90px] w-[90px] border-2 cursor-pointer hover:scale-105 transition-transform"
+          title="View Dashboard"
+        />
       </div>
       <div class="leading-none flex flex-col gap-1 flex-grow overflow-hidden">
         <h2 class="mt-2">${this.props.displayName}</h2>
@@ -60,9 +66,11 @@ export class FriendItem {
   }
 
   private bindEvents(): void {
+    const avatarImg = this.element.querySelector('#avatar-img');
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
+    avatarImg?.addEventListener('click', () => this.handleViewDashboard());
     inviteBtn?.addEventListener('click', () => this.inviteToPong());
     optionsBtn?.addEventListener('click', () => this.openOptions());
   }
@@ -94,6 +102,10 @@ export class FriendItem {
           '<img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />';
       }
     }
+  }
+
+  private handleViewDashboard(): void {
+    router.navigate(`/dashboard/${this.props.id}`);
   }
 
   private showNotification(message: string, type: 'success' | 'error'): void {
