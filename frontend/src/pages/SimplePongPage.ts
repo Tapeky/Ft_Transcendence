@@ -4,6 +4,8 @@ import { router } from '../core/app/Router';
 import { authManager } from '../core/auth/AuthManager';
 import type { User as AppUser } from '../core/state/AppState';
 import { config } from '../config/environment';
+import { PongGameRenderer } from '../game/PongGameRenderer';
+import { PongInputHandler } from '../game/PongInputHandler';
 
 interface PongState {
   ballX: number;
@@ -26,6 +28,8 @@ export class SimplePongPage {
   private banner?: Banner;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
+  private renderer!: PongGameRenderer;
+  private inputHandler!: PongInputHandler;
   private ws: WebSocket | null = null;
   private gameState: PongState | null = null;
   private displayState: PongState | null = null;
@@ -34,14 +38,7 @@ export class SimplePongPage {
   private readonly interpolationDelayMs = 100;
   private readonly maxBufferMs = 750;
   private readonly maxExtrapolationMs = 120;
-  private readonly arenaWidth = 800;
-  private readonly arenaHeight = 500;
-  private readonly serverArenaHeight = 400;
-  private readonly paddleWidth = 10;
-  private readonly paddleHeight = 80;
-  private readonly ballRadius = 10;
   private myRole: 'left' | 'right' | null = null;
-  private keys = { up: false, down: false };
   private authToken: string | null = null;
   private gameId: string | undefined;
   private isInvitedGame: boolean = false;
@@ -160,8 +157,8 @@ export class SimplePongPage {
 
       canvas = document.createElement('canvas');
       canvas.id = 'game';
-      canvas.width = this.arenaWidth;
-      canvas.height = this.arenaHeight;
+      canvas.width = 800;
+      canvas.height = 500;
       canvas.className = 'border-4 border-white rounded-xl bg-black shadow-xl';
       container.appendChild(canvas);
     }
@@ -172,6 +169,13 @@ export class SimplePongPage {
       throw new Error('Could not get canvas context');
     }
     this.ctx = ctx;
+
+    // Initialize renderer and input handler
+    this.renderer = new PongGameRenderer(this.canvas, this.ctx);
+    this.inputHandler = new PongInputHandler();
+    this.inputHandler.setInputChangeCallback(input => {
+      this.sendInput(input.up, input.down);
+    });
   }
 
   private setupBackButton(): void {
@@ -185,35 +189,7 @@ export class SimplePongPage {
   }
 
   private setupKeyboardHandlers(): void {
-    const keydownHandler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp') {
-        this.keys.up = true;
-        this.sendInput();
-        e.preventDefault();
-      }
-      if (e.key === 'ArrowDown') {
-        this.keys.down = true;
-        this.sendInput();
-        e.preventDefault();
-      }
-    };
-
-    const keyupHandler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp') {
-        this.keys.up = false;
-        this.sendInput();
-      }
-      if (e.key === 'ArrowDown') {
-        this.keys.down = false;
-        this.sendInput();
-      }
-    };
-
-    document.addEventListener('keydown', keydownHandler);
-    document.addEventListener('keyup', keyupHandler);
-
-    (this as any).keydownHandler = keydownHandler;
-    (this as any).keyupHandler = keyupHandler;
+    this.inputHandler.startListening();
   }
 
   private initializeConnection(): void {
@@ -505,13 +481,13 @@ export class SimplePongPage {
     this.instructionsElement.innerHTML = `<div>${primary}</div>${secondaryLine}`;
   }
 
-  private sendInput(): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+  private sendInput(up: boolean, down: boolean): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.gameId) {
       this.ws.send(
         JSON.stringify({
-          type: 'friend_pong_input',
-          up: this.keys.up,
-          down: this.keys.down,
+          type: 'simple_pong_input',
+          gameId: this.gameId,
+          input: { up, down },
         })
       );
     }
@@ -740,95 +716,13 @@ export class SimplePongPage {
   }
 
   private render(): void {
-    if (!this.ctx) {
-      return;
-    }
-
-    const state = this.displayState ?? this.gameState;
-    const canvasWidth = this.canvas.width;
-    const canvasHeight = this.canvas.height;
-    const yScale = canvasHeight / this.serverArenaHeight;
-    const defaultCenter = this.serverArenaHeight / 2;
-    const paddleHalfScaled = (this.paddleHeight / 2) * yScale;
-    const paddleHeightScaled = this.paddleHeight * yScale;
-
-    this.ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    this.ctx.fillStyle = '#000';
-    this.ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    this.ctx.setLineDash([8, 8]);
-    this.ctx.beginPath();
-    this.ctx.moveTo(canvasWidth / 2, 0);
-    this.ctx.lineTo(canvasWidth / 2, canvasHeight);
-    this.ctx.strokeStyle = '#fff';
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-    this.ctx.setLineDash([]);
-
-    const leftPaddleCenter = (state?.leftPaddleY ?? defaultCenter) * yScale;
-    const rightPaddleCenter = (state?.rightPaddleY ?? defaultCenter) * yScale;
-    this.ctx.fillStyle = '#fff';
-    this.ctx.fillRect(
-      10,
-      leftPaddleCenter - paddleHalfScaled,
-      this.paddleWidth,
-      paddleHeightScaled
+    this.renderer.render(
+      this.displayState ?? this.gameState,
+      this.playerNames,
+      this.isCountingDown,
+      this.countdownValue,
+      this.countdownStartTime
     );
-    this.ctx.fillRect(
-      canvasWidth - this.paddleWidth - 10,
-      rightPaddleCenter - paddleHalfScaled,
-      this.paddleWidth,
-      paddleHeightScaled
-    );
-
-    const ballX = state?.ballX ?? canvasWidth / 2;
-    const ballY = (state?.ballY ?? defaultCenter) * yScale;
-    this.ctx.beginPath();
-    this.ctx.arc(ballX, ballY, this.ballRadius, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    const leftScore = state?.leftScore ?? 0;
-    const rightScore = state?.rightScore ?? 0;
-    this.ctx.fillStyle = '#fff';
-    this.ctx.textAlign = 'center';
-    this.ctx.font = '48px Iceland, monospace';
-    this.ctx.fillText(leftScore.toString(), canvasWidth / 4, 80);
-    this.ctx.fillText(rightScore.toString(), (3 * canvasWidth) / 4, 80);
-
-    const leftDisplayName = this.playerNames.left || 'Player 1';
-    const rightDisplayName = this.playerNames.right || 'Player 2';
-    this.ctx.fillStyle = '#ADD8E6';
-    this.ctx.font = '24px Iceland, monospace';
-    this.ctx.fillText(leftDisplayName, canvasWidth / 4, 120);
-    this.ctx.fillText(rightDisplayName, (3 * canvasWidth) / 4, 120);
-
-    if (this.isCountingDown) {
-      this.renderCountdownOverlay();
-    }
-  }
-
-  private renderCountdownOverlay(): void {
-    if (!this.ctx) return;
-
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    this.ctx.fillStyle = '#fff';
-    this.ctx.textAlign = 'center';
-    this.ctx.font = '120px Iceland, monospace';
-
-    const displayText = this.countdownValue > 0 ? this.countdownValue.toString() : 'GO!';
-    const textY = this.canvas.height / 2 + 40;
-
-    const elapsed = performance.now() - this.countdownStartTime;
-    const cycleTime = elapsed % 1000;
-    const scale = 1 + Math.sin((cycleTime / 1000) * Math.PI * 2) * 0.1;
-
-    this.ctx.save();
-    this.ctx.translate(this.canvas.width / 2, textY);
-    this.ctx.scale(scale, scale);
-    this.ctx.fillText(displayText, 0, 0);
-    this.ctx.restore();
   }
 
   private async showGameEnd(result: string): Promise<void> {
