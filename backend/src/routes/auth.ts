@@ -87,6 +87,11 @@ export async function authRoutes(server: FastifyInstance) {
               email: user.email,
               display_name: user.display_name,
               avatar_url: user.avatar_url,
+              is_online: false,
+              total_wins: 0,
+              total_losses: 0,
+              total_games: 0,
+              created_at: user.created_at,
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
@@ -179,6 +184,8 @@ export async function authRoutes(server: FastifyInstance) {
           details: JSON.stringify({ username: user.username }),
         });
 
+        const stats = await userRepo.getUserStats(user.id);
+
         reply.send({
           success: true,
           data: {
@@ -189,6 +196,10 @@ export async function authRoutes(server: FastifyInstance) {
               display_name: user.display_name,
               avatar_url: user.avatar_url,
               is_online: true,
+              total_wins: stats.total_wins || 0,
+              total_losses: stats.total_losses || 0,
+              total_games: stats.total_games || 0,
+              created_at: user.created_at,
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
@@ -276,8 +287,10 @@ export async function authRoutes(server: FastifyInstance) {
             display_name: user.display_name,
             avatar_url: user.avatar_url,
             is_online: user.is_online,
+            total_wins: stats.total_wins || 0,
+            total_losses: stats.total_losses || 0,
+            total_games: stats.total_games || 0,
             created_at: user.created_at,
-            stats,
           },
         });
       } catch (error: any) {

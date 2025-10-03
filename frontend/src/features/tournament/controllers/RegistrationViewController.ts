@@ -15,85 +15,51 @@ export class RegistrationViewController extends TournamentViewController {
       : 0;
 
     container.innerHTML = `
-      <div class="mb-6 text-center">
-        <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
-      </div>
-
-      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
-        <div class="text-center mb-6">
-          <p class="text-white text-2xl font-iceland">Tournament Registration</p>
-            <div class="mt-4">
-              <div class="text-lg text-white mb-2 font-iceland">Tournament ID:
-                <span class="text-blue-300 font-mono">${tournament.id}</span>
-                <button id="copy-id" class="ml-3 text-white border-white border-2 px-3 py-1 rounded hover:bg-white hover:text-black transition-colors font-iceland">Copy</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-8">
-            <div class="flex justify-between text-xl mb-3 text-white font-iceland">
-              <span>Players Registered</span>
-              <span>${tournament.currentPlayers}/${tournament.maxPlayers}</span>
-            </div>
-            <div class="w-full bg-black/50 border border-white rounded-full h-4">
-              <div class="bg-gradient-to-r from-blue-400 to-green-400 h-4 rounded-full transition-all duration-500"
-                   style="width: ${progress}%"></div>
-            </div>
-          </div>
-
-          <div class="mb-8">
-            <h3 class="text-2xl font-semibold mb-6 text-white font-iceland">Registered Players</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              ${tournament.players
-                .map(
-                  (player, index) => `
-                <div class="bg-black/30 border border-white rounded-lg p-4 text-center">
-                  <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold font-iceland text-lg">
-                    ${index + 1}
-                  </div>
-                  <div class="text-lg font-medium text-white font-iceland">${player.alias}</div>
-                </div>
-              `
-                )
-                .join('')}
-              ${Array.from(
-                { length: tournament.maxPlayers - tournament.currentPlayers },
-                (_, index) => `
-                <div class="bg-black/10 rounded-lg p-4 text-center border-2 border-dashed border-white/50">
-                  <div class="w-10 h-10 bg-gray-600 rounded-full mx-auto mb-3 flex items-center justify-center text-gray-400 font-iceland text-lg">
-                    ${tournament.currentPlayers + index + 1}
-                  </div>
-                  <div class="text-lg text-gray-300 font-iceland">Waiting...</div>
-                </div>
-              `
-              ).join('')}
-            </div>
-          </div>
-
-          <div class="flex gap-6">
-            ${
-              tournament.status === 'ready'
-                ? `
-              <div class="flex-1">
-                <div class="mb-4 text-center text-green-300 text-xl font-iceland">
-                  ✅ Tournament ready! Click to start the bracket and begin matches.
-                </div>
-                <button id="start-tournament" class="w-full text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold">
-                  Start Tournament
-                </button>
-              </div>
-            `
-                : `
-              <div class="flex-1 px-8 py-4 bg-black/20 border border-white rounded font-iceland text-xl text-center text-white">
-                Waiting for ${tournament.maxPlayers - tournament.currentPlayers} more players
-              </div>
-            `
-            }
-            <button id="refresh-tournament" class="text-white border-white border-2 px-6 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
-              Refresh
-            </button>
-          </div>
+      <div class="bg-black/40 backdrop-blur-md border-white border-2 rounded-xl p-10 shadow-2xl max-w-4xl mx-auto">
+        <div class="mb-10 text-center">
+          <h2 class="text-4xl font-bold text-white font-iceland tracking-wider uppercase">${tournament.name}</h2>
+          <div class="mt-3 h-0.5 bg-white/40 mx-auto" style="max-width: 200px;"></div>
         </div>
+
+        <div class="space-y-4 mb-10">
+          ${tournament.players
+            .map(
+              (player, index) => `
+            <div class="flex items-center gap-4 bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-5 hover:bg-black/40 transition-colors">
+              <span class="text-white font-iceland text-2xl font-bold">${index + 1}.</span>
+              <span class="text-white font-iceland text-2xl">${player.alias}</span>
+            </div>
+          `
+            )
+            .join('')}
+          ${Array.from(
+            { length: tournament.maxPlayers - tournament.currentPlayers },
+            (_, index) => `
+            <div class="flex justify-between items-center bg-black/20 backdrop-blur-sm border-white border-2 border-dashed rounded-lg p-5 opacity-60">
+              <div class="flex items-center gap-4">
+                <span class="text-white/60 font-iceland text-2xl font-bold">${tournament.currentPlayers + index + 1}.</span>
+                <span class="text-white/60 font-iceland text-2xl">Waiting...</span>
+              </div>
+              <span class="text-white/40 font-iceland text-xl">----</span>
+            </div>
+          `
+          ).join('')}
+        </div>
+
+        ${
+          tournament.status === 'ready'
+            ? `
+          <button id="start-tournament" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white border-white border-2 px-8 py-4 rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 font-iceland text-2xl font-bold uppercase tracking-wide shadow-xl">
+            Start Tournament
+          </button>
+        `
+            : `
+          <div class="w-full px-8 py-4 bg-black/40 backdrop-blur-sm border-white border-2 rounded-lg font-iceland text-xl text-center text-white/80">
+            Waiting for ${tournament.maxPlayers - tournament.currentPlayers} more players
+          </div>
+        `
+        }
+      </div>
     `;
 
     this.bindEvents();
@@ -102,44 +68,10 @@ export class RegistrationViewController extends TournamentViewController {
   bindEvents(): void {
     if (!this.isElementReady()) return;
 
-    const copyButton = this.querySelector('#copy-id');
-    if (copyButton) {
-      copyButton.addEventListener('click', () => {
-        this.handleCopyTournamentId();
-      });
-    }
-
     const startButton = this.querySelector('#start-tournament');
     if (startButton) {
       startButton.addEventListener('click', async () => {
         await this.handleStartTournament();
-      });
-    }
-
-    const refreshButton = this.querySelector('#refresh-tournament');
-    if (refreshButton) {
-      refreshButton.addEventListener('click', async () => {
-        await this.handleRefreshTournament();
-      });
-    }
-  }
-
-  private handleCopyTournamentId(): void {
-    const currentState = this.stateManager.getState();
-    const tournamentId = currentState.tournament?.id;
-
-    if (tournamentId) {
-      navigator.clipboard.writeText(tournamentId).then(() => {
-        const button = this.querySelector('#copy-id') as HTMLButtonElement;
-        if (button) {
-          const originalText = button.textContent;
-          button.textContent = 'Copied!';
-          button.classList.add('bg-green-600');
-          setTimeout(() => {
-            button.textContent = originalText;
-            button.classList.remove('bg-green-600');
-          }, 2000);
-        }
       });
     }
   }
@@ -163,15 +95,6 @@ export class RegistrationViewController extends TournamentViewController {
     } catch (error) {
       console.error('Start failed:', error);
       this.showError('Failed to start tournament. Please ensure all players have joined.');
-    }
-  }
-
-  private async handleRefreshTournament(): Promise<void> {
-    try {
-      await this.stateManager.refreshTournament();
-    } catch (error) {
-      console.error('Refresh failed:', error);
-      this.showError('Failed to refresh tournament.');
     }
   }
 }

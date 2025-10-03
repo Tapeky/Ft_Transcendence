@@ -17,8 +17,6 @@ interface FastifyWithWebSocket extends FastifyInstance {
 }
 
 export async function localTournamentRoutes(server: FastifyInstance) {
-  const db = DatabaseManager.getInstance().getDb();
-  const tournamentService = new LocalTournamentService(db);
   const wsManager = (server as FastifyWithWebSocket).websocketManager;
 
   server.post<{ Body: TournamentCreateRequest }>(
@@ -37,6 +35,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     },
     async (request: FastifyRequest<{ Body: TournamentCreateRequest }>, reply: FastifyReply) => {
       const { name, maxPlayers } = request.body;
+      const db = DatabaseManager.getInstance().getDb();
 
       try {
         const result = await db.run(
@@ -69,6 +68,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     '/state/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
+      const db = DatabaseManager.getInstance().getDb();
 
       try {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
@@ -88,7 +88,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         let bracket = null;
-        if (tournament.status === 'running' && matches.length > 0) {
+        if (matches.length > 0) {
           const roundsMap = new Map();
           matches.forEach(match => {
             if (!roundsMap.has(match.round)) {
@@ -134,6 +134,15 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           } else {
             frontendStatus = 'registration';
           }
+        } else if (tournament.status === 'waiting') {
+          // Map 'waiting' to appropriate frontend status
+          if (matches.length > 0) {
+            frontendStatus = 'in_progress';
+          } else if (tournament.current_players >= tournament.max_players) {
+            frontendStatus = 'ready';
+          } else {
+            frontendStatus = 'registration';
+          }
         } else if (tournament.status === 'running') {
           frontendStatus = 'in_progress';
         }
@@ -175,6 +184,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     ) => {
       const { id } = request.params;
       const { alias } = request.body;
+      const db = DatabaseManager.getInstance().getDb();
 
       try {
         const tournament = await db.get(
@@ -236,6 +246,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     '/start/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
+      const db = DatabaseManager.getInstance().getDb();
+      const tournamentService = new LocalTournamentService(db);
 
       try {
         const tournament = await db.get(
@@ -349,6 +361,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     '/next-match/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
+      const db = DatabaseManager.getInstance().getDb();
 
       try {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
@@ -429,6 +442,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     ) => {
       const { id } = request.params;
       const { matchId, player1Score, player2Score, winnerAlias } = request.body;
+      const db = DatabaseManager.getInstance().getDb();
 
       try {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
@@ -564,8 +578,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
   );
 
   server.get('/history', async (request: FastifyRequest, reply: FastifyReply) => {
+    const db = DatabaseManager.getInstance().getDb();
+
     try {
-      const db = DatabaseManager.getInstance().getDb();
 
       const tournaments = await db.all(`
         SELECT 
@@ -679,8 +694,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
   });
 
   server.delete('/clear-all', async (request: FastifyRequest, reply: FastifyReply) => {
+    const db = DatabaseManager.getInstance().getDb();
+
     try {
-      const db = DatabaseManager.getInstance().getDb();
 
       const countResult = await db.get(`SELECT COUNT(*) as count FROM tournaments`);
       const totalCount = countResult.count;
@@ -708,85 +724,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
   });
 
   server.delete('/history', async (request: FastifyRequest, reply: FastifyReply) => {
+    const db = DatabaseManager.getInstance().getDb();
+
     try {
-      const db = DatabaseManager.getInstance().getDb();
 
-      const allTournaments = (await db.all(`
-        SELECT 
-          id,
-          bracket_data as bracketData
-        FROM tournaments
-      `)) as any[];
-
-      const completedTournamentIds: string[] = [];
-
-      for (const tournament of allTournaments) {
-        let shouldDelete = false;
-        let winner = null;
-
-        if (tournament.bracketData) {
-          try {
-            const bracketData = JSON.parse(tournament.bracketData);
-            if (bracketData.winner) {
-              winner = bracketData.winner;
-            }
-          } catch (e) {
-            console.warn('Failed to parse bracket data:', e);
-          }
-        }
-
-        if (!winner) {
-          const matches = (await db.all(
-            `
-            SELECT winner_alias as winnerAlias, round, status
-            FROM tournament_matches 
-            WHERE tournament_id = ? AND winner_alias IS NOT NULL
-            ORDER BY round DESC
-          `,
-            [tournament.id]
-          )) as any[];
-
-          if (matches.length > 0) {
-            const finalMatch = matches.find(
-              (match: any) =>
-                match.winnerAlias && match.round === Math.max(...matches.map((m: any) => m.round))
-            );
-            if (finalMatch) {
-              winner = finalMatch.winnerAlias;
-            }
-          }
-        }
-
-        if (winner) {
-          shouldDelete = true;
-        } else {
-          const allMatches = (await db.all(
-            `
-            SELECT status 
-            FROM tournament_matches 
-            WHERE tournament_id = ?
-          `,
-            [tournament.id]
-          )) as any[];
-
-          if (
-            allMatches.length > 0 &&
-            allMatches.every((match: any) => match.status === 'pending')
-          ) {
-            shouldDelete = true;
-          }
-        }
-
-        if (shouldDelete) {
-          completedTournamentIds.push(tournament.id);
-        }
-      }
+      // Get all tournament IDs
+      const allTournaments = (await db.all(`SELECT id FROM tournaments`)) as any[];
+      const completedTournamentIds = allTournaments.map((t: any) => t.id);
 
       if (completedTournamentIds.length > 0) {
         const placeholders = completedTournamentIds.map(() => '?').join(',');
 
         console.log(
-          `🔍 Found ${completedTournamentIds.length} tournaments to delete (completed + stuck):`,
+          `🗑️ Deleting ALL ${completedTournamentIds.length} tournaments:`,
           completedTournamentIds
         );
 
@@ -815,13 +765,13 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         console.log(
-          `✅ Cleared ${result.changes} tournaments (completed + stuck) and their related data`
+          `✅ Deleted ALL ${result.changes} tournaments and their related data`
         );
 
         reply.send({
           success: true,
           data: {
-            message: 'Tournament history cleared (completed + stuck tournaments)',
+            message: 'All tournament history cleared',
             deletedCount: completedTournamentIds.length,
           },
         });
@@ -829,7 +779,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         reply.send({
           success: true,
           data: {
-            message: 'No tournaments to clear (completed or stuck)',
+            message: 'No tournaments to delete',
             deletedCount: 0,
           },
         });
