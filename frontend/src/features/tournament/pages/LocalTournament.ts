@@ -67,16 +67,40 @@ export class LocalTournament {
 
   private async checkForExistingTournament(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search);
-    const tournamentId = urlParams.get('id');
+    let tournamentId = urlParams.get('id');
+
+    // Check sessionStorage for active tournament if no URL param
+    if (!tournamentId) {
+      const savedTournamentId = sessionStorage.getItem('activeTournamentId');
+      if (savedTournamentId) {
+        tournamentId = savedTournamentId;
+        // Update URL to include tournament ID
+        const newUrl = `/tournament?id=${tournamentId}`;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
 
     if (tournamentId) {
       try {
+        console.log(`[Tournament] Attempting to resume tournament ${tournamentId}`);
         await this.stateManager.resumeTournament(tournamentId);
+        // Save tournament ID in sessionStorage
+        sessionStorage.setItem('activeTournamentId', tournamentId);
+        console.log(`[Tournament] Successfully resumed tournament ${tournamentId}`);
       } catch (error) {
         console.error('Failed to resume tournament:', error);
+        // Clear invalid tournament ID
+        sessionStorage.removeItem('activeTournamentId');
+
+        // Show error but don't automatically go to lobby - let user see the error
         this.updateErrorState(
           'Impossible de reprendre ce tournoi. Il a peut-être été supprimé ou est terminé.'
         );
+
+        // Update URL to remove invalid tournament ID
+        window.history.replaceState(null, '', '/tournament');
+
+        // Still initialize but user will see error message
         await this.initialize();
       }
     } else {
@@ -86,6 +110,9 @@ export class LocalTournament {
 
   private async initialize(): Promise<void> {
     try {
+      // Clear any stale tournament ID when initializing fresh
+      sessionStorage.removeItem('activeTournamentId');
+
       await this.stateManager.initialize();
       this.checkForTournamentResult();
     } catch (error) {
@@ -113,6 +140,11 @@ export class LocalTournament {
           winnerAlias: result.winnerAlias,
         };
 
+        // Save tournament ID in sessionStorage and update URL
+        sessionStorage.setItem('activeTournamentId', result.tournamentId);
+        const newUrl = `/tournament?id=${result.tournamentId}`;
+        window.history.replaceState(null, '', newUrl);
+
         const { TournamentService } = await import('../services/TournamentService');
         await TournamentService.submitMatchResult(result.tournamentId, matchResult);
         await this.stateManager.refreshTournamentState();
@@ -126,6 +158,14 @@ export class LocalTournament {
   private setupStateSubscription(): void {
     this.unsubscribe = this.stateManager.subscribe(state => {
       this.currentState = state;
+
+      // Clear sessionStorage if tournament is completed
+      if (state.tournament?.status === 'completed') {
+        sessionStorage.removeItem('activeTournamentId');
+        // Update URL to remove tournament ID
+        window.history.replaceState(null, '', '/tournament');
+      }
+
       this.updateView(state);
     });
   }
@@ -168,7 +208,7 @@ export class LocalTournament {
                 id="history-button"
                 class="text-white border-white border-2 px-4 py-2 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg"
               >
-                📊 History
+                History
               </button>
             </div>
           </div>
@@ -289,6 +329,12 @@ export class LocalTournament {
       if (!tournamentId) {
         throw new Error('Tournament ID not available');
       }
+
+      // Save tournament ID in sessionStorage and update URL
+      sessionStorage.setItem('activeTournamentId', tournamentId);
+      const newUrl = `/tournament?id=${tournamentId}`;
+      window.history.replaceState(null, '', newUrl);
+
       await this.stateManager.refreshTournamentState();
 
       const currentTournament = this.stateManager.getCurrentTournament();
@@ -332,6 +378,9 @@ export class LocalTournament {
   }
 
   destroy(): void {
+    // Clear active tournament from sessionStorage when leaving page
+    sessionStorage.removeItem('activeTournamentId');
+
     if (this.unsubscribe) {
       this.unsubscribe();
     }

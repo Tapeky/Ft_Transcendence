@@ -18,33 +18,33 @@ export class BracketViewController extends TournamentViewController {
     }
 
     container.innerHTML = `
-      <div class="mb-6 text-center">
-        <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
-        <p class="text-white text-2xl font-iceland mt-2">Tournament Bracket</p>
-      </div>
-
-      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-6 mb-6">
-        <div class="text-center mb-6">
-          <div class="text-3xl font-bold text-blue-300 font-iceland">Round ${tournament.bracket.currentRound}</div>
+      <div class="bg-black/40 backdrop-blur-md border-white border-2 rounded-xl p-10 shadow-2xl max-w-6xl mx-auto">
+        <div class="mb-10 text-center">
+          <h2 class="text-4xl font-bold text-white font-iceland tracking-wider uppercase">${tournament.name}</h2>
+          <div class="mt-3 h-0.5 bg-white/40 mx-auto" style="max-width: 200px;"></div>
         </div>
-        <div class="text-center">
+
+        <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-xl p-6 mb-8">
+          <div class="text-center mb-6">
+            <div class="text-3xl font-bold text-white font-iceland">ROUND ${tournament.bracket.currentRound}</div>
+          </div>
           ${
             tournament.status === 'in_progress' || tournament.status === 'running'
               ? `
-            <button id="start-next-match" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-2xl font-bold">
-              Start Next Match
-            </button>
+            <div class="text-center">
+              <button id="start-next-match" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-white border-2 px-10 py-4 rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 font-iceland text-2xl font-bold uppercase tracking-wide shadow-xl">
+                Start Next Match
+              </button>
+            </div>
           `
               : tournament.status === 'completed'
                 ? `
-            <div class="text-3xl font-bold text-yellow-300 font-iceland">Tournament Complete!</div>
+            <div class="text-center text-3xl font-bold text-green-400 font-iceland uppercase">Tournament Complete</div>
           `
                 : ''
           }
         </div>
-      </div>
 
-      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
         <div id="bracket-display" class="overflow-x-auto">
         </div>
       </div>
@@ -66,32 +66,22 @@ export class BracketViewController extends TournamentViewController {
         await this.handleStartNextMatch();
       });
     }
-
-    const refreshButton = this.querySelector('#refresh-bracket');
-    if (refreshButton) {
-      refreshButton.addEventListener('click', async () => {
-        await this.handleRefreshBracket();
-      });
-    }
   }
 
   private renderNoBracketState(container: Element, tournament: any): void {
     container.innerHTML = `
-      <div class="mb-6 text-center">
-        <h2 class="text-4xl font-bold text-white font-iceland">${tournament.name}</h2>
-        <p class="text-white text-xl font-iceland mt-2">Tournament Status: ${tournament.status}</p>
-      </div>
+      <div class="bg-black/40 backdrop-blur-md border-white border-2 rounded-xl p-10 shadow-2xl max-w-4xl mx-auto">
+        <div class="mb-10 text-center">
+          <h2 class="text-4xl font-bold text-white font-iceland tracking-wider uppercase">${tournament.name}</h2>
+          <div class="mt-3 h-0.5 bg-white/40 mx-auto" style="max-width: 200px;"></div>
+        </div>
 
-      <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8">
-        <div class="bg-yellow-600/30 border border-yellow-400 rounded-lg p-6 text-center">
-          <p class="text-yellow-300 mb-6 text-xl font-iceland">Bracket not yet generated. Tournament may still be initializing...</p>
-          <button id="refresh-bracket" class="text-white border-white border-2 px-6 py-3 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg">
-            Refresh Bracket
-          </button>
+        <div class="bg-yellow-600/20 backdrop-blur-sm border-yellow-400 border-2 rounded-lg p-8 text-center">
+          <p class="text-yellow-300 text-xl font-iceland uppercase tracking-wide">Bracket not yet generated</p>
+          <p class="text-white/60 mt-3 font-iceland">Tournament may still be initializing...</p>
         </div>
       </div>
     `;
-    this.bindEvents();
   }
 
   private renderBracket(bracket: any): void {
@@ -101,34 +91,33 @@ export class BracketViewController extends TournamentViewController {
     const bracketHTML = bracket.rounds
       .map(
         (round: any, roundIndex: number) => `
-      <div class="bracket-round mb-10">
-        <h3 class="text-2xl font-bold mb-6 text-center text-white font-iceland">Round ${roundIndex + 1}</h3>
-        <div class="grid gap-6 ${round.length <= 2 ? 'max-w-lg mx-auto' : ''}">
+      <div class="bracket-round mb-8">
+        <h3 class="text-2xl font-bold mb-6 text-center text-white/80 font-iceland uppercase tracking-wider">Round ${roundIndex + 1}</h3>
+        <div class="grid gap-6 ${round.length <= 2 ? 'max-w-2xl mx-auto' : round.length <= 4 ? 'grid-cols-2 max-w-4xl mx-auto' : 'grid-cols-2 md:grid-cols-4'}">
           ${round
             .map(
               (match: any) => `
-            <div class="match bg-black/20 border border-white rounded-lg p-6 ${match.status === 'in_progress' ? 'border-2 border-blue-300' : ''}">
-              <div class="flex justify-between items-center">
-                <div class="flex-1">
-                  <div class="player text-lg font-iceland ${match.winnerAlias === match.player1Alias ? 'text-green-300 font-bold' : 'text-white'}">
-                    ${match.player1Alias || 'Player 1'} <span class="float-right text-xl">${match.player1Score || 0}</span>
-                  </div>
-                  <div class="player text-lg font-iceland ${match.winnerAlias === match.player2Alias ? 'text-green-300 font-bold' : 'text-white'}">
-                    ${match.player2Alias || 'Player 2'} <span class="float-right text-xl">${match.player2Score || 0}</span>
-                  </div>
+            <div class="match bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-5 ${match.status === 'in_progress' ? 'ring-4 ring-blue-400 ring-opacity-50' : ''} hover:bg-black/40 transition-all">
+              <div class="space-y-3">
+                <div class="flex justify-between items-center ${match.winnerAlias === match.player1Alias ? 'text-green-400' : 'text-white'} ${match.player1Alias === 'TBD' ? 'opacity-50' : ''}">
+                  <span class="font-iceland text-xl ${match.winnerAlias === match.player1Alias ? 'font-bold' : ''}">${match.player1Alias || 'TBD'}</span>
+                  <span class="font-iceland text-2xl font-bold">${match.player1Score || 0}</span>
                 </div>
-                <div class="ml-6 text-2xl">
-                  ${
-                    match.status === 'completed'
-                      ? '✓'
-                      : match.status === 'in_progress'
-                        ? '▶'
-                        : match.player1Alias !== 'TBD' && match.player2Alias !== 'TBD'
-                          ? '⏳'
-                          : '⏸'
-                  }
+                <div class="h-px bg-white/20"></div>
+                <div class="flex justify-between items-center ${match.winnerAlias === match.player2Alias ? 'text-green-400' : 'text-white'} ${match.player2Alias === 'TBD' ? 'opacity-50' : ''}">
+                  <span class="font-iceland text-xl ${match.winnerAlias === match.player2Alias ? 'font-bold' : ''}">${match.player2Alias || 'TBD'}</span>
+                  <span class="font-iceland text-2xl font-bold">${match.player2Score || 0}</span>
                 </div>
               </div>
+              ${
+                match.status === 'completed'
+                  ? `<div class="mt-3 pt-3 border-t border-white/20 text-center text-green-400 font-iceland text-sm uppercase">Completed</div>`
+                  : match.status === 'in_progress'
+                    ? `<div class="mt-3 pt-3 border-t border-white/20 text-center text-blue-400 font-iceland text-sm uppercase">In Progress</div>`
+                    : match.player1Alias !== 'TBD' && match.player2Alias !== 'TBD'
+                      ? `<div class="mt-3 pt-3 border-t border-white/20 text-center text-white/60 font-iceland text-sm uppercase">Pending</div>`
+                      : `<div class="mt-3 pt-3 border-t border-white/20 text-center text-white/40 font-iceland text-sm uppercase">Waiting</div>`
+              }
             </div>
           `
             )
@@ -148,15 +137,6 @@ export class BracketViewController extends TournamentViewController {
     } catch (error) {
       console.error('Failed to start next match:', error);
       this.showError('Failed to start next match.');
-    }
-  }
-
-  private async handleRefreshBracket(): Promise<void> {
-    try {
-      await this.stateManager.refreshTournamentState();
-    } catch (error) {
-      console.error('Failed to refresh bracket:', error);
-      this.showError('Failed to refresh bracket');
     }
   }
 }
