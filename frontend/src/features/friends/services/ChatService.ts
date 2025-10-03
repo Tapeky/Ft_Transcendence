@@ -305,6 +305,14 @@ export class ChatService {
         this.handleConnected(data);
         break;
 
+      case 'tournament_match_ready':
+        this.emit('tournament_match_ready', data.data);
+        break;
+
+      case 'tournament_completed':
+        this.emit('tournament_completed', data.data);
+        break;
+
       default:
         console.warn('Unhandled message type:', data.type);
     }

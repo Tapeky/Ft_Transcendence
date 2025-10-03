@@ -2,16 +2,19 @@ import { appState } from '../state/AppState';
 import { router } from './Router';
 import { AuthManager } from '../../core/auth/AuthManager';
 import { RouteGuard } from './RouteGuard';
+import { TournamentNotificationManager } from '../../shared/components/TournamentNotification';
 
 export class Application {
   private static instance: Application;
   private routeGuard: RouteGuard;
   private authManager: AuthManager;
+  private tournamentNotifications: TournamentNotificationManager;
   private isInitialized = false;
 
   private constructor() {
     this.authManager = AuthManager.getInstance();
     this.routeGuard = new RouteGuard();
+    this.tournamentNotifications = TournamentNotificationManager.getInstance();
   }
 
   public static getInstance(): Application {
@@ -25,6 +28,7 @@ export class Application {
     if (this.isInitialized) return;
     this.setupCoreDependencies();
     this.initializeRouteProtection();
+    this.initializeTournamentNotifications();
     this.setupErrorHandling();
     this.isInitialized = true;
   }
@@ -36,6 +40,10 @@ export class Application {
 
   private initializeRouteProtection(): void {
     this.routeGuard.initialize();
+  }
+
+  private initializeTournamentNotifications(): void {
+    this.tournamentNotifications.initialize();
   }
 
   private setupErrorHandling(): void {
