@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { LocalTournamentService } from '../tournament/LocalTournamentService';
+import { WebSocketManager } from '../websocket/WebSocketManager';
 
 interface TournamentCreateRequest {
   name: string;
@@ -11,9 +12,14 @@ interface TournamentJoinRequest {
   alias: string;
 }
 
+interface FastifyWithWebSocket extends FastifyInstance {
+  websocketManager: WebSocketManager;
+}
+
 export async function localTournamentRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
   const tournamentService = new LocalTournamentService(db);
+  const wsManager = (server as FastifyWithWebSocket).websocketManager;
 
   server.post<{ Body: TournamentCreateRequest }>(
     '/create',
@@ -285,6 +291,23 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           }
         }
 
+        // 🔔 Broadcast tournament start notification
+        if (wsManager && bracket.rounds.length > 0 && bracket.rounds[0].length > 0) {
+          const firstMatch = bracket.rounds[0][0];
+          wsManager.broadcastToAll({
+            type: 'tournament_match_ready',
+            data: {
+              tournamentId: parseInt(id),
+              tournamentName: updatedTournament.name,
+              matchId: firstMatch.id,
+              round: firstMatch.round,
+              player1: firstMatch.player1Alias,
+              player2: firstMatch.player2Alias,
+            },
+          });
+          console.log(`📢 Broadcasted first match notification: ${firstMatch.player1Alias} vs ${firstMatch.player2Alias}`);
+        }
+
         let frontendStatus = updatedTournament.status;
         if (updatedTournament.status === 'running') {
           frontendStatus = 'in_progress';
@@ -350,6 +373,22 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         if (!nextMatch) {
           return reply.status(404).send({ success: false, error: 'No pending matches found' });
+        }
+
+        // 🔔 Broadcast next match notification
+        if (wsManager) {
+          wsManager.broadcastToAll({
+            type: 'tournament_match_ready',
+            data: {
+              tournamentId: parseInt(id),
+              tournamentName: tournament.name,
+              matchId: nextMatch.id,
+              round: nextMatch.round,
+              player1: nextMatch.player1_alias,
+              player2: nextMatch.player2_alias,
+            },
+          });
+          console.log(`📢 Broadcasted next match notification: ${nextMatch.player1_alias} vs ${nextMatch.player2_alias}`);
         }
 
         reply.send({
@@ -461,8 +500,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                   const nextMatch = nextRoundMatches[nextMatchIndex];
 
                   await db.run(
-                    `UPDATE tournament_matches 
-                   SET player1_alias = ?, player2_alias = ? 
+                    `UPDATE tournament_matches
+                   SET player1_alias = ?, player2_alias = ?
                    WHERE id = ?`,
                     [match1.winner_alias, match2.winner_alias, nextMatch.id]
                   );
@@ -470,6 +509,22 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                   console.log(
                     `🏆 Advanced ${match1.winner_alias} and ${match2.winner_alias} to next round match ${nextMatch.id}`
                   );
+
+                  // 🔔 Broadcast next round match notification
+                  if (wsManager && i === 0) { // Only broadcast once for the first match of next round
+                    wsManager.broadcastToAll({
+                      type: 'tournament_match_ready',
+                      data: {
+                        tournamentId: parseInt(id),
+                        tournamentName: tournament.name,
+                        matchId: nextMatch.id,
+                        round: nextRound,
+                        player1: match1.winner_alias,
+                        player2: match2.winner_alias,
+                      },
+                    });
+                    console.log(`📢 Broadcasted next round match: ${match1.winner_alias} vs ${match2.winner_alias}`);
+                  }
                 }
               }
             }
@@ -479,6 +534,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               [JSON.stringify({ winner: winnerAlias }), parseInt(id)]
             );
             console.log(`🏆 Tournament ${id} completed! Winner: ${winnerAlias}`);
+
+            // 🔔 Broadcast tournament completion notification
+            if (wsManager) {
+              wsManager.broadcastToAll({
+                type: 'tournament_completed',
+                data: {
+                  tournamentId: parseInt(id),
+                  tournamentName: tournament.name,
+                  winnerAlias: winnerAlias,
+                },
+              });
+              console.log(`📢 Broadcasted tournament completion: Winner is ${winnerAlias}`);
+            }
           }
         }
 
