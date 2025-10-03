@@ -9,6 +9,12 @@ interface TournamentMatchData {
   player2: string;
 }
 
+interface TournamentCompletedData {
+  tournamentId: number;
+  tournamentName: string;
+  winnerAlias: string;
+}
+
 export class TournamentNotificationManager {
   private static instance: TournamentNotificationManager;
   private notificationContainer: HTMLElement | null = null;
@@ -23,7 +29,10 @@ export class TournamentNotificationManager {
   initialize(): void {
     this.createNotificationContainer();
     chatService.on('tournament_match_ready', (data: TournamentMatchData) => {
-      this.showNotification(data);
+      this.showMatchNotification(data);
+    });
+    chatService.on('tournament_completed', (data: TournamentCompletedData) => {
+      this.showCompletedNotification(data);
     });
   }
 
@@ -36,43 +45,84 @@ export class TournamentNotificationManager {
     document.body.appendChild(this.notificationContainer);
   }
 
-  private showNotification(data: TournamentMatchData): void {
+  private showMatchNotification(data: TournamentMatchData): void {
     if (!this.notificationContainer) return;
 
     const notification = document.createElement('div');
     notification.className =
-      'bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg shadow-2xl border-2 border-white/30 backdrop-blur-sm animate-slide-in-right min-w-[350px] max-w-[400px]';
+      'bg-black/50 backdrop-blur-sm border-white border-2 text-white p-6 rounded-lg shadow-2xl transition-all duration-300 transform translate-x-full opacity-0 w-80';
 
     notification.innerHTML = `
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <h3 class="font-bold text-lg font-iceland">NEXT MATCH</h3>
-          </div>
-          <p class="text-sm opacity-90 mb-2">${data.tournamentName}</p>
-          <div class="text-xl font-bold font-iceland">
-            ${data.player1} <span class="text-blue-300">vs</span> ${data.player2}
-          </div>
-          <p class="text-sm opacity-75 mt-1">Round ${data.round}</p>
+      <div class="text-center">
+        <h3 class="text-xl font-bold font-iceland text-yellow-300 tracking-wider mb-3">NEXT MATCH</h3>
+        <p class="text-sm text-blue-300 font-semibold font-iceland mb-3">${data.tournamentName}</p>
+        <div class="text-2xl font-bold font-iceland text-white mb-3">
+          ${data.player1} <span class="text-blue-300 mx-2">vs</span> ${data.player2}
         </div>
-        <button class="text-white/70 hover:text-white ml-4 text-xl">×</button>
+        <div class="flex items-center justify-center gap-2">
+          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <p class="text-xs text-gray-400 font-iceland">Round ${data.round}</p>
+        </div>
       </div>
     `;
 
-    const closeBtn = notification.querySelector('button');
-    closeBtn?.addEventListener('click', () => {
-      notification.classList.add('animate-slide-out-right');
-      setTimeout(() => notification.remove(), 300);
+    this.notificationContainer.appendChild(notification);
+
+    // Trigger slide-in animation
+    requestAnimationFrame(() => {
+      notification.classList.remove('translate-x-full', 'opacity-0');
+      notification.classList.add('translate-x-0', 'opacity-100');
     });
 
+    // Auto-remove after 6 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        this.removeNotification(notification);
+      }
+    }, 6000);
+  }
+
+  private removeNotification(notification: HTMLElement): void {
+    notification.classList.add('translate-x-full', 'opacity-0');
+    setTimeout(() => notification.remove(), 300);
+  }
+
+  private showCompletedNotification(data: TournamentCompletedData): void {
+    if (!this.notificationContainer) return;
+
+    const notification = document.createElement('div');
+    notification.className =
+      'bg-black/50 backdrop-blur-sm border-yellow-400 border-2 text-white p-6 rounded-lg shadow-2xl transition-all duration-300 transform translate-x-full opacity-0 w-80';
+
+    notification.innerHTML = `
+      <div class="text-center">
+        <h3 class="text-xl font-bold font-iceland text-yellow-300 tracking-wider mb-3">TOURNAMENT COMPLETE!</h3>
+        <p class="text-sm text-blue-300 font-semibold font-iceland mb-3">${data.tournamentName}</p>
+        <div class="text-2xl font-bold font-iceland text-yellow-300 mb-3">
+          WINNER
+        </div>
+        <div class="text-xl font-bold font-iceland text-white mb-3">
+          ${data.winnerAlias}
+        </div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+          <p class="text-xs text-gray-400 font-iceland">Congratulations!</p>
+        </div>
+      </div>
+    `;
+
     this.notificationContainer.appendChild(notification);
+
+    // Trigger slide-in animation
+    requestAnimationFrame(() => {
+      notification.classList.remove('translate-x-full', 'opacity-0');
+      notification.classList.add('translate-x-0', 'opacity-100');
+    });
 
     // Auto-remove after 8 seconds
     setTimeout(() => {
       if (notification.parentElement) {
-        notification.classList.add('animate-slide-out-right');
-        setTimeout(() => notification.remove(), 300);
+        this.removeNotification(notification);
       }
     }, 8000);
   }
