@@ -61,6 +61,7 @@ export interface SecurityLog {
 export interface LoginCredentials {
   email: string;
   password: string;
+  totp_password?: string;
 }
 
 export interface RegisterCredentials {
