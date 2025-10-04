@@ -277,6 +277,7 @@ export async function authRoutes(server: FastifyInstance) {
             avatar_url: user.avatar_url,
             is_online: user.is_online,
             created_at: user.created_at,
+			has_2fa_enabled: user.has_2fa_enabled,
             stats,
           },
         });
