@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     total_games INTEGER DEFAULT 0,
     google_id VARCHAR(255) UNIQUE,
     github_id VARCHAR(255) UNIQUE,
+	totp_secret CHAR(32),
+	has_2fa_enabled BOOLEAN DEFAULT FALSE,
     data_consent BOOLEAN DEFAULT FALSE,
     data_consent_date DATETIME
 );
