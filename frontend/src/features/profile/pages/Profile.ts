@@ -6,6 +6,7 @@ import { CloseBtn } from '../../../shared/components/CloseBtn';
 import { AvatarSelect } from '../../../shared/components/AvatarSelect';
 import { apiService } from '../../../shared/services/api';
 import { getAvatarUrl } from '../../../shared/utils/avatar';
+import { toCanvas } from 'qrcode';
 
 export class ProfilePage {
   private element: HTMLElement;
@@ -106,6 +107,22 @@ export class ProfilePage {
     `;
     leftColumn.appendChild(passwordSection);
 
+  const totpSection = document.createElement('div')
+    totpSection.className = 'flex justify-center';
+    totpSection.innerHTML = `
+      <h4 class="flex-1">2FA</h4>
+      <div class="flex-1">
+        <button 
+          id="manage-2fa-btn"
+          class="border-2 w-full bg-blue-800 hover:scale-105 text-white rounded-md translate-x-[-20px] transition-transform"
+        >
+          Manage 2FA
+        </button>
+      </div>
+      <div class="flex-1"></div>
+    `;
+  leftColumn.appendChild(totpSection);
+
     mainContent.appendChild(leftColumn);
 
     const rightColumn = document.createElement('div');
@@ -140,6 +157,9 @@ export class ProfilePage {
 
     const changePasswordBtn = this.element.querySelector('#change-password-btn');
     changePasswordBtn?.addEventListener('click', () => this.openPasswordModal());
+
+    const manage2faBtn = this.element.querySelector('#manage-2fa-btn');
+    manage2faBtn?.addEventListener('click', () => this.open2faModal())
 
     const editAvatarBtn = this.element.querySelector('#edit-avatar-btn');
     editAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
@@ -447,6 +467,139 @@ export class ProfilePage {
         type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
       }`;
     }
+  }
+
+  private open2faModal(): void {
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = '2fa-modal';
+    modalOverlay.className =
+      'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+
+    const modalContainer = document.createElement('div');
+    modalContainer.className =
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+
+    var timerInterval: any = null
+    const $2faModalCloseBtn = new CloseBtn(() => {
+      if (timerInterval)
+        clearInterval(timerInterval);
+      modalOverlay.remove();
+    });
+    modalContainer.appendChild($2faModalCloseBtn.getElement());
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'flex flex-col justify-center items-center mt-6 gap-0 px-8';
+    modalContent.innerHTML = `
+      <div>
+        <h1 class="justify-center" id="state-of-2fa-text"></h1>
+      </div>
+      <div class="flex flex-col justify-center items-center mt-6 gap-4 px-8">
+        <button id="toggle-2fa-btn" class="rounded-md ml-3 border-2 border-white" />
+      </div>
+      <div>
+        <h2 id="has-2fa-been-enabled-text" class="text-[1.4rem]"></h2>
+      </div>
+      <div id="submit-2fa-div" class="flex flex-col justify-center items-center">
+        <canvas id="qr-2fa-canvas"></canvas>
+        <hr style="height:5px" />
+        <form id="submit-2fa-form">
+          <div class="flex flex-col justify-center items-center">
+            <input
+              type="text"
+              name="totp_input"
+              value=""
+              autocomplete="off"
+              autofocus="autofocus"
+              class="form-control text-center"
+              onkeypress="return (event.charCode != 8 && event.charCode == 0 || (event.charCode >= 48 && event.charCode <= 57))"
+              minlength="6"
+              maxlength="6"
+              required
+              placeholder="XXXXXX">
+            <hr style="height:10px"/>
+            <button class="rounded-md ml-3 border-2 border-white">
+              SUBMIT
+            </button>
+          </div>
+        </form>
+        <hr style="height:5px" />
+        <h3 id="time-counter-2fa-text" class="text-[1.5rem]"></h3>
+      </div>`;
+
+    modalContainer.appendChild(modalContent);
+    modalOverlay.appendChild(modalContainer);
+    document.body.appendChild(modalOverlay);
+
+    const stateOf2faText = modalContainer.querySelector('#state-of-2fa-text')!;
+    const toggle2faBtn = modalContainer.querySelector('#toggle-2fa-btn')! as HTMLButtonElement;
+    const qr2faCanvas = modalContainer.querySelector('#qr-2fa-canvas')! as HTMLCanvasElement;
+    const timeCounter2faText = modalContainer.querySelector('#time-counter-2fa-text')!;
+    const has2faBeenEnabledText = modalContainer.querySelector('#has-2fa-been-enabled-text')! as HTMLHeadingElement;
+    function setModalText(is2FaEnabled: boolean) {
+      stateOf2faText.textContent = "2FA is " + (is2FaEnabled ? "enabled" : "disabled");
+      toggle2faBtn.style.display = '';
+      toggle2faBtn.textContent = (is2FaEnabled ? "Disable" : "Enable") + " 2FA";
+    }
+
+    const submit2faForm = modalContainer.querySelector('#submit-2fa-form')! as HTMLFormElement;
+    const submit2faDiv = modalContainer.querySelector('#submit-2fa-div')! as HTMLDivElement;
+    submit2faForm.onsubmit = async (ev: SubmitEvent) => {
+      ev.preventDefault();
+      const input: HTMLInputElement = submit2faForm.elements.namedItem('totp_input') as HTMLInputElement;
+      const totp = input.value;
+      const response = await apiService.confirm2faSetup(totp);
+      if (response.success) {
+        setModalText(true);
+        authManager.refreshUser();
+        clearInterval(timerInterval);
+        timerInterval = null;
+        submit2faDiv.style.display = 'none';
+        has2faBeenEnabledText.style.color = 'green';
+      }
+      else
+        has2faBeenEnabledText.style.color = 'red';
+      has2faBeenEnabledText.textContent = response.message;
+    }
+    submit2faDiv.style.display = 'none';
+
+    setModalText(authManager.getCurrentUser()!.has_2fa_enabled!);
+    toggle2faBtn?.addEventListener('click', async () => {
+      const user = authManager.getCurrentUser();
+      const has2fa = user?.has_2fa_enabled!
+      if (has2fa) {
+        await apiService.disable2fa();
+        has2faBeenEnabledText.textContent = '';
+        authManager.refreshUser();
+        setModalText(false);
+      }
+      else {
+        if (timerInterval)
+          return ;
+        const $2faInfo = await apiService.start2faSetup();
+        toCanvas(qr2faCanvas, $2faInfo.totp_uri);
+        submit2faDiv.style.display = '';
+        var remainingTime = $2faInfo.remaining_time;
+        toggle2faBtn.style.display = 'none';
+
+        function updateTimer() {
+          timeCounter2faText.textContent = `${Math.floor(remainingTime / 60)}m${Math.floor(remainingTime % 60)}s`
+        }
+
+        updateTimer();
+        timerInterval = setInterval(() => {
+          remainingTime--;
+          if (remainingTime < 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            has2faBeenEnabledText.textContent = 'Timeout';
+            has2faBeenEnabledText.style.color = 'red';
+            submit2faDiv.style.display = 'none';
+          }
+          else
+            updateTimer();
+        }, 1000);
+      }
+    });
   }
 
   private showFeedback(message: string, type: 'success' | 'error'): void {
