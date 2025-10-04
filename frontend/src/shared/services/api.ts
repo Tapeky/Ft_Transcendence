@@ -32,6 +32,7 @@ export interface User {
   email: string;
   display_name?: string;
   avatar_url?: string;
+  has_2fa_enabled?: boolean;
   is_online: boolean;
   total_wins: number;
   total_losses: number;
@@ -284,6 +285,22 @@ class ApiService {
         new_password: newPassword,
       }),
     });
+  }
+
+  async start2faSetup(): Promise<{ totp_uri: string, remaining_time: number }> {
+	const response = await this.post<{ totp_uri: string, remaining_time: number }>('/api/profile/setup_2fa');
+	return response.data!;
+  }
+
+  async confirm2faSetup(totp: string): Promise<{ success: boolean, message: string }> {
+	const response = await this.post<{ error: boolean, message: string }>('/api/profile/confirm_2fa', {
+		otp: totp
+	});
+	return { success: response.success!, message: response.message! };
+  }
+
+  async disable2fa(): Promise<void> {
+	await this.post('/api/profile/disable_2fa');
   }
 
   async deleteAccount(password: string): Promise<void> {
