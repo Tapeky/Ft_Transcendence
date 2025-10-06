@@ -14,50 +14,50 @@ setup: ## Configuration initiale du projet
 
 dev: setup ## Lance l'environnement de développement
 	@echo "🚀 Lancement en mode développement..."
-	docker-compose -f $(COMPOSE_FILE_DEV) up --build
+	docker compose --file $(COMPOSE_FILE_DEV) up --build
 
 prod: setup ## Lance l'environnement de production
 	@echo "🚀 Lancement en mode production..."
-	docker-compose -f $(COMPOSE_FILE_PROD) up -d --build
+	docker compose --file $(COMPOSE_FILE_PROD) up -d --build
 
 build: ## Rebuild les images sans cache
 	@echo "🔨 Rebuild des images..."
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 stop: ## Arrête tous les conteneurs
 	@echo "⏹️ Arrêt des conteneurs..."
-	docker-compose down
+	docker compose down
 
 clean: ## Nettoie les conteneurs, images et volumes
 	@echo "🧹 Nettoyage..."
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	docker system prune -f
 
 logs: ## Affiche les logs en temps réel
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-backend: ## Affiche les logs du backend
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 logs-frontend: ## Affiche les logs du frontend
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 shell-backend: ## Ouvre un shell dans le conteneur backend
-	docker-compose exec backend sh
+	docker compose exec backend sh
 
 shell-frontend: ## Ouvre un shell dans le conteneur frontend
-	docker-compose exec frontend sh
+	docker compose exec frontend sh
 
 db-reset: ## Remet à zéro la base de données
 	@echo "🗑️ Reset de la base de données..."
-	docker-compose exec backend npm run db:reset
+	docker compose exec backend npm run db:reset
 
 db-migrate: ## Lance les migrations
-	docker-compose exec backend npm run db:migrate
+	docker compose exec backend npm run db:migrate
 
 db-migrate-github: ## Lance la migration GitHub
 	@echo "🔄 Migration GitHub..."
-	docker-compose exec backend npm run db:migrate:github
+	docker compose exec backend npm run db:migrate:github
 
 db-seed: ## Lance le seeding de la DB
-	docker-compose exec backend npm run db:seed
+	docker compose exec backend npm run db:seed
