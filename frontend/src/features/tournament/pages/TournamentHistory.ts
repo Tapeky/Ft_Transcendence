@@ -217,7 +217,7 @@ export class TournamentHistory {
       
       const backBtn = mainContent.querySelector('#back-btn') as HTMLButtonElement;
       if (backBtn) {
-        backBtn.addEventListener('click', () => router.navigate('/menu'));
+        backBtn.addEventListener('click', () => router.navigate('/'));
       }
     }
   }
@@ -437,7 +437,7 @@ export class TournamentHistory {
     const backBtn = mainContent.querySelector('#back-btn') as HTMLButtonElement;
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        router.navigate('/menu');
+        router.navigate('/');
       });
     }
 

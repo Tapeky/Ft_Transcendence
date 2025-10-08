@@ -107,7 +107,7 @@ export class FriendsPage {
     const backBtn = container.querySelector('#back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        router.navigate('/menu');
+        router.navigate('/');
       });
     }
 

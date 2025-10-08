@@ -25,18 +25,13 @@ export class Router {
 
   private setupRoutes(): void {
     this.routes.set('/', async () => {
-      const { HomePage } = await import('../../pages/Home');
-      return new HomePage().getElement();
+      const { MenuPage } = await import('../../pages/Menu');
+      return new MenuPage().getElement();
     });
 
     this.routes.set('/auth', async () => {
       const { AuthPage } = await import('../../features/auth/pages/Auth');
       return new AuthPage().getElement();
-    });
-
-    this.routes.set('/menu', async () => {
-      const { MenuPage } = await import('../../pages/Menu');
-      return new MenuPage().getElement();
     });
 
     this.routes.set('/profile', async () => {
@@ -160,8 +155,8 @@ export class Router {
       const { apiService } = await import('../../shared/services/api');
       apiService.setToken(token);
 
-      window.history.replaceState(null, '', '/menu');
-      await this.navigate('/menu', true);
+      window.history.replaceState(null, '', '/');
+      await this.navigate('/', true);
 
       window.location.reload();
     } catch (error) {

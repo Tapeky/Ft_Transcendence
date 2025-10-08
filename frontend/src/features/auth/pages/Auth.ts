@@ -359,7 +359,7 @@ export class AuthPage {
 
       if (authState.isAuthenticated && authState.user) {
         import('../../../core/app/Router').then(({ router }) => {
-          router.navigate('/menu');
+          router.navigate('/');
         });
       }
     });
@@ -562,7 +562,7 @@ export class AuthPage {
     try {
       await authManager.login(credentials);
       import('../../../core/app/Router').then(({ router }) => {
-        router.navigate('/menu');
+        router.navigate('/');
       });
     } catch (error) {
       console.error('❌ AuthPage: Login failed:', error);
@@ -602,7 +602,7 @@ export class AuthPage {
     try {
       await authManager.register(credentials);
       import('../../../core/app/Router').then(({ router }) => {
-        router.navigate('/menu');
+        router.navigate('/');
       });
     } catch (error) {
       console.error('❌ AuthPage: Registration failed:', error);

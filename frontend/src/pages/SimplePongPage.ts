@@ -183,7 +183,7 @@ export class SimplePongPage {
     backButton?.addEventListener('click', () => {
       import('../core/app/Router').then(({ router }) => {
         this.destroy();
-        router.navigate('/menu');
+        router.navigate('/');
       });
     });
   }
@@ -761,7 +761,7 @@ export class SimplePongPage {
       } else if (target.id === 'back-to-menu-end') {
         this.destroy();
         import('../core/app/Router').then(({ router }) => {
-          router.navigate('/menu');
+          router.navigate('/');
         });
       }
     });

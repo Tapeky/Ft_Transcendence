@@ -69,7 +69,7 @@ export class AuthManager {
       });
 
       this.notifyAuthStateChange(true);
-      this.navigateToMenu();
+      this.navigateToHome();
 
       this.connectChatService();
     } catch (error) {
@@ -94,7 +94,7 @@ export class AuthManager {
       });
 
       this.notifyAuthStateChange(true);
-      this.navigateToMenu();
+      this.navigateToHome();
 
       this.connectChatService();
     } catch (error) {
@@ -164,9 +164,6 @@ export class AuthManager {
     return await apiService.getGoogleAuthUrl();
   }
 
-  private navigateToMenu(): void {
-    router.navigate('/menu');
-  }
   private navigateToHome(): void {
     router.navigate('/');
   }
