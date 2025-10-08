@@ -59,8 +59,8 @@ export class TournamentEventManager {
   }
 
   private handleBackNavigation(): void {
-    console.log('Going back to menu');
-    router.navigate('/menu');
+    console.log('Going back to home');
+    router.navigate('/');
   }
 
   private handleHistoryNavigation(): void {

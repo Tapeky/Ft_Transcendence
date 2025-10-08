@@ -9,9 +9,9 @@ export class RouteGuard {
   }
 
   isProtectedRoute(path: string): boolean {
-    const protectedRoutes = ['/menu', '/profile', '/tournament', '/game'];
+    const protectedRoutes = ['/', '/profile', '/friends', '/tournament', '/game', '/dashboard'];
 
-    return protectedRoutes.some(route => path.startsWith(route));
+    return protectedRoutes.some(route => path === route || (route !== '/' && path.startsWith(route)));
   }
 
   isGuestOnlyRoute(path: string): boolean {
@@ -38,7 +38,7 @@ export class RouteGuard {
     if (isAuthenticated && isGuestOnly) {
       return {
         allowed: false,
-        redirectTo: '/menu',
+        redirectTo: '/',
       };
     }
 

@@ -94,7 +94,7 @@ export class GamePage {
     const backButton = this.element.querySelector('#back-to-menu');
     backButton?.addEventListener('click', () => {
       this.destroy();
-      router.navigate('/menu');
+      router.navigate('/');
     });
     setTimeout(() => this.initializeGame(), 100);
   }
@@ -477,7 +477,7 @@ export class GamePage {
         router.navigate('/game');
       } else if (target.id === 'back-to-menu-end') {
         this.destroy();
-        router.navigate('/menu');
+        router.navigate('/');
       }
     });
     document.body.appendChild(overlay);
