@@ -455,6 +455,9 @@ export class TournamentHistory {
     const createBtn = mainContent.querySelector('#create-tournament-btn') as HTMLButtonElement;
     if (createBtn) {
       createBtn.addEventListener('click', () => {
+        // Clear any existing tournament ID to ensure fresh start
+        sessionStorage.removeItem('activeTournamentId');
+        sessionStorage.removeItem('tournamentMatchResult');
         router.navigate('/tournament');
       });
     }

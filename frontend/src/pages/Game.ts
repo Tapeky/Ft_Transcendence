@@ -425,9 +425,14 @@ export class GamePage {
     if (this.gameEndOverlay) return;
     const leftScore = this.gameState?.leftScore || 0;
     const rightScore = this.gameState?.rightScore || 0;
-    if (!this.tournamentContext) {
+
+    // Save tournament result immediately (before showing overlay)
+    if (this.tournamentContext) {
+      this.saveTournamentResult(leftScore, rightScore);
+    } else {
       await this.recordMatch(leftScore, rightScore);
     }
+
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
     if (this.tournamentContext) {
@@ -441,14 +446,9 @@ export class GamePage {
                         <div class="text-lg text-white font-iceland">${this.tournamentContext.player2Alias}: ${rightScore}</div>
                     </div>
                     <p class="text-sm text-gray-300 font-iceland mb-6">Round ${this.tournamentContext.round} • Match ${this.tournamentContext.matchNumber}</p>
-                    <div class="flex gap-4 justify-center">
-                        <button id="continue-tournament" class="text-white border-white border-2 px-6 py-3 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg font-bold">
-                            Continue Tournament
-                        </button>
-                        <button id="back-to-tournament" class="text-white border-gray-400 border-2 px-6 py-3 rounded hover:bg-gray-400 hover:text-black transition-colors font-iceland text-lg">
-                            Back to Tournament
-                        </button>
-                    </div>
+                    <button id="continue-tournament" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
+                        Continue Tournament →
+                    </button>
                 </div>
             `;
     } else {
@@ -472,9 +472,6 @@ export class GamePage {
       const target = e.target as HTMLElement;
       if (target.id === 'continue-tournament') {
         this.handleTournamentMatchComplete();
-      } else if (target.id === 'back-to-tournament') {
-        this.destroy();
-        router.navigate('/tournament');
       } else if (target.id === 'play-again') {
         this.destroy();
         router.navigate('/game');
@@ -487,10 +484,9 @@ export class GamePage {
     this.gameEndOverlay = overlay;
   }
 
-  private handleTournamentMatchComplete(): void {
-    if (!this.tournamentContext || !this.gameState) return;
-    const leftScore = this.gameState.leftScore;
-    const rightScore = this.gameState.rightScore;
+  private saveTournamentResult(leftScore: number, rightScore: number): void {
+    if (!this.tournamentContext) return;
+
     const winnerAlias =
       leftScore > rightScore
         ? this.tournamentContext.player1Alias
@@ -503,6 +499,9 @@ export class GamePage {
       winnerAlias: winnerAlias,
     };
     sessionStorage.setItem('tournamentMatchResult', JSON.stringify(matchResult));
+  }
+
+  private handleTournamentMatchComplete(): void {
     this.destroy();
     router.navigate('/tournament');
   }

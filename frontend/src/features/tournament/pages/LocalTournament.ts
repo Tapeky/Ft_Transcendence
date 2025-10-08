@@ -82,11 +82,11 @@ export class LocalTournament {
 
     if (tournamentId) {
       try {
-        console.log(`[Tournament] Attempting to resume tournament ${tournamentId}`);
+        // Check for tournament result FIRST before resuming
+        await this.checkForTournamentResult();
+
         await this.stateManager.resumeTournament(tournamentId);
-        // Save tournament ID in sessionStorage
         sessionStorage.setItem('activeTournamentId', tournamentId);
-        console.log(`[Tournament] Successfully resumed tournament ${tournamentId}`);
       } catch (error) {
         console.error('Failed to resume tournament:', error);
         // Clear invalid tournament ID
@@ -125,10 +125,12 @@ export class LocalTournament {
 
   private async checkForTournamentResult(): Promise<void> {
     const tournamentResultJson = sessionStorage.getItem('tournamentMatchResult');
+
     if (tournamentResultJson) {
       try {
         const result = JSON.parse(tournamentResultJson);
         sessionStorage.removeItem('tournamentMatchResult');
+
         if (!this.currentState?.tournament) {
           await this.stateManager.loadTournament(result.tournamentId);
         }
@@ -148,6 +150,15 @@ export class LocalTournament {
         const { TournamentService } = await import('../services/TournamentService');
         await TournamentService.submitMatchResult(result.tournamentId, matchResult);
         await this.stateManager.refreshTournamentState();
+
+        // Automatically start next match if tournament is still in progress
+        const updatedTournament = this.stateManager.getCurrentTournament();
+        if (
+          updatedTournament &&
+          (updatedTournament.status === 'in_progress' || updatedTournament.status === 'running')
+        ) {
+          await this.stateManager.startNextMatch();
+        }
       } catch (error) {
         console.error('Failed to process tournament result:', error);
         this.showError('Failed to process match result');
@@ -357,11 +368,16 @@ export class LocalTournament {
 
   private redirectToGame(state: TournamentSystemState): void {
     const matchOrchestrator = this.stateManager.getMatchOrchestrator();
+    console.log('🎮 Match Orchestrator:', matchOrchestrator);
     const gameContext = matchOrchestrator?.getCurrentGameContext();
+    console.log('🎮 Game Context:', gameContext);
 
     if (gameContext) {
       const contextParam = encodeURIComponent(JSON.stringify(gameContext));
+      console.log('✅ Launching game with context:', contextParam);
       window.location.href = `/game?tournamentContext=${contextParam}`;
+    } else {
+      console.error('❌ No game context available - cannot launch tournament game!');
     }
   }
 
