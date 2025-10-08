@@ -120,10 +120,28 @@ export async function localTournamentRoutes(server: FastifyInstance) {
             rounds.push(roundsMap.get(i) || []);
           }
 
+          // Calculate current round dynamically
+          let currentRound = 1;
+          const nextPendingMatch = matches.find(
+            m => m.status === 'pending' && m.player1_alias !== 'TBD' && m.player2_alias !== 'TBD'
+          );
+          if (nextPendingMatch) {
+            currentRound = nextPendingMatch.round;
+          } else {
+            // If no pending matches, check for in_progress matches
+            const inProgressMatch = matches.find(m => m.status === 'in_progress');
+            if (inProgressMatch) {
+              currentRound = inProgressMatch.round;
+            } else {
+              // All matches completed, set to last round
+              currentRound = maxRound;
+            }
+          }
+
           bracket = {
             rounds: rounds,
-            currentRound: 1,
-            currentMatch: matches.find(m => m.status === 'pending')?.id,
+            currentRound: currentRound,
+            currentMatch: nextPendingMatch?.id || matches.find(m => m.status === 'pending')?.id,
           };
         }
 
@@ -147,6 +165,30 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           frontendStatus = 'in_progress';
         }
 
+        // Extract winner from bracket_data or final match
+        let winnerAlias = null;
+        if (tournament.status === 'completed') {
+          // Try to get winner from bracket_data first
+          if (tournament.bracket_data) {
+            try {
+              const bracketData = JSON.parse(tournament.bracket_data);
+              winnerAlias = bracketData.winner;
+            } catch (e) {
+              console.warn('Failed to parse bracket_data:', e);
+            }
+          }
+
+          // If not found, get winner from the final match
+          if (!winnerAlias && matches.length > 0) {
+            const finalMatch = matches.find(
+              (m: any) => m.status === 'completed' && m.winner_alias && m.round === Math.max(...matches.map((match: any) => match.round))
+            );
+            if (finalMatch) {
+              winnerAlias = finalMatch.winner_alias;
+            }
+          }
+        }
+
         reply.send({
           success: true,
           data: {
@@ -156,7 +198,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               maxPlayers: tournament.max_players,
               currentPlayers: tournament.current_players,
               status: frontendStatus,
-              winnerAlias: tournament.winner_alias,
+              winnerAlias: winnerAlias,
               players: players.map(p => ({
                 id: p.id.toString(),
                 alias: p.alias,
@@ -212,8 +254,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         await db.run(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`, [
           parseInt(id),
         ]);
-
-        console.log(`🏆 Player "${alias}" joined tournament ${id} (ID: ${playerId})`);
 
         const updatedTournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [
           parseInt(id),
@@ -279,8 +319,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           [parseInt(id)]
         );
 
-        console.log(`🏆 Starting tournament ${id} with ${players.length} players`);
-
         const bracket = tournamentService.generateTournamentBracket(players);
 
         for (const round of bracket.rounds) {
@@ -303,7 +341,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           }
         }
 
-        // 🔔 Broadcast tournament start notification
+        // Broadcast tournament start notification
         if (wsManager && bracket.rounds.length > 0 && bracket.rounds[0].length > 0) {
           const firstMatch = bracket.rounds[0][0];
           wsManager.broadcastToAll({
@@ -317,7 +355,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               player2: firstMatch.player2Alias,
             },
           });
-          console.log(`📢 Broadcasted first match notification: ${firstMatch.player1Alias} vs ${firstMatch.player2Alias}`);
         }
 
         let frontendStatus = updatedTournament.status;
@@ -376,9 +413,12 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         const nextMatch = await db.get(
           `
-        SELECT * FROM tournament_matches 
-        WHERE tournament_id = ? AND status = 'pending' 
-        ORDER BY round, match_number 
+        SELECT * FROM tournament_matches
+        WHERE tournament_id = ?
+          AND status = 'pending'
+          AND player1_alias != 'TBD'
+          AND player2_alias != 'TBD'
+        ORDER BY round, match_number
         LIMIT 1
       `,
           [parseInt(id)]
@@ -388,7 +428,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           return reply.status(404).send({ success: false, error: 'No pending matches found' });
         }
 
-        // 🔔 Broadcast next match notification
+        // Broadcast next match notification
         if (wsManager) {
           wsManager.broadcastToAll({
             type: 'tournament_match_ready',
@@ -401,7 +441,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               player2: nextMatch.player2_alias,
             },
           });
-          console.log(`📢 Broadcasted next match notification: ${nextMatch.player1_alias} vs ${nextMatch.player2_alias}`);
         }
 
         reply.send({
@@ -469,14 +508,10 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         }
 
         await db.run(
-          `UPDATE tournament_matches 
-         SET player1_score = ?, player2_score = ?, winner_alias = ?, status = 'completed', completed_at = CURRENT_TIMESTAMP 
+          `UPDATE tournament_matches
+         SET player1_score = ?, player2_score = ?, winner_alias = ?, status = 'completed', completed_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
           [player1Score, player2Score, winnerAlias, matchId]
-        );
-
-        console.log(
-          `🏆 Match ${matchId} completed: ${match.player1_alias} ${player1Score}-${player2Score} ${match.player2_alias}, winner: ${winnerAlias}`
         );
 
         const remainingMatches = await db.all(
@@ -486,7 +521,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         if (remainingMatches.length === 0) {
-          console.log(`🏆 Round ${match.round} complete, advancing winners to next round`);
 
           const roundMatches = await db.all(
             `SELECT * FROM tournament_matches 
@@ -520,12 +554,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                     [match1.winner_alias, match2.winner_alias, nextMatch.id]
                   );
 
-                  console.log(
-                    `🏆 Advanced ${match1.winner_alias} and ${match2.winner_alias} to next round match ${nextMatch.id}`
-                  );
-
-                  // 🔔 Broadcast next round match notification
-                  if (wsManager && i === 0) { // Only broadcast once for the first match of next round
+                  // Broadcast next round match notification
+                  if (wsManager && i === 0) {
                     wsManager.broadcastToAll({
                       type: 'tournament_match_ready',
                       data: {
@@ -537,7 +567,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                         player2: match2.winner_alias,
                       },
                     });
-                    console.log(`📢 Broadcasted next round match: ${match1.winner_alias} vs ${match2.winner_alias}`);
                   }
                 }
               }
@@ -547,9 +576,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               `UPDATE tournaments SET status = 'completed', completed_at = CURRENT_TIMESTAMP, bracket_data = ? WHERE id = ?`,
               [JSON.stringify({ winner: winnerAlias }), parseInt(id)]
             );
-            console.log(`🏆 Tournament ${id} completed! Winner: ${winnerAlias}`);
 
-            // 🔔 Broadcast tournament completion notification
+            // Broadcast tournament completion notification
             if (wsManager) {
               wsManager.broadcastToAll({
                 type: 'tournament_completed',
@@ -559,7 +587,6 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                   winnerAlias: winnerAlias,
                 },
               });
-              console.log(`📢 Broadcasted tournament completion: Winner is ${winnerAlias}`);
             }
           }
         }
@@ -583,7 +610,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
     try {
 
       const tournaments = await db.all(`
-        SELECT 
+        SELECT
           id,
           name,
           max_players as maxPlayers,
@@ -594,8 +621,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           created_at as createdAt,
           started_at as startedAt,
           completed_at as completedAt
-        FROM tournaments 
-        ORDER BY created_at DESC 
+        FROM tournaments
+        WHERE status IN ('completed', 'cancelled')
+        ORDER BY created_at DESC
         LIMIT 50
       `);
 
@@ -728,15 +756,17 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
     try {
 
-      // Get all tournament IDs
-      const allTournaments = (await db.all(`SELECT id FROM tournaments`)) as any[];
-      const completedTournamentIds = allTournaments.map((t: any) => t.id);
+      // Get only completed/cancelled tournament IDs (not running ones)
+      const completedTournaments = (await db.all(
+        `SELECT id FROM tournaments WHERE status IN ('completed', 'cancelled')`
+      )) as any[];
+      const completedTournamentIds = completedTournaments.map((t: any) => t.id);
 
       if (completedTournamentIds.length > 0) {
         const placeholders = completedTournamentIds.map(() => '?').join(',');
 
         console.log(
-          `🗑️ Deleting ALL ${completedTournamentIds.length} tournaments:`,
+          `🗑️ Deleting ${completedTournamentIds.length} completed tournaments:`,
           completedTournamentIds
         );
 
