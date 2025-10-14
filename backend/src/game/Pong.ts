@@ -1,170 +1,232 @@
-import { Vector2, Point2 } from "./Geometry";
+import { Vector2, Point2 } from './Geometry';
 import { Rectangle, Circle, Collision } from './Collision';
-import { Input } from "./Input";
+import { Input } from './Input';
 
-// unsure on how to store const variables'n'stuff
-
-// IMPORTANT: (0, 0) coordinates are the top left of the arena.
 const arenaSize = {
-	width: 500,
-	height: 200
+  width: 500,
+  height: 200,
 };
 
-const paddleSpeed = 20; // units / sec
+const paddleSpeed = 200; // units / sec
 const paddleSize = {
-	width: 8,
-	height: 30
+  width: 8,
+  height: 30,
 };
 
 const ballRadius = 5;
-const ballSpeed = 50; // units / sec
+const ballSpeed = 300; // units / sec
 const ballMaxBounceAngle = 75;
+const winningScore = 3; // First to 3 points wins
 
 export class Paddle {
-	public rect: Rectangle;
-	private _hitCount: number = 0;
+  public rect: Rectangle;
+  private _hitCount: number = 0;
 
-	public constructor(centerPos: Point2, private readonly _parent: Pong) {
-		this.rect = new Rectangle(centerPos, new Vector2(paddleSize.width, paddleSize.height));
-	}
-	
-	public move(deltaTime: number, input: Input) {
-		if (input.up)
-			this.rect.pos.y -= paddleSpeed * deltaTime;
-		if (input.down)
-			this.rect.pos.y += paddleSpeed * deltaTime;
-		
-		if (this.rect.top < 0)
-			this.rect.pos.y = 0;
-		else if (this.rect.bottom > arenaSize.height)
-			this.rect.pos.y = arenaSize.height - this.rect.size.y;
-	}
+  public constructor(
+    centerPos: Point2,
+    private readonly _parent: Pong
+  ) {
+    this.rect = new Rectangle(centerPos, new Vector2(paddleSize.width, paddleSize.height));
+  }
 
-	public increaseHitCount() { this._hitCount++ }
-	public resetHitCount() { this._hitCount = 0; }
+  public move(deltaTime: number, input: Input) {
+    if (input.up) this.rect.pos.y -= paddleSpeed * deltaTime;
+    if (input.down) this.rect.pos.y += paddleSpeed * deltaTime;
 
-	public get pos() { return this.rect.pos; }
-	public get size() { return this.rect.size; }
-	public get hitCount() { return this._hitCount; }
+    if (this.rect.top < 0) this.rect.pos.y = 0;
+    else if (this.rect.bottom > arenaSize.height)
+      this.rect.pos.y = arenaSize.height - this.rect.size.y;
+  }
+
+  public increaseHitCount() {
+    this._hitCount++;
+  }
+  public resetHitCount() {
+    this._hitCount = 0;
+  }
+
+  public get pos() {
+    return this.rect.pos;
+  }
+  public get size() {
+    return this.rect.size;
+  }
+  public get hitCount() {
+    return this._hitCount;
+  }
 }
 
 export class Ball {
-	public circle: Circle;
-	private _direction: Vector2;
+  public circle: Circle;
+  private _direction: Vector2;
 
-	public constructor(pos: Point2, initialDirection: Vector2, private readonly _parent: Pong) {
-		this.circle = new Circle(pos, ballRadius);
-		this._direction = initialDirection;
-	}
+  public constructor(
+    pos: Point2,
+    initialDirection: Vector2,
+    private readonly _parent: Pong
+  ) {
+    this.circle = new Circle(pos, ballRadius);
+    this._direction = initialDirection;
+  }
 
-	public move(deltaTime: number) {
-		this.circle.pos = this.circle.pos.add(this._direction.scale(deltaTime * ballSpeed));
+  public move(deltaTime: number) {
+    this.circle.pos = this.circle.pos.add(this._direction.scale(deltaTime * ballSpeed));
 
-		if (this.applyPaddleCollision(this._parent.leftPaddle, Vector2.one))
-			this._parent.leftPaddle.increaseHitCount();
-		else if (this.applyPaddleCollision(this._parent.rightPaddle, new Vector2(-1, 1)))
-			this._parent.rightPaddle.increaseHitCount();
+    if (this.applyPaddleCollision(this._parent.leftPaddle, Vector2.one))
+      this._parent.leftPaddle.increaseHitCount();
+    else if (this.applyPaddleCollision(this._parent.rightPaddle, new Vector2(-1, 1)))
+      this._parent.rightPaddle.increaseHitCount();
 
-		if (this.circle.top < 0) {
-			this.circle.pos.y = -this.circle.top + this.circle.radius;
-			this._direction.y = -this._direction.y;
-		}
-		else if (this.circle.bottom > arenaSize.height) {
-			this.circle.pos.y = 2 * arenaSize.height - this.circle.bottom - this.circle.radius;
-			this._direction.y = -this._direction.y;
-		}
+    if (this.circle.top < 0) {
+      this.circle.pos.y = -this.circle.top + this.circle.radius;
+      this._direction.y = -this._direction.y;
+    } else if (this.circle.bottom > arenaSize.height) {
+      this.circle.pos.y = 2 * arenaSize.height - this.circle.bottom - this.circle.radius;
+      this._direction.y = -this._direction.y;
+    }
 
-		// the entire ball needs to pass the border to lose
-		if (this.circle.right < 0) {
-			return 1; // left wins
-		}
-		else if (this.circle.left > arenaSize.width) {
-			return 2; // right wins
-		}
-		return 0;
-	}
+    if (this.circle.right < 0) {
+      return 1; // right player scores
+    } else if (this.circle.left > arenaSize.width) {
+      return 2; // left player scores
+    }
+    return 0;
+  }
 
-	private applyPaddleCollision(paddle: Paddle, directionMuliplier: Vector2) {
-		if (Collision.rectVsCircle(paddle.rect, this.circle)) {
-			const closestPoint = Collision.closestPoint(paddle.rect, this.circle);
+  private applyPaddleCollision(paddle: Paddle, directionMuliplier: Vector2) {
+    if (Collision.rectVsCircle(paddle.rect, this.circle)) {
+      const closestPoint = Collision.closestPoint(paddle.rect, this.circle);
 
-			// bounds: [-paddleSize.height / 2, paddlesize.height / 2]
-			const yDiff = closestPoint.y - paddle.rect.center.y;
+      const yDiff = closestPoint.y - paddle.rect.center.y;
 
-			const normalized = yDiff / paddleSize.height / 2;
-			const bounceAngle = normalized * ballMaxBounceAngle * Math.PI / 360;
-			console.log(bounceAngle * 360 / Math.PI);
-			this._direction.x = Math.cos(bounceAngle) * directionMuliplier.x;
-			this._direction.y = Math.sin(bounceAngle) * directionMuliplier.y;
-			return true;
-		}
-		return false;
-	}
+      const normalized = yDiff / paddleSize.height / 2;
+      const bounceAngle = (normalized * ballMaxBounceAngle * Math.PI) / 360;
+      this._direction.x = Math.cos(bounceAngle) * directionMuliplier.x;
+      this._direction.y = Math.sin(bounceAngle) * directionMuliplier.y;
+      return true;
+    }
+    return false;
+  }
 
-	public get pos() { return this.circle.pos; }
-	public get radius() { return this.circle.radius; }
-	public get direction() { return this._direction; }
+  public get pos() {
+    return this.circle.pos;
+  }
+  public get radius() {
+    return this.circle.radius;
+  }
+  public get direction() {
+    return this._direction;
+  }
+
+  public setDirection(direction: Vector2) {
+    this._direction = direction;
+  }
 }
 
 export enum PongState {
-	Running,
-	Aborted,
-	LeftWins,
-	RightWins
-};
+  Running,
+  Aborted,
+  LeftWins,
+  RightWins,
+}
 
 export class Pong {
-	public readonly leftPaddle: Paddle;
-	public readonly rightPaddle: Paddle;
-	public readonly ball: Ball;
-	private _state: PongState = PongState.Running;
+  public readonly leftPaddle: Paddle;
+  public readonly rightPaddle: Paddle;
+  public readonly ball: Ball;
+  private _state: PongState = PongState.Running;
+  private _leftScore: number = 0;
+  private _rightScore: number = 0;
 
-	public constructor() {
-		this.leftPaddle = new Paddle(new Point2(0, arenaSize.height / 2), this);
-		this.rightPaddle = new Paddle(new Point2(arenaSize.width, arenaSize.height / 2), this);
+  public constructor() {
+    this.leftPaddle = new Paddle(new Point2(10 + paddleSize.width / 2, arenaSize.height / 2), this); // Centre à x=8
+    this.rightPaddle = new Paddle(
+      new Point2(arenaSize.width - 2 - paddleSize.width / 2, arenaSize.height / 2),
+      this
+    ); // Centre à x=492
 
-		this.ball = new Ball(
-			new Vector2(arenaSize.width / 2, arenaSize.height / 2), Vector2.up, this);
-	}
+    const randomAngle = ((Math.random() - 0.5) * Math.PI) / 3; // angle entre -60° et +60°
+    const horizontalDirection = Math.random() < 0.5 ? 1 : -1; // gauche ou droite
+    const initialDirection = new Vector2(
+      Math.cos(randomAngle) * horizontalDirection,
+      Math.sin(randomAngle)
+    ).normalized;
 
-	public update(deltaTime: number, leftInput: Input, rightInput: Input) {
-		if (this._state == PongState.Running) {
-			this.leftPaddle.move(deltaTime, leftInput);
-			this.rightPaddle.move(deltaTime, rightInput);
-			const ballResult = this.ball.move(deltaTime);
-			if (ballResult == 1)
-				this._state = PongState.LeftWins;
-			else if (ballResult == 2)
-				this._state = PongState.RightWins;
-		}
-	}
+    this.ball = new Ball(
+      new Vector2(arenaSize.width / 2, arenaSize.height / 2),
+      initialDirection,
+      this
+    );
+  }
 
-	public abort() {
-		this._state = PongState.Aborted;
-	}
+  public update(deltaTime: number, leftInput: Input, rightInput: Input) {
+    if (this._state == PongState.Running) {
+      this.leftPaddle.move(deltaTime, leftInput);
+      this.rightPaddle.move(deltaTime, rightInput);
+      const ballResult = this.ball.move(deltaTime);
 
-	public get state() {
-		return this._state;
-	}
+      if (ballResult == 1) {
+        this._rightScore++; // right player scores
+        this.resetBall();
+      } else if (ballResult == 2) {
+        this._leftScore++; // left player scores
+        this.resetBall();
+      }
 
-	public repr(): {[k: string]: any} {
-		return {
-			leftPaddle: {
-				pos: this.leftPaddle.pos,
-				//size: this.leftPaddle.size,
-				hitCount: this.leftPaddle.hitCount
-			},
-			rightPaddle: {
-				pos: this.rightPaddle.pos,
-				//size: this.rightPaddle.size,
-				hitCount: this.rightPaddle.hitCount
-			},
-			ball: {
-				pos: this.ball.pos,
-				//radius: this.ball.radius,
-				direction: this.ball.direction
-			},
-			state: this._state
-		};
-	}
+      if (this._leftScore >= winningScore) {
+        this._state = PongState.LeftWins;
+      } else if (this._rightScore >= winningScore) {
+        this._state = PongState.RightWins;
+      }
+    }
+  }
+
+  public abort() {
+    this._state = PongState.Aborted;
+  }
+
+  private resetBall() {
+    this.ball.circle.pos.x = arenaSize.width / 2;
+    this.ball.circle.pos.y = arenaSize.height / 2;
+
+    const randomAngle = ((Math.random() - 0.5) * Math.PI) / 3; // angle between -60° and +60°
+    const horizontalDirection = Math.random() < 0.5 ? 1 : -1; // left or right
+    const initialDirection = new Vector2(
+      Math.cos(randomAngle) * horizontalDirection,
+      Math.sin(randomAngle)
+    ).normalized;
+    this.ball.setDirection(initialDirection);
+  }
+
+  public get state() {
+    return this._state;
+  }
+
+  public get leftScore() {
+    return this._leftScore;
+  }
+
+  public get rightScore() {
+    return this._rightScore;
+  }
+
+  public repr(): { [k: string]: any } {
+    return {
+      leftPaddle: {
+        pos: this.leftPaddle.pos,
+        hitCount: this.leftPaddle.hitCount,
+      },
+      rightPaddle: {
+        pos: this.rightPaddle.pos,
+        hitCount: this.rightPaddle.hitCount,
+      },
+      ball: {
+        pos: this.ball.pos,
+        direction: this.ball.direction,
+      },
+      state: this._state,
+      leftScore: this._leftScore,
+      rightScore: this._rightScore,
+    };
+  }
 }

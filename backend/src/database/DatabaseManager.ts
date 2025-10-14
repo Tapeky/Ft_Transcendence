@@ -6,27 +6,25 @@ import fs from 'fs/promises';
 export class DatabaseManager {
   private static instance: DatabaseManager;
   private db: Database | null = null;
-  
+
   private constructor() {}
-  
+
   public static getInstance(): DatabaseManager {
     if (!DatabaseManager.instance) {
       DatabaseManager.instance = new DatabaseManager();
     }
     return DatabaseManager.instance;
   }
-  
+
   async connect(dbPath: string = './db/ft_transcendence.db'): Promise<Database> {
     if (this.db) {
       return this.db;
     }
     
     try {
-      // Créer le dossier db s'il n'existe pas
       const dbDir = path.dirname(dbPath);
       await fs.mkdir(dbDir, { recursive: true });
       
-      // Ouvrir la base de données
       this.db = await open({
         filename: dbPath,
         driver: sqlite3.Database
@@ -42,21 +40,19 @@ export class DatabaseManager {
       throw error;
     }
   }
-  
+
   async initialize(): Promise<void> {
     if (!this.db) {
       throw new Error('Database not connected');
     }
     
     try {
-      // Lire et exécuter le schéma
       const schemaPath = path.join(__dirname, 'schema.sql');
       const schema = await fs.readFile(schemaPath, 'utf8');
       
       await this.db.exec(schema);
       console.log('✅ Schéma de base de données initialisé');
       
-      // Ajouter des données de test si nécessaire
       await this.seedIfEmpty();
       
     } catch (error: unknown) {
@@ -64,95 +60,94 @@ export class DatabaseManager {
       throw error;
     }
   }
-  
+
   private async seedIfEmpty(): Promise<void> {
     if (!this.db) return;
-    
-    // Vérifier si la DB est vide
+
     const userCount = await this.db.get('SELECT COUNT(*) as count FROM users');
-    
+
     if (userCount.count === 0) {
-      console.log('🌱 Ajout de données de test...');
       await this.seedTestData();
     }
   }
-  
+
   private async seedTestData(): Promise<void> {
     if (!this.db) return;
-    
+
     const bcrypt = await import('bcrypt');
     const saltRounds = 12;
-    
-    // Utilisateurs de test
+
     const testUsers = [
       {
         username: 'admin',
         email: 'admin@transcendence.com',
         password: await bcrypt.hash('admin123', saltRounds),
         display_name: 'Administrateur',
-        data_consent: true
+        data_consent: true,
       },
       {
         username: 'player1',
         email: 'player1@test.com',
         password: await bcrypt.hash('player123', saltRounds),
         display_name: 'Joueur 1',
-        data_consent: true
+        data_consent: true,
       },
       {
         username: 'player2',
         email: 'player2@test.com',
         password: await bcrypt.hash('player123', saltRounds),
         display_name: 'Joueur 2',
-        data_consent: true
-      }
+        data_consent: true,
+      },
     ];
-    
+
     for (const user of testUsers) {
-      await this.db.run(`
+      await this.db.run(
+        `
         INSERT INTO users (username, email, password_hash, display_name, data_consent)
         VALUES (?, ?, ?, ?, ?)
-      `, [user.username, user.email, user.password, user.display_name, user.data_consent]);
+      `,
+        [user.username, user.email, user.password, user.display_name, user.data_consent]
+      );
     }
-    
-    console.log('✅ Données de test ajoutées');
   }
-  
+
   getDb(): Database {
     if (!this.db) {
       throw new Error('Database not connected');
     }
     return this.db;
   }
-  
+
   async close(): Promise<void> {
     if (this.db) {
       await this.db.close();
       this.db = null;
-      console.log('✅ Connexion à la base de données fermée');
     }
   }
-  
-  // Méthodes utilitaires
-  async query(sql: string, params: any[] = []): Promise<any[]> {
+
+  async query<T = unknown>(sql: string, params: unknown[] = []): Promise<T[]> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.all(sql, params);
   }
-  
-  async queryOne(sql: string, params: any[] = []): Promise<any> {
+
+  async queryOne<T = unknown>(sql: string, params: unknown[] = []): Promise<T | undefined> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.get(sql, params);
   }
-  
-  async execute(sql: string, params: any[] = []): Promise<any> {
+
+  async execute(sql: string, params: unknown[] = []): Promise<{ lastID?: number; changes: number }> {
     if (!this.db) throw new Error('Database not connected');
-    return await this.db.run(sql, params);
+    const result = await this.db.run(sql, params);
+    return {
+      lastID: result.lastID,
+      changes: result.changes ?? 0,
+    };
   }
-  
-  // Transaction helper
+
   async transaction<T>(callback: (db: Database) => Promise<T>): Promise<T> {
     if (!this.db) throw new Error('Database not connected');
-    
+
     await this.db.exec('BEGIN TRANSACTION');
     try {
       const result = await callback(this.db);
@@ -163,49 +158,50 @@ export class DatabaseManager {
       throw error;
     }
   }
-  
-  // Méthodes de maintenance
+
   async vacuum(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('VACUUM');
-    console.log('✅ VACUUM exécuté');
   }
-  
+
   async analyze(): Promise<void> {
     if (!this.db) return;
     await this.db.exec('ANALYZE');
-    console.log('✅ ANALYZE exécuté');
   }
-  
-  // Cleanup des tokens expirés
+
   async cleanupExpiredTokens(): Promise<void> {
     if (!this.db) return;
-    
-    const result = await this.db.run(`
-      DELETE FROM jwt_tokens 
+
+    await this.db.run(`
+      DELETE FROM jwt_tokens
       WHERE expires_at < datetime('now') OR revoked = true
     `);
-    
-    console.log(`✅ ${result.changes} tokens expirés supprimés`);
   }
-  
-  // Stats de la base de données
-  async getStats(): Promise<any> {
+
+  async getStats(): Promise<{
+    users: number;
+    tournaments: number;
+    matches: number;
+    activeTokens: number;
+    timestamp: string;
+  }> {
     if (!this.db) throw new Error('Database not connected');
-    
+
     const stats = await Promise.all([
-      this.db.get('SELECT COUNT(*) as users FROM users'),
-      this.db.get('SELECT COUNT(*) as tournaments FROM tournaments'),
-      this.db.get('SELECT COUNT(*) as matches FROM matches'),
-      this.db.get('SELECT COUNT(*) as active_tokens FROM jwt_tokens WHERE expires_at > datetime("now") AND revoked = false')
+      this.db.get<{ users: number }>('SELECT COUNT(*) as users FROM users'),
+      this.db.get<{ tournaments: number }>('SELECT COUNT(*) as tournaments FROM tournaments'),
+      this.db.get<{ matches: number }>('SELECT COUNT(*) as matches FROM matches'),
+      this.db.get<{ active_tokens: number }>(
+        'SELECT COUNT(*) as active_tokens FROM jwt_tokens WHERE expires_at > datetime("now") AND revoked = false'
+      ),
     ]);
-    
+
     return {
-      users: stats[0].users,
-      tournaments: stats[1].tournaments,
-      matches: stats[2].matches,
-      active_tokens: stats[3].active_tokens,
-      timestamp: new Date().toISOString()
+      users: stats[0]?.users ?? 0,
+      tournaments: stats[1]?.tournaments ?? 0,
+      matches: stats[2]?.matches ?? 0,
+      activeTokens: stats[3]?.active_tokens ?? 0,
+      timestamp: new Date().toISOString(),
     };
   }
 }

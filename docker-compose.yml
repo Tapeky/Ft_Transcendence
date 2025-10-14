@@ -1,4 +1,3 @@
-# Ft_Transcendence Docker Compose Configuration
 services:
 
   # ModSecurity Reverse Proxy Service - HARDENED
@@ -183,7 +182,6 @@ volumes:
   vault_data:
   vault_logs:
 
-# Docker networks
 networks:
   ft_transcendence:
     driver: bridge
