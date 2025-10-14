@@ -179,8 +179,8 @@ async function start() {
       setInterval(async () => {
         try {
           await dbManager.cleanupExpiredTokens();
-        } catch (error: unknown) {
-          server.log.error('Erreur lors du nettoyage des tokens:', error as undefined);
+        } catch (error) {
+          server.log.error('Erreur lors du nettoyage des tokens:' + (error instanceof Error ? error.message : String(error)));
         }
       }, 60 * 60 * 1000);
     }
@@ -198,14 +198,14 @@ async function start() {
         if (result.changes && result.changes > 0) {
           server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
         }
-      } catch (error: unknown) {
-        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:', error as undefined);
+      } catch (error) {
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:' + (error instanceof Error ? error.message : String(error)));
       }
     }, 5 * 60 * 1000);
 
     GameManager.instance.registerLoop();
-  } catch (err: unknown) {
-    server.log.error('❌ Erreur de démarrage du serveur:', err as undefined);
+  } catch (err) {
+    server.log.error('❌ Erreur de démarrage du serveur:'+ (err instanceof Error ? err.message : String(err)));
     process.exit(1);
   }
 }
@@ -219,7 +219,7 @@ async function gracefulShutdown(signal: string) {
     console.log('Server stopped');
     process.exit(0);
   } catch (error) {
-    console.error('Error during shutdown:', error);
+    console.error('Error during shutdown:' + (error instanceof Error ? error.message : String(error)));
     process.exit(1);
   }
 }

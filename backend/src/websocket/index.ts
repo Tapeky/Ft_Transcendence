@@ -52,8 +52,8 @@ export function setupWebSocket(server: FastifyInstance) {
             const db = DatabaseManager.getInstance().getDb();
             const userRepo = new UserRepository(db);
             await userRepo.updateOnlineStatus(userId, false);
-          } catch (error: unknown) {
-            console.error('Erreur mise à jour statut hors ligne:', error);
+          } catch (error) {
+            console.error('Erreur mise à jour statut hors ligne:' + (error instanceof Error ? error.message : String(error)));
           }
 
           simplePongManager.handlePlayerDisconnect(userId);

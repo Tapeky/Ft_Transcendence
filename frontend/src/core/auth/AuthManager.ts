@@ -168,7 +168,7 @@ export class AuthManager {
     router.navigate('/');
   }
 
-  private getErrorMessage(error: unknown): string {
+  private getErrorMessage(error: any): string {
     if (error instanceof Error) {
       return error.message;
     }

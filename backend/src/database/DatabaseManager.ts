@@ -35,8 +35,8 @@ export class DatabaseManager {
       
       console.log(`✅ Base de données connectée : ${dbPath}`);
       return this.db;
-    } catch (error: unknown) {
-      console.error('❌ Erreur de connexion à la base de données:', error);
+    } catch (error) {
+      console.error('❌ Erreur de connexion à la base de données:' + (error instanceof Error ? error.message : String(error)));
       throw error;
     }
   }
@@ -55,8 +55,8 @@ export class DatabaseManager {
       
       await this.seedIfEmpty();
       
-    } catch (error: unknown) {
-      console.error('❌ Erreur d\'initialisation de la base de données:', error);
+    } catch (error) {
+      console.error('❌ Erreur d\'initialisation de la base de données:' + (error instanceof Error ? error.message : String(error)));
       throw error;
     }
   }
@@ -153,7 +153,7 @@ export class DatabaseManager {
       const result = await callback(this.db);
       await this.db.exec('COMMIT');
       return result;
-    } catch (error: unknown) {
+    } catch (error) {
       await this.db.exec('ROLLBACK');
       throw error;
     }
