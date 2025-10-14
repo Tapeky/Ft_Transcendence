@@ -1,0 +1,97 @@
+import { appState } from '../state/AppState';
+import { router } from './Router';
+import { AuthManager } from '../../core/auth/AuthManager';
+import { RouteGuard } from './RouteGuard';
+import { TournamentNotificationManager } from '../../shared/components/TournamentNotification';
+
+export class Application {
+  private static instance: Application;
+  private routeGuard: RouteGuard;
+  private authManager: AuthManager;
+  private tournamentNotifications: TournamentNotificationManager;
+  private isInitialized = false;
+
+  private constructor() {
+    this.authManager = AuthManager.getInstance();
+    this.routeGuard = new RouteGuard();
+    this.tournamentNotifications = TournamentNotificationManager.getInstance();
+  }
+
+  public static getInstance(): Application {
+    if (!Application.instance) {
+      Application.instance = new Application();
+    }
+    return Application.instance;
+  }
+
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+    this.setupCoreDependencies();
+    this.initializeRouteProtection();
+    this.initializeTournamentNotifications();
+    this.setupErrorHandling();
+    this.isInitialized = true;
+  }
+
+  private setupCoreDependencies(): void {
+    appState.setRouter(router);
+    router.setRouteGuard(this.routeGuard);
+  }
+
+  private initializeRouteProtection(): void {
+    this.routeGuard.initialize();
+  }
+
+  private initializeTournamentNotifications(): void {
+    this.tournamentNotifications.initialize();
+  }
+
+  private setupErrorHandling(): void {
+    window.addEventListener('error', event => {
+      this.handleGlobalError(event.error);
+    });
+    window.addEventListener('unhandledrejection', event => {
+      this.handleGlobalError(event.reason);
+    });
+  }
+
+  private handleGlobalError(error: any): void {
+    console.error('Error:', error);
+  }
+
+  public getSystemStatus(): {
+    initialized: boolean;
+    authenticated: boolean;
+    loading: boolean;
+    currentPath: string;
+  } {
+    return {
+      initialized: this.isInitialized,
+      authenticated: this.authManager.isAuthenticated(),
+      loading: this.authManager.isLoading(),
+      currentPath: router.getCurrentPath(),
+    };
+  }
+
+  public getRouteGuard(): RouteGuard {
+    return this.routeGuard;
+  }
+  public getAuthManager(): AuthManager {
+    return this.authManager;
+  }
+  public shutdown(): void {
+    this.isInitialized = false;
+  }
+}
+
+export const application = Application.getInstance();
+
+declare global {
+  interface Window {
+    router: typeof router;
+    application: typeof application;
+  }
+}
+
+window.router = router;
+window.application = application;

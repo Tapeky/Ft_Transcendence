@@ -1,4 +1,4 @@
-import '@fastify/jwt'
+import '@fastify/jwt';
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
@@ -12,5 +12,11 @@ declare module '@fastify/jwt' {
       username: string;
       email: string;
     };
+  }
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    websocketManager: any;
   }
 }

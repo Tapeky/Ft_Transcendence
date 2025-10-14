@@ -8,14 +8,15 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
-    "test": "echo \"Tests à implémenter\" && exit 0",
-    "db:reset": "rm -f ../db/*.db && ts-node src/scripts/init-db.ts",
-    "db:migrate": "ts-node src/scripts/migrate.ts",
-    "db:seed": "ts-node src/scripts/seed.ts",
-    "db:stats": "ts-node src/scripts/db-stats.ts",
+    "db:reset": "rm -f ../db/*.db",
     "clean": "rm -rf dist/",
-    "lint": "echo \"Linting à configurer\"",
-    "type-check": "tsc --noEmit"
+    "lint": "eslint src/ --ext .ts,.js",
+    "lint:fix": "eslint src/ --ext .ts,.js --fix",
+    "type-check": "tsc --noEmit",
+    "prettier:check": "prettier --check \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "prettier:write": "prettier --write \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,js,json}\" \"*.{ts,js,json}\"",
+    "deadcode": "ts-prune"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -36,9 +37,15 @@
     "@types/node": "^20.11.30",
     "@types/node-vault": "^0.9.4",
     "@types/sharp": "^0.31.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-unused-imports": "^4.2.0",
     "nodemon": "^3.1.0",
+    "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.2"
+    "ts-prune": "^0.10.3",
+    "typescript": "5.8.3"
   },
   "engines": {
     "node": ">=18.0.0"
