@@ -7,7 +7,7 @@ interface EnvironmentConfig {
 }
 
 function createConfig(): EnvironmentConfig {
-  const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
+  const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8080';
   const isDev = (import.meta as any).env?.DEV || false;
   const isProd = (import.meta as any).env?.PROD || false;
 
