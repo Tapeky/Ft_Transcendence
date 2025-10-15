@@ -10,18 +10,19 @@ services:
       - ./modsecurity/nginx.conf:/etc/nginx/templates/conf.d/default.conf.template:ro
       - ./modsecurity/custom-rules.conf:/etc/modsecurity.d/owasp-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf:ro
       - ./ssl:/etc/nginx/conf:ro
+      - ./logs/modsecurity/modsec_audit.log:/var/log/modsec_audit.log
     environment:
       # Strict ModSecurity Configuration
       - BACKEND=http://backend:8000
       - PROXY=1
+      - MODSEC_RULE_REMOVE=920420
       
-      # HARDENED: Maximum paranoia level
-      - BLOCKING_PARANOIA=4
-      - DETECTION_PARANOIA=4
+      - BLOCKING_PARANOIA=2
+      - DETECTION_PARANOIA=2
       
       # HARDENED: Stricter anomaly scoring (lower = more strict)
-      - ANOMALY_INBOUND=3
-      - ANOMALY_OUTBOUND=3
+      - ANOMALY_INBOUND=7
+      - ANOMALY_OUTBOUND=5
       
       # HARDENED: Enable all security features
       - MODSEC_RULE_ENGINE=On
