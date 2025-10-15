@@ -15,40 +15,40 @@ setup:
 
 dev: setup
 	@echo "Starting development..."
-	docker-compose -f $(COMPOSE_FILE_DEV) up --build
+	docker compose -f $(COMPOSE_FILE_DEV) up --build
 
 prod: setup
 	@echo "Starting production..."
-	docker-compose -f $(COMPOSE_FILE_PROD) up -d --build
+	docker compose -f $(COMPOSE_FILE_PROD) up -d --build
 
 build:
 	@echo "Rebuilding images..."
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 stop:
 	@echo "Stopping containers..."
-	docker-compose down
+	docker compose down
 
 clean:
 	@echo "Cleaning up..."
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	docker system prune -f
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-backend:
-	docker-compose logs -f backend
+	docker compose logs -f backend
 
 logs-frontend:
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 shell-backend:
-	docker-compose exec backend sh
+	docker compose exec backend sh
 
 shell-frontend:
-	docker-compose exec frontend sh
+	docker compose exec frontend sh
 
 db-reset:
 	@echo "Resetting database..."
-	docker-compose exec backend npm run db:reset
+	docker compose exec backend npm run db:reset
