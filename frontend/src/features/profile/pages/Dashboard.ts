@@ -415,12 +415,12 @@ export class Dashboard {
 		</div>
 
 		<div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-end">
-			<h1>${matchDetails.player2_username}</h1>
+			<h1>${matchDetails.player2_username ? matchDetails.player2_username : "Guest"}</h1>
 			<img src="${this.getAvatarUrl(matchDetails.player2_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
 		</div>
 		</div>
 	
-		<h2 class="text-[4rem]">${matchDetails.duration_seconds}s</h2>
+		<h2 class="text-[4rem]">${Math.floor(matchDetails.duration_seconds)}s</h2>
 
 		<div class="flex justify-evenly w-full text-center mb-4">
 		<h2 class="flex-1">${matchDetails.player1_score}</h2>
