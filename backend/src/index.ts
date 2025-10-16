@@ -77,6 +77,12 @@ async function start() {
     await server.register(staticFiles, {
       root: path.join(__dirname, '../uploads'),
       prefix: '/uploads/',
+      decorateReply: false,
+      setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      },
     });
 
     setupMiddleware(server);
