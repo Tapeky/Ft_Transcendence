@@ -12,6 +12,8 @@ interface GameState {
   state: number;
   leftScore: number;
   rightScore: number;
+  start: number;
+  end: number;
 }
 
 interface TournamentGameContext {
@@ -189,6 +191,8 @@ export class GamePage {
       state: 1,
       leftScore: 0,
       rightScore: 0,
+      start: 0,
+      end: 0,
     };
     this.setupKeyboardListeners();
     this.startLocalGame();
@@ -196,6 +200,8 @@ export class GamePage {
 
   private startLocalGame(): void {
     this.render();
+    if (this.gameState)
+      this.gameState.start = Date.now();
     this.startCountdown();
   }
 
@@ -391,7 +397,7 @@ export class GamePage {
     }
   };
 
-  private async recordMatch(leftScore: number, rightScore: number): Promise<void> {
+  private async recordMatch(leftScore: number, rightScore: number, duration: number): Promise<void> {
     try {
       const currentUser = appState.getState().user;
       if (!currentUser) {
@@ -409,7 +415,7 @@ export class GamePage {
         winner_id: winnerId,
         game_type: 'pong',
         max_score: 5,
-        duration_seconds: 60,
+        duration_seconds: duration,
         player1_touched_ball: this.gameState?.leftPaddle.hitCount || 0,
         player1_missed_ball: Math.max(0, rightScore),
         player2_touched_ball: this.gameState?.rightPaddle.hitCount || 0,
@@ -425,12 +431,18 @@ export class GamePage {
     if (this.gameEndOverlay) return;
     const leftScore = this.gameState?.leftScore || 0;
     const rightScore = this.gameState?.rightScore || 0;
+    let duration = 0;
 
-    // Save tournament result immediately (before showing overlay)
+    if (this.gameState)
+    {
+      this.gameState.end = Date.now();
+      duration = (this.gameState.end - this.gameState.start) / 1000;
+    }
+
     if (this.tournamentContext) {
       this.saveTournamentResult(leftScore, rightScore);
     } else {
-      await this.recordMatch(leftScore, rightScore);
+      await this.recordMatch(leftScore, rightScore, duration);
     }
 
     const overlay = document.createElement('div');
