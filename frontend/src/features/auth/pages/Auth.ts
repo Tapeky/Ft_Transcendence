@@ -41,7 +41,7 @@ export class AuthPage {
                   Welcome Back!
                 </h2>
                 <p id="auth-subtitle" class="text-gray-600 text-sm leading-relaxed">
-                  Sign in to access your Pong account and compete with players worldwide.
+                  Sign in to access our website.
                 </p>
               </div>
 
@@ -52,7 +52,6 @@ export class AuthPage {
                 </div>
 
                 <form id="login-form" class="space-y-6 auth-form active">
-                  
                   <div class="floating-input-container">
                     <input
                       id="login-email"
@@ -428,11 +427,11 @@ export class AuthPage {
     const authConfig = {
       login: {
         title: 'Welcome Back!',
-        subtitle: 'Sign in to access your Pong account and compete with players worldwide.',
+        subtitle: 'Sign in to access our website.',
       },
       register: {
         title: 'Join the Game!',
-        subtitle: 'Create your account and start your journey in the legendary Pong universe.',
+        subtitle: 'Create your account before accessing our website.',
       },
     };
 
@@ -702,7 +701,7 @@ export class AuthPage {
         <div class="space-y-4">
           <h3 class="text-2xl font-bold">Master the Classic</h3>
           <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
-            Experience the legendary Pong game with modern multiplayer features, tournaments, and real-time competitions.
+            Experience the legendary Pong game made by our small team !
           </p>
         </div>
       </div>
@@ -745,7 +744,7 @@ export class AuthPage {
         <div class="space-y-4">
           <h3 class="text-2xl font-bold">Tournament Glory</h3>
           <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
-            Compete in thrilling tournaments, climb the brackets, and claim your victory with style and strategy.
+            Compete in tournaments, climb the brackets, and claim your victory !
           </p>
         </div>
       </div>
@@ -778,7 +777,7 @@ export class AuthPage {
                 <div class="absolute top-32 left-1/2 transform -translate-x-1/2 animate-chat-message-3">
                   <div class="bg-white/8 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/15 text-center">
                     <div class="text-xs opacity-70 mb-1">Game Invitation</div>
-                    <div class="text-sm opacity-90">Join Tournament</div>
+                    <div class="text-sm opacity-90">Join Game</div>
                   </div>
                 </div>
                 <div class="absolute top-44 left-8 animate-chat-typing">
@@ -811,7 +810,7 @@ export class AuthPage {
         <div class="space-y-4">
           <h3 class="text-2xl font-bold">Connect & Communicate</h3>
           <p class="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
-            Seamless real-time communication with players worldwide. Chat, invite, and build your gaming network.
+            Add friends and talk to them via chat !
           </p>
         </div>
       </div>

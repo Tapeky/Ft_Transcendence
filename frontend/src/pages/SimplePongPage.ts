@@ -102,7 +102,7 @@ export class SimplePongPage {
       this.instructionsElement = this.element.querySelector('#game-instructions') as
         | HTMLElement
         | undefined;
-      this.setStatusMessage('Waiting for opponent...', 'Use ↑/↓ arrow keys to move your paddle.');
+      this.setStatusMessage('Waiting for opponent...', 'Use ↑/↓ arrow keys or W/S to move your paddle.');
       this.checkGameContext();
       this.initializeCanvas();
       this.startRenderLoop();
@@ -414,7 +414,7 @@ export class SimplePongPage {
 
           this.setStatusMessage(
             `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
-            `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ keys.`
+            `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys.`
           );
 
           if (!this.isCountingDown) {
@@ -453,7 +453,7 @@ export class SimplePongPage {
     const matchup = `${leftName} vs ${rightName}`;
     const roleText = this.myRole
       ? `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ arrow keys to move.`
-      : 'Use ↑/↓ arrow keys to move your paddle.';
+      : 'Use ↑/↓ arrow keys or W/S to move your paddle.';
     this.setStatusMessage(matchup, roleText);
   }
 

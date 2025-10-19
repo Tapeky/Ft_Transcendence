@@ -27,8 +27,8 @@ export class PongInviteNotification {
     modal.innerHTML = `
       <div class="bg-gradient-to-b from-blue-600 to-purple-700 p-6 rounded-lg border-4 border-white max-w-md w-full mx-4 text-white font-iceland">
         <div class="text-center">
-          <h3 class="text-2xl font-bold mb-4">🏓 Invitation Pong !</h3>
-          <p class="text-lg mb-6">
+          <h3 class="text-[2.5rem] font-bold mb-4">Invitation Pong !</h3>
+          <p class="text-[2.2rem] mb-6">
             ${this.inviteData.fromUsername || 'Un ami'} vous invite à jouer au Pong !
           </p>
           
@@ -41,7 +41,7 @@ export class PongInviteNotification {
             </button>
           </div>
           
-          <div class="mt-4 text-sm text-gray-300">
+          <div class="mt-4 text-[1.2rem] text-gray-300">
             Invitation expire dans: <span id="countdown"></span>
           </div>
         </div>
