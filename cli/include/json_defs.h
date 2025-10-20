@@ -38,23 +38,28 @@ DEFINE_JSON(friends,
 	(ARRAY, data, friend),
 );
 
-DEFINE_JSON(bracket_data);
+DEFINE_JSON(bracket_data,
+	(STRING, winner)
+);
 
 DEFINE_JSON(tournament,
 	(INT, id),
 	(STRING, name),
-	(STRING, description),
-	(INT, max_players),
-	(INT, current_players),
+	(INT, maxPlayers),
+	(INT, currentPlayers),
 	(STRING, status),
-	(OBJECT_N, bracket_data, bracket_data),
-	(INT_N, winner_id),
-	(STRING, creator_username),
-	(STRING, created_at),
+	(OBJECT_N, bracketData, bracket_data),
+	(STRING_N, winnerAlias),
+	(INT_N, winnerId),
+	(STRING, createdAt),
+);
+
+DEFINE_JSON(tournaments_data,
+	(ARRAY, tournaments, tournament)
 );
 
 DEFINE_JSON(tournaments,
-	(ARRAY, data, tournament)
+	(OBJECT, data, tournaments_data)
 );
 
 /* WEBSOCKETS */

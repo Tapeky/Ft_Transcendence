@@ -39,7 +39,6 @@ typedef struct s_ctx
 	{
 		list_view list_view;
 		C(tournament_name);
-		C(tournament_description);
 	}	tournament_view;
 	struct
 	{

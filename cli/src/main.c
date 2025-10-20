@@ -11,7 +11,7 @@
 #include "ctx.h"
 #include "term.h"
 
-ctx g_ctx = {0};
+ctx g_ctx = {0}; 
 
 int on_key_event(ctx *ctx, KeySym key, int on_press)
 {
@@ -52,7 +52,6 @@ void update_tournament_view(void *obj, void *param)
 	if (t)
 	{
 		label_update_text(ctx->tournament_view.tournament_name, t->name, 0);
-		label_update_text(ctx->tournament_view.tournament_description, t->description, 0);
 	}
 	else
 	{
@@ -65,7 +64,7 @@ void refresh_tournaments(ctx *ctx)
 	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
 	if (ctx->tournaments._json_)
 		json_clean_obj(&ctx->tournaments, tournaments_def);
-	do_api_request_to_def(&ctx->api_ctx, "api/tournaments", GET, tournaments_def, &ctx->tournaments);
+	do_api_request_to_def(&ctx->api_ctx, "api/local-tournaments/history", GET, tournaments_def, &ctx->tournaments);
 	ctx->tournament_view.list_view.list_cursor = 0;
 	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
 }
@@ -90,6 +89,14 @@ int json_success(cJSON *json, char **error_string)
 		*error_string = error_obj->valuestring;
 	return (0);
 }
+
+DEFINE_JSON(totp_data,
+	(STRING, totp_uri)
+);
+
+DEFINE_JSON(totp,
+	(OBJECT, data, totp_data)
+);
 
 void attempt_login(ctx *ctx)
 {
@@ -298,14 +305,11 @@ static void init_windows(ctx *ctx)
 		const int BOX_W = 50;
 		const int BOX_H = 14;
 
-		list_view_init(&ctx->tournament_view.list_view, BOX_X, BOX_Y, BOX_W, BOX_H, update_tournament_view, &ctx->tournaments.data.size, (void **)&ctx->tournaments.data.arr, sizeof(tournament));
+		list_view_init(&ctx->tournament_view.list_view, BOX_X, BOX_Y, BOX_W, BOX_H, update_tournament_view, &ctx->tournaments.data.tournaments.size, (void **)&ctx->tournaments.data.tournaments.arr, sizeof(tournament));
 		label_init(&component, BOX_X, BOX_Y - 1, "TOURNAMENTS", 0);
 		ccomponent_add(component);
 		label_init(&component, BOX_X + 2, BOX_Y + 1, NULL, 0);
 		ctx->tournament_view.tournament_name = ccomponent_add(component);
-		label_init(&component, BOX_X + 2, BOX_Y + 3, NULL, 0);
-		label_wrap_around(&component, BOX_W - 4);
-		ctx->tournament_view.tournament_description = ccomponent_add(component);
 		button_init(&component, BOX_X + 4, BOX_Y + BOX_H - 2, "ENTER", handle_tournament_enter_button, ctx);
 		ccomponent_add(component);
 	}
