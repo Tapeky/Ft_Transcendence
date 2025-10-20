@@ -83,11 +83,12 @@ DEFINE_JSON(tournaments,
 # define REQ_ENTRY(name, ...) \
 	REQ_ENTRY_LAST(name, ## __VA_ARGS__) ","
 
-# define REQ_API_LOGIN(buf, email, password)	\
-	FILL_REQUEST(buf, REQ_WRAP(					\
-		REQ_ENTRY("email")						\
-		REQ_ENTRY_LAST("password")				\
-	), email, password)
+# define REQ_API_LOGIN(buf, email, password, totp_password)	\
+	FILL_REQUEST(buf, REQ_WRAP(								\
+		REQ_ENTRY("email")									\
+		REQ_ENTRY("password")								\
+		REQ_ENTRY_LAST("totp_password")						\
+	), email, password, totp_password)
 
 # define REQ_API_REGISTER(buf, username, email, password, display_name)	\
 	FILL_REQUEST(buf, REQ_WRAP(											\

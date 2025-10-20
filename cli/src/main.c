@@ -90,20 +90,13 @@ int json_success(cJSON *json, char **error_string)
 	return (0);
 }
 
-DEFINE_JSON(totp_data,
-	(STRING, totp_uri)
-);
-
-DEFINE_JSON(totp,
-	(OBJECT, data, totp_data)
-);
-
 void attempt_login(ctx *ctx)
 {
 	REQ_API_LOGIN(
 		ctx->api_ctx.in_buf,
 		ctx->login_view.username_field->u.c_text_area.buf,
-		ctx->login_view.password_field->u.c_text_area.buf
+		ctx->login_view.password_field->u.c_text_area.buf,
+		ctx->login_view.totp_field->u.c_text_area.buf
 	);
 	cJSON *json;
 	json = do_api_request(&ctx->api_ctx, "api/auth/login", POST);
@@ -236,12 +229,13 @@ static void init_windows(ctx *ctx)
 
 		label_init(&component, 2, 6, "PASSWORD", 0);
 		ccomponent_add(component);
+		
+		label_init(&component, 40, 6, "2FA KEY", 0);
+		ccomponent_add(component);		
 
 		ctx->login_view.username_field = add_pretty_textarea(3, 3, 32, "...", 0);
 		ctx->login_view.password_field = add_pretty_textarea(3, 7, 32, "...", 1);
-
-		strcpy(ctx->login_view.username_field->u.c_text_area.buf, "admin@transcendence.com");
-		strcpy(ctx->login_view.password_field->u.c_text_area.buf, "admin123");
+		ctx->login_view.totp_field = add_pretty_textarea(41, 7, 6, "XXXXXX", 0);
 
 		add_pretty_button(15, 10, " LOGIN ", handle_login_button, ctx);
 
