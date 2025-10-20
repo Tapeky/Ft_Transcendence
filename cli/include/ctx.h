@@ -25,6 +25,7 @@ typedef struct s_ctx
 	{
 		C(username_field);
 		C(password_field);
+		C(totp_field);
 		C(login_error_label);
 	}	login_view;
 	struct
