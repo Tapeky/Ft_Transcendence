@@ -13,7 +13,7 @@ services:
       - ./logs/modsecurity/modsec_audit.log:/var/log/modsec_audit.log
     environment:
       # Strict ModSecurity Configuration
-      - BACKEND=http://backend:8000
+      - BACKEND=https://backend:8000
       - PROXY=1
       - MODSEC_RULE_REMOVE=920420
       
@@ -136,10 +136,12 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - ./ssl:/app/ssl
     environment:
       FRONTEND_PORT: 3000
       # API calls go through hardened WAF
-      VITE_API_URL: http://localhost:8080
+      ENABLE_HTTPS: "true"
+      VITE_API_URL: https://localhost:8443
     depends_on:
       - backend
       - modsecurity
@@ -159,11 +161,13 @@ services:
       - ./backend:/app
       - /app/node_modules
       - ./db:/app/db
+      - ./ssl:/app/ssl
     environment:
       # HARDENED: All secrets from Vault
       VAULT_ADDR: "http://vault:8200"
       VAULT_TOKEN: "root"
       NODE_ENV: "production"
+      ENABLE_HTTPS: "true"
     depends_on:
       vault-init:
         condition: service_completed_successfully
@@ -171,7 +175,7 @@ services:
       - ft_transcendence
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      test: ["CMD", "wget", "--no-check-certificate", "--quiet", "--tries=1", "--spider", "https://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
