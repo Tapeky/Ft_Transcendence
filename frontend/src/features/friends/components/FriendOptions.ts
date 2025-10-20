@@ -53,7 +53,7 @@ export class FriendOptions {
     dashboardSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
     dashboardSection.innerHTML = `
       <h2 class="text-[2rem]">▼ See ${this.props.username}'s stats ▼</h2>
-      <div class="h-[100px] w-3/4 text-center">
+      <div class="h-[75px] w-3/4 text-center">
         <button 
           id="dashboard-btn"
           class="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200"
@@ -67,8 +67,8 @@ export class FriendOptions {
     const gameSection = document.createElement('div');
     gameSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
     gameSection.innerHTML = `
-      <h2 class="text-[1.8rem]">🎮 Challenge ${this.props.username} 🎮</h2>
-      <div class="h-[80px] w-3/4 text-center">
+      <h2 class="text-[1.8rem]">▼ Challenge ${this.props.username} ▼</h2>
+      <div class="h-[75px] w-3/4 text-center">
         <button 
           id="invite-btn"
           class="text-[2rem] border-2 px-4 hover:scale-110 rounded-md bg-green-700 w-full h-full transition duration-200"
