@@ -15,15 +15,16 @@ export default defineConfig({
     historyApiFallback: true, // SPA routing: redirect unknown routes to index.html
     // API proxy configuration - forward API requests to backend
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/api': {  
+        target: 'https://modsecurity:8443',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'wss://modsecurity:8443',
         ws: true,
         changeOrigin: true,
+        secure: false,
       }
     },
     // HTTPS configuration (conditional)
