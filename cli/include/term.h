@@ -33,6 +33,7 @@ typedef struct
 {
 	const char	*str;
 	size_t		str_len;
+	size_t		has_to_clear;
 	int			wrap_around;
 	int			str_is_allocated;
 }	component_label;
@@ -72,6 +73,7 @@ typedef struct s_component_button
 {
 	char				*str;
 	size_t				str_len;
+	size_t				has_to_clear;
 	int					wrap_around;
 	button_action_func	*func;
 	void				*func_param;
