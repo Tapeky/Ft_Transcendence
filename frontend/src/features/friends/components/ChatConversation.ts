@@ -36,21 +36,18 @@ export class ChatConversation {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'flex flex-col w-full h-full';
+    container.className = 'flex flex-col w-full h-full text-[1.2rem]';
 
     container.innerHTML = `
       <div class="bg-gray-700 p-2 border-b border-gray-600">
-        <button id="back-to-friends" class="text-white text-sm hover:text-blue-400 flex items-center gap-2">
+        <button id="back-to-friends" class="text-white hover:text-blue-400 flex items-center gap-2">
           ← Back to Friends
         </button>
       </div>
       
       <div class="flex-1 flex flex-col bg-gray-900">
-        <div id="chat-header" class="bg-gray-700 p-2 border-b border-gray-600 text-white text-sm">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs">
-              ${this.getOtherUser().username?.charAt(0).toUpperCase() || '?'}
-            </div>
+        <div id="chat-header" class="bg-gray-700 p-2 border-b border-gray-600 text-white">
+          <div class="flex items-center gap-2 text-[2rem]">
             <span id="chat-username">${this.getOtherUser().username || 'Unknown'}</span>
           </div>
         </div>
@@ -62,8 +59,8 @@ export class ChatConversation {
         <div id="message-input-area" class="bg-gray-700 p-2 border-t border-gray-600">
           <div class="flex gap-2">
             <input id="message-input" type="text" placeholder="Type a message..." 
-                   class="flex-1 bg-gray-800 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm">
+                   class="flex-1 bg-gray-800 text-white px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white">
               Send
             </button>
           </div>
@@ -119,8 +116,8 @@ export class ChatConversation {
         return `
         <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
           <div class="max-w-[70%] ${isOwn ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-3 py-1">
-            <div class="text-xs">${message.content}</div>
-            <div class="text-xs text-gray-300 mt-1">
+            <div>${message.content}</div>
+            <div "text-[1rem] text-gray-300 mt-1">
               ${this.formatMessageTime(message.created_at)}
             </div>
           </div>
