@@ -648,10 +648,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?token=${token}`);
     } catch (error: any) {
@@ -666,10 +663,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?error=github_auth_failed`);
     }
@@ -796,10 +790,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?token=${token}`);
     } catch (error: any) {
@@ -814,10 +805,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?error=google_auth_failed`);
     }
