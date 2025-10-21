@@ -76,7 +76,12 @@ tmp/
 temp/
 *.sqlite
 *.db
+!db/*.db
 .dockerignore
+*.sh
+!vault/scripts/*.sh
+.env.backup*
+backend.log
 test-results/
 playwright-report/
 coverage/

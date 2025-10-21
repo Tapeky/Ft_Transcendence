@@ -168,6 +168,18 @@ services:
       VAULT_TOKEN: "root"
       NODE_ENV: "production"
       ENABLE_HTTPS: "true"
+      # Frontend Configuration
+      FRONTEND_URL: "${FRONTEND_URL}"
+      # OAuth Configuration
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
+      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
+      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
+      GITHUB_REDIRECT_URI: "${GITHUB_REDIRECT_URI}"
+      # JWT Configuration
+      JWT_SECRET: "${JWT_SECRET}"
+      JWT_EXPIRES_IN: "${JWT_EXPIRES_IN}"
     depends_on:
       vault-init:
         condition: service_completed_successfully
