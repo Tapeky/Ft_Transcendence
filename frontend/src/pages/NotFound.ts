@@ -25,14 +25,6 @@ export class NotFoundPage {
             <button id="home-btn" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors duration-200">
               Retour à l'Accueil
             </button>
-            
-            <button id="test-btn" class="w-full px-6 py-2 border border-gray-500 hover:border-gray-400 rounded-lg font-medium transition-colors duration-200">
-              Page de Test
-            </button>
-          </div>
-          
-          <div class="mt-8 text-sm text-gray-400">
-            <p>Phase 1: Vanilla TypeScript Migration</p>
           </div>
         </div>
       </div>
@@ -42,10 +34,8 @@ export class NotFoundPage {
 
   private bindEvents(): void {
     const homeButton = this.element.querySelector('#home-btn');
-    const testButton = this.element.querySelector('#test-btn');
 
     homeButton?.addEventListener('click', () => router.navigate('/'));
-    testButton?.addEventListener('click', () => router.navigate('/test'));
   }
 
   getElement(): HTMLElement {
