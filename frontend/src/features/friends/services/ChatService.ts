@@ -99,6 +99,7 @@ export class ChatService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private syncInterval: number | null = null;
+  private intentionalDisconnect = false;
 
   private getApiUrl(endpoint: string): string {
     const API_BASE_URL = config.API_BASE_URL;
@@ -124,6 +125,8 @@ export class ChatService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
     }
+
+    this.intentionalDisconnect = false;
 
     try {
       this.ws = apiService.connectWebSocket();
@@ -178,6 +181,10 @@ export class ChatService {
   }
 
   private attemptReconnect(): void {
+    if (this.intentionalDisconnect) {
+      return;
+    }
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnect attempts reached');
       return;
@@ -194,6 +201,8 @@ export class ChatService {
   }
 
   disconnect(): void {
+    this.intentionalDisconnect = true;
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
