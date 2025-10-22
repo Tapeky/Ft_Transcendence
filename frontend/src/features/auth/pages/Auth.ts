@@ -51,10 +51,6 @@ export class AuthPage {
           <div class="w-full px-10 flex-grow">
 
             <div id="form-container" class="transition-all duration-100">
-              
-              <div id="error-display" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                <span id="error-message"></span>
-              </div>
 
               <form id="login-form" class="space-y-6 auth-form active text-[1.5rem]">
                 <div>
@@ -62,7 +58,6 @@ export class AuthPage {
                     id="login-email"
                     name="email"
                     type="email"
-                    required
                     autocomplete="email"
                     placeholder=""
                     class="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-100 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -77,7 +72,6 @@ export class AuthPage {
                     id="login-password"
                     name="password"
                     type="password"
-                    required
                     autocomplete="current-password"
                     placeholder=""
                     class="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-100 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -90,7 +84,7 @@ export class AuthPage {
                 <button 
                   type="submit" 
                   id="login-submit"
-                  class="premium-button relative w-full py-3 px-4 rounded-lg duration-100 bg-blue-700 text-white hover:bg-blue-600 cursor-pointer"
+                  class="premium-button relative w-full py-3 px-4 rounded-lg overflow-hidden duration-100 bg-blue-700 text-white hover:bg-blue-600 cursor-pointer"
                 >
                   <span class="relative z-10 flex items-center justify-center">
                     <span id="login-submit-text">Sign in</span>
@@ -163,7 +157,6 @@ export class AuthPage {
                     id="register-username"
                     name="username"
                     type="text"
-                    required
                     minlength="3"
                     maxlength="20"
                     placeholder=""
@@ -179,7 +172,6 @@ export class AuthPage {
                     id="register-email"
                     name="email"
                     type="email"
-                    required
                     autocomplete="email"
                     placeholder=""
                     class="peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-100 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -194,7 +186,6 @@ export class AuthPage {
                     id="register-password"
                     name="password"
                     type="password"
-                    required
                     minlength="6"
                     autocomplete="new-password"
                     placeholder=""
@@ -224,7 +215,6 @@ export class AuthPage {
                     type="checkbox" 
                     id="register-consent" 
                     name="data_consent"
-                    required
                     class="mt-1 w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
                   />
                   <label for="register-consent" class="text-white text-[1rem]">
@@ -235,7 +225,7 @@ export class AuthPage {
                 <button 
                   type="submit" 
                   id="register-submit"
-                  class="premium-button relative w-full py-3 px-4 rounded-lg font-medium overflow-hidden duration-100 bg-blue-700 text-white hover:bg-blue-600 cursor-pointer"
+                  class="premium-button relative w-full py-3 px-4 rounded-lg overflow-hidden duration-100 bg-blue-700 text-white hover:bg-blue-600 cursor-pointer"
                 >
                   <span class="relative z-10 flex items-center justify-center">
                     <span id="register-submit-text">Sign Up</span>
@@ -253,7 +243,7 @@ export class AuthPage {
           </div>
         </div>
 
-        <div class="flex-1 pt-20 self-start">
+        <div class="flex-1 pt-20 self-start flex flex-col">
           <div class='text-[2rem] text-white flex flex-col justify-center items-center backdrop-blur-md bg-white/10 rounded-md py-6 mx-20' id='register-btn'>
             First time ?
             <button
@@ -274,6 +264,10 @@ export class AuthPage {
             >
               Log in here !
             </button>
+          </div>
+
+          <div id="error-display" class="duration-200 hidden bg-red-500 border-2 border-red-300 text-white text-center self-center rounded-lg text-[1.2rem] mt-10 py-4 w-1/2">
+            <span id="error-message"></span>
           </div>
         </div>
 
@@ -455,6 +449,7 @@ export class AuthPage {
       });
     } catch (error) {
       console.error('❌ AuthPage: Login failed:', error);
+      console.log('e');
       this.showError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       this.setSubmitLoading('login', false);
@@ -518,6 +513,12 @@ export class AuthPage {
     if (errorDisplay && errorMessage) {
       errorMessage.textContent = message;
       errorDisplay.classList.remove('hidden');
+      setTimeout(() => {
+        errorDisplay.classList.add('scale-125');
+      }, 1);
+      setTimeout(() => {
+        errorDisplay.classList.remove('scale-125');
+      }, 300);
     }
   }
 
