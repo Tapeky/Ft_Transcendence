@@ -346,8 +346,8 @@ export class ChatService {
     this.emit('friend_pong_invite', data);
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Invitation Pong de ${data.fromUsername || 'un ami'}`, {
-        body: "Cliquez pour voir l'invitation",
+      new Notification(`Pong invitation from ${data.fromUsername || 'a friend'}`, {
+        body: "Click here to see your invitation",
         icon: '/favicon.png',
       });
     }
