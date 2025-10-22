@@ -191,7 +191,7 @@ export class Router {
           <button onclick="window.location.reload()"
                   style="padding: 10px 20px; font-size: 1rem; background: white; color: #dc2626;
                          border: none; border-radius: 5px; cursor: pointer;">
-            Recharger la page
+            Reload
           </button>
         </div>
       </div>
