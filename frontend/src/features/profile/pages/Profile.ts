@@ -121,7 +121,7 @@ export class ProfilePage {
       
       <button 
         id="edit-avatar-btn"
-        class="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.3rem] rounded-md transition-transform"
+        class="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-110 text-white text-[1.3rem] rounded-md transition-transform"
       >
         EDIT
       </button>
@@ -316,7 +316,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem] font-iceland';
 
     this.avatarModalCloseBtn = new CloseBtn(() => this.closeAvatarModal());
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
@@ -332,8 +332,8 @@ export class ProfilePage {
       <div class="flex flex-col items-center gap-4">
         <input type="file" id="avatar-file-input" accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden"/>
         
-        <button id="upload-avatar-btn" class="border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.5rem] rounded-md transition-transform">
-          IMPORT FILE
+        <button id="upload-avatar-btn" class="border-2 p-2 px-6 bg-blue-800 hover:scale-110 text-white text-[1.5rem] rounded-md transition-transform">
+          Import file
         </button>
         
         <div id="upload-status" class="text-[1.2rem] min-h-[1.5rem] text-center"></div>

@@ -15,7 +15,7 @@ export class AvatarSelect {
 
   private createElement(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'flex gap-10 flex-wrap justify-center mt-3';
+    container.className = 'flex gap-10 flex-wrap justify-center mt-6';
     container.id = 'avatar-select-container';
     container.innerHTML = '<p class="text-white text-[1.5rem]">Loading avatars...</p>';
     return container;

@@ -9,6 +9,8 @@ export interface FriendItemProps {
   avatar: string | null;
   is_online: boolean;
   id: number;
+  wins: number;
+  losses: number;
 }
 
 export class FriendItem {
@@ -51,10 +53,10 @@ export class FriendItem {
             id="invite-btn" 
             data-invite-user="${this.props.id}"
             data-invite-username="${this.props.username}"
-            class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 hover:scale-110 transition">
+            class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition">
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
-          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
+          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition">
             <img src="/src/img/plus.svg" alt="more" />
           </button>
         </div>
@@ -141,6 +143,8 @@ export class FriendItem {
         displayName: this.props.displayName,
         avatar: this.props.avatar,
         id: this.props.id,
+        wins: this.props.wins,
+        losses: this.props.losses,
         isOpen: this.isOptionsOpen,
         setIsOpen: () => this.closeOptions(),
         setDismiss: () => this.dismissItem(),
