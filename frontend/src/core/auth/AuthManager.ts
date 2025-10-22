@@ -75,7 +75,17 @@ export class AuthManager {
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
-      console.error('AuthManager login failed:', errorMessage);
+
+      const isUserError =
+        errorMessage.includes('Wrong') ||
+        errorMessage.includes('password') ||
+        errorMessage.includes('email') ||
+        errorMessage.includes('invalid') ||
+        errorMessage.includes('incorrect');
+
+      if (!isUserError) {
+        console.error('AuthManager unexpected login error:', errorMessage);
+      }
 
       throw new Error(errorMessage);
     }
