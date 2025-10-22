@@ -448,8 +448,6 @@ export class AuthPage {
         router.navigate('/');
       });
     } catch (error) {
-      console.error('❌ AuthPage: Login failed:', error);
-      console.log('e');
       this.showError(error instanceof Error ? error.message : 'Login failed');
     } finally {
       this.setSubmitLoading('login', false);
@@ -489,7 +487,6 @@ export class AuthPage {
         router.navigate('/');
       });
     } catch (error) {
-      console.error('❌ AuthPage: Registration failed:', error);
       this.showError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       this.setSubmitLoading('register', false);
