@@ -531,6 +531,26 @@ export class ChatService {
           },
         }
       );
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 500) {
+          console.warn(`Conversation ${conversationId} not found or inaccessible, cleaning localStorage`);
+
+          this.state.messages.delete(conversationId);
+          this.state.conversations.delete(conversationId);
+
+          if (this.state.currentConversationId === conversationId) {
+            this.state.currentConversationId = null;
+            localStorage.removeItem('chat_current_conversation');
+          }
+
+          this.saveToLocalStorage();
+
+          return [];
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       const serverMessages = data.messages || [];
 
@@ -779,7 +799,13 @@ export class ChatService {
       await this.loadConversations();
 
       if (this.state.currentConversationId) {
-        await this.loadConversationMessages(this.state.currentConversationId);
+        try {
+          await this.loadConversationMessages(this.state.currentConversationId);
+        } catch (error) {
+          console.warn('Failed to load current conversation, clearing it:', error);
+          this.state.currentConversationId = null;
+          localStorage.removeItem('chat_current_conversation');
+        }
       }
 
       this.restoreState();
