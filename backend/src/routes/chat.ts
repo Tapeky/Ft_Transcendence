@@ -139,9 +139,10 @@ export async function chatRoutes(server: FastifyInstance) {
       ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const currentUser = request.user as { id: number; username: string; email: string };
+      const params = request.params as { id: number };
+
       try {
-        const currentUser = request.user as { id: number; username: string; email: string };
-        const params = request.params as { id: number };
         const query = request.query as { page?: number; limit?: number };
 
         const page = Math.max(1, query.page || 1);
@@ -170,7 +171,13 @@ export async function chatRoutes(server: FastifyInstance) {
           } as ConversationMessagesResponse,
         });
       } catch (error: any) {
-        request.log.error('Erreur récupération messages:', error);
+        request.log.error({
+          err: error,
+          conversationId: params.id,
+          userId: currentUser.id,
+          message: error.message,
+          stack: error.stack
+        }, 'Erreur récupération messages');
 
         if (error.message.includes('non trouvée') || error.message.includes('non autorisé')) {
           return reply.status(404).send({
