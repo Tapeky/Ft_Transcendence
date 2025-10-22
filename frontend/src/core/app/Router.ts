@@ -39,11 +39,6 @@ export class Router {
       return new ProfilePage().getElement();
     });
 
-    this.routes.set('/friends', async () => {
-      const { FriendsPage } = await import('../../features/friends/pages/Friends');
-      return new FriendsPage().getElement();
-    });
-
     this.routes.set('/tournament', async () => {
       const { LocalTournament } = await import('../../features/tournament/pages/LocalTournament');
       const tournament = new LocalTournament();

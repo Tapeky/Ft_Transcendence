@@ -56,8 +56,8 @@ export class FriendItem {
             class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition">
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
-          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition">
-            <img src="/src/img/plus.svg" alt="more" />
+          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition p-1">
+            <img src="/src/img/profile.svg" alt="more" />
           </button>
         </div>
       </div>
@@ -89,13 +89,13 @@ export class FriendItem {
       const result = await apiService.inviteFriendToPong(this.props.id);
 
       if (result.success) {
-        this.showNotification(`Invitation envoyée à ${this.props.username}!`, 'success');
+        this.showNotification(`Invitation sent to ${this.props.username}!`, 'success');
       } else {
         this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
       }
     } catch (error) {
       console.error('❌ Failed to invite friend to pong:', error);
-      this.showNotification("Erreur lors de l'envoi de l'invitation", 'error');
+      this.showNotification("Invitation failed", 'error');
     } finally {
       const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
       if (inviteBtn) {
