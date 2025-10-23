@@ -347,7 +347,76 @@ export class ChatService {
     }
   }
 
+  private addInviteMessageToChat(data: PongInviteData): void {
+    // Find existing conversation with the sender
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) return;
+
+    let conversation: Conversation | undefined;
+    for (const conv of this.state.conversations.values()) {
+      if (
+        (conv.user1_id === currentUserId && conv.user2_id === data.fromUserId) ||
+        (conv.user2_id === currentUserId && conv.user1_id === data.fromUserId)
+      ) {
+        conversation = conv;
+        break;
+      }
+    }
+
+    // Create a local invite message
+    const inviteMessage: Message = {
+      id: Date.now(), // Temporary ID
+      conversation_id: conversation?.id || 0,
+      sender_id: data.fromUserId,
+      content: 'Invited you to play Pong!',
+      type: 'game_invite',
+      metadata: JSON.stringify({
+        inviteId: data.inviteId,
+        expiresAt: data.expiresAt,
+      }),
+      created_at: new Date().toISOString(),
+      username: data.fromUsername || 'Friend',
+      avatar_url: undefined,
+      display_name: data.fromUsername,
+    };
+
+    if (conversation) {
+      // Add message to existing conversation
+      const messages = this.state.messages.get(conversation.id) || [];
+      const newMessages = [...messages, inviteMessage].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      this.state.messages.set(conversation.id, newMessages);
+      
+      // Update conversation's last message
+      conversation.last_message = inviteMessage.content;
+      conversation.last_message_at = inviteMessage.created_at;
+      this.state.conversations.set(conversation.id, conversation);
+
+      this.saveToLocalStorage();
+      this.emit('message_received', { message: inviteMessage, conversation });
+      this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+    }
+  }
+
+  private getCurrentUserId(): number | null {
+    // Get current user ID from auth or state
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.id || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
   private handlePongInvite(data: PongInviteData): void {
+    // Add invitation as a message in the chat
+    this.addInviteMessageToChat(data);
+
     const inviteModal = new PongInviteNotification(data, () => {});
 
     inviteModal.show();
