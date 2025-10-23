@@ -77,6 +77,10 @@ export class TournamentHistory {
 
           const result = await TournamentService.clearHistory();
 
+          // Clear session storage to prevent attempting to resume deleted tournaments
+          sessionStorage.removeItem('activeTournamentId');
+          sessionStorage.removeItem('tournamentMatchResult');
+
           await this.loadTournaments();
 
           this.showMessage('History cleared successfully!', 'success');
