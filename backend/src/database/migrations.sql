@@ -5,6 +5,8 @@ ALTER TABLE matches ADD COLUMN next_match_id INTEGER;
 ALTER TABLE tournaments ADD COLUMN min_players INTEGER DEFAULT 2;
 ALTER TABLE tournaments ADD COLUMN current_round INTEGER DEFAULT 1;
 ALTER TABLE tournaments ADD COLUMN total_rounds INTEGER DEFAULT 1;
+ALTER TABLE tournaments ADD COLUMN winner_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE tournaments ADD COLUMN bracket_data TEXT;
 
 ALTER TABLE matches ADD COLUMN is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE matches ADD COLUMN parent_match_1 INTEGER;
@@ -19,8 +21,6 @@ CREATE INDEX IF NOT EXISTS idx_tournaments_current_players ON tournaments(curren
 ALTER TABLE tournament_participants ADD COLUMN eliminated_at DATETIME;
 ALTER TABLE tournament_participants ADD COLUMN final_position INTEGER;
 ALTER TABLE tournament_participants ADD COLUMN elimination_round INTEGER;
-
-UPDATE tournaments SET status = 'waiting' WHERE status = 'open';
 
 CREATE TABLE IF NOT EXISTS tournament_state_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
