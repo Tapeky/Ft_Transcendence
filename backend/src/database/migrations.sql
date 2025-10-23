@@ -9,6 +9,7 @@ ALTER TABLE tournaments ADD COLUMN total_rounds INTEGER DEFAULT 1;
 ALTER TABLE matches ADD COLUMN is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE matches ADD COLUMN parent_match_1 INTEGER;
 ALTER TABLE matches ADD COLUMN parent_match_2 INTEGER;
+ALTER TABLE matches ADD COLUMN tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_matches_round ON matches(tournament_id, round_number);
 CREATE INDEX IF NOT EXISTS idx_matches_status_round ON matches(status, round_number);
