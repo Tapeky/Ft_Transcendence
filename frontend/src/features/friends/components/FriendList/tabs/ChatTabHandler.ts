@@ -3,6 +3,7 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
+import { apiService, Friend } from '../../../../shared/services/api';
 
 export class ChatTabHandler {
   private container: Element;
@@ -57,6 +58,7 @@ export class ChatTabHandler {
       this.chatFriendsList = new ChatFriendsList({
         friends: friends,
         onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend),
+        onGameInvite: (friend: Friend) => this.inviteFriendToGame(friend),
       });
 
       this.container.appendChild(this.chatFriendsList.getElement());
@@ -103,6 +105,20 @@ export class ChatTabHandler {
       await this.renderChatContent();
     } catch (error) {
       console.error('❌ Error opening chat with friend:', error);
+    }
+  }
+
+  private async inviteFriendToGame(friend: Friend): Promise<void> {
+    try {
+      const result = await apiService.inviteFriendToPong(friend.id);
+
+      if (result.success) {
+        console.log(`✅ Invitation sent to ${friend.username}`);
+      } else {
+        console.error(`❌ Failed to invite ${friend.username}:`, result.message);
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
     }
   }
 
