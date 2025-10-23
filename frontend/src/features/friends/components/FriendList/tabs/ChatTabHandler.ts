@@ -3,7 +3,7 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
-import { apiService, Friend } from '../../../../shared/services/api';
+import { apiService, Friend } from '../../../../../shared/services/api';
 
 export class ChatTabHandler {
   private container: Element;
