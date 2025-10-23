@@ -11,20 +11,20 @@ ALTER TABLE tournaments ADD COLUMN bracket_data TEXT;
 ALTER TABLE matches ADD COLUMN is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE matches ADD COLUMN parent_match_1 INTEGER;
 ALTER TABLE matches ADD COLUMN parent_match_2 INTEGER;
-ALTER TABLE matches ADD COLUMN tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE;
+ALTER TABLE matches ADD COLUMN tournament_id VARCHAR(36) REFERENCES tournaments(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_matches_round ON matches(tournament_id, round_number);
 CREATE INDEX IF NOT EXISTS idx_matches_status_round ON matches(status, round_number);
 CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
 CREATE INDEX IF NOT EXISTS idx_tournaments_current_players ON tournaments(current_players, max_players);
 
-ALTER TABLE tournament_participants ADD COLUMN eliminated_at DATETIME;
-ALTER TABLE tournament_participants ADD COLUMN final_position INTEGER;
-ALTER TABLE tournament_participants ADD COLUMN elimination_round INTEGER;
+ALTER TABLE tournament_players ADD COLUMN eliminated_at DATETIME;
+ALTER TABLE tournament_players ADD COLUMN final_position INTEGER;
+ALTER TABLE tournament_players ADD COLUMN elimination_round INTEGER;
 
 CREATE TABLE IF NOT EXISTS tournament_state_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER NOT NULL,
+    tournament_id VARCHAR(36) NOT NULL,
     old_status VARCHAR(20),
     new_status VARCHAR(20) NOT NULL,
     reason VARCHAR(255),
@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_tournament_state_log_tournament ON tournament_sta
 
 CREATE TABLE IF NOT EXISTS tournament_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER NOT NULL,
+    tournament_id VARCHAR(36) NOT NULL,
     event_type VARCHAR(50) NOT NULL,
     event_data TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
