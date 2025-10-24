@@ -12,6 +12,7 @@ export class PongInviteNotification {
   private element: HTMLElement;
   private onClose: () => void;
   private inviteData: PongInviteData;
+  private countdownIntervalId: number | null = null;
 
   constructor(inviteData: PongInviteData, onClose: () => void) {
     this.inviteData = inviteData;
@@ -132,11 +133,11 @@ export class PongInviteNotification {
     };
 
     updateCountdown();
-    const interval = setInterval(() => {
+    this.countdownIntervalId = window.setInterval(() => {
       updateCountdown();
       const timeLeft = this.inviteData.expiresAt - Date.now();
       if (timeLeft <= 0) {
-        clearInterval(interval);
+        this.clearCountdown();
       }
     }, 1000);
   }
@@ -165,7 +166,15 @@ export class PongInviteNotification {
     }, 3000);
   }
 
+  private clearCountdown(): void {
+    if (this.countdownIntervalId !== null) {
+      clearInterval(this.countdownIntervalId);
+      this.countdownIntervalId = null;
+    }
+  }
+
   private close(): void {
+    this.clearCountdown();
     this.element.remove();
     this.onClose();
   }
