@@ -39,6 +39,7 @@ export class GamePage {
   private tournamentContext?: TournamentGameContext;
   private authUnsubscribe?: () => void;
   private gameEnded: boolean = false;
+  private isDestroyed: boolean = false;
   private lastFrameTime: number = 0;
   private readonly TARGET_FPS = 60;
   private isCountingDown: boolean = false;
@@ -453,7 +454,7 @@ export class GamePage {
   }
 
   private async showGameEnd(winner: string): Promise<void> {
-    if (this.gameEndOverlay) return;
+    if (this.gameEndOverlay || this.isDestroyed) return;
     const leftScore = this.gameState?.leftScore || 0;
     const rightScore = this.gameState?.rightScore || 0;
     let duration = 0;
@@ -469,6 +470,8 @@ export class GamePage {
     } else {
       await this.recordMatch(leftScore, rightScore, duration);
     }
+
+    if (this.isDestroyed) return;
 
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
@@ -634,6 +637,7 @@ export class GamePage {
   }
 
   destroy(): void {
+    this.isDestroyed = true;
     document.removeEventListener('keydown', this.keydownHandler);
     document.removeEventListener('keyup', this.keyupHandler);
     if (this.animationId) {
