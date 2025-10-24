@@ -44,6 +44,8 @@ export class GamePage {
   private isCountingDown: boolean = false;
   private countdownValue: number = 5;
   private countdownStartTime: number = 0;
+  private isWaitingAfterScore: boolean = false;
+  private scoreDelayStartTime: number = 0;
   private readonly ARENA_WIDTH = 800;
   private readonly ARENA_HEIGHT = 500;
   private readonly PADDLE_WIDTH = 8;
@@ -297,6 +299,18 @@ export class GamePage {
 
   private updateBall(): void {
     if (!this.gameState) return;
+
+    if (this.isWaitingAfterScore) {
+      const elapsedTime = performance.now() - this.scoreDelayStartTime;
+      if (elapsedTime >= 1000) {
+        this.gameState.ball.direction.x =
+          Math.random() > 0.5 ? this.INITIAL_BALL_SPEED : -this.INITIAL_BALL_SPEED;
+        this.gameState.ball.direction.y = (Math.random() - 0.5) * 6;
+        this.isWaitingAfterScore = false;
+      }
+      return;
+    }
+
     const ball = this.gameState.ball;
     ball.pos.x += ball.direction.x;
     ball.pos.y += ball.direction.y;
@@ -305,6 +319,8 @@ export class GamePage {
     }
     if (
       ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH &&
+      ball.pos.x >= 0 &&
+      ball.direction.x < 0 &&
       ball.pos.y >= this.gameState.leftPaddle.pos.y &&
       ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
@@ -314,6 +330,8 @@ export class GamePage {
     }
     if (
       ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
+      ball.pos.x <= this.ARENA_WIDTH &&
+      ball.direction.x > 0 &&
       ball.pos.y >= this.gameState.rightPaddle.pos.y &&
       ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
@@ -334,9 +352,12 @@ export class GamePage {
     if (!this.gameState) return;
     this.gameState.ball.pos.x = this.ARENA_WIDTH / 2;
     this.gameState.ball.pos.y = this.ARENA_HEIGHT / 2;
-    this.gameState.ball.direction.x =
-      Math.random() > 0.5 ? this.INITIAL_BALL_SPEED : -this.INITIAL_BALL_SPEED;
-    this.gameState.ball.direction.y = (Math.random() - 0.5) * 6;
+    this.gameState.ball.direction.x = 0;
+    this.gameState.ball.direction.y = 0;
+    this.gameState.leftPaddle.pos.y = this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2;
+    this.gameState.rightPaddle.pos.y = this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2;
+    this.isWaitingAfterScore = true;
+    this.scoreDelayStartTime = performance.now();
   }
 
   private increaseBallSpeed(): void {
