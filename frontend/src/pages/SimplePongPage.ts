@@ -497,6 +497,10 @@ export class SimplePongPage {
   }
 
   private handleGameStateMessage(msg: any): void {
+    // Save current values BEFORE preparePlayerNames() might reset them
+    const savedMyRole = this.myRole;
+    const savedPlayerIds = this.lastPlayerIds;
+
     this.preparePlayerNames(msg);
 
     const rawState = msg.state || msg.gameState;
@@ -520,14 +524,17 @@ export class SimplePongPage {
     if (sanitized.gameOver) {
       console.log('🏁 Game Over detected:', {
         winner: sanitized.winner,
-        myRole: this.myRole,
+        savedMyRole: savedMyRole,
+        currentMyRole: this.myRole,
         leftScore: sanitized.leftScore,
         rightScore: sanitized.rightScore,
-        lastPlayerIds: this.lastPlayerIds,
+        savedPlayerIds: savedPlayerIds,
+        currentPlayerIds: this.lastPlayerIds,
       });
-      const won = sanitized.winner === this.myRole;
+      const won = sanitized.winner === savedMyRole;
       console.log(`🎯 Result: ${won ? 'You won!' : 'You lost!'}`);
-      this.showGameEnd(won ? 'You won!' : 'You lost!');
+      // Pass saved values to showGameEnd
+      this.showGameEnd(won ? 'You won!' : 'You lost!', savedMyRole, savedPlayerIds);
     }
   }
 
@@ -736,7 +743,10 @@ export class SimplePongPage {
     );
   }
 
-  private async recordMatch(): Promise<void> {
+  private async recordMatch(
+    myRole: 'left' | 'right' | null,
+    playerIds: { left: number; right: number } | null
+  ): Promise<void> {
     try {
       // Import appState and apiService at the top if not already imported
       const { appState } = await import('../core/state/AppState');
@@ -748,12 +758,12 @@ export class SimplePongPage {
         return;
       }
 
-      if (!this.lastPlayerIds) {
+      if (!playerIds) {
         console.warn('⚠️ No player IDs available, cannot record match');
         return;
       }
 
-      if (!this.myRole) {
+      if (!myRole) {
         console.warn('⚠️ No player role assigned, cannot record match');
         return;
       }
@@ -765,22 +775,22 @@ export class SimplePongPage {
       }
 
       // Calculate match duration
-      const duration = this.gameStartTime 
-        ? Math.floor((Date.now() - this.gameStartTime) / 1000) 
+      const duration = this.gameStartTime
+        ? Math.floor((Date.now() - this.gameStartTime) / 1000)
         : 0;
 
       // Determine player IDs based on role
       const myUserId = currentUser.id;
-      const opponentUserId = this.myRole === 'left' 
-        ? this.lastPlayerIds.right 
-        : this.lastPlayerIds.left;
+      const opponentUserId = myRole === 'left'
+        ? playerIds.right
+        : playerIds.left;
 
       // Determine scores based on role
-      const myScore = this.myRole === 'left' ? finalState.leftScore : finalState.rightScore;
-      const opponentScore = this.myRole === 'left' ? finalState.rightScore : finalState.leftScore;
+      const myScore = myRole === 'left' ? finalState.leftScore : finalState.rightScore;
+      const opponentScore = myRole === 'left' ? finalState.rightScore : finalState.leftScore;
 
       // Determine winner
-      const winnerId = finalState.winner === this.myRole ? myUserId : opponentUserId;
+      const winnerId = finalState.winner === myRole ? myUserId : opponentUserId;
 
       // Prepare match data
       const matchData = {
@@ -802,7 +812,7 @@ export class SimplePongPage {
       };
 
       console.log('📝 Recording online match:', {
-        myRole: this.myRole,
+        myRole: myRole,
         myUserId,
         opponentUserId,
         myScore,
@@ -819,12 +829,14 @@ export class SimplePongPage {
     }
   }
 
-  private async showGameEnd(result: string): Promise<void> {
+  private async showGameEnd(
+    result: string,
+    myRole: 'left' | 'right' | null,
+    playerIds: { left: number; right: number } | null
+  ): Promise<void> {
     if (this.gameEndOverlay) return;
 
-    // Record the match result to database
-    await this.recordMatch();
-
+    // Create and assign overlay IMMEDIATELY to prevent multiple calls
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
     const finalState = this.gameState ?? this.displayState;
@@ -865,6 +877,9 @@ export class SimplePongPage {
 
     document.body.appendChild(overlay);
     this.gameEndOverlay = overlay;
+
+    // Record the match result to database (using saved values to avoid null references)
+    await this.recordMatch(myRole, playerIds);
   }
 
   getElement(): HTMLElement {
