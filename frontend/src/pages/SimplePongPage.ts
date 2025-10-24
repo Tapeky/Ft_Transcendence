@@ -520,7 +520,12 @@ export class SimplePongPage {
 
     // Save current values BEFORE preparePlayerNames() might reset them
     const savedMyRole = this.myRole;
-    const savedPlayerIds = this.lastPlayerIds;
+
+    // Extract player IDs directly from message instead of relying on this.lastPlayerIds
+    const savedPlayerIds =
+      msg.leftPlayerId !== undefined && msg.rightPlayerId !== undefined
+        ? { left: msg.leftPlayerId, right: msg.rightPlayerId }
+        : this.lastPlayerIds;
 
     this.preparePlayerNames(msg);
 
