@@ -409,16 +409,9 @@ export class SimplePongPage {
 
         case 'friend_pong_start':
         case 'simple_pong_start':
-          console.log('🎮 Game start message received:', {
-            type: msg.type,
-            role: msg.role,
-            gameId: msg.gameId,
-            leftPlayerId: msg.leftPlayerId,
-            rightPlayerId: msg.rightPlayerId,
-          });
           this.myRole = msg.role;
           this.gameId = msg.gameId;
-          this.gameStartTime = Date.now(); // Record game start time for duration calculation
+          this.gameStartTime = Date.now();
           this.preparePlayerNames(msg);
 
           this.setStatusMessage(
@@ -439,10 +432,7 @@ export class SimplePongPage {
         case 'friend_pong_end':
         case 'simple_pong_end':
           this.handleGameStateMessage(msg);
-          // Don't reset myRole, gameStartTime, lastPlayerIds here!
-          // They're needed by recordMatch() which runs asynchronously
-          // They'll be reset in destroy() or when a new game starts
-          this.isCountingDown = false; // Stop the countdown
+          this.isCountingDown = false;
           this.hidePlayerNames();
           break;
       }
@@ -504,24 +494,18 @@ export class SimplePongPage {
   }
 
   private handleGameStateMessage(msg: any): void {
-    // Infer role from player IDs if not set (e.g., page reloaded during game)
     if (!this.myRole && msg.leftPlayerId && msg.rightPlayerId) {
       const currentUser = this.getCurrentUserInfo();
       if (currentUser) {
         if (currentUser.id === msg.leftPlayerId) {
           this.myRole = 'left';
-          console.log('🔄 Inferred role from player IDs: left');
         } else if (currentUser.id === msg.rightPlayerId) {
           this.myRole = 'right';
-          console.log('🔄 Inferred role from player IDs: right');
         }
       }
     }
 
-    // Save current values BEFORE preparePlayerNames() might reset them
     const savedMyRole = this.myRole;
-
-    // Extract player IDs directly from message instead of relying on this.lastPlayerIds
     const savedPlayerIds =
       msg.leftPlayerId !== undefined && msg.rightPlayerId !== undefined
         ? { left: msg.leftPlayerId, right: msg.rightPlayerId }
@@ -548,18 +532,7 @@ export class SimplePongPage {
     this.enqueueState(sanitized, now);
 
     if (sanitized.gameOver) {
-      console.log('🏁 Game Over detected:', {
-        winner: sanitized.winner,
-        savedMyRole: savedMyRole,
-        currentMyRole: this.myRole,
-        leftScore: sanitized.leftScore,
-        rightScore: sanitized.rightScore,
-        savedPlayerIds: savedPlayerIds,
-        currentPlayerIds: this.lastPlayerIds,
-      });
       const won = sanitized.winner === savedMyRole;
-      console.log(`🎯 Result: ${won ? 'You won!' : 'You lost!'}`);
-      // Pass saved values to showGameEnd
       this.showGameEnd(won ? 'You won!' : 'You lost!', savedMyRole, savedPlayerIds);
     }
   }
@@ -811,14 +784,10 @@ export class SimplePongPage {
         ? playerIds.right
         : playerIds.left;
 
-      // Determine scores based on role
       const myScore = myRole === 'left' ? finalState.leftScore : finalState.rightScore;
       const opponentScore = myRole === 'left' ? finalState.rightScore : finalState.leftScore;
-
-      // Determine winner
       const winnerId = finalState.winner === myRole ? myUserId : opponentUserId;
 
-      // Prepare match data
       const matchData = {
         player1_id: myUserId,
         player2_id: opponentUserId,
@@ -830,31 +799,16 @@ export class SimplePongPage {
         game_type: 'pong',
         max_score: 5,
         duration_seconds: duration,
-        // Stats tracking (basic for now, could be enhanced)
         player1_touched_ball: 0,
         player1_missed_ball: Math.max(0, opponentScore),
         player2_touched_ball: 0,
         player2_missed_ball: Math.max(0, myScore),
       };
 
-      console.log('📝 Recording online match:', {
-        myRole: myRole,
-        myUserId,
-        opponentUserId,
-        myScore,
-        opponentScore,
-        winner: finalState.winner,
-        winnerId,
-        duration,
-      });
-
       await apiService.recordMatch(matchData);
-      console.log('✅ Online match recorded successfully');
 
-      // Refresh user stats to update wins/losses on homepage
       const { authManager } = await import('../core/auth/AuthManager');
       await authManager.refreshUser();
-      console.log('🔄 User stats refreshed');
     } catch (error) {
       console.error('❌ Failed to record online match:', error);
     }
@@ -867,7 +821,6 @@ export class SimplePongPage {
   ): Promise<void> {
     if (this.gameEndOverlay) return;
 
-    // Create and assign overlay IMMEDIATELY to prevent multiple calls
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
     const finalState = this.gameState ?? this.displayState;
@@ -909,7 +862,6 @@ export class SimplePongPage {
     document.body.appendChild(overlay);
     this.gameEndOverlay = overlay;
 
-    // Record the match result to database (using saved values to avoid null references)
     await this.recordMatch(myRole, playerIds);
   }
 
