@@ -422,6 +422,10 @@ export class GamePage {
         player2_missed_ball: Math.max(0, leftScore),
       };
       await apiService.recordMatch(matchData);
+
+      // Refresh user stats to update wins/losses on homepage
+      const { authManager } = await import('../core/auth/AuthManager');
+      await authManager.refreshUser();
     } catch (error) {
       console.error('Failed to record match');
     }
