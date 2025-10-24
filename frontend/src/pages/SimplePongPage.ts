@@ -409,6 +409,13 @@ export class SimplePongPage {
 
         case 'friend_pong_start':
         case 'simple_pong_start':
+          console.log('🎮 Game start message received:', {
+            type: msg.type,
+            role: msg.role,
+            gameId: msg.gameId,
+            leftPlayerId: msg.leftPlayerId,
+            rightPlayerId: msg.rightPlayerId,
+          });
           this.myRole = msg.role;
           this.gameId = msg.gameId;
           this.gameStartTime = Date.now(); // Record game start time for duration calculation
@@ -497,6 +504,20 @@ export class SimplePongPage {
   }
 
   private handleGameStateMessage(msg: any): void {
+    // Infer role from player IDs if not set (e.g., page reloaded during game)
+    if (!this.myRole && msg.leftPlayerId && msg.rightPlayerId) {
+      const currentUser = this.getCurrentUserInfo();
+      if (currentUser) {
+        if (currentUser.id === msg.leftPlayerId) {
+          this.myRole = 'left';
+          console.log('🔄 Inferred role from player IDs: left');
+        } else if (currentUser.id === msg.rightPlayerId) {
+          this.myRole = 'right';
+          console.log('🔄 Inferred role from player IDs: right');
+        }
+      }
+    }
+
     // Save current values BEFORE preparePlayerNames() might reset them
     const savedMyRole = this.myRole;
     const savedPlayerIds = this.lastPlayerIds;
