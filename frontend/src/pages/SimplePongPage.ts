@@ -432,10 +432,10 @@ export class SimplePongPage {
         case 'friend_pong_end':
         case 'simple_pong_end':
           this.handleGameStateMessage(msg);
-          this.myRole = null;
-          this.gameStartTime = null;
+          // Don't reset myRole, gameStartTime, lastPlayerIds here!
+          // They're needed by recordMatch() which runs asynchronously
+          // They'll be reset in destroy() or when a new game starts
           this.isCountingDown = false; // Stop the countdown
-          this.lastPlayerIds = null;
           this.hidePlayerNames();
           break;
       }
@@ -518,7 +518,15 @@ export class SimplePongPage {
     this.enqueueState(sanitized, now);
 
     if (sanitized.gameOver) {
+      console.log('🏁 Game Over detected:', {
+        winner: sanitized.winner,
+        myRole: this.myRole,
+        leftScore: sanitized.leftScore,
+        rightScore: sanitized.rightScore,
+        lastPlayerIds: this.lastPlayerIds,
+      });
       const won = sanitized.winner === this.myRole;
+      console.log(`🎯 Result: ${won ? 'You won!' : 'You lost!'}`);
       this.showGameEnd(won ? 'You won!' : 'You lost!');
     }
   }
