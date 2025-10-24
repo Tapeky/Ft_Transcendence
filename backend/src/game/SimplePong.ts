@@ -42,6 +42,8 @@ export class SimplePong {
     this.state.ballY = SimplePong.ARENA_HEIGHT / 2;
     this.state.ballVX = (Math.random() > 0.5 ? 1 : -1) * SimplePong.BALL_SPEED;
     this.state.ballVY = (Math.random() - 0.5) * SimplePong.BALL_SPEED * 0.5;
+    this.state.leftPaddleY = SimplePong.ARENA_HEIGHT / 2;
+    this.state.rightPaddleY = SimplePong.ARENA_HEIGHT / 2;
   }
 
   public update(
@@ -118,6 +120,8 @@ export class SimplePong {
   private isCollidingWithLeftPaddle(halfPaddle: number): boolean {
     return (
       this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
+      this.state.ballX >= 0 &&
+      this.state.ballVX < 0 &&
       Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE
     );
   }
@@ -125,6 +129,8 @@ export class SimplePong {
   private isCollidingWithRightPaddle(halfPaddle: number): boolean {
     return (
       this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
+      this.state.ballX <= SimplePong.ARENA_WIDTH &&
+      this.state.ballVX > 0 &&
       Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE
     );
   }
