@@ -47,6 +47,7 @@ export class SimplePongPage {
   private countdownValue: number = 5;
   private countdownStartTime: number = 0;
   private lastFrameTime: number = 0;
+  private countdownAnimationId: number | null = null;
 
   private playerNames: { left: string; right: string } = { left: '', right: '' };
   private lastPlayerIds: { left: number; right: number } | null = null;
@@ -882,6 +883,13 @@ export class SimplePongPage {
     }
 
     this.stopRenderLoop();
+
+    this.isCountingDown = false;
+    if (this.countdownAnimationId !== null) {
+      cancelAnimationFrame(this.countdownAnimationId);
+      this.countdownAnimationId = null;
+    }
+
     this.stateBuffer = [];
     this.displayState = null;
     this.playerNames = { left: '', right: '' };
@@ -941,6 +949,6 @@ export class SimplePongPage {
       this.lastFrameTime = currentTime;
     }
 
-    requestAnimationFrame(() => this.countdownLoop());
+    this.countdownAnimationId = requestAnimationFrame(() => this.countdownLoop());
   }
 }
