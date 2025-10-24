@@ -50,6 +50,7 @@ export class SimplePongPage {
 
   private playerNames: { left: string; right: string } = { left: '', right: '' };
   private lastPlayerIds: { left: number; right: number } | null = null;
+  private gameStartTime: number | null = null;
   private authUnsubscribe?: () => void;
   private instructionsElement?: HTMLElement;
   private gameEndOverlay: HTMLElement | null = null;
@@ -410,6 +411,7 @@ export class SimplePongPage {
         case 'simple_pong_start':
           this.myRole = msg.role;
           this.gameId = msg.gameId;
+          this.gameStartTime = Date.now(); // Record game start time for duration calculation
           this.preparePlayerNames(msg);
 
           this.setStatusMessage(
@@ -431,6 +433,7 @@ export class SimplePongPage {
         case 'simple_pong_end':
           this.handleGameStateMessage(msg);
           this.myRole = null;
+          this.gameStartTime = null;
           this.isCountingDown = false; // Stop the countdown
           this.lastPlayerIds = null;
           this.hidePlayerNames();
@@ -725,8 +728,94 @@ export class SimplePongPage {
     );
   }
 
+  private async recordMatch(): Promise<void> {
+    try {
+      // Import appState and apiService at the top if not already imported
+      const { appState } = await import('../core/state/AppState');
+      const { apiService } = await import('../shared/services/api');
+
+      const currentUser = appState.getState().user;
+      if (!currentUser) {
+        console.warn('⚠️ No user authenticated, cannot record match');
+        return;
+      }
+
+      if (!this.lastPlayerIds) {
+        console.warn('⚠️ No player IDs available, cannot record match');
+        return;
+      }
+
+      if (!this.myRole) {
+        console.warn('⚠️ No player role assigned, cannot record match');
+        return;
+      }
+
+      const finalState = this.gameState ?? this.displayState;
+      if (!finalState) {
+        console.warn('⚠️ No game state available, cannot record match');
+        return;
+      }
+
+      // Calculate match duration
+      const duration = this.gameStartTime 
+        ? Math.floor((Date.now() - this.gameStartTime) / 1000) 
+        : 0;
+
+      // Determine player IDs based on role
+      const myUserId = currentUser.id;
+      const opponentUserId = this.myRole === 'left' 
+        ? this.lastPlayerIds.right 
+        : this.lastPlayerIds.left;
+
+      // Determine scores based on role
+      const myScore = this.myRole === 'left' ? finalState.leftScore : finalState.rightScore;
+      const opponentScore = this.myRole === 'left' ? finalState.rightScore : finalState.leftScore;
+
+      // Determine winner
+      const winnerId = finalState.winner === this.myRole ? myUserId : opponentUserId;
+
+      // Prepare match data
+      const matchData = {
+        player1_id: myUserId,
+        player2_id: opponentUserId,
+        player1_guest_name: undefined,
+        player2_guest_name: undefined,
+        player1_score: myScore,
+        player2_score: opponentScore,
+        winner_id: winnerId,
+        game_type: 'pong',
+        max_score: 5,
+        duration_seconds: duration,
+        // Stats tracking (basic for now, could be enhanced)
+        player1_touched_ball: 0,
+        player1_missed_ball: Math.max(0, opponentScore),
+        player2_touched_ball: 0,
+        player2_missed_ball: Math.max(0, myScore),
+      };
+
+      console.log('📝 Recording online match:', {
+        myRole: this.myRole,
+        myUserId,
+        opponentUserId,
+        myScore,
+        opponentScore,
+        winner: finalState.winner,
+        winnerId,
+        duration,
+      });
+
+      await apiService.recordMatch(matchData);
+      console.log('✅ Online match recorded successfully');
+    } catch (error) {
+      console.error('❌ Failed to record online match:', error);
+    }
+  }
+
   private async showGameEnd(result: string): Promise<void> {
     if (this.gameEndOverlay) return;
+
+    // Record the match result to database
+    await this.recordMatch();
 
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
@@ -791,6 +880,7 @@ export class SimplePongPage {
     this.displayState = null;
     this.playerNames = { left: '', right: '' };
     this.lastPlayerIds = null;
+    this.gameStartTime = null;
 
     if (this.gameEndOverlay && document.body.contains(this.gameEndOverlay)) {
       document.body.removeChild(this.gameEndOverlay);
