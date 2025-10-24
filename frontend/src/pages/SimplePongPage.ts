@@ -850,6 +850,11 @@ export class SimplePongPage {
 
       await apiService.recordMatch(matchData);
       console.log('✅ Online match recorded successfully');
+
+      // Refresh user stats to update wins/losses on homepage
+      const { authManager } = await import('../core/auth/AuthManager');
+      await authManager.refreshUser();
+      console.log('🔄 User stats refreshed');
     } catch (error) {
       console.error('❌ Failed to record online match:', error);
     }
