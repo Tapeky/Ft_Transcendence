@@ -6,5 +6,5 @@ export interface OAuthUserInfo {
 }
 
 export interface AccountParams {
-  user_id : string;
+  userID : string;
 }
