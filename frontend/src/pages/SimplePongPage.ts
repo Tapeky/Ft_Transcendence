@@ -833,10 +833,6 @@ export class SimplePongPage {
                     Final Score: ${finalState?.leftScore ?? 0} - ${finalState?.rightScore ?? 0}
                 </p>
                 <div class="flex gap-4 justify-center">
-                    <button id="play-again"
-                            class="text-white border-white border-2 px-6 py-3 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg font-bold">
-                        Play Again
-                    </button>
                     <button id="back-to-menu-end"
                             class="text-white border-gray-400 border-2 px-6 py-3 rounded hover:bg-gray-400 hover:text-black transition-colors font-iceland text-lg">
                         Back to Menu
