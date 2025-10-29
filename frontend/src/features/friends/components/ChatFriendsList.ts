@@ -5,19 +5,16 @@ import { getAvatarUrl } from '../../../shared/utils/avatar';
 export interface ChatFriendsListOptions {
   friends: Friend[];
   onChatWithFriend: (friend: Friend) => void;
-  onGameInvite?: (friend: Friend) => void;
 }
 
 export class ChatFriendsList {
   private element: HTMLElement;
   private friends: Friend[];
   private onChatWithFriend: (friend: Friend) => void;
-  private onGameInvite?: (friend: Friend) => void;
 
   constructor(options: ChatFriendsListOptions) {
     this.friends = options.friends;
     this.onChatWithFriend = options.onChatWithFriend;
-    this.onGameInvite = options.onGameInvite;
     this.element = this.createElement();
   }
 
@@ -62,14 +59,14 @@ export class ChatFriendsList {
           <h2 class="text-[1.5rem]">${friend.is_online ? 'Online' : 'Offline'}</h2>
         </div>
         <div class="flex-1 flex justify-evenly items-start mt-1">
-          <button class="invite-btn border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 text-white rounded">Invite</button>
-          <button class="chat-btn border-2 min-h-[40px] px-4 mx-2 bg-green-600 hover:bg-green-700 border-black mb-4 text-white rounded">Chat</button>
+          <button id='invite-btn' class="border-2 min-h-[40px] px-4 bg-blue-600 hover:bg-blue-700 border-black mb-4 text-white rounded">Invite</button>
+          <button id='chat-btn' class="border-2 min-h-[40px] px-4 mx-2 bg-green-600 hover:bg-green-700 border-black mb-4 text-white rounded">Chat</button>
         </div>
       </div>
     `;
 
-    item.querySelector('.invite-btn')?.addEventListener('click', () => this.onGameInvite?.(friend));
-    item.querySelector('.chat-btn')?.addEventListener('click', () => this.onChatWithFriend(friend));
+    item.querySelector('#invite-btn')?.addEventListener('click', () => this.inviteToPong?.(friend));
+    item.querySelector('#chat-btn')?.addEventListener('click', () => this.onChatWithFriend(friend));
 
     return item;
   }
@@ -78,6 +75,55 @@ export class ChatFriendsList {
     this.friends = friends;
     this.element.replaceWith(this.createElement());
   }
+
+  private async inviteToPong(friend: Friend): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+      }
+
+      const result = await apiService.inviteFriendToPong(friend.id);
+
+      if (result.success) {
+        this.showNotification(`Invitation sent to ${friend.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+      this.showNotification("Invitation failed", 'error');
+    } finally {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-0 ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.classList.add('opacity-100');
+    }, 10);
+
+    setTimeout(() => {
+      notification.classList.add('translate-x-full', 'opacity-0');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
+  }
+
 
   public getElement(): HTMLElement {
     return this.element;

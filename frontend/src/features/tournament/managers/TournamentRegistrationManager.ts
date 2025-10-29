@@ -166,14 +166,6 @@ export class TournamentRegistrationManager {
   }
 
   async startTournament(tournamentId: string): Promise<Tournament> {
-    if (!this.state.tournament) {
-      throw new Error('No tournament loaded');
-    }
-
-    if (this.state.tournament.status !== 'ready') {
-      throw new Error('Tournament is not ready to start');
-    }
-
     try {
       const tournament = await TournamentService.startTournament(tournamentId);
       this.updateState({ tournament, error: null });

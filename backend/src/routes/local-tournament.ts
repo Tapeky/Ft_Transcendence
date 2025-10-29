@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { randomUUID } from 'crypto';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { LocalTournamentService } from '../tournament/LocalTournamentService';
 import { WebSocketManager } from '../websocket/WebSocketManager';
@@ -38,16 +39,18 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       const db = DatabaseManager.getInstance().getDb();
 
       try {
-        const result = await db.run(
-          `INSERT INTO tournaments (name, max_players, current_players, status, created_by) VALUES (?, ?, 0, 'open', 1)`,
-          [name, maxPlayers]
+        const tournamentId = randomUUID();
+
+        await db.run(
+          `INSERT INTO tournaments (id, name, max_players, current_players, status, created_by) VALUES (?, ?, ?, 0, 'registration', 1)`,
+          [tournamentId, name, maxPlayers]
         );
 
         reply.status(201).send({
           success: true,
           data: {
             tournament: {
-              id: result.lastID!.toString(), // Convert to string for frontend compatibility
+              id: tournamentId,
               name,
               maxPlayers,
               currentPlayers: 0,
@@ -71,7 +74,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       const db = DatabaseManager.getInstance().getDb();
 
       try {
-        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
+        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
           return reply.status(404).send({ success: false, error: 'Tournament not found' });
@@ -79,12 +82,12 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         const players = await db.all(
           `SELECT * FROM tournament_players WHERE tournament_id = ? ORDER BY joined_at ASC`,
-          [parseInt(id)]
+          [id]
         );
 
         const matches = await db.all(
           `SELECT * FROM tournament_matches WHERE tournament_id = ? ORDER BY round ASC, match_number ASC`,
-          [parseInt(id)]
+          [id]
         );
 
         let bracket = null;
@@ -146,22 +149,15 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         }
 
         let frontendStatus = tournament.status;
-        if (tournament.status === 'open') {
+        if (tournament.status === 'registration') {
           if (tournament.current_players >= tournament.max_players) {
             frontendStatus = 'ready';
           } else {
             frontendStatus = 'registration';
           }
-        } else if (tournament.status === 'waiting') {
-          // Map 'waiting' to appropriate frontend status
-          if (matches.length > 0) {
-            frontendStatus = 'in_progress';
-          } else if (tournament.current_players >= tournament.max_players) {
-            frontendStatus = 'ready';
-          } else {
-            frontendStatus = 'registration';
-          }
-        } else if (tournament.status === 'running') {
+        } else if (tournament.status === 'ready') {
+          frontendStatus = 'ready';
+        } else if (tournament.status === 'in_progress') {
           frontendStatus = 'in_progress';
         }
 
@@ -230,8 +226,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
       try {
         const tournament = await db.get(
-          `SELECT * FROM tournaments WHERE id = ? AND status = 'open'`,
-          [parseInt(id)]
+          `SELECT * FROM tournaments WHERE id = ? AND status = 'registration'`,
+          [id]
         );
 
         if (!tournament) {
@@ -248,15 +244,15 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
         await db.run(
           `INSERT INTO tournament_players (id, tournament_id, alias, joined_at) VALUES (?, ?, ?, ?)`,
-          [playerId, parseInt(id), alias, new Date().toISOString()]
+          [playerId, id, alias, new Date().toISOString()]
         );
 
         await db.run(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`, [
-          parseInt(id),
+          id,
         ]);
 
         const updatedTournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [
-          parseInt(id),
+          id,
         ]);
 
         reply.send({
@@ -270,7 +266,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
             tournament: {
               currentPlayers: updatedTournament.current_players,
               status:
-                updatedTournament.status === 'open' ? 'registration' : updatedTournament.status,
+                updatedTournament.status === 'registration' ? 'registration' : updatedTournament.status,
               ready: updatedTournament.current_players >= updatedTournament.max_players,
             },
           },
@@ -291,8 +287,8 @@ export async function localTournamentRoutes(server: FastifyInstance) {
 
       try {
         const tournament = await db.get(
-          `SELECT * FROM tournaments WHERE id = ? AND status IN ('open', 'running')`,
-          [parseInt(id)]
+          `SELECT * FROM tournaments WHERE id = ? AND status IN ('registration', 'in_progress')`,
+          [id]
         );
 
         if (!tournament) {
@@ -306,17 +302,17 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         }
 
         await db.run(
-          `UPDATE tournaments SET status = 'running', started_at = CURRENT_TIMESTAMP WHERE id = ?`,
-          [parseInt(id)]
+          `UPDATE tournaments SET status = 'in_progress', started_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [id]
         );
 
         const updatedTournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [
-          parseInt(id),
+          id,
         ]);
 
         const players = await db.all(
           `SELECT * FROM tournament_players WHERE tournament_id = ? ORDER BY joined_at`,
-          [parseInt(id)]
+          [id]
         );
 
         const bracket = tournamentService.generateTournamentBracket(players);
@@ -327,7 +323,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               `INSERT INTO tournament_matches (id, tournament_id, round, match_number, player1_alias, player2_alias, player1_score, player2_score, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [
                 match.id,
-                parseInt(id), // ✅ Use integer tournament_id
+                id, // ✅ Use integer tournament_id
                 match.round,
                 match.matchNumber,
                 match.player1Alias,
@@ -347,7 +343,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           wsManager.broadcastToAll({
             type: 'tournament_match_ready',
             data: {
-              tournamentId: parseInt(id),
+              tournamentId: id,
               tournamentName: updatedTournament.name,
               matchId: firstMatch.id,
               round: firstMatch.round,
@@ -358,9 +354,9 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         }
 
         let frontendStatus = updatedTournament.status;
-        if (updatedTournament.status === 'running') {
+        if (updatedTournament.status === 'in_progress') {
           frontendStatus = 'in_progress';
-        } else if (updatedTournament.status === 'open') {
+        } else if (updatedTournament.status === 'registration') {
           frontendStatus =
             updatedTournament.current_players >= updatedTournament.max_players
               ? 'ready'
@@ -401,13 +397,13 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       const db = DatabaseManager.getInstance().getDb();
 
       try {
-        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
+        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
           return reply.status(404).send({ success: false, error: 'Tournament not found' });
         }
 
-        if (tournament.status !== 'running') {
+        if (tournament.status !== 'in_progress') {
           return reply.status(400).send({ success: false, error: 'Tournament is not running' });
         }
 
@@ -421,7 +417,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         ORDER BY round, match_number
         LIMIT 1
       `,
-          [parseInt(id)]
+          [id]
         );
 
         if (!nextMatch) {
@@ -433,7 +429,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           wsManager.broadcastToAll({
             type: 'tournament_match_ready',
             data: {
-              tournamentId: parseInt(id),
+              tournamentId: id,
               tournamentName: tournament.name,
               matchId: nextMatch.id,
               round: nextMatch.round,
@@ -484,19 +480,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       const db = DatabaseManager.getInstance().getDb();
 
       try {
-        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [parseInt(id)]);
+        const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
           return reply.status(404).send({ success: false, error: 'Tournament not found' });
         }
 
-        if (tournament.status !== 'running') {
+        if (tournament.status !== 'in_progress') {
           return reply.status(400).send({ success: false, error: 'Tournament is not running' });
         }
 
         const match = await db.get(
           `SELECT * FROM tournament_matches WHERE id = ? AND tournament_id = ?`,
-          [matchId, parseInt(id)]
+          [matchId, id]
         );
 
         if (!match) {
@@ -517,7 +513,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         const remainingMatches = await db.all(
           `SELECT * FROM tournament_matches 
          WHERE tournament_id = ? AND round = ? AND status = 'pending'`,
-          [parseInt(id), match.round]
+          [id, match.round]
         );
 
         if (remainingMatches.length === 0) {
@@ -526,7 +522,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
             `SELECT * FROM tournament_matches 
            WHERE tournament_id = ? AND round = ? AND status = 'completed'
            ORDER BY match_number`,
-            [parseInt(id), match.round]
+            [id, match.round]
           );
 
           const nextRound = match.round + 1;
@@ -534,7 +530,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
             `SELECT * FROM tournament_matches 
            WHERE tournament_id = ? AND round = ?
            ORDER BY match_number`,
-            [parseInt(id), nextRound]
+            [id, nextRound]
           );
 
           if (nextRoundMatches.length > 0) {
@@ -559,7 +555,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
                     wsManager.broadcastToAll({
                       type: 'tournament_match_ready',
                       data: {
-                        tournamentId: parseInt(id),
+                        tournamentId: id,
                         tournamentName: tournament.name,
                         matchId: nextMatch.id,
                         round: nextRound,
@@ -574,7 +570,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           } else {
             await db.run(
               `UPDATE tournaments SET status = 'completed', completed_at = CURRENT_TIMESTAMP, bracket_data = ? WHERE id = ?`,
-              [JSON.stringify({ winner: winnerAlias }), parseInt(id)]
+              [JSON.stringify({ winner: winnerAlias }), id]
             );
 
             // Broadcast tournament completion notification
@@ -582,7 +578,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               wsManager.broadcastToAll({
                 type: 'tournament_completed',
                 data: {
-                  tournamentId: parseInt(id),
+                  tournamentId: id,
                   tournamentName: tournament.name,
                   winnerAlias: winnerAlias,
                 },
