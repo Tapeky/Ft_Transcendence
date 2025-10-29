@@ -168,7 +168,7 @@ export class Router {
       try {
         await this.renderPath(currentPath);
       } catch (error) {
-        this.renderError(`Erreur navigation historique: ${error}`);
+        this.renderError(`Navigation history error: ${error}`);
       }
     });
   }
@@ -181,7 +181,7 @@ export class Router {
       <div style="min-height: 100vh; background: linear-gradient(135deg, #ef4444, #dc2626);
                   display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
         <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 10px;">
-          <h1 style="font-size: 3rem; margin-bottom: 20px;">⚠️ Erreur Router</h1>
+          <h1 style="font-size: 3rem; margin-bottom: 20px;">Router error</h1>
           <p style="font-size: 1.2rem; margin-bottom: 20px;">${message}</p>
           <button onclick="window.location.reload()"
                   style="padding: 10px 20px; font-size: 1rem; background: white; color: #dc2626;

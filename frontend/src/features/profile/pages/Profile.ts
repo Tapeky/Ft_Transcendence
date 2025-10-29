@@ -13,7 +13,9 @@ export class ProfilePage {
   private backBtn?: BackBtn;
   private showPasswordModal: boolean = false;
   private showAvatarModal: boolean = false;
+  private showDeleteModal: boolean = false;
   private passwordModalCloseBtn?: CloseBtn;
+  private deleteModalCloseBtn?: CloseBtn;
   private avatarModalCloseBtn?: CloseBtn;
   private avatarSelect?: AvatarSelect;
 
@@ -82,7 +84,7 @@ export class ProfilePage {
       <div class="flex-1">
         <button 
           id="save-display-name"
-          class="bg-blue-400 w-[50px] rounded-md hover:scale-90 ml-3 border-2 border-white transition-transform"
+          class="bg-blue-800 w-[50px] rounded-md hover:scale-90 ml-3 border-2 border-white transition-transform"
         >
           &#x2713;
         </button>
@@ -105,6 +107,25 @@ export class ProfilePage {
       <div class="flex-1"></div>
     `;
     leftColumn.appendChild(passwordSection);
+
+    const deleteSection = document.createElement('div');
+    deleteSection.className = 'flex justify-center';
+    deleteSection.innerHTML = `
+      <h4 class="flex-1">Account</h4>
+      <div class="flex-1">
+        <button 
+          id="delete-btn"
+          class="border-2 w-full bg-red-600 hover:scale-105 text-white rounded-md translate-x-[-20px] transition-transform"
+        >
+          Delete
+        </button>
+      </div>
+      <div class="flex-1"></div>
+    `;
+    leftColumn.appendChild(deleteSection);
+
+
+
 
     mainContent.appendChild(leftColumn);
 
@@ -143,6 +164,9 @@ export class ProfilePage {
 
     const editAvatarBtn = this.element.querySelector('#edit-avatar-btn');
     editAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
+
+    const deleteAccountBtn = this.element.querySelector('#delete-btn');
+    deleteAccountBtn?.addEventListener('click', () => this.openDeleteModal());
   }
 
   private async handleSaveDisplayName(): Promise<void> {
@@ -178,14 +202,94 @@ export class ProfilePage {
     }
   }
 
+  private async deleteAccount() {
+    const token = localStorage.getItem('auth_token');
+    const user = authManager.getCurrentUser();
+
+    try {
+      const response = await fetch(`/delete_account/${user?.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // console.log(response);
+      const data = await response.json();
+
+      if (data.success) {
+        console.log(data.message);
+        this.deleteSuccess();
+      } else {
+        console.error(data.error);
+      }
+    } catch (error) {
+      console.error('Error: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+
   private openPasswordModal(): void {
     this.showPasswordModal = true;
     this.renderPasswordModal();
   }
 
+  private openDeleteModal(): void {
+  this.showDeleteModal = true;
+  this.renderDeleteModal();
+  }
+
   private openAvatarModal(): void {
     this.showAvatarModal = true;
     this.renderAvatarModal();
+  }
+
+  private renderDeleteModal(): void {
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'delete-modal';
+    modalOverlay.className =
+      'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+
+    const modalContainer = document.createElement('div');
+    modalContainer.className =
+      'flex flex-col bg-blue-800 w-[600px] h-[300px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland items-center justify-center';
+    const modalContent = document.createElement('div');
+    modalContent.className = 'flex flex-col justify-center items-center gap-4 text-white h-full my-4 px-8';
+    modalContent.id = 'delete-content';
+    modalContent.innerHTML = `
+      <div class='text-[2.5rem] text-center flex-1 pt-8'>
+        <h2>Are you sure you want to delete your account ?</h2>
+      </div>
+      <div class='flex-1 flex flex-row w-full justify-evenly items-center text-[2.2rem]'>
+        <button id='no-delete-btn' class='border-2 border-white bg-blue-600 py-2 w-[150px] rounded-md hover:scale-110 hover:bg-blue-700 duration-300'>
+          Cancel
+        </button>
+        <button id='yes-delete-btn' class='border-2 border-white bg-red-600 py-2 w-[150px] rounded-md hover:scale-110 hover:bg-red-700 duration-500'>
+          Delete
+        </button>
+      </div>
+
+    `;
+    modalContainer.appendChild(modalContent);
+    modalOverlay.appendChild(modalContainer);
+    document.body.appendChild(modalOverlay);
+    
+    document.body.querySelector('#no-delete-btn')?.addEventListener('click', () => this.closeDeleteModal());
+    document.body.querySelector('#yes-delete-btn')?.addEventListener('click', () => this.deleteAccount());
+  }
+
+  private deleteSuccess(): void {
+    const content = document.body.querySelector('#delete-content');
+    if (!content)
+      return;
+    content.innerHTML=`
+      <div class='text-center text-white text-[3rem]'>
+        Account deleted !
+      </div>
+    `;
+    setTimeout(() => router.navigate('/auth'), 2000);
+    setTimeout(() => this.closeDeleteModal(), 2000);
   }
 
   private renderPasswordModal(): void {
@@ -196,7 +300,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem] font-iceland';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
@@ -205,31 +309,31 @@ export class ProfilePage {
     modalContent.className = 'flex flex-col justify-center items-center mt-6 gap-4 px-8';
     modalContent.innerHTML = `
       <div>
-        <h2>Current password</h2>
+        <h2 class='text-white text-[2rem]'>Current password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="current-password"/>
           <button id="toggle-current" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
 
       <div>
-        <h2>New password</h2>
+        <h2 class='text-white text-[2rem]'>New password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="new-password"/>
           <button id="toggle-new" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
 
       <div>
-        <h2>Confirm new password</h2>
+        <h2 class='text-white text-[2rem]'>Confirm new password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="confirm-password"/>
           <button id="toggle-confirm" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
@@ -260,7 +364,7 @@ export class ProfilePage {
       toggleBtn?.addEventListener('click', () => {
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          toggleBtn.textContent = input.type === 'password' ? '👁️' : '🙈';
+          toggleBtn.innerHTML = input.type === 'password' ? "<img src='/src/img/eye_white.svg' class='p-1'>" : "<img src='/src/img/eye_black.svg' class='p-1 bg-white'>";
         }
       });
     });
@@ -420,6 +524,13 @@ export class ProfilePage {
     }
 
     const modal = document.getElementById('password-modal');
+    modal?.remove();
+  }
+
+  private closeDeleteModal(): void {
+    this.showDeleteModal = false;
+
+    const modal = document.getElementById('delete-modal');
     modal?.remove();
   }
 
