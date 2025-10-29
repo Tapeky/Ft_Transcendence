@@ -1,5 +1,7 @@
 import { chatService, Conversation, Message } from '../services/ChatService';
 import { authManager } from '../../../core/auth/AuthManager';
+import { apiService } from '../../../shared/services/api';
+import { getAvatarUrl } from '../../../shared/utils/avatar';
 
 export interface ChatConversationOptions {
   conversation: Conversation;
@@ -38,29 +40,49 @@ export class ChatConversation {
     const container = document.createElement('div');
     container.className = 'flex flex-col w-full h-full text-[1.2rem]';
 
+    const otherUser = this.getOtherUser();
+
     container.innerHTML = `
-      <div class="bg-gray-700 p-2 border-b border-gray-600">
-        <button id="back-to-friends" class="text-white hover:text-blue-400 flex items-center gap-2">
+      <div class="bg-gray-800 p-3 border-b-2 border-blue-600">
+        <button id="back-to-friends" class="text-gray-300 hover:text-white flex items-center gap-2">
           ← Back to Friends
         </button>
       </div>
-      
+
       <div class="flex-1 flex flex-col bg-gray-900">
-        <div id="chat-header" class="bg-gray-700 p-2 border-b border-gray-600 text-white">
-          <div class="flex items-center gap-2 text-[2rem]">
-            <span id="chat-username">${this.getOtherUser().username || 'Unknown'}</span>
+        <div id="chat-header" class="bg-gray-800 px-4 py-3 border-b-2 border-gray-700">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <img src="${getAvatarUrl(otherUser.avatar)}"
+                   alt="${otherUser.username}"
+                   class="w-12 h-12 rounded-full border-2 border-white object-cover"
+                   onerror="this.src='/default-avatar.png'" />
+              <h3 id="chat-username" class="text-white text-[1.6rem] font-bold">${otherUser.username || 'Unknown'}</h3>
+            </div>
+
+            <button id="invite-to-pong-btn"
+                    class="bg-green-600 hover:bg-green-700 active:bg-green-800
+                           px-4 py-2 border-2 border-white text-white font-bold text-[1.1rem]
+                           transition-colors">
+              Invite to Pong
+            </button>
           </div>
         </div>
-        
-        <div id="messages-container" class="flex-1 overflow-y-auto p-2">
-          <div id="messages-list" class="space-y-2"></div>
+
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 bg-gray-900">
+          <div id="messages-list" class="space-y-3"></div>
         </div>
-        
-        <div id="message-input-area" class="bg-gray-700 p-2 border-t border-gray-600">
+
+        <div id="message-input-area" class="bg-gray-800 p-4 border-t-2 border-gray-700">
           <div class="flex gap-2">
-            <input id="message-input" type="text" placeholder="Type a message..." 
-                   class="flex-1 bg-gray-800 text-white px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white">
+            <input id="message-input"
+                   type="text"
+                   placeholder="Type a message..."
+                   class="flex-1 bg-gray-900 text-white px-3 py-2 border-2 border-gray-600
+                          focus:outline-none focus:border-blue-500 placeholder-gray-500" />
+            <button id="send-btn"
+                    class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+                           px-4 py-2 border-2 border-white text-white font-bold transition-colors">
               Send
             </button>
           </div>
@@ -74,6 +96,9 @@ export class ChatConversation {
   private bindEvents(): void {
     const backBtn = this.element.querySelector('#back-to-friends');
     backBtn?.addEventListener('click', this.onBack);
+
+    const inviteBtn = this.element.querySelector('#invite-to-pong-btn');
+    inviteBtn?.addEventListener('click', () => this.inviteToPong());
 
     const messageInput = this.element.querySelector('#message-input') as HTMLInputElement;
     const sendBtn = this.element.querySelector('#send-btn');
@@ -109,18 +134,19 @@ export class ChatConversation {
     const messagesList = this.element.querySelector('#messages-list');
     if (!messagesList) return;
 
+    const otherUser = this.getOtherUser();
+
     messagesList.innerHTML = this.messages
       .map(message => {
         const isOwn = message.sender_id === this.currentUser?.id;
 
-        // Special rendering for game invites
         if (message.type === 'game_invite') {
           return `
-            <div class="flex justify-center my-2">
-              <div class="bg-green-700 text-white rounded-lg px-4 py-3 max-w-[80%]">
-                <div class="text-center font-bold text-[1.2rem]">🎮 Game Invitation</div>
-                <div class="text-center mt-1">${message.username} invited you to play Pong!</div>
-                <div class="text-[1rem] text-gray-300 mt-1 text-center">
+            <div class="flex justify-center my-3">
+              <div class="bg-green-700 border-2 border-green-500 text-white px-4 py-3 rounded-lg max-w-[80%]">
+                <div class="text-center font-bold text-[1.3rem]">Pong Invitation</div>
+                <div class="text-center mt-1">${message.username} invited you to play!</div>
+                <div class="text-[0.9rem] text-green-200 mt-1 text-center">
                   ${this.formatMessageTime(message.created_at)}
                 </div>
               </div>
@@ -128,19 +154,51 @@ export class ChatConversation {
           `;
         }
 
-        // Regular message rendering
-        return `
-        <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
-          <div class="max-w-[70%] ${isOwn ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-3 py-1">
-            <div>${message.content}</div>
-            <div class="text-[1rem] text-gray-300 mt-1">
-              ${this.formatMessageTime(message.created_at)}
+        if (message.type === 'system') {
+          return `
+            <div class="flex justify-center my-2">
+              <div class="bg-gray-800 text-gray-400 px-3 py-1 rounded-full text-[0.95rem] italic">
+                ${message.content}
+              </div>
             </div>
-          </div>
-        </div>
-      `;
+          `;
+        }
+
+        if (isOwn) {
+          return `
+            <div class="flex justify-end">
+              <div class="max-w-[70%] bg-blue-600 text-white px-4 py-2 rounded-2xl">
+                <div class="break-words">${this.escapeHtml(message.content)}</div>
+                <div class="text-[0.85rem] text-blue-200 mt-1">
+                  ${this.formatMessageTime(message.created_at)}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="flex justify-start items-end gap-2">
+              <img src="${getAvatarUrl(otherUser.avatar)}"
+                   alt="${otherUser.username}"
+                   class="w-8 h-8 rounded-full border border-gray-600 object-cover flex-shrink-0"
+                   onerror="this.src='/default-avatar.png'" />
+              <div class="max-w-[70%] bg-gray-700 text-white px-4 py-2 rounded-2xl">
+                <div class="break-words">${this.escapeHtml(message.content)}</div>
+                <div class="text-[0.85rem] text-gray-400 mt-1">
+                  ${this.formatMessageTime(message.created_at)}
+                </div>
+              </div>
+            </div>
+          `;
+        }
       })
       .join('');
+  }
+
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   private async sendMessage(content: string): Promise<void> {
@@ -183,10 +241,74 @@ export class ChatConversation {
 
   public updateConversation(conversation: Conversation): void {
     this.conversation = conversation;
+    this.refreshAvatars();
+  }
+
+  private refreshAvatars(): void {
+    const otherUser = this.getOtherUser();
+    const newAvatarUrl = getAvatarUrl(otherUser.avatar, true);
+
+    const headerAvatar = this.element.querySelector('#chat-header img') as HTMLImageElement;
+    if (headerAvatar) {
+      headerAvatar.src = newAvatarUrl;
+    }
+
+    const messageAvatars = this.element.querySelectorAll('#messages-list img');
+    messageAvatars.forEach((img: Element) => {
+      if (img instanceof HTMLImageElement) {
+        img.src = newAvatarUrl;
+      }
+    });
+  }
+
+  public refreshUserData(): void {
+    this.refreshAvatars();
   }
 
   public getElement(): HTMLElement {
     return this.element;
+  }
+
+  private async inviteToPong(): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-to-pong-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+        inviteBtn.innerHTML = 'Sending...';
+      }
+
+      const otherUser = this.getOtherUser();
+      const result = await apiService.inviteFriendToPong(otherUser.id);
+
+      if (result.success) {
+        this.showNotification(`Invitation sent to ${otherUser.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || 'Failed to send invitation', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite to pong:', error);
+      this.showNotification('Failed to send invitation', 'error');
+    } finally {
+      const inviteBtn = this.element.querySelector('#invite-to-pong-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+        inviteBtn.innerHTML = 'Invite to Pong';
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-3 border-2 text-white font-bold ${
+      type === 'success' ? 'bg-green-600 border-green-400' : 'bg-red-600 border-red-400'
+    }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   public destroy(): void {

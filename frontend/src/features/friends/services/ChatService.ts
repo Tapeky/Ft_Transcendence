@@ -801,6 +801,7 @@ export class ChatService {
 
       localStorage.setItem('chat_conversations', JSON.stringify(conversationsArray));
       localStorage.setItem('chat_messages', JSON.stringify(messagesArray));
+      localStorage.setItem('chat_last_sync', Date.now().toString());
       localStorage.setItem(
         'chat_current_conversation',
         this.state.currentConversationId?.toString() || ''
@@ -839,6 +840,14 @@ export class ChatService {
 
   private loadFromLocalStorage(): void {
     try {
+      const lastSync = localStorage.getItem('chat_last_sync');
+      const cacheAge = lastSync ? Date.now() - parseInt(lastSync) : Infinity;
+      
+      // Invalider le cache si plus vieux que 5 minutes
+      if (cacheAge > 5 * 60 * 1000) {
+        return;
+      }
+
       const conversationsData = localStorage.getItem('chat_conversations');
       const messagesData = localStorage.getItem('chat_messages');
       const currentConversationData = localStorage.getItem('chat_current_conversation');
@@ -888,15 +897,56 @@ export class ChatService {
     try {
       await this.loadConversations();
 
-      if (conversationId) {
-        await this.loadConversationMessages(conversationId);
-      } else if (this.state.currentConversationId) {
-        await this.loadConversationMessages(this.state.currentConversationId);
+      const targetConversationId = conversationId || this.state.currentConversationId;
+
+      if (targetConversationId) {
+        await this.loadConversationMessages(targetConversationId);
+
+        // Emit conversation_updated to trigger avatar refresh in UI
+        const conversation = this.state.conversations.get(targetConversationId);
+        if (conversation) {
+          this.emit('conversation_updated', { conversation });
+        }
       }
     } catch (error) {
       console.error('Error refreshing messages:', error);
       throw error;
     }
+  }
+
+  async forceRefresh(): Promise<void> {
+    try {
+      // Invalider le cache
+      localStorage.removeItem('chat_conversations');
+      localStorage.removeItem('chat_messages');
+      localStorage.removeItem('chat_last_sync');
+      
+      // Recharger depuis le serveur
+      await this.loadConversations();
+      
+      if (this.state.currentConversationId) {
+        await this.loadConversationMessages(this.state.currentConversationId);
+        
+        // Force refresh des avatars dans la conversation actuelle
+        const conversation = this.state.conversations.get(this.state.currentConversationId);
+        if (conversation) {
+          this.emit('conversation_updated', { conversation });
+        }
+      }
+      
+      this.emit('data_refreshed', null);
+    } catch (error) {
+      console.error('Error forcing refresh:', error);
+      throw error;
+    }
+  }
+
+  getAvatarUrl(avatarPath: string | undefined, addTimestamp: boolean = true): string {
+    if (!avatarPath) {
+      return '/default-avatar.png';
+    }
+    // Ajouter un timestamp pour éviter le cache du navigateur
+    return addTimestamp ? `${avatarPath}?t=${Date.now()}` : avatarPath;
   }
 
   startPeriodicSync(): void {
