@@ -2,25 +2,20 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
 import { authenticateToken, validateDisplayname } from '../middleware';
-import { AccountParams } from '../auth/types';
+import { AccountParams } from '../auth/types'
 
-
-type DeleteAccountRequest = FastifyRequest <{
-  Params: AccountParams;
-}>;
 
 export async function delete_accountRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
   const userRepo = new UserRepository(db);
-  server.delete<DeleteAccountRequest>(
+  server.delete<{ Params: AccountParams }>(
     '/delete_account/:userID',
     {
       preHandler: [authenticateToken],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try
-      {
-        const { userID } = request.Params; 
+    async (request: FastifyRequest<{ Params: AccountParams }>, reply: FastifyReply) => {
+      try {
+        const { userID } = request.params; 
         const remove_account = await userRepo.deleteUser(Number(userID));
         
         reply.send({
@@ -37,7 +32,6 @@ export async function delete_accountRoutes(server: FastifyInstance) {
     }
   )
 }
-
 
 export async function profileRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
