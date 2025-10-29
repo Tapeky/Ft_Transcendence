@@ -27,22 +27,22 @@ export class PongInviteNotification {
     modal.innerHTML = `
       <div class="bg-gradient-to-b from-blue-600 to-purple-700 p-6 rounded-lg border-4 border-white max-w-md w-full mx-4 text-white font-iceland">
         <div class="text-center">
-          <h3 class="text-[2.5rem] font-bold mb-4">Invitation Pong !</h3>
+          <h3 class="text-[2.5rem] font-bold mb-4">Pong alert !</h3>
           <p class="text-[2.2rem] mb-6">
-            ${this.inviteData.fromUsername || 'Un ami'} vous invite à jouer au Pong !
+            ${this.inviteData.fromUsername || 'A friend'} invited you to a game of Pong !
           </p>
           
           <div class="flex gap-4 justify-center">
             <button id="accept-invite" class="bg-green-500 hover:bg-green-600 px-6 py-2 rounded font-bold text-white transition-colors">
-              ✓ Accepter
+              ✓ Accept
             </button>
             <button id="decline-invite" class="bg-red-500 hover:bg-red-600 px-6 py-2 rounded font-bold text-white transition-colors">
-              ✗ Refuser
+              ✗ Decline
             </button>
           </div>
           
           <div class="mt-4 text-[1.2rem] text-gray-300">
-            Invitation expire dans: <span id="countdown"></span>
+            Invitation expires in: <span id="countdown"></span>
           </div>
         </div>
       </div>
@@ -85,11 +85,11 @@ export class PongInviteNotification {
         );
       }
 
-      this.showNotification('Invitation acceptée ! Le jeu va commencer...', 'success');
+      this.showNotification('Accepted ! Game starting soon...', 'success');
       this.close();
     } catch (error) {
-      console.error("Erreur lors de l'acceptation:", error);
-      this.showNotification("Erreur lors de l'acceptation", 'error');
+      console.error("Accept error:", error);
+      this.showNotification("Accept error", 'error');
     }
   }
 
@@ -105,10 +105,10 @@ export class PongInviteNotification {
         );
       }
 
-      this.showNotification('Invitation refusée', 'info');
+      this.showNotification('Declined', 'info');
       this.close();
     } catch (error) {
-      console.error('Erreur lors du refus:', error);
+      console.error('Decline error:', error);
       this.close();
     }
   }
@@ -122,7 +122,7 @@ export class PongInviteNotification {
       const timeLeft = this.inviteData.expiresAt - now;
 
       if (timeLeft <= 0) {
-        this.showNotification('Invitation expirée', 'info');
+        this.showNotification('Expired invitation', 'info');
         this.close();
         return;
       }
