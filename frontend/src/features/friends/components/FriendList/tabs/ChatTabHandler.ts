@@ -13,6 +13,7 @@ export class ChatTabHandler {
   private onRefresh?: () => void;
 
   private messagesUpdatedHandler?: (data: { conversationId: number; messages: any[] }) => void;
+  private conversationUpdatedHandler?: (data: { conversation: any }) => void;
 
   constructor(config: TabHandlerConfig, chatManager: ChatManager) {
     this.container = config.container;
@@ -30,7 +31,15 @@ export class ChatTabHandler {
       }
     };
 
+    this.conversationUpdatedHandler = data => {
+      const chatState = this.chatManager.getState();
+      if (chatState.chatView === 'conversation' && this.chatConversation) {
+        this.chatConversation.updateConversation(data.conversation);
+      }
+    };
+
     this.chatManager.on('messages_updated', this.messagesUpdatedHandler);
+    this.chatManager.on('conversation_updated', this.conversationUpdatedHandler);
 
     await this.renderChatContent();
   }
@@ -155,6 +164,11 @@ export class ChatTabHandler {
     if (this.messagesUpdatedHandler) {
       this.chatManager.off('messages_updated', this.messagesUpdatedHandler);
       this.messagesUpdatedHandler = undefined;
+    }
+
+    if (this.conversationUpdatedHandler) {
+      this.chatManager.off('conversation_updated', this.conversationUpdatedHandler);
+      this.conversationUpdatedHandler = undefined;
     }
 
     if (this.chatConversation) {

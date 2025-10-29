@@ -393,6 +393,17 @@ export class ProfilePage {
 
       this.updateMainAvatar();
 
+      // Force chat refresh to update avatars everywhere
+      try {
+        const { chatService } = await import('../../../features/friends/services/ChatService');
+        if (chatService.isConnected()) {
+          await chatService.forceRefresh();
+        }
+      } catch (error) {
+        // ChatService might not be initialized, that's ok
+        console.debug('ChatService not available for refresh:', error);
+      }
+
       this.updateUploadStatus('Avatar updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to upload avatar:', error);

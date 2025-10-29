@@ -58,6 +58,18 @@ export class AvatarSelect {
     try {
       await apiService.setAvatar(avatarId);
       await authManager.refreshUser();
+
+      // Trigger chat refresh if chat service is available
+      try {
+        const { chatService } = await import('../../features/friends/services/ChatService');
+        if (chatService.isConnected()) {
+          await chatService.refreshMessages();
+        }
+      } catch (error) {
+        // ChatService might not be initialized, that's ok
+        console.debug('ChatService not available for refresh:', error);
+      }
+
       if (this.onAvatarChange) this.onAvatarChange();
       this.showFeedback('Avatar updated successfully!');
     } catch (error) {

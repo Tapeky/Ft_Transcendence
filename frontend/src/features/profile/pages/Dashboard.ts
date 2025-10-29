@@ -296,7 +296,9 @@ export class Dashboard {
     }
 
     if (avatarUrl.startsWith('/uploads/')) {
-      return `${config.API_BASE_URL}${avatarUrl}`;
+      const baseUrl = `${config.API_BASE_URL}${avatarUrl}`;
+      // Ajouter un timestamp pour éviter le cache du navigateur
+      return `${baseUrl}?t=${Date.now()}`;
     }
 
     return avatarUrl;

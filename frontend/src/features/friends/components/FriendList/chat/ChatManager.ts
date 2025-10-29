@@ -94,6 +94,12 @@ export class ChatManager {
       this.state.conversations.unshift(conversation);
     }
 
+    // Update current conversation if it matches
+    if (this.state.currentConversation?.id === conversation.id) {
+      this.state.currentConversation = conversation;
+      this.emit('conversation_updated', { conversation });
+    }
+
     const conversationMessages = this.state.allMessages.get(conversation.id) || [];
     const existingMessage = conversationMessages.find(m => m.id === message.id);
 
@@ -120,6 +126,12 @@ export class ChatManager {
       this.state.conversations[index] = conversation;
     } else {
       this.state.conversations.unshift(conversation);
+    }
+
+    // Update current conversation if it matches
+    if (this.state.currentConversation?.id === conversation.id) {
+      this.state.currentConversation = conversation;
+      this.emit('conversation_updated', { conversation });
     }
 
     const conversationMessages = this.state.allMessages.get(conversation.id) || [];
