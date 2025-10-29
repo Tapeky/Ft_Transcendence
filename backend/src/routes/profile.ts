@@ -20,13 +20,13 @@ export async function delete_accountRoutes(server: FastifyInstance) {
         
         reply.send({
           success: true,
-          message: 'Account supprime avec succès',
+          message: 'Account deleted successfully',
         });
       } catch (error: any) {
-        request.log.error('Erreur suppression de compte:', error);
+        request.log.error('Account delete error:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la mise à jour du profil',
+          error: 'Account delete error',
         });
       }
     }
@@ -53,13 +53,13 @@ export async function profileRoutes(server: FastifyInstance) {
           data: {
             display_name: updatedUser.display_name,
           },
-          message: 'Profil mis à jour avec succès',
+          message: 'Profile updated successfully',
         });
       } catch (error: any) {
-        request.log.error('Erreur mise à jour profil:', error);
+        request.log.error('Profile update error:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la mise à jour du profil',
+          error: 'Profile update error',
         });
       }
     }
