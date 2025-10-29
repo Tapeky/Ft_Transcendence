@@ -82,8 +82,6 @@ export class FriendItem {
       const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
       if (inviteBtn) {
         inviteBtn.disabled = true;
-        inviteBtn.innerHTML =
-          '<div class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mx-auto"></div>';
       }
 
       const result = await apiService.inviteFriendToPong(this.props.id);
@@ -100,8 +98,6 @@ export class FriendItem {
       const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
       if (inviteBtn) {
         inviteBtn.disabled = false;
-        inviteBtn.innerHTML =
-          '<img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />';
       }
     }
   }
