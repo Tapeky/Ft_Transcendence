@@ -113,11 +113,27 @@ export class ChatConversation {
       .map(message => {
         const isOwn = message.sender_id === this.currentUser?.id;
 
+        // Special rendering for game invites
+        if (message.type === 'game_invite') {
+          return `
+            <div class="flex justify-center my-2">
+              <div class="bg-green-700 text-white rounded-lg px-4 py-3 max-w-[80%]">
+                <div class="text-center font-bold text-[1.2rem]">🎮 Game Invitation</div>
+                <div class="text-center mt-1">${message.username} invited you to play Pong!</div>
+                <div class="text-[1rem] text-gray-300 mt-1 text-center">
+                  ${this.formatMessageTime(message.created_at)}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Regular message rendering
         return `
         <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
           <div class="max-w-[70%] ${isOwn ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-3 py-1">
             <div>${message.content}</div>
-            <div "text-[1rem] text-gray-300 mt-1">
+            <div class="text-[1rem] text-gray-300 mt-1">
               ${this.formatMessageTime(message.created_at)}
             </div>
           </div>

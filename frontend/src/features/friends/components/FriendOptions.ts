@@ -72,7 +72,7 @@ export class FriendOptions {
             </div>
             <div class='flex flex-row items-center justify-evenly'>
               <div class='flex-1'>
-                Send an invite ! ⇁
+                Invite here ! ⇁
               </div>
               <div class='flex-1'>
                 <button id="invite-btn" class='text-[2.5rem] hover:scale-110 rounded-md bg-green-500 h-full transition duration-200 self-center w-3/4'>
@@ -110,6 +110,9 @@ export class FriendOptions {
 
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
+
+    const inviteBtn = this.element.querySelector('#invite-btn');
+    inviteBtn?.addEventListener('click', () => this.inviteToPong());
   }
 
   private handleDashboard(): void {
@@ -134,8 +137,56 @@ export class FriendOptions {
       this.props.setIsOpen();
     } catch (error) {
       console.error('Error blocking user:', error);
-      alert(`Erreur lors du blocage: ${error}`);
+      alert(`Block error: ${error}`);
     }
+  }
+
+  private async inviteToPong(): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+      }
+
+      const result = await apiService.inviteFriendToPong(this.props.id);
+
+      if (result.success) {
+        this.showNotification(`Invitation sent to ${this.props.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+      this.showNotification("Invitation failed", 'error');
+    } finally {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-0 ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.classList.add('opacity-100');
+    }, 10);
+
+    setTimeout(() => {
+      notification.classList.add('translate-x-full', 'opacity-0');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   public getElement(): HTMLElement {

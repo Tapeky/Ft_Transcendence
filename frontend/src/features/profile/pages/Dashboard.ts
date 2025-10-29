@@ -12,6 +12,8 @@ export class Dashboard {
   private playerId: string;
   private header: Header | null = null;
   private backBtn: BackBtn | null = null;
+  private refreshIntervalId: number | null = null;
+  private visibilityChangeHandler: (() => void) | null = null;
 
   constructor(container: HTMLElement, playerId: string) {
     this.container = container;
@@ -38,6 +40,7 @@ export class Dashboard {
 
     this.loading = false;
     this.render();
+    this.startAutoRefresh();
   }
 
   private async waitForAuthInitialization(): Promise<void> {
@@ -802,6 +805,39 @@ export class Dashboard {
 		`;
   }
 
+  private startAutoRefresh(): void {
+    // Refresh when page becomes visible
+    this.visibilityChangeHandler = () => {
+      if (!document.hidden) {
+        this.refreshData().catch(error => {
+          console.error('Error auto-refreshing dashboard:', error);
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+
+    // Refresh every 30 seconds while dashboard is active
+    this.refreshIntervalId = window.setInterval(() => {
+      if (!document.hidden) {
+        this.refreshData().catch(error => {
+          console.error('Error auto-refreshing dashboard:', error);
+        });
+      }
+    }, 30000);
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      this.visibilityChangeHandler = null;
+    }
+
+    if (this.refreshIntervalId !== null) {
+      clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = null;
+    }
+  }
+
   async refreshData() {
     try {
       await Promise.all([this.loadPlayer(), this.loadMatches()]);
@@ -813,6 +849,8 @@ export class Dashboard {
   }
 
   destroy() {
+    this.stopAutoRefresh();
+    
     if (this.header) {
       this.header.destroy();
     }
