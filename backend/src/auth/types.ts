@@ -4,3 +4,7 @@ export interface OAuthUserInfo {
   name?: string;
   email: string;
 }
+
+export interface AccountParams {
+  user_id : string;
+}
