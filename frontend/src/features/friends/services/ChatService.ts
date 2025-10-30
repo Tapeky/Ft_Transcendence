@@ -97,6 +97,7 @@ export class ChatService {
 
   private listeners: Map<string, ChatEventListener[]> = new Map();
   private reconnectAttempts = 0;
+  private dismissedInvitations: Set<string> = new Set();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private syncInterval: number | null = null;
@@ -107,7 +108,9 @@ export class ChatService {
     return `${API_BASE_URL}${endpoint}`;
   }
 
-  private constructor() {}
+  private constructor() {
+    this.loadDismissedInvitations();
+  }
 
   static getInstance(): ChatService {
     if (!ChatService.instance) {
@@ -324,7 +327,6 @@ export class ChatService {
         break;
 
       case 'friend_pong_expired':
-        console.log('Pong invitation expired:', data);
         this.emit('friend_pong_expired', data);
         break;
 
@@ -354,10 +356,8 @@ export class ChatService {
   }
 
   private async addInviteMessageToChat(data: PongInviteData): Promise<void> {
-    // Find existing conversation with the sender
     const currentUserId = this.getCurrentUserId();
     if (!currentUserId) {
-      console.error('Cannot add invite message: no current user ID');
       return;
     }
 
@@ -372,19 +372,16 @@ export class ChatService {
       }
     }
 
-    // Create conversation if it doesn't exist
     if (!conversation) {
       try {
         conversation = await this.createOrGetConversation(data.fromUserId);
       } catch (error) {
-        console.error('Failed to create conversation for invite:', error);
         return;
       }
     }
 
-    // Create a local invite message
     const inviteMessage: Message = {
-      id: Date.now(), // Temporary ID
+      id: Date.now(),
       conversation_id: conversation.id,
       sender_id: data.fromUserId,
       content: 'Invited you to play Pong!',
@@ -399,14 +396,12 @@ export class ChatService {
       display_name: data.fromUsername,
     };
 
-    // Add message to conversation
     const messages = this.state.messages.get(conversation.id) || [];
     const newMessages = [...messages, inviteMessage].sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
     this.state.messages.set(conversation.id, newMessages);
 
-    // Update conversation's last message
     conversation.last_message = inviteMessage.content;
     conversation.last_message_at = inviteMessage.created_at;
     this.state.conversations.set(conversation.id, conversation);
@@ -417,17 +412,15 @@ export class ChatService {
   }
 
   private getCurrentUserId(): number | null {
-    // Get current user ID from authManager
     const currentUser = authManager.getCurrentUser();
     return currentUser?.id || null;
   }
 
   private async handlePongInvite(data: PongInviteData): Promise<void> {
-    // Add invitation as a message in the chat
     try {
       await this.addInviteMessageToChat(data);
     } catch (error) {
-      console.error('Error adding invitation to chat:', error);
+      return;
     }
 
     this.emit('friend_pong_invite', data);
@@ -635,14 +628,17 @@ export class ChatService {
       const existingMessages = this.state.messages.get(conversationId) || [];
       const mergedMessages = this.mergeMessages(existingMessages, serverMessages);
 
-      this.state.messages.set(conversationId, mergedMessages);
+      // Filter out dismissed invitations
+      const filteredMessages = this.filterDismissedInvitations(mergedMessages);
+
+      this.state.messages.set(conversationId, filteredMessages);
       this.state.currentConversationId = conversationId;
 
       this.saveToLocalStorage();
 
-      this.emit('messages_loaded', { conversationId, messages: mergedMessages });
+      this.emit('messages_loaded', { conversationId, messages: filteredMessages });
 
-      return mergedMessages;
+      return filteredMessages;
     } catch (error) {
       console.error('Error loading messages:', error);
       throw error;
@@ -680,7 +676,64 @@ export class ChatService {
   }
 
   getConversationMessages(conversationId: number): Message[] {
-    return this.state.messages.get(conversationId) || [];
+    const messages = this.state.messages.get(conversationId) || [];
+    return this.filterDismissedInvitations(messages);
+  }
+
+  removeMessageByInviteId(conversationId: number, inviteId: string): void {
+    this.dismissedInvitations.add(inviteId);
+    this.saveDismissedInvitations();
+
+    const messages = this.state.messages.get(conversationId);
+    if (!messages) return;
+
+    const filteredMessages = messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return metadata.inviteId !== inviteId;
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
+
+    this.state.messages.set(conversationId, filteredMessages);
+    this.saveToLocalStorage();
+  }
+
+  private loadDismissedInvitations(): void {
+    try {
+      const stored = localStorage.getItem('chat_dismissed_invitations');
+      if (stored) {
+        this.dismissedInvitations = new Set(JSON.parse(stored));
+      }
+    } catch (error) {
+      return;
+    }
+  }
+
+  private saveDismissedInvitations(): void {
+    try {
+      localStorage.setItem('chat_dismissed_invitations', JSON.stringify(Array.from(this.dismissedInvitations)));
+    } catch (error) {
+      return;
+    }
+  }
+
+  private filterDismissedInvitations(messages: Message[]): Message[] {
+    return messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return !this.dismissedInvitations.has(metadata.inviteId);
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
   }
 
   getCurrentConversationId(): number | null {
