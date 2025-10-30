@@ -91,12 +91,12 @@ export class BlockList {
     const item = document.createElement('div');
     item.className = 'flex items-center gap-2 p-2 text-white border-b border-gray-600 w-full';
     item.innerHTML = `
-      <img src="${user.avatar_url || '/src/img/default-avatar.png'}" alt="avatar" class="w-[40px] h-[40px] border-2 border-white"/>
+      <img src="${user.avatar_url || '/src/img/default-avatar.png'}" alt="avatar" class="w-[60px] h-[60px] border-2 border-white"/>
       <div class="flex flex-col flex-grow">
-        <span class="text-[1rem]">${user.display_name || user.username}</span>
-        <span class="text-[0.8rem] text-gray-300">@${user.username}</span>
+        <span class="text-[1.2rem]">${user.display_name || user.username}</span>
+        <span class="text-[1rem] text-gray-300">${user.username}</span>
       </div>
-      <button class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-sm" data-user-id="${user.id}">
+      <button class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-[1.2rem]" data-user-id="${user.id}">
         Unblock
       </button>
     `;

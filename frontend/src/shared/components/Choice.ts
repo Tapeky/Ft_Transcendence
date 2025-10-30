@@ -34,7 +34,7 @@ export class Choice {
         <div 
           id="tournament-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
-                 text-[4rem] bg-[url('./img/city.png')] bg-cover bg-center 
+                 text-[4rem] bg-[url('./img/tourna.gif')] bg-cover bg-center 
                  flex justify-center items-center hover:scale-125 duration-500 cursor-pointer"
           data-route="/tournament"
         >
