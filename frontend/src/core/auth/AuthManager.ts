@@ -195,6 +195,16 @@ export class AuthManager {
     return appState.getState().loading;
   }
 
+  public clearUser(): void {
+   appState.setState({
+    user: null,
+    isAuthenticated: false,
+    loading: false,
+  });
+  chatService.disconnect();
+  apiService.clearToken();
+}
+
   public subscribeToAuth(
     callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void
   ): () => void {
@@ -237,5 +247,6 @@ export class AuthManager {
     }
   }
 }
+
 
 export const authManager = AuthManager.getInstance();
