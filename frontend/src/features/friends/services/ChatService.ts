@@ -1,8 +1,9 @@
 import { Friend, apiService } from '../../../shared/services/api';
-import { PongInviteNotification, PongInviteData } from '../components/PongInviteNotification';
+import { PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
 import { config } from '../../../config/environment';
+import { authManager } from '../../../core/auth/AuthManager';
 
 export interface Conversation {
   id: number;
@@ -322,6 +323,11 @@ export class ChatService {
         this.emit('tournament_completed', data.data);
         break;
 
+      case 'friend_pong_expired':
+        console.log('Pong invitation expired:', data);
+        this.emit('friend_pong_expired', data);
+        break;
+
       default:
         console.warn('Unhandled message type:', data.type);
     }
@@ -347,10 +353,13 @@ export class ChatService {
     }
   }
 
-  private addInviteMessageToChat(data: PongInviteData): void {
+  private async addInviteMessageToChat(data: PongInviteData): Promise<void> {
     // Find existing conversation with the sender
     const currentUserId = this.getCurrentUserId();
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      console.error('Cannot add invite message: no current user ID');
+      return;
+    }
 
     let conversation: Conversation | undefined;
     for (const conv of this.state.conversations.values()) {
@@ -363,10 +372,20 @@ export class ChatService {
       }
     }
 
+    // Create conversation if it doesn't exist
+    if (!conversation) {
+      try {
+        conversation = await this.createOrGetConversation(data.fromUserId);
+      } catch (error) {
+        console.error('Failed to create conversation for invite:', error);
+        return;
+      }
+    }
+
     // Create a local invite message
     const inviteMessage: Message = {
       id: Date.now(), // Temporary ID
-      conversation_id: conversation?.id || 0,
+      conversation_id: conversation.id,
       sender_id: data.fromUserId,
       content: 'Invited you to play Pong!',
       type: 'game_invite',
@@ -380,46 +399,36 @@ export class ChatService {
       display_name: data.fromUsername,
     };
 
-    if (conversation) {
-      // Add message to existing conversation
-      const messages = this.state.messages.get(conversation.id) || [];
-      const newMessages = [...messages, inviteMessage].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      this.state.messages.set(conversation.id, newMessages);
-      
-      // Update conversation's last message
-      conversation.last_message = inviteMessage.content;
-      conversation.last_message_at = inviteMessage.created_at;
-      this.state.conversations.set(conversation.id, conversation);
+    // Add message to conversation
+    const messages = this.state.messages.get(conversation.id) || [];
+    const newMessages = [...messages, inviteMessage].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    this.state.messages.set(conversation.id, newMessages);
 
-      this.saveToLocalStorage();
-      this.emit('message_received', { message: inviteMessage, conversation });
-      this.emit('conversations_updated', Array.from(this.state.conversations.values()));
-    }
+    // Update conversation's last message
+    conversation.last_message = inviteMessage.content;
+    conversation.last_message_at = inviteMessage.created_at;
+    this.state.conversations.set(conversation.id, conversation);
+
+    this.saveToLocalStorage();
+    this.emit('message_received', { message: inviteMessage, conversation });
+    this.emit('conversations_updated', Array.from(this.state.conversations.values()));
   }
 
   private getCurrentUserId(): number | null {
-    // Get current user ID from auth or state
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        return user.id || null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
+    // Get current user ID from authManager
+    const currentUser = authManager.getCurrentUser();
+    return currentUser?.id || null;
   }
 
-  private handlePongInvite(data: PongInviteData): void {
+  private async handlePongInvite(data: PongInviteData): Promise<void> {
     // Add invitation as a message in the chat
-    this.addInviteMessageToChat(data);
-
-    const inviteModal = new PongInviteNotification(data, () => {});
-
-    inviteModal.show();
+    try {
+      await this.addInviteMessageToChat(data);
+    } catch (error) {
+      console.error('Error adding invitation to chat:', error);
+    }
 
     this.emit('friend_pong_invite', data);
 

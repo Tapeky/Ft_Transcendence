@@ -141,14 +141,40 @@ export class ChatConversation {
         const isOwn = message.sender_id === this.currentUser?.id;
 
         if (message.type === 'game_invite') {
+          let metadata: any = {};
+          try {
+            metadata = message.metadata ? JSON.parse(message.metadata) : {};
+          } catch (e) {
+            console.error('Failed to parse invite metadata', e);
+          }
+
+          const inviteId = metadata.inviteId || '';
+          const isOwn = message.sender_id === this.currentUser?.id;
+
           return `
             <div class="flex justify-center my-3">
               <div class="bg-green-700 border-2 border-green-500 text-white px-4 py-3 rounded-lg max-w-[80%]">
-                <div class="text-center font-bold text-[1.3rem]">Pong Invitation</div>
-                <div class="text-center mt-1">${message.username} invited you to play!</div>
+                <div class="text-center font-bold text-[1.3rem]">🏓 Pong Invitation</div>
+                <div class="text-center mt-1">${isOwn ? 'You' : message.username} invited ${isOwn ? message.username : 'you'} to play!</div>
                 <div class="text-[0.9rem] text-green-200 mt-1 text-center">
                   ${this.formatMessageTime(message.created_at)}
                 </div>
+                ${!isOwn && inviteId ? `
+                  <div class="flex gap-2 justify-center mt-3">
+                    <button
+                      class="accept-invite-btn bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded transition"
+                      data-invite-id="${inviteId}"
+                    >
+                      ✓ Accept
+                    </button>
+                    <button
+                      class="decline-invite-btn bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded transition"
+                      data-invite-id="${inviteId}"
+                    >
+                      ✗ Decline
+                    </button>
+                  </div>
+                ` : ''}
               </div>
             </div>
           `;
@@ -193,6 +219,9 @@ export class ChatConversation {
         }
       })
       .join('');
+
+    // Bind event listeners for invite buttons
+    this.bindInviteButtons();
   }
 
   private escapeHtml(text: string): string {
@@ -207,6 +236,68 @@ export class ChatConversation {
       await chatService.sendMessage(otherUser.id, content);
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  }
+
+  private bindInviteButtons(): void {
+    // Bind accept buttons
+    const acceptButtons = this.element.querySelectorAll('.accept-invite-btn');
+    acceptButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const inviteId = target.dataset.inviteId;
+        if (inviteId) {
+          this.acceptInvite(inviteId);
+        }
+      });
+    });
+
+    // Bind decline buttons
+    const declineButtons = this.element.querySelectorAll('.decline-invite-btn');
+    declineButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const inviteId = target.dataset.inviteId;
+        if (inviteId) {
+          this.declineInvite(inviteId);
+        }
+      });
+    });
+  }
+
+  private async acceptInvite(inviteId: string): Promise<void> {
+    try {
+      if (chatService.ws && chatService.ws.readyState === WebSocket.OPEN) {
+        chatService.ws.send(
+          JSON.stringify({
+            type: 'friend_pong_accept',
+            inviteId: inviteId,
+          })
+        );
+        console.log('✅ Invitation accepted, game starting soon...');
+      } else {
+        console.error('WebSocket not connected');
+      }
+    } catch (error) {
+      console.error('Accept error:', error);
+    }
+  }
+
+  private async declineInvite(inviteId: string): Promise<void> {
+    try {
+      if (chatService.ws && chatService.ws.readyState === WebSocket.OPEN) {
+        chatService.ws.send(
+          JSON.stringify({
+            type: 'friend_pong_decline',
+            inviteId: inviteId,
+          })
+        );
+        console.log('Invitation declined');
+      } else {
+        console.error('WebSocket not connected');
+      }
+    } catch (error) {
+      console.error('Decline error:', error);
     }
   }
 
