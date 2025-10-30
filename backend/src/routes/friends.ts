@@ -27,7 +27,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (currentUser.id === friend_id) {
           return reply.status(400).send({
             success: false,
-            error: 'Vous ne pouvez pas vous ajouter vous-meme en ami',
+            error: "Can't add yourself",
           });
         }
 
@@ -35,7 +35,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!targetUser) {
           return reply.status(404).send({
             success: false,
-            error: 'Utilisateur non trouve',
+            error: 'User not found',
           });
         }
 
@@ -52,17 +52,17 @@ export async function friendRoutes(server: FastifyInstance) {
           if (existingFriendship.status === 'pending') {
             return reply.status(409).send({
               success: false,
-              error: 'Une demande d ami est deja en attente',
+              error: 'Request already sent',
             });
           } else if (existingFriendship.status === 'accepted') {
             return reply.status(409).send({
               success: false,
-              error: 'Vous etes deja amis',
+              error: 'Already friends',
             });
           } else if (existingFriendship.status === 'blocked') {
             return reply.status(409).send({
               success: false,
-              error: 'Impossible d envoyer une demande d ami',
+              error: "Can't send a request",
             });
           }
         }
@@ -89,7 +89,7 @@ export async function friendRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Demande d amis envoye avec succes',
+          message: 'Request sent successfully',
           data: {
             id: result.lastID,
             friend_id,
@@ -97,10 +97,10 @@ export async function friendRoutes(server: FastifyInstance) {
           },
         });
       } catch (error: any) {
-        request.log.error('Erreur inatendue lors de l envoi de la demande d ami:', error);
+        request.log.error('Unexpected error while sending request:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de l envoi de la demande d ami',
+          error: 'Friend request error',
         });
       }
     }
@@ -134,7 +134,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!friendship) {
           return reply.status(404).send({
             success: false,
-            error: 'Demande d ami non trouvee ou deja traitee',
+            error: 'Request not found or already done',
           });
         }
 
@@ -166,13 +166,13 @@ export async function friendRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Demande d ami accepte avec succes',
+          message: 'Friend request accepted sucessfully',
         });
       } catch (error: any) {
-        request.log.error("Erreur lors de l'acceptation de la demande d'ami:", error);
+        request.log.error("Error accepting request:", error);
         reply.status(500).send({
           success: false,
-          error: "Erreur lors de l'acceptation de la demande d'ami",
+          error: "Error accepting request",
         });
       }
     }
@@ -206,7 +206,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!friendship) {
           return reply.status(404).send({
             success: false,
-            error: 'La demande d ami n existe pas OU est deja traiteee',
+            error: 'Request not found or already done',
           });
         }
 
@@ -223,13 +223,13 @@ export async function friendRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Demande d ami refusee avec succes',
+          message: 'Request declined successfully',
         });
       } catch (error: any) {
-        request.log.error("Erreur lors du refus de la demande d'ami:", error);
+        request.log.error("Error declining request:", error);
         reply.status(500).send({
           success: false,
-          error: "Erreur lors du refus de la demande d'ami",
+          error: "Error declining request",
         });
       }
     }
