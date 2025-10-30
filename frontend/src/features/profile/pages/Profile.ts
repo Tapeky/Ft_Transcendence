@@ -206,27 +206,114 @@ export class ProfilePage {
     const token = localStorage.getItem('auth_token');
     const user = authManager.getCurrentUser();
 
+    if (!user?.id) {
+      console.error('No user ID found');
+      this.updateDeleteStatus('Error: User not found', 'error');
+      return;
+    }
+
+    console.log('Attempting to delete account for user ID:', user.id);
+    console.log('Request URL:', `/api/profile/delete_account/${user.id}`);
+
     try {
-      const response = await fetch(`/delete_account/${user?.id}`, {
+      const response = await fetch(`/api/profile/delete_account/${user.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
         }
       });
 
-      // console.log(response);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      // Check if response is ok first
+      if (!response.ok) {
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        
+        let errorMessage = 'Error deleting account';
+        try {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          
+          // Try to parse as JSON
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (e) {
+          console.error('Could not read error response:', e);
+        }
+        
+        this.updateDeleteStatus(errorMessage, 'error');
+        return;
+      }
+
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Response is not JSON');
+        this.updateDeleteStatus('Error: Invalid server response', 'error');
+        return;
+      }
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (data.success) {
         console.log(data.message);
         this.deleteSuccess();
       } else {
         console.error(data.error);
+        this.updateDeleteStatus(data.error || 'Error deleting account', 'error');
       }
     } catch (error) {
-      console.error('Error: ' + (error instanceof Error ? error.message : String(error)));
+      console.error('Error deleting account:', error);
+      this.updateDeleteStatus(
+        'Error: ' + (error instanceof Error ? error.message : String(error)),
+        'error'
+      );
     }
+  }
+
+  private updateDeleteStatus(message: string, type: 'success' | 'error' | 'info'): void {
+    const content = document.body.querySelector('#delete-content');
+    if (!content) return;
+
+    const statusElement = content.querySelector('#delete-status') || document.createElement('div');
+    statusElement.id = 'delete-status';
+    statusElement.textContent = message;
+    statusElement.className = `text-[1.5rem] text-center ${
+      type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
+    }`;
+
+    if (!statusElement.parentElement) {
+      content.appendChild(statusElement);
+    }
+  }
+
+  private deleteSuccess(): void {
+    const content = document.body.querySelector('#delete-content');
+    if (!content) return;
+    
+    content.innerHTML = `
+      <div class='text-center text-white text-[3rem]'>
+        Account deleted!
+      </div>
+    `;
+    
+    // Clear auth data
+    localStorage.removeItem('auth_token');
+    authManager.clearUser();
+    
+    setTimeout(() => {
+      this.closeDeleteModal();
+      router.navigate('/auth');
+    }, 2000);
   }
 
 
@@ -277,19 +364,6 @@ export class ProfilePage {
     
     document.body.querySelector('#no-delete-btn')?.addEventListener('click', () => this.closeDeleteModal());
     document.body.querySelector('#yes-delete-btn')?.addEventListener('click', () => this.deleteAccount());
-  }
-
-  private deleteSuccess(): void {
-    const content = document.body.querySelector('#delete-content');
-    if (!content)
-      return;
-    content.innerHTML=`
-      <div class='text-center text-white text-[3rem]'>
-        Account deleted !
-      </div>
-    `;
-    setTimeout(() => router.navigate('/auth'), 2000);
-    setTimeout(() => this.closeDeleteModal(), 2000);
   }
 
   private renderPasswordModal(): void {
