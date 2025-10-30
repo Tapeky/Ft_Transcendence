@@ -24,7 +24,7 @@ export class ChatConversation {
     this.currentUser = options.currentUser;
     this.onBack = options.onBack;
     this.onMessageSent = options.onMessageSent;
-    this.messages = options.messages || [];
+    this.messages = this.filterDismissedInvitations(options.messages || []);
     this.element = this.createElement();
     this.bindEvents();
 
@@ -126,7 +126,7 @@ export class ChatConversation {
       this.renderMessages();
       this.scrollToBottom();
     } catch (error) {
-      console.error('Error loading messages:', error);
+      return;
     }
   }
 
@@ -145,7 +145,7 @@ export class ChatConversation {
           try {
             metadata = message.metadata ? JSON.parse(message.metadata) : {};
           } catch (e) {
-            console.error('Failed to parse invite metadata', e);
+            metadata = {};
           }
 
           const inviteId = metadata.inviteId || '';
@@ -235,7 +235,7 @@ export class ChatConversation {
       const otherUser = this.getOtherUser();
       await chatService.sendMessage(otherUser.id, content);
     } catch (error) {
-      console.error('Error sending message:', error);
+      return;
     }
   }
 
@@ -274,12 +274,10 @@ export class ChatConversation {
             inviteId: inviteId,
           })
         );
-        console.log('✅ Invitation accepted, game starting soon...');
-      } else {
-        console.error('WebSocket not connected');
+        this.removeInviteMessage(inviteId);
       }
     } catch (error) {
-      console.error('Accept error:', error);
+      return;
     }
   }
 
@@ -292,13 +290,45 @@ export class ChatConversation {
             inviteId: inviteId,
           })
         );
-        console.log('Invitation declined');
-      } else {
-        console.error('WebSocket not connected');
+        this.removeInviteMessage(inviteId);
       }
     } catch (error) {
-      console.error('Decline error:', error);
+      return;
     }
+  }
+
+  private removeInviteMessage(inviteId: string): void {
+    this.messages = this.messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return metadata.inviteId !== inviteId;
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
+
+    chatService.removeMessageByInviteId(this.conversation.id, inviteId);
+    this.renderMessages();
+  }
+
+  private filterDismissedInvitations(messages: Message[]): Message[] {
+    const stored = localStorage.getItem('chat_dismissed_invitations');
+    const dismissedSet = stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+
+    return messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return !dismissedSet.has(metadata.inviteId);
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
   }
 
   private scrollToBottom(): void {
@@ -318,14 +348,17 @@ export class ChatConversation {
 
   public addMessage(message: Message): void {
     if (!this.messages.find(m => m.id === message.id)) {
-      this.messages.push(message);
-      this.renderMessages();
-      this.scrollToBottom();
+      const filtered = this.filterDismissedInvitations([message]);
+      if (filtered.length > 0) {
+        this.messages.push(message);
+        this.renderMessages();
+        this.scrollToBottom();
+      }
     }
   }
 
   public updateMessages(messages: Message[]): void {
-    this.messages = messages;
+    this.messages = this.filterDismissedInvitations(messages);
     this.renderMessages();
     this.scrollToBottom();
   }
@@ -377,7 +410,6 @@ export class ChatConversation {
         this.showNotification(result.message || 'Failed to send invitation', 'error');
       }
     } catch (error) {
-      console.error('❌ Failed to invite to pong:', error);
       this.showNotification('Failed to send invitation', 'error');
     } finally {
       const inviteBtn = this.element.querySelector('#invite-to-pong-btn') as HTMLButtonElement;
