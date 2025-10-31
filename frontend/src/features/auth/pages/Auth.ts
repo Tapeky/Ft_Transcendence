@@ -81,6 +81,22 @@ export class AuthPage {
                   </label>
                 </div>
 
+                <div>
+                  <input
+                    id="totp-password"
+                    name="totp-password"
+                    onkeypress="return (event.charCode != 8 && event.charCode == 0 || (event.charCode >= 48 && event.charCode <= 57))"
+                    minlength="6"
+                    maxlength="6"
+                    placeholder="XXXXXX"
+                    class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    style="width: 25%; text-align:center;"
+                  />
+                  <label for="totp-password" class="floating-label">
+                    2FA Key
+                  </label>
+                </div>
+
                 <button 
                   type="submit" 
                   id="login-submit"
@@ -446,6 +462,7 @@ export class AuthPage {
     const credentials = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
+      totp_password: formData.get('totp-password') as string
     };
 
     if (!credentials.email || !credentials.password) {
