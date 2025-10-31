@@ -42,6 +42,8 @@ export class SimplePong {
     this.state.ballY = SimplePong.ARENA_HEIGHT / 2;
     this.state.ballVX = (Math.random() > 0.5 ? 1 : -1) * SimplePong.BALL_SPEED;
     this.state.ballVY = (Math.random() - 0.5) * SimplePong.BALL_SPEED * 0.5;
+    this.state.leftPaddleY = SimplePong.ARENA_HEIGHT / 2;
+    this.state.rightPaddleY = SimplePong.ARENA_HEIGHT / 2;
   }
 
   public update(
@@ -53,49 +55,87 @@ export class SimplePong {
   ): void {
     if (this.state.gameOver) return;
 
-    const safeDeltaTime = Math.min(deltaTime, 1 / 30); // Limite à ~33ms max
+    const safeDeltaTime = Math.min(deltaTime, 1 / 30);
 
-    if (leftUp) this.state.leftPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
-    if (leftDown) this.state.leftPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
-    if (rightUp) this.state.rightPaddleY -= SimplePong.PADDLE_SPEED * safeDeltaTime;
-    if (rightDown) this.state.rightPaddleY += SimplePong.PADDLE_SPEED * safeDeltaTime;
+    this.updatePaddlePositions(safeDeltaTime, leftUp, leftDown, rightUp, rightDown);
+    this.updateBallPosition(safeDeltaTime);
+    this.handleWallCollisions();
+    this.handlePaddleCollisions();
+    this.handleScoring();
+    this.checkGameOver();
+  }
+
+  private updatePaddlePositions(
+    deltaTime: number,
+    leftUp: boolean,
+    leftDown: boolean,
+    rightUp: boolean,
+    rightDown: boolean
+  ): void {
+    if (leftUp) this.state.leftPaddleY -= SimplePong.PADDLE_SPEED * deltaTime;
+    if (leftDown) this.state.leftPaddleY += SimplePong.PADDLE_SPEED * deltaTime;
+    if (rightUp) this.state.rightPaddleY -= SimplePong.PADDLE_SPEED * deltaTime;
+    if (rightDown) this.state.rightPaddleY += SimplePong.PADDLE_SPEED * deltaTime;
 
     const halfPaddle = SimplePong.PADDLE_HEIGHT / 2;
-    this.state.leftPaddleY = Math.max(
-      halfPaddle,
-      Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.leftPaddleY)
-    );
-    this.state.rightPaddleY = Math.max(
-      halfPaddle,
-      Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, this.state.rightPaddleY)
-    );
+    this.state.leftPaddleY = this.clampPaddlePosition(this.state.leftPaddleY, halfPaddle);
+    this.state.rightPaddleY = this.clampPaddlePosition(this.state.rightPaddleY, halfPaddle);
+  }
 
-    this.state.ballX += this.state.ballVX * safeDeltaTime;
-    this.state.ballY += this.state.ballVY * safeDeltaTime;
+  private clampPaddlePosition(paddleY: number, halfPaddle: number): number {
+    return Math.max(
+      halfPaddle,
+      Math.min(SimplePong.ARENA_HEIGHT - halfPaddle, paddleY)
+    );
+  }
 
+  private updateBallPosition(deltaTime: number): void {
+    this.state.ballX += this.state.ballVX * deltaTime;
+    this.state.ballY += this.state.ballVY * deltaTime;
+  }
+
+  private handleWallCollisions(): void {
     if (
       this.state.ballY <= SimplePong.BALL_SIZE ||
       this.state.ballY >= SimplePong.ARENA_HEIGHT - SimplePong.BALL_SIZE
     ) {
       this.state.ballVY = -this.state.ballVY;
     }
+  }
 
-    if (
-      this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
-      Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE
-    ) {
+  private handlePaddleCollisions(): void {
+    const halfPaddle = SimplePong.PADDLE_HEIGHT / 2;
+
+    if (this.isCollidingWithLeftPaddle(halfPaddle)) {
       this.state.ballVX = Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.leftPaddleY) * 5;
     }
 
-    if (
-      this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
-      Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE
-    ) {
+    if (this.isCollidingWithRightPaddle(halfPaddle)) {
       this.state.ballVX = -Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.rightPaddleY) * 5;
     }
+  }
 
+  private isCollidingWithLeftPaddle(halfPaddle: number): boolean {
+    return (
+      this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
+      this.state.ballX >= 0 &&
+      this.state.ballVX < 0 &&
+      Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+    );
+  }
+
+  private isCollidingWithRightPaddle(halfPaddle: number): boolean {
+    return (
+      this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
+      this.state.ballX <= SimplePong.ARENA_WIDTH &&
+      this.state.ballVX > 0 &&
+      Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+    );
+  }
+
+  private handleScoring(): void {
     if (this.state.ballX < 0) {
       this.state.rightScore++;
       this.resetBallPosition();
@@ -103,7 +143,9 @@ export class SimplePong {
       this.state.leftScore++;
       this.resetBallPosition();
     }
+  }
 
+  private checkGameOver(): void {
     if (this.state.leftScore >= SimplePong.WINNING_SCORE) {
       this.state.gameOver = true;
       this.state.winner = 'left';

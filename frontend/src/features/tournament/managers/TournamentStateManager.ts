@@ -139,6 +139,11 @@ export class TournamentStateManager {
       this.tournament = tournament;
       this.initializeMatchOrchestrator(tournament.id);
 
+      // Save tournament ID in sessionStorage and update URL
+      sessionStorage.setItem('activeTournamentId', tournament.id);
+      const newUrl = `/tournament?id=${tournament.id}`;
+      window.history.replaceState(null, '', newUrl);
+
       this.updateUIState({
         currentView: 'registration',
         isLoading: false,
@@ -165,6 +170,11 @@ export class TournamentStateManager {
       await this.registrationManager.joinTournament(tournamentId, alias);
 
       this.initializeMatchOrchestrator(tournamentId);
+
+      // Save tournament ID in sessionStorage and update URL
+      sessionStorage.setItem('activeTournamentId', tournamentId);
+      const newUrl = `/tournament?id=${tournamentId}`;
+      window.history.replaceState(null, '', newUrl);
 
       this.updateUIState({
         currentView: 'registration',
@@ -455,6 +465,7 @@ export class TournamentStateManager {
 
   private getViewForStatus(status: string, bracket?: any): TournamentUIState['currentView'] {
     switch (status) {
+      case 'waiting':
       case 'registration':
         return 'registration';
       case 'ready':

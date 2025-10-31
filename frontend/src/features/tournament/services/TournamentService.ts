@@ -177,7 +177,12 @@ export class TournamentService {
       if (match.status === 'in_progress') {
         currentRound = match.round;
         currentMatch = match.id;
-      } else if (match.status === 'pending' && !currentMatch) {
+      } else if (
+        match.status === 'pending' &&
+        !currentMatch &&
+        match.player1Alias !== 'TBD' &&
+        match.player2Alias !== 'TBD'
+      ) {
         if (currentRound === 1 || match.round < currentRound) currentRound = match.round;
       }
     });

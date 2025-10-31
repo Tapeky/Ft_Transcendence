@@ -12,6 +12,8 @@ export class Dashboard {
   private playerId: string;
   private header: Header | null = null;
   private backBtn: BackBtn | null = null;
+  private refreshIntervalId: number | null = null;
+  private visibilityChangeHandler: (() => void) | null = null;
 
   constructor(container: HTMLElement, playerId: string) {
     this.container = container;
@@ -38,6 +40,7 @@ export class Dashboard {
 
     this.loading = false;
     this.render();
+    this.startAutoRefresh();
   }
 
   private async waitForAuthInitialization(): Promise<void> {
@@ -94,7 +97,6 @@ export class Dashboard {
   private getPlayerStats(matches?: any[]) {
     const totalGames = this.player?.total_games || 0;
     const wins = this.player?.total_wins || 0;
-    const losses = this.player?.total_losses || 0;
 
     return {
       winRate: totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0',
@@ -134,7 +136,7 @@ export class Dashboard {
     if (matchesToUse.length === 0) return 'N/A';
 
     const currentUser = appState.getState().user;
-    const recentMatches = matchesToUse.slice(-5);
+    const recentMatches = matchesToUse.slice(0,5).reverse();
 
     const results = recentMatches.map(match => (match.winner_id === currentUser?.id ? 'W' : 'L'));
 
@@ -272,17 +274,6 @@ export class Dashboard {
 					<div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
 						<img src="${this.getAvatarUrl(match.player1_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
 						<h1>${match.player1_username || match.player1_guest_name || 'Unknown'}</h1>
-						${
-              match.player1_username && match.player1_username !== currentUser?.username
-                ? `
-							<button 
-								data-invite-username="${match.player1_username}"
-								class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
-								🎮 Rematch
-							</button>
-						`
-                : ''
-            }
 					</div>
 
 					<h1 class="flex-1 text-center text-[4rem]">${match.player1_score} - ${match.player2_score}</h1>
@@ -290,17 +281,6 @@ export class Dashboard {
 					<div class="flex flex-col items-center justify-center flex-1 overflow-hidden text-[1.7rem]">
 						<img src="${this.getAvatarUrl(match.player2_avatar_url)}" alt="icon" class="border-2 h-[100px] w-[100px]"/> 
 						<h1>${match.player2_username || match.player2_guest_name || 'Unknown'}</h1>
-						${
-              match.player2_username && match.player2_username !== currentUser?.username
-                ? `
-							<button 
-								data-invite-username="${match.player2_username}"
-								class="mt-1 px-2 py-1 text-[0.8rem] bg-green-600 hover:bg-green-500 rounded transition">
-								🎮 Rematch
-							</button>
-						`
-                : ''
-            }
 					</div>
 				</div>
 			</div>
@@ -316,7 +296,9 @@ export class Dashboard {
     }
 
     if (avatarUrl.startsWith('/uploads/')) {
-      return `${config.API_BASE_URL}${avatarUrl}`;
+      const baseUrl = `${config.API_BASE_URL}${avatarUrl}`;
+      // Ajouter un timestamp pour éviter le cache du navigateur
+      return `${baseUrl}?t=${Date.now()}`;
     }
 
     return avatarUrl;
@@ -415,12 +397,12 @@ export class Dashboard {
 		</div>
 
 		<div class="text-[3rem] flex-1 flex overflow-hidden gap-4 justify-end">
-			<h1>${matchDetails.player2_username}</h1>
+			<h1>${matchDetails.player2_username ? matchDetails.player2_username : "Guest"}</h1>
 			<img src="${this.getAvatarUrl(matchDetails.player2_avatar_url)}" alt="icon" class="border-2 min-w-[120px] h-[120px]"/>
 		</div>
 		</div>
 	
-		<h2 class="text-[4rem]">${matchDetails.duration_seconds}s</h2>
+		<h2 class="text-[4rem]">${Math.floor(matchDetails.duration_seconds)}s</h2>
 
 		<div class="flex justify-evenly w-full text-center mb-4">
 		<h2 class="flex-1">${matchDetails.player1_score}</h2>
@@ -465,7 +447,7 @@ export class Dashboard {
       return;
     }
 
-    const lastMatches = matches.slice(-5);
+    const lastMatches = matches.slice(0,5).reverse();
     const currentUser = appState.getState().user;
 
     const scores = lastMatches.map(match => {
@@ -483,251 +465,6 @@ export class Dashboard {
 
     if (left) left.innerHTML = this.generateBarChart(scores, 'Last scores');
     if (right) right.innerHTML = this.generateWinrate(results, 'Winrate (5 last games)');
-  }
-
-  private renderDetailedStats(matches?: any[]): string {
-    const stats = this.getPlayerStats(matches);
-    const totalGames = this.player?.total_games || 0;
-    const wins = this.player?.total_wins || 0;
-    const losses = this.player?.total_losses || 0;
-    const winRate = parseFloat(stats.winRate);
-
-    return `
-			<div class="h-full p-4 flex flex-col">
-				<h3 class="text-center text-[2.5rem] mb-6 border-b-2 pb-2">Performance Analytics</h3>
-
-				<div class="mb-6">
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Win Rate</h4>
-					<div class="flex justify-center items-center">
-						<div class="relative w-32 h-32">
-							<svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-								<path class="text-gray-600" stroke="currentColor" stroke-width="3" fill="none" 
-									d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-								<path class="text-green-400" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"
-									stroke-dasharray="${winRate}, 100" 
-									d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-							</svg>
-							<div class="absolute inset-0 flex items-center justify-center">
-								<span class="text-[1.5rem] font-bold text-white">${stats.winRate}%</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="mb-6">
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Analysis</h4>
-					<div class="space-y-2">
-						<div class="flex justify-between items-center">
-							<span class="text-[1.4rem]">Avg Score:</span>
-							<div class="flex items-center">
-								<div class="w-24 h-4 bg-gray-600 rounded mr-2">
-									<div class="h-4 bg-blue-400 rounded" style="width: ${Math.min((parseFloat(stats.avgScore) / 21) * 100, 100)}%"></div>
-								</div>
-								<span class="text-[1.4rem] font-bold">${stats.avgScore}</span>
-							</div>
-						</div>
-						<div class="flex justify-between items-center">
-							<span class="text-[1.4rem]">Best Score:</span>
-							<div class="flex items-center">
-								<div class="w-24 h-4 bg-gray-600 rounded mr-2">
-									<div class="h-4 bg-yellow-400 rounded" style="width: ${Math.min((stats.bestScore / 21) * 100, 100)}%"></div>
-								</div>
-								<span class="text-[1.4rem] font-bold">${stats.bestScore}</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div>
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Games Distribution</h4>
-					<div class="space-y-3">
-						<div class="flex items-center">
-							<span class="text-[1.4rem] w-20">Wins:</span>
-							<div class="flex-1 mx-3 h-6 bg-gray-600 rounded">
-								<div class="h-6 bg-green-400 rounded flex items-center justify-end pr-2" 
-									style="width: ${totalGames > 0 ? (wins / totalGames) * 100 : 0}%">
-									<span class="text-[1rem] font-bold">${wins}</span>
-								</div>
-							</div>
-						</div>
-						<div class="flex items-center">
-							<span class="text-[1.4rem] w-20">Losses:</span>
-							<div class="flex-1 mx-3 h-6 bg-gray-600 rounded">
-								<div class="h-6 bg-red-400 rounded flex items-center justify-end pr-2" 
-									style="width: ${totalGames > 0 ? (losses / totalGames) * 100 : 0}%">
-									<span class="text-[1rem] font-bold">${losses}</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="mt-4">
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Form</h4>
-					<div class="flex justify-center space-x-2">
-						${stats.recentForm
-              .split('')
-              .map(
-                result =>
-                  `<div class="w-8 h-8 rounded ${result === 'W' ? 'bg-green-400' : 'bg-red-400'} 
-								flex items-center justify-center text-black font-bold text-[1.2rem]">${result}</div>`
-              )
-              .join('')}
-					</div>
-				</div>
-			</div>
-		`;
-  }
-
-  private renderMatchBreakdown(matches?: any[]): string {
-    const matchesToUse = matches || this.matches || [];
-    if (matchesToUse.length === 0) {
-      return '<div class="flex items-center justify-center h-full text-[2rem]">No matches to analyze</div>';
-    }
-
-    const currentUser = appState.getState().user;
-    const recentMatches = matchesToUse.slice(-10);
-
-    const matchResults = recentMatches.map((match, index) => {
-      const isWin = match.winner_id === currentUser?.id;
-      const playerScore =
-        match.player1_username === currentUser?.username
-          ? match.player1_score
-          : match.player2_score;
-      return { index, isWin, score: playerScore };
-    });
-
-    const maxScore = Math.max(...matchResults.map(m => m.score), 21);
-    const chartHeight = 200;
-
-    return `
-			<div class="h-full p-4 flex flex-col">
-				<h3 class="text-center text-[2.5rem] mb-4 border-b-2 pb-2">Match Progression</h3>
-
-				<div class="mb-6">
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Score Evolution</h4>
-					<div class="bg-gray-800 rounded p-4 relative" style="height: ${chartHeight}px;">
-						${Array.from({ length: 5 }, (_, i) => {
-              const y = ((chartHeight - 40) * i) / 4 + 20;
-              const value = Math.round((maxScore * (4 - i)) / 4);
-              return `
-								<div class="absolute left-0 right-0 border-t border-gray-600" style="top: ${y}px;"></div>
-								<span class="absolute left-1 text-[0.8rem] text-gray-400" style="top: ${y - 8}px;">${value}</span>
-							`;
-            }).join('')}
-						
-						<svg class="absolute top-5 left-8 right-2 bottom-5" style="width: calc(100% - 40px); height: ${chartHeight - 40}px;">
-							<polyline
-								fill="none"
-								stroke="#60a5fa"
-								stroke-width="2"
-								points="${matchResults
-                  .map((result, i) => {
-                    const x = (i / Math.max(matchResults.length - 1, 1)) * 100;
-                    const y = 100 - (result.score / maxScore) * 100;
-                    return `${x}%,${y}%`;
-                  })
-                  .join(' ')}"
-							/>
-							${matchResults
-                .map((result, i) => {
-                  const x = (i / Math.max(matchResults.length - 1, 1)) * 100;
-                  const y = 100 - (result.score / maxScore) * 100;
-                  return `
-									<circle
-										cx="${x}%"
-										cy="${y}%"
-										r="4"
-										fill="${result.isWin ? '#10b981' : '#ef4444'}"
-										stroke="white"
-										stroke-width="1"
-									/>
-								`;
-                })
-                .join('')}
-						</svg>
-					</div>
-				</div>
-
-				<div>
-					<h4 class="text-[1.8rem] text-yellow-300 mb-3 text-center">Recent Results</h4>
-					<div class="space-y-2 max-h-40 overflow-y-auto">
-						${recentMatches
-              .reverse()
-              .map((match, index) => {
-                const isWin = match.winner_id === currentUser?.id;
-                const playerScore =
-                  match.player1_username === currentUser?.username
-                    ? match.player1_score
-                    : match.player2_score;
-                const opponentScore =
-                  match.player1_username === currentUser?.username
-                    ? match.player2_score
-                    : match.player1_score;
-                const opponent =
-                  match.player1_username === currentUser?.username
-                    ? match.player2_username || match.player2_guest_name
-                    : match.player1_username || match.player1_guest_name;
-
-                const date = new Date(match.created_at);
-                const timeAgo = this.getTimeAgo(date);
-
-                return `
-								<div class="flex items-center justify-between p-2 rounded ${isWin ? 'bg-green-800/20' : 'bg-red-800/20'}">
-									<div class="flex items-center space-x-3">
-										<div class="w-8 h-8 rounded ${isWin ? 'bg-green-400' : 'bg-red-400'} 
-											flex items-center justify-center text-black font-bold text-[1.2rem]">
-											${isWin ? 'W' : 'L'}
-										</div>
-										<span class="text-[1.3rem]">${playerScore}-${opponentScore}</span>
-									</div>
-									<div class="text-right">
-										<div class="text-[1.1rem] text-gray-300 truncate max-w-[100px]">vs ${opponent || 'Unknown'}</div>
-										<div class="text-[0.9rem] text-gray-500">${timeAgo}</div>
-									</div>
-								</div>
-							`;
-              })
-              .join('')}
-					</div>
-				</div>
-			</div>
-		`;
-  }
-
-  private getTimeAgo(date: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return diffMins <= 1 ? 'Just now' : `${diffMins}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
-  }
-
-  private getCurrentWinStreak(): number {
-    if (!this.matches || this.matches.length === 0) return 0;
-
-    const currentUser = appState.getState().user;
-    let streak = 0;
-
-    for (let i = this.matches.length - 1; i >= 0; i--) {
-      if (this.matches[i].winner_id === currentUser?.id) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    return streak;
   }
 
   private generateBarChart(data: number[], title: string): string {
@@ -755,11 +492,13 @@ export class Dashboard {
       .join('');
 
     return `
-			<svg viewBox="0 0 600 250" class="w-full h-full">
-			<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
-			<line x1="30" y1="200" x2="570" y2="200" stroke="white" />
-			${bars}
-			</svg>
+      <div class='flex flex-col justify-center items-center'>
+        <h1 class='text-[2.5rem]'>${title}</h1>
+        <svg viewBox="0 0 600 250" class="w-full h-full">
+          <line x1="30" y1="200" x2="570" y2="200" stroke="white" />
+          ${bars}
+        </svg>
+      </div>
 		`;
   }
 
@@ -794,12 +533,47 @@ export class Dashboard {
       .join('');
 
     return `
-			<svg viewBox="0 0 600 250" class="w-full h-full">
-				<text x="300" y="20" text-anchor="middle" class="fill-white text-[2.5rem]">${title}</text>
-				<line x1="30" y1="200" x2="570" y2="200" stroke="white" />
-				${bars}
-			</svg>
+      <div class='flex flex-col justify-center items-center'>
+        <h1 class='text-[2.5rem]'>${title}</h1>
+        <svg viewBox="0 0 600 250" class="w-full h-full">
+          <line x1="30" y1="200" x2="570" y2="200" stroke="white" />
+          ${bars}
+        </svg>
+      </div>
 		`;
+  }
+
+  private startAutoRefresh(): void {
+    // Refresh when page becomes visible
+    this.visibilityChangeHandler = () => {
+      if (!document.hidden) {
+        this.refreshData().catch(error => {
+          console.error('Error auto-refreshing dashboard:', error);
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+
+    // Refresh every 30 seconds while dashboard is active
+    this.refreshIntervalId = window.setInterval(() => {
+      if (!document.hidden) {
+        this.refreshData().catch(error => {
+          console.error('Error auto-refreshing dashboard:', error);
+        });
+      }
+    }, 30000);
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      this.visibilityChangeHandler = null;
+    }
+
+    if (this.refreshIntervalId !== null) {
+      clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = null;
+    }
   }
 
   async refreshData() {
@@ -813,6 +587,8 @@ export class Dashboard {
   }
 
   destroy() {
+    this.stopAutoRefresh();
+    
     if (this.header) {
       this.header.destroy();
     }

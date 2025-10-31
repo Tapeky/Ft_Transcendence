@@ -6,7 +6,16 @@ export class ResultsViewController extends TournamentViewController {
     const tournament = state.tournament;
     if (!tournament) return;
 
-    const winner = tournament.winnerAlias;
+    // Get winner from tournament or from final match in bracket
+    let winner = tournament.winnerAlias;
+    if (!winner && tournament.bracket?.rounds?.length) {
+      const finalRound = tournament.bracket.rounds[tournament.bracket.rounds.length - 1];
+      const finalMatch = finalRound?.[0];
+      if (finalMatch?.winnerAlias) {
+        winner = finalMatch.winnerAlias;
+      }
+    }
+
     const stats = this.stateManager.getTournamentStatistics();
 
     container.innerHTML = `
@@ -17,7 +26,7 @@ export class ResultsViewController extends TournamentViewController {
       <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-12 text-center mb-8">
         <div class="text-8xl mb-6">🏆</div>
         <h3 class="text-3xl font-bold mb-4 text-white font-iceland">Tournament Complete!</h3>
-        <div class="text-2xl text-yellow-300 font-semibold font-iceland">Winner: ${winner}</div>
+        <div class="text-2xl text-yellow-300 font-semibold font-iceland">Winner: ${winner || 'Unknown'}</div>
       </div>
 
       <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-lg p-8 mb-8">

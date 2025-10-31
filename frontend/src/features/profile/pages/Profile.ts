@@ -14,7 +14,9 @@ export class ProfilePage {
   private backBtn?: BackBtn;
   private showPasswordModal: boolean = false;
   private showAvatarModal: boolean = false;
+  private showDeleteModal: boolean = false;
   private passwordModalCloseBtn?: CloseBtn;
+  private deleteModalCloseBtn?: CloseBtn;
   private avatarModalCloseBtn?: CloseBtn;
   private avatarSelect?: AvatarSelect;
 
@@ -83,7 +85,7 @@ export class ProfilePage {
       <div class="flex-1">
         <button 
           id="save-display-name"
-          class="bg-blue-400 w-[50px] rounded-md hover:scale-90 ml-3 border-2 border-white transition-transform"
+          class="bg-blue-800 w-[50px] rounded-md hover:scale-90 ml-3 border-2 border-white transition-transform"
         >
           &#x2713;
         </button>
@@ -121,7 +123,22 @@ export class ProfilePage {
       </div>
       <div class="flex-1"></div>
     `;
-  leftColumn.appendChild(totpSection);
+	leftColumn.appendChild(totpSection);
+    const deleteSection = document.createElement('div');
+    deleteSection.className = 'flex justify-center';
+    deleteSection.innerHTML = `
+      <h4 class="flex-1">Account</h4>
+      <div class="flex-1">
+        <button 
+          id="delete-btn"
+          class="border-2 w-full bg-red-600 hover:scale-105 text-white rounded-md translate-x-[-20px] transition-transform"
+        >
+          Delete
+        </button>
+      </div>
+      <div class="flex-1"></div>
+    `;
+    leftColumn.appendChild(deleteSection);
 
     mainContent.appendChild(leftColumn);
 
@@ -138,7 +155,7 @@ export class ProfilePage {
       
       <button 
         id="edit-avatar-btn"
-        class="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.3rem] rounded-md transition-transform"
+        class="absolute top-[275px] border-2 p-2 px-6 bg-blue-800 hover:scale-110 text-white text-[1.3rem] rounded-md transition-transform"
       >
         EDIT
       </button>
@@ -163,6 +180,9 @@ export class ProfilePage {
 
     const editAvatarBtn = this.element.querySelector('#edit-avatar-btn');
     editAvatarBtn?.addEventListener('click', () => this.openAvatarModal());
+
+    const deleteAccountBtn = this.element.querySelector('#delete-btn');
+    deleteAccountBtn?.addEventListener('click', () => this.openDeleteModal());
   }
 
   private async handleSaveDisplayName(): Promise<void> {
@@ -198,14 +218,168 @@ export class ProfilePage {
     }
   }
 
+  private async deleteAccount() {
+    const token = localStorage.getItem('auth_token');
+    const user = authManager.getCurrentUser();
+
+    if (!user?.id) {
+      console.error('No user ID found');
+      this.updateDeleteStatus('Error: User not found', 'error');
+      return;
+    }
+
+    console.log('Attempting to delete account for user ID:', user.id);
+    console.log('Request URL:', `/api/profile/delete_account/${user.id}`);
+
+    try {
+      const response = await fetch(`/api/profile/delete_account/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      // Check if response is ok first
+      if (!response.ok) {
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        
+        let errorMessage = 'Error deleting account';
+        try {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          
+          // Try to parse as JSON
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (e) {
+          console.error('Could not read error response:', e);
+        }
+        
+        this.updateDeleteStatus(errorMessage, 'error');
+        return;
+      }
+
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Response is not JSON');
+        this.updateDeleteStatus('Error: Invalid server response', 'error');
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        console.log(data.message);
+        this.deleteSuccess();
+      } else {
+        console.error(data.error);
+        this.updateDeleteStatus(data.error || 'Error deleting account', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      this.updateDeleteStatus(
+        'Error: ' + (error instanceof Error ? error.message : String(error)),
+        'error'
+      );
+    }
+  }
+
+  private updateDeleteStatus(message: string, type: 'success' | 'error' | 'info'): void {
+    const content = document.body.querySelector('#delete-content');
+    if (!content) return;
+
+    const statusElement = content.querySelector('#delete-status') || document.createElement('div');
+    statusElement.id = 'delete-status';
+    statusElement.textContent = message;
+    statusElement.className = `text-[1.5rem] text-center ${
+      type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
+    }`;
+
+    if (!statusElement.parentElement) {
+      content.appendChild(statusElement);
+    }
+  }
+
+  private deleteSuccess(): void {
+    const content = document.body.querySelector('#delete-content');
+    if (!content) return;
+    
+    content.innerHTML = `
+      <div class='text-center text-white text-[3rem]'>
+        Account deleted!
+      </div>
+    `;
+    
+    // Clear auth data
+    localStorage.removeItem('auth_token');
+    authManager.clearUser();
+    
+    setTimeout(() => {
+      this.closeDeleteModal();
+      router.navigate('/auth');
+    }, 2000);
+  }
+
+
   private openPasswordModal(): void {
     this.showPasswordModal = true;
     this.renderPasswordModal();
   }
 
+  private openDeleteModal(): void {
+  this.showDeleteModal = true;
+  this.renderDeleteModal();
+  }
+
   private openAvatarModal(): void {
     this.showAvatarModal = true;
     this.renderAvatarModal();
+  }
+
+  private renderDeleteModal(): void {
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'delete-modal';
+    modalOverlay.className =
+      'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
+
+    const modalContainer = document.createElement('div');
+    modalContainer.className =
+      'flex flex-col bg-blue-800 w-[600px] h-[300px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland items-center justify-center';
+    const modalContent = document.createElement('div');
+    modalContent.className = 'flex flex-col justify-center items-center gap-4 text-white h-full my-4 px-8';
+    modalContent.id = 'delete-content';
+    modalContent.innerHTML = `
+      <div class='text-[2.5rem] text-center flex-1 pt-8'>
+        <h2>Are you sure you want to delete your account ?</h2>
+      </div>
+      <div class='flex-1 flex flex-row w-full justify-evenly items-center text-[2.2rem]'>
+        <button id='no-delete-btn' class='border-2 border-white bg-blue-600 py-2 w-[150px] rounded-md hover:scale-110 hover:bg-blue-700 duration-300'>
+          Cancel
+        </button>
+        <button id='yes-delete-btn' class='border-2 border-white bg-red-600 py-2 w-[150px] rounded-md hover:scale-110 hover:bg-red-700 duration-500'>
+          Delete
+        </button>
+      </div>
+
+    `;
+    modalContainer.appendChild(modalContent);
+    modalOverlay.appendChild(modalContainer);
+    document.body.appendChild(modalOverlay);
+    
+    document.body.querySelector('#no-delete-btn')?.addEventListener('click', () => this.closeDeleteModal());
+    document.body.querySelector('#yes-delete-btn')?.addEventListener('click', () => this.deleteAccount());
   }
 
   private renderPasswordModal(): void {
@@ -216,7 +390,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem] font-iceland';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
@@ -225,31 +399,31 @@ export class ProfilePage {
     modalContent.className = 'flex flex-col justify-center items-center mt-6 gap-4 px-8';
     modalContent.innerHTML = `
       <div>
-        <h2>Current password</h2>
+        <h2 class='text-white text-[2rem]'>Current password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="current-password"/>
           <button id="toggle-current" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
 
       <div>
-        <h2>New password</h2>
+        <h2 class='text-white text-[2rem]'>New password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="new-password"/>
           <button id="toggle-new" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
 
       <div>
-        <h2>Confirm new password</h2>
+        <h2 class='text-white text-[2rem]'>Confirm new password</h2>
         <div class="flex">
           <input type="password" class="text-black rounded-md indent-4" id="confirm-password"/>
           <button id="toggle-confirm" class="w-[50px] rounded-md ml-3 border-2 border-white">
-            👁️
+            <img src='/src/img/eye_white.svg' class='p-1'>
           </button>
         </div>
       </div>
@@ -280,7 +454,7 @@ export class ProfilePage {
       toggleBtn?.addEventListener('click', () => {
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          toggleBtn.textContent = input.type === 'password' ? '👁️' : '🙈';
+          toggleBtn.innerHTML = input.type === 'password' ? "<img src='/src/img/eye_white.svg' class='p-1'>" : "<img src='/src/img/eye_black.svg' class='p-1 bg-white'>";
         }
       });
     });
@@ -336,7 +510,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem] font-iceland';
 
     this.avatarModalCloseBtn = new CloseBtn(() => this.closeAvatarModal());
     modalContainer.appendChild(this.avatarModalCloseBtn.getElement());
@@ -352,8 +526,8 @@ export class ProfilePage {
       <div class="flex flex-col items-center gap-4">
         <input type="file" id="avatar-file-input" accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden"/>
         
-        <button id="upload-avatar-btn" class="border-2 p-2 px-6 bg-blue-800 hover:scale-90 text-white text-[1.5rem] rounded-md transition-transform">
-          IMPORT FILE
+        <button id="upload-avatar-btn" class="border-2 p-2 px-6 bg-blue-800 hover:scale-110 text-white text-[1.5rem] rounded-md transition-transform">
+          Import file
         </button>
         
         <div id="upload-status" class="text-[1.2rem] min-h-[1.5rem] text-center"></div>
@@ -413,6 +587,17 @@ export class ProfilePage {
 
       this.updateMainAvatar();
 
+      // Force chat refresh to update avatars everywhere
+      try {
+        const { chatService } = await import('../../../features/friends/services/ChatService');
+        if (chatService.isConnected()) {
+          await chatService.forceRefresh();
+        }
+      } catch (error) {
+        // ChatService might not be initialized, that's ok
+        console.debug('ChatService not available for refresh:', error);
+      }
+
       this.updateUploadStatus('Avatar updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to upload avatar:', error);
@@ -429,6 +614,13 @@ export class ProfilePage {
     }
 
     const modal = document.getElementById('password-modal');
+    modal?.remove();
+  }
+
+  private closeDeleteModal(): void {
+    this.showDeleteModal = false;
+
+    const modal = document.getElementById('delete-modal');
     modal?.remove();
   }
 

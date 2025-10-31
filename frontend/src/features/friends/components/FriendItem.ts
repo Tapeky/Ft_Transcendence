@@ -9,6 +9,8 @@ export interface FriendItemProps {
   avatar: string | null;
   is_online: boolean;
   id: number;
+  wins: number;
+  losses: number;
 }
 
 export class FriendItem {
@@ -30,7 +32,13 @@ export class FriendItem {
 
     container.innerHTML = `
       <div class="flex items-center justify-center min-w-[120px]">
-        <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[90px] w-[90px] border-2"/>
+        <img 
+          id="avatar-img"
+          src="${getAvatarUrl(this.props.avatar)}" 
+          alt="icon" 
+          class="h-[90px] w-[90px] border-2 cursor-pointer hover:scale-105 transition-transform"
+          title="View Dashboard"
+        />
       </div>
       <div class="leading-none flex flex-col gap-1 flex-grow overflow-hidden">
         <h2 class="mt-2">${this.props.displayName}</h2>
@@ -45,11 +53,11 @@ export class FriendItem {
             id="invite-btn" 
             data-invite-user="${this.props.id}"
             data-invite-username="${this.props.username}"
-            class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:bg-blue-100 hover:scale-110 transition">
+            class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition">
             <img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />
           </button>
-          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black">
-            <img src="/src/img/plus.svg" alt="more" />
+          <button id="options-btn" class="border-2 h-[40px] w-[40px] mr-2 bg-white border-black hover:scale-110 transition p-1">
+            <img src="/src/img/profile.svg" alt="more" />
           </button>
         </div>
       </div>
@@ -60,9 +68,11 @@ export class FriendItem {
   }
 
   private bindEvents(): void {
+    const avatarImg = this.element.querySelector('#avatar-img');
     const inviteBtn = this.element.querySelector('#invite-btn');
     const optionsBtn = this.element.querySelector('#options-btn');
 
+    avatarImg?.addEventListener('click', () => this.handleViewDashboard());
     inviteBtn?.addEventListener('click', () => this.inviteToPong());
     optionsBtn?.addEventListener('click', () => this.openOptions());
   }
@@ -72,28 +82,28 @@ export class FriendItem {
       const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
       if (inviteBtn) {
         inviteBtn.disabled = true;
-        inviteBtn.innerHTML =
-          '<div class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mx-auto"></div>';
       }
 
       const result = await apiService.inviteFriendToPong(this.props.id);
 
       if (result.success) {
-        this.showNotification(`Invitation envoyée à ${this.props.username}!`, 'success');
+        this.showNotification(`Invitation sent to ${this.props.username}!`, 'success');
       } else {
         this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
       }
     } catch (error) {
       console.error('❌ Failed to invite friend to pong:', error);
-      this.showNotification("Erreur lors de l'envoi de l'invitation", 'error');
+      this.showNotification("Invitation failed", 'error');
     } finally {
       const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
       if (inviteBtn) {
         inviteBtn.disabled = false;
-        inviteBtn.innerHTML =
-          '<img src="/src/img/paper-plane-icon-free-vector-1131209362.jpg" alt="invite to game" class="w-[36px] h-[36px] m-auto" />';
       }
     }
+  }
+
+  private handleViewDashboard(): void {
+    router.navigate(`/dashboard/${this.props.id}`);
   }
 
   private showNotification(message: string, type: 'success' | 'error'): void {
@@ -129,6 +139,8 @@ export class FriendItem {
         displayName: this.props.displayName,
         avatar: this.props.avatar,
         id: this.props.id,
+        wins: this.props.wins,
+        losses: this.props.losses,
         isOpen: this.isOptionsOpen,
         setIsOpen: () => this.closeOptions(),
         setDismiss: () => this.dismissItem(),

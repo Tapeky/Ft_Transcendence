@@ -3,6 +3,7 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
+import { apiService, Friend } from '../../../../../shared/services/api';
 
 export class ChatTabHandler {
   private container: Element;
@@ -12,6 +13,7 @@ export class ChatTabHandler {
   private onRefresh?: () => void;
 
   private messagesUpdatedHandler?: (data: { conversationId: number; messages: any[] }) => void;
+  private conversationUpdatedHandler?: (data: { conversation: any }) => void;
 
   constructor(config: TabHandlerConfig, chatManager: ChatManager) {
     this.container = config.container;
@@ -29,7 +31,15 @@ export class ChatTabHandler {
       }
     };
 
+    this.conversationUpdatedHandler = data => {
+      const chatState = this.chatManager.getState();
+      if (chatState.chatView === 'conversation' && this.chatConversation) {
+        this.chatConversation.updateConversation(data.conversation);
+      }
+    };
+
     this.chatManager.on('messages_updated', this.messagesUpdatedHandler);
+    this.chatManager.on('conversation_updated', this.conversationUpdatedHandler);
 
     await this.renderChatContent();
   }
@@ -57,6 +67,7 @@ export class ChatTabHandler {
       this.chatFriendsList = new ChatFriendsList({
         friends: friends,
         onChatWithFriend: (friend: Friend) => this.openChatWithFriend(friend),
+        onGameInvite: (friend: Friend) => this.inviteFriendToGame(friend),
       });
 
       this.container.appendChild(this.chatFriendsList.getElement());
@@ -106,6 +117,20 @@ export class ChatTabHandler {
     }
   }
 
+  private async inviteFriendToGame(friend: Friend): Promise<void> {
+    try {
+      const result = await apiService.inviteFriendToPong(friend.id);
+
+      if (result.success) {
+        console.log(`✅ Invitation sent to ${friend.username}`);
+      } else {
+        console.error(`❌ Failed to invite ${friend.username}:`, result.message);
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+    }
+  }
+
   private renderErrorMessage(message: string): void {
     this.container.innerHTML = '';
     const errorDiv = document.createElement('div');
@@ -139,6 +164,11 @@ export class ChatTabHandler {
     if (this.messagesUpdatedHandler) {
       this.chatManager.off('messages_updated', this.messagesUpdatedHandler);
       this.messagesUpdatedHandler = undefined;
+    }
+
+    if (this.conversationUpdatedHandler) {
+      this.chatManager.off('conversation_updated', this.conversationUpdatedHandler);
+      this.conversationUpdatedHandler = undefined;
     }
 
     if (this.chatConversation) {

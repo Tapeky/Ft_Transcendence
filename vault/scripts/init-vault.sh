@@ -1,108 +1,120 @@
-#!/bin/bash
-
+#!/bin/sh
 set -e
 
-sleep 10
-# Use the Docker service name
-VAULT_ADDR="http://vault:8200"
-export VAULT_ADDR
-export VAULT_TOKEN="root"
+echo "Waiting for Vault to be ready..."
+sleep 5
 
-# Install jq and curl if not present
-if ! command -v jq &> /dev/null; then
-    echo "📦 Installing jq and curl..."
-    apk add --no-cache jq curl
-fi
-
-echo "⏳ Waiting for Vault dev server to start..."
-
-# Wait for Vault to be ready (dev mode starts much faster)
-until vault status >/dev/null 2>&1; do
-    echo "⏳ Vault not ready yet, waiting..."
-    sleep 2
+# Wait for Vault to be available
+until vault status > /dev/null 2>&1; do
+  echo "Waiting for Vault..."
+  sleep 2
 done
 
-echo "✅ Connected to Vault successfully"
+echo "Vault is ready!"
 
-# Enable secret engines (check if already enabled)
-echo "🏪 Setting up secret engines..."
+# Enable KV secrets engine v2
+echo "Enabling KV secrets engine..."
+vault secrets enable -path=secret -version=2 kv || echo "KV engine already enabled"
 
-if ! vault secrets list | grep -q "^secret/"; then
-    echo "📦 Enabling KV secret engine..."
-    vault secrets enable -path=secret kv-v2
-else
-    echo "✅ KV secret engine already enabled"
-fi
+# ============================================================================
+# DATABASE CREDENTIALS
+# ============================================================================
+echo "Storing database credentials..."
+vault kv put secret/database \
+  username="db_user" \
+  password="secure_db_password_$(date +%s)" \
+  host="database" \
+  port="5432" \
+  database="ft_transcendence"
 
-if ! vault secrets list | grep -q "^transit/"; then
-    echo "🔐 Enabling transit secret engine..."
-    vault secrets enable -path=transit transit
-else
-    echo "✅ Transit secret engine already enabled"
-fi
+# ============================================================================
+# API KEYS
+# ============================================================================
+echo "Storing API keys..."
+vault kv put secret/api \
+  jwt_secret="$(openssl rand -base64 32)" \
+  refresh_token_secret="$(openssl rand -base64 32)" \
+  encryption_key="$(openssl rand -base64 32)"
 
-# Create encryption key for sensitive data (check if exists)
-echo "🗝️  Setting up encryption key..."
-if ! vault list transit/keys 2>/dev/null | grep -q "ft_transcendence"; then
-    echo "🔑 Creating encryption key..."
-    vault write -f transit/keys/ft_transcendence
-else
-    echo "✅ Encryption key already exists"
-fi
+# ============================================================================
+# OAUTH CREDENTIALS (Example)
+# ============================================================================
+echo "Storing OAuth credentials..."
+vault kv put secret/oauth \
+  client_id="your_oauth_client_id" \
+  client_secret="your_oauth_client_secret" \
+  redirect_uri="http://localhost:3000/callback"
 
-# Create policies (always update)
-echo "📜 Creating/updating policies..."
+# ============================================================================
+# SSL/TLS CERTIFICATES (Example - store cert paths or actual certs)
+# ============================================================================
+echo "Storing SSL configuration..."
+vault kv put secret/ssl \
+  cert_path="/etc/nginx/conf/server.crt" \
+  key_path="/etc/nginx/conf/server.key" \
+  ca_bundle_path="/etc/ssl/certs/ca-bundle.crt"
+
+# ============================================================================
+# APPLICATION SECRETS
+# ============================================================================
+echo "Storing application secrets..."
+vault kv put secret/app \
+  session_secret="$(openssl rand -base64 32)" \
+  csrf_token="$(openssl rand -base64 32)" \
+  cookie_secret="$(openssl rand -base64 32)"
+
+# ============================================================================
+# CREATE POLICIES
+# ============================================================================
+echo "Creating Vault policies..."
+
+# Backend service policy
 vault policy write backend-policy - <<EOF
-path "secret/data/ft_transcendence/*" {
-    capabilities = ["read"]
+path "secret/data/database" {
+  capabilities = ["read"]
 }
-path "transit/encrypt/ft_transcendence" {
-    capabilities = ["create", "update"]
+path "secret/data/api" {
+  capabilities = ["read"]
 }
-path "transit/decrypt/ft_transcendence" {
-    capabilities = ["create", "update"]
+path "secret/data/app" {
+  capabilities = ["read"]
+}
+path "secret/data/oauth" {
+  capabilities = ["read"]
+}
+path "secret/data/smtp" {
+  capabilities = ["read"]
 }
 EOF
 
-echo "✅ Policy created/updated"
+# Frontend service policy (if needed)
+vault policy write frontend-policy - <<EOF
+path "secret/data/api" {
+  capabilities = ["read"]
+}
+EOF
 
-# Store application secrets (check if they exist first)
-echo "🔒 Setting up application secrets..."
+# ============================================================================
+# ENABLE AUDIT LOGGING
+# ============================================================================
+echo "Enabling audit logging..."
+vault audit enable file file_path=/vault/logs/audit.log || echo "Audit already enabled"
 
-# Check if config secrets already exist
-if vault kv get secret/ft_transcendence/config >/dev/null 2>&1; then
-    echo "✅ Application config secrets already exist"
-else
-    echo "🔍 Creating application config secrets..."
-    vault kv put secret/ft_transcendence/config \
-        NODE_ENV="development" \
-        DB_NAME="ft_transcendence.db" \
-        DB_PATH="/app/db" \
-        BACKEND_PORT="8000" \
-        JWT_SECRET="$(openssl rand -base64 32)" \
-        JWT_EXPIRES_IN="24h" \
-        BCRYPT_ROUNDS="12" \
-        FRONTEND_PORT="3000" \
-        VITE_API_URL="http://localhost:8000" \
-        ENABLE_HTTPS="true"
-    echo "✅ Application config secrets created"
-fi
+# ============================================================================
+# VERIFICATION
+# ============================================================================
+echo "Verifying secrets..."
+vault kv get secret/database
+vault kv get secret/api
 
-# Store OAuth secrets
-if vault kv get secret/ft_transcendence/oauth >/dev/null 2>&1; then
-    echo "✅ OAuth secrets already exist"
-else
-    echo "🔍 Creating OAuth secrets..."
-    vault kv put secret/ft_transcendence/oauth \
-        GOOGLE_CLIENT_ID="your_google_client_id_here" \
-        GOOGLE_CLIENT_SECRET="your_google_client_secret_here" \
-        GOOGLE_REDIRECT_URI="http://localhost:8000/api/auth/google/callback" \
-        GITHUB_CLIENT_ID="your_github_client_id_here" \
-        GITHUB_CLIENT_SECRET="your_github_client_secret_here" \
-        GITHUB_REDIRECT_URI="http://localhost:8000/api/auth/github/callback"
-    echo "✅ OAuth secrets created"
-fi
-
-echo "🎉 Vault initialization complete!"
-echo "🔍 Available secrets:"
-vault kv list secret/ft_transcendence/ 2>/dev/null || echo "   (Use 'vault kv list secret/ft_transcendence/' to see secrets)"
+echo "============================================"
+echo "Vault initialization complete!"
+echo "============================================"
+echo "Available secrets:"
+echo "  - secret/database (DB credentials)"
+echo "  - secret/api (API keys & tokens)"
+echo "  - secret/oauth (OAuth credentials)"
+echo "  - secret/ssl (SSL/TLS config)"
+echo "  - secret/app (Application secrets)"
+echo "  - secret/smtp (Email config)"
+echo "============================================"

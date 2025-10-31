@@ -9,6 +9,8 @@ export interface FriendOptionsProps {
   avatar: string | null;
   id: number;
   isOpen: boolean;
+  wins: number;
+  losses: number;
   setIsOpen: () => void;
   setDismiss: () => void;
 }
@@ -30,7 +32,7 @@ export class FriendOptions {
 
     const modalContent = document.createElement('div');
     modalContent.className =
-      'z-[65] w-[500px] max-w-[90vw] h-[600px] max-h-[90vh] border-[5px] border-black bg-purple-800 text-[2rem] fixed';
+      'z-[65] w-[700px] h-[900px] border-[5px] border-purple-950 bg-gradient-to-b from-purple-700 to-blue-800 text-[2rem] fixed rounded-md';
 
     const flexContainer = document.createElement('div');
     flexContainer.className = 'flex flex-col h-full z-[65]';
@@ -39,54 +41,56 @@ export class FriendOptions {
     flexContainer.appendChild(this.closeBtn.getElement());
 
     const userInfoSection = document.createElement('div');
-    userInfoSection.className = 'flex justify-center items-start';
+    userInfoSection.className = 'flex justify-center items-start border-b-4 border-white w-4/5 self-center pb-6 mb-6';
     userInfoSection.innerHTML = `
-      <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[150px] w-[150px] border-2 m-5" />
-      <div class="flex flex-col flex-grow items-start justify-start overflow-hidden">
-        <h1 class="text-[2.6rem]">${this.props.username}</h1>
-        <h2>${this.props.displayName}</h2>
+      <div class="flex-1 flex items-center justify-start">
+        <img src="${getAvatarUrl(this.props.avatar)}" alt="icon" class="h-[200px] w-[200px] border-2 m-5" />
+      </div>
+      <div class="flex-1 flex flex-col flex-grow items-start justify-start overflow-hidden">
+        <h1 class="text-[2.6rem]">${this.props.displayName}</h1>
+        <h2>${this.props.username}</h2>
       </div>
     `;
     flexContainer.appendChild(userInfoSection);
 
-    const dashboardSection = document.createElement('div');
-    dashboardSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
-    dashboardSection.innerHTML = `
-      <h2 class="text-[2rem]">▼ See ${this.props.username}'s stats ▼</h2>
-      <div class="h-[100px] w-3/4 text-center">
-        <button 
-          id="dashboard-btn"
-          class="text-[2.5rem] border-2 px-4 hover:scale-110 rounded-md bg-blue-800 w-full h-full transition duration-200"
-        >
-          Dashboard
-        </button>
-      </div>
-    `;
-    flexContainer.appendChild(dashboardSection);
-
-    const gameSection = document.createElement('div');
-    gameSection.className = 'flex flex-col items-center justify-center gap-2 mt-2';
-    gameSection.innerHTML = `
-      <h2 class="text-[1.8rem]">🎮 Challenge ${this.props.username} 🎮</h2>
-      <div class="h-[80px] w-3/4 text-center">
-        <button 
-          id="invite-btn"
-          class="text-[2rem] border-2 px-4 hover:scale-110 rounded-md bg-green-700 w-full h-full transition duration-200"
-        >
-          Send Game Invite
-        </button>
-      </div>
-    `;
-    flexContainer.appendChild(gameSection);
+    const statsSection = document.createElement('div');
+    statsSection.className = 'self-center w-3/4 border-b-4 border-white pb-12 gap-12 flex flex-col';
+    statsSection.innerHTML = `
+            <div class='flex flex-row items-center justify-evenly mt-2 w-full text-[2.5rem]'
+              <h2>Wins : ${this.props.wins}</h2>
+              <h2>Losses : ${this.props.losses}</h2>
+            </div>
+            <div class='flex flex-row items-center justify-evenly'>
+                <div class='flex-1'>
+                  <button id="dashboard-btn" class='text-[2.5rem] hover:scale-110 rounded-md bg-blue-500 h-full transition duration-200 self-center w-3/4'>
+                    Stats
+                  </button>
+                </div>
+                <div class='flex-1'>
+                  ↼ More stats here !
+                </div>
+            </div>
+            <div class='flex flex-row items-center justify-evenly'>
+              <div class='flex-1'>
+                Invite here ! ⇁
+              </div>
+              <div class='flex-1'>
+                <button id="invite-btn" class='text-[2.5rem] hover:scale-110 rounded-md bg-green-500 h-full transition duration-200 self-center w-3/4'>
+                  Fight
+                </button>
+              </div>
+            </div>
+          `;
+          flexContainer.appendChild(statsSection);
 
     const actionsSection = document.createElement('div');
-    actionsSection.className = 'flex-grow flex justify-evenly items-center';
+    actionsSection.className = 'flex-grow flex justify-evenly items-center text-[1.5rem]';
     actionsSection.innerHTML = `
-      <button id="block-btn" class="border-2 h-[60px] w-[60px] mr-2 bg-white border-black">
-        <img src="/src/img/block.svg" alt="block"/>
+      <button id="block-btn" class="w-[200px] h-[70px] bg-red-600 border-white hover:scale-110 hover:bg-red-700 duration-500 rounded-md">
+        Block user
       </button>
-      <button id="remove-btn" class="border-2 h-[60px] w-[60px] mr-2 bg-white border-black">
-        <img src="/src/img/remove.svg" alt="remove"/>
+      <button id="remove-btn" class="w-[200px] h-[70px] bg-red-600 border-white hover:scale-110 hover:bg-red-700 duration-500 rounded-md">
+        Remove friend
       </button>
     `;
     flexContainer.appendChild(actionsSection);
@@ -106,6 +110,9 @@ export class FriendOptions {
 
     const blockBtn = this.element.querySelector('#block-btn');
     blockBtn?.addEventListener('click', () => this.handleBlock());
+
+    const inviteBtn = this.element.querySelector('#invite-btn');
+    inviteBtn?.addEventListener('click', () => this.inviteToPong());
   }
 
   private handleDashboard(): void {
@@ -130,8 +137,56 @@ export class FriendOptions {
       this.props.setIsOpen();
     } catch (error) {
       console.error('Error blocking user:', error);
-      alert(`Erreur lors du blocage: ${error}`);
+      alert(`Block error: ${error}`);
     }
+  }
+
+  private async inviteToPong(): Promise<void> {
+    try {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = true;
+      }
+
+      const result = await apiService.inviteFriendToPong(this.props.id);
+
+      if (result.success) {
+        this.showNotification(`Invitation sent to ${this.props.username}!`, 'success');
+      } else {
+        this.showNotification(result.message || "Erreur lors de l'envoi de l'invitation", 'error');
+      }
+    } catch (error) {
+      console.error('❌ Failed to invite friend to pong:', error);
+      this.showNotification("Invitation failed", 'error');
+    } finally {
+      const inviteBtn = this.element.querySelector('#invite-btn') as HTMLButtonElement;
+      if (inviteBtn) {
+        inviteBtn.disabled = false;
+      }
+    }
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg text-white font-medium transition-all duration-300 transform translate-x-0 ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.classList.add('opacity-100');
+    }, 10);
+
+    setTimeout(() => {
+      notification.classList.add('translate-x-full', 'opacity-0');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   public getElement(): HTMLElement {

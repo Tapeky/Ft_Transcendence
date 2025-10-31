@@ -12,7 +12,12 @@ import { ensureSchema } from './database/init';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
+import { GameManager } from './websocket/game_manager';
+import { VaultService } from './vault/vault';
 
+
+const vaultService = VaultService.getInstance();
+// Environment configuration
 const PORT = parseInt(process.env.BACKEND_PORT || '8000');
 const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
@@ -38,6 +43,12 @@ const server = Fastify({
 
 async function start() {
   try {
+    await vaultService.initialize().catch(err => {
+      console.error('❌ Impossible de charger les secrets depuis Vault:', err);
+    });
+    await vaultService.getOAuthSecrets(); // Ensure secrets are loaded
+    await vaultService.getJwtSecret(); // Ensure JWT secret is loaded
+    // 1. Configuration de la base de données
     console.log('🔌 Connexion à la base de données...');
     const dbManager = DatabaseManager.getInstance();
     const dbPath = path.join(
@@ -83,7 +94,7 @@ async function start() {
     setupWebSocket(server);
     setupRoutes(server);
 
-    server.get('/health', async (request, reply) => {
+    server.get('/health', async () => {
       const dbStats = await dbManager.getStats();
       return {
         status: 'healthy',
@@ -94,7 +105,7 @@ async function start() {
       };
     });
 
-    server.get('/', async (request, reply) => {
+    server.get('/', async () => {
       return {
         name: 'ft_transcendence API',
         version: '1.0.0',
@@ -111,32 +122,34 @@ async function start() {
       };
     });
 
-    server.setErrorHandler(async (error, request, reply) => {
+    server.setErrorHandler(async (error, _request, reply) => {
       server.log.error(error);
 
-      if ((error as any).code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
+      const errorWithCode = error as Error & { code?: string; validation?: unknown };
+
+      if (errorWithCode.code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
           success: false,
           error: "Token d'authentification requis",
         });
       }
 
-      if ((error as any).code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
+      if (errorWithCode.code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
         return reply.status(401).send({
           success: false,
           error: "Token d'authentification invalide",
         });
       }
 
-      if ((error as any).validation) {
+      if (errorWithCode.validation) {
         return reply.status(400).send({
           success: false,
           error: 'Données invalides',
-          details: (error as any).validation,
+          details: errorWithCode.validation,
         });
       }
 
-      if ((error as any).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (errorWithCode.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return reply.status(409).send({
           success: false,
           error: 'Cette ressource existe déjà',
@@ -163,20 +176,36 @@ async function start() {
     `);
 
     if (NODE_ENV === 'production') {
-      setInterval(
-        async () => {
-          try {
-            await dbManager.cleanupExpiredTokens();
-          } catch (error) {
-            server.log.error('Erreur lors du nettoyage des tokens:', error);
-          }
-        },
-        60 * 60 * 1000
-      );
+      setInterval(async () => {
+        try {
+          await dbManager.cleanupExpiredTokens();
+        } catch (error) {
+          server.log.error('Erreur lors du nettoyage des tokens:' + (error instanceof Error ? error.message : String(error)));
+        }
+      }, 60 * 60 * 1000);
     }
+
+    setInterval(async () => {
+      try {
+        const db = DatabaseManager.getInstance().getDb();
+        const result = await db.run(`
+          UPDATE users 
+          SET is_online = false 
+          WHERE is_online = true 
+          AND last_login < datetime('now', '-5 minutes')
+        `);
+        
+        if (result.changes && result.changes > 0) {
+          server.log.info(`${result.changes} utilisateurs marqués comme hors ligne (inactifs)`);
+        }
+      } catch (error) {
+        server.log.error('Erreur lors du nettoyage des utilisateurs inactifs:' + (error instanceof Error ? error.message : String(error)));
+      }
+    }, 5 * 60 * 1000);
+
+    GameManager.instance.registerLoop();
   } catch (err) {
-    console.error('❌ Erreur de démarrage du serveur:', err);
-    server.log.error('❌ Erreur de démarrage du serveur:', err);
+    server.log.error('❌ Erreur de démarrage du serveur:'+ (err instanceof Error ? err.message : String(err)));
     process.exit(1);
   }
 }
@@ -190,7 +219,7 @@ async function gracefulShutdown(signal: string) {
     console.log('Server stopped');
     process.exit(0);
   } catch (error) {
-    console.error('Error during shutdown:', error);
+    console.error('Error during shutdown:' + (error instanceof Error ? error.message : String(error)));
     process.exit(1);
   }
 }

@@ -72,18 +72,10 @@ export class TournamentService {
     };
   }
 
-  async joinTournament(
-    tournamentId: string,
+  private validateJoinTournament(
+    tournament: any,
     alias: string
-  ): Promise<{ success: boolean; message?: string }> {
-    const tournament = await this.db.get(
-      `
-      SELECT id, max_players, current_players, status 
-      FROM tournaments WHERE id = ?
-    `,
-      [tournamentId]
-    );
-
+  ): { success: boolean; message?: string } {
     if (!tournament) {
       return { success: false, message: 'Tournament not found' };
     }
@@ -96,88 +88,208 @@ export class TournamentService {
       return { success: false, message: 'Tournament is full' };
     }
 
-    const existingParticipant = await this.db.get(
-      `
-      SELECT id FROM tournament_participants 
-      WHERE tournament_id = ? AND alias = ?
-    `,
-      [tournamentId, alias]
-    );
-
-    if (existingParticipant) {
-      return { success: false, message: 'Alias already taken in this tournament' };
+    if (!alias || alias.trim().length === 0) {
+      return { success: false, message: 'Alias cannot be empty' };
     }
 
-    await this.db.run(`INSERT INTO tournament_participants (tournament_id, alias) VALUES (?, ?)`, [
-      tournamentId,
-      alias,
-    ]);
-
-    await this.db.run(
-      `
-      UPDATE tournaments 
-      SET current_players = current_players + 1 
-      WHERE id = ?
-    `,
-      [tournamentId]
-    );
+    if (alias.length > 50) {
+      return { success: false, message: 'Alias too long (max 50 characters)' };
+    }
 
     return { success: true };
+  }
+
+  async joinTournament(
+    tournamentId: string,
+    alias: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      return await this.db.run('BEGIN TRANSACTION').then(async () => {
+        try {
+          // Lock tournament row for update to prevent race conditions
+          const tournament = await this.db.get(
+            `
+            SELECT id, max_players, current_players, status 
+            FROM tournaments 
+            WHERE id = ?
+          `,
+            [tournamentId]
+          );
+
+          // Validate tournament and alias
+          const validation = this.validateJoinTournament(tournament, alias);
+          if (!validation.success) {
+            await this.db.run('ROLLBACK');
+            return validation;
+          }
+
+          // Check if alias already exists in this tournament
+          const existingParticipant = await this.db.get(
+            `
+            SELECT 1 FROM tournament_participants 
+            WHERE tournament_id = ? AND alias = ?
+          `,
+            [tournamentId, alias]
+          );
+
+          if (existingParticipant) {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Alias already taken in this tournament' };
+          }
+
+          // Insert participant
+          await this.db.run(
+            `INSERT INTO tournament_participants (tournament_id, alias) VALUES (?, ?)`,
+            [tournamentId, alias]
+          );
+
+          // Update tournament player count
+          const updateResult = await this.db.run(
+            `
+            UPDATE tournaments 
+            SET current_players = current_players + 1 
+            WHERE id = ? AND current_players < max_players
+          `,
+            [tournamentId]
+          );
+
+          // Verify update was successful (affected row count)
+          if (updateResult.changes === 0) {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Tournament is full or no longer exists' };
+          }
+
+          await this.db.run('COMMIT');
+          return { success: true };
+        } catch (error) {
+          await this.db.run('ROLLBACK');
+          throw error;
+        }
+      });
+    } catch (error) {
+      console.error('Error joining tournament:', error);
+      return { 
+        success: false, 
+        message: 'An error occurred while joining the tournament' 
+      };
+    }
   }
 
   async startTournament(
     tournamentId: string
   ): Promise<{ success: boolean; bracket?: any; message?: string }> {
-    const tournament = await this.db.get(
-      `
-      SELECT id, max_players, current_players, status 
-      FROM tournaments WHERE id = ?
-    `,
-      [tournamentId]
-    );
+    try {
+      return await this.db.run('BEGIN TRANSACTION').then(async () => {
+        try {
+          // Lock tournament row
+          const tournament = await this.db.get(
+            `
+            SELECT id, max_players, current_players, status 
+            FROM tournaments WHERE id = ?
+          `,
+            [tournamentId]
+          );
 
-    if (!tournament) {
-      return { success: false, message: 'Tournament not found' };
+          if (!tournament) {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Tournament not found' };
+          }
+
+          if (tournament.status !== 'open') {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Tournament is not in open state' };
+          }
+
+          if (tournament.current_players !== tournament.max_players) {
+            await this.db.run('ROLLBACK');
+            return { 
+              success: false, 
+              message: `Tournament is not full yet (${tournament.current_players}/${tournament.max_players})` 
+            };
+          }
+
+          // Get participants
+          const participants = await this.getTournamentParticipants(tournament.id);
+          
+          if (participants.length !== tournament.max_players) {
+            await this.db.run('ROLLBACK');
+            return { 
+              success: false, 
+              message: 'Participant count mismatch with tournament configuration' 
+            };
+          }
+
+          // Generate bracket
+          const bracket = BracketGenerator.generateBracket(
+            participants.map(p => ({ tournament_id: p.tournament_id, alias: p.alias }))
+          );
+
+          // Update tournament status
+          const updateResult = await this.db.run(
+            `
+            UPDATE tournaments 
+            SET status = 'running', bracket_data = ?, started_at = CURRENT_TIMESTAMP 
+            WHERE id = ? AND status = 'open'
+          `,
+            [JSON.stringify(bracket), tournamentId]
+          );
+
+          if (updateResult.changes === 0) {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Tournament state changed, cannot start' };
+          }
+
+          await this.db.run('COMMIT');
+          return { success: true, bracket };
+        } catch (error) {
+          await this.db.run('ROLLBACK');
+          throw error;
+        }
+      });
+    } catch (error) {
+      console.error('Error starting tournament:', error);
+      return { 
+        success: false, 
+        message: 'An error occurred while starting the tournament' 
+      };
     }
-
-    if (tournament.status !== 'open') {
-      return { success: false, message: 'Tournament is not in open state' };
-    }
-
-    if (tournament.current_players !== tournament.max_players) {
-      return { success: false, message: 'Tournament is not full yet' };
-    }
-
-    const participants = await this.getTournamentParticipants(tournament.id);
-    const bracket = BracketGenerator.generateBracket(
-      participants.map(p => ({ tournament_id: p.tournament_id, alias: p.alias }))
-    );
-
-    await this.db.run(
-      `
-      UPDATE tournaments 
-      SET status = 'running', bracket_data = ?, started_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `,
-      [JSON.stringify(bracket), tournamentId]
-    );
-
-    return { success: true, bracket };
   }
 
   async deleteTournament(tournamentId: string): Promise<{ success: boolean; message?: string }> {
-    const tournament = await this.db.get(`SELECT id FROM tournaments WHERE id = ?`, [tournamentId]);
+    try {
+      return await this.db.run('BEGIN TRANSACTION').then(async () => {
+        try {
+          const tournament = await this.db.get(`SELECT id FROM tournaments WHERE id = ?`, [
+            tournamentId,
+          ]);
 
-    if (!tournament) {
-      return { success: false, message: 'Tournament not found' };
+          if (!tournament) {
+            await this.db.run('ROLLBACK');
+            return { success: false, message: 'Tournament not found' };
+          }
+
+          // Delete participants first (foreign key constraint)
+          await this.db.run(`DELETE FROM tournament_participants WHERE tournament_id = ?`, [
+            tournamentId,
+          ]);
+
+          // Delete tournament
+          await this.db.run(`DELETE FROM tournaments WHERE id = ?`, [tournamentId]);
+
+          await this.db.run('COMMIT');
+          return { success: true };
+        } catch (error) {
+          await this.db.run('ROLLBACK');
+          throw error;
+        }
+      });
+    } catch (error) {
+      console.error('Error deleting tournament:', error);
+      return { 
+        success: false, 
+        message: 'An error occurred while deleting the tournament' 
+      };
     }
-
-    await this.db.run(`DELETE FROM tournament_participants WHERE tournament_id = ?`, [
-      tournamentId,
-    ]);
-    await this.db.run(`DELETE FROM tournaments WHERE id = ?`, [tournamentId]);
-
-    return { success: true };
   }
 
   private async getTournamentParticipants(tournamentId: number): Promise<TournamentParticipant[]> {
