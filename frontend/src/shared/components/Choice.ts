@@ -18,7 +18,7 @@ export class Choice {
         <div 
           id="pong-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
-                 text-[4rem] bg-[url('./img/jinx.gif')] bg-cover 
+                 text-[4rem] bg-[url('./img/pong.gif')] bg-cover 
                  flex justify-center items-center hover:scale-125 duration-500 cursor-pointer"
           data-route="/game"
         >

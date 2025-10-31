@@ -37,7 +37,7 @@ export class AuthPage {
 
       <div class="flex flex-grow items-center justify-center p-4 bg-gradient-to-t from-purple-900 to-blue-900">
  
-        <div class="flex-1 flex flex-col justify-center items-center text-white">
+        <div id='egg' class="flex-1 flex flex-col justify-center items-center text-white">
           jsp quoi mettre ici
           <img class='border-2 border-white h-[600px] w-[400px]' src='/src/img/night.jpg'>
         </div>
@@ -292,6 +292,10 @@ export class AuthPage {
 
     this.setupPremiumButtons();
 
+    const imgEgg = this.element.querySelector('#egg');
+
+    imgEgg?.addEventListener('click', () => this.changeImg());
+
     const githubBtn = this.element.querySelector('#github-auth');
     const googleBtn = this.element.querySelector('#google-auth');
 
@@ -309,6 +313,16 @@ export class AuthPage {
         });
       }
     });
+  }
+
+  private changeImg(): void {
+    const imgEgg = this.element.querySelector('#egg');
+
+    console.log('click');
+    if (!imgEgg)
+      return;
+
+    imgEgg.innerHTML = "<img class='border-2 border-white h-[400px] w-[400px]' src='/src/img/jinx.gif'>"
   }
 
   private switchMode(newMode: 'login' | 'register'): void {
