@@ -1,6 +1,7 @@
 import { Database } from 'sqlite';
 import { User, UserCreateInput, UserPublic, SecurityLog } from '../types/database';
 import bcrypt from 'bcrypt';
+import { generateOTPSecret } from '../auth/totp'
 
 export class UserRepository {
   constructor(private db: Database) {}
@@ -60,6 +61,41 @@ export class UserRepository {
 
   async verifyPassword(user: User, password: string): Promise<boolean> {
     return await bcrypt.compare(password, user.password_hash);
+  }
+
+  async update2faStatus(userId: number, isEnabled: boolean) : Promise<void> {
+    await this.db.run(
+      `
+      UPDATE users
+      SET has_2fa_enabled = ?
+      WHERE id = ?
+      `,
+      [isEnabled, userId]
+    )
+  }
+
+  async get2faSecretAndCreateIfNull(userId: number) : Promise<string> {
+    const request = await this.db.get(
+      `
+      SELECT totp_secret
+      FROM users
+      WHERE id = ?
+      `,
+      [userId]
+    ) as { totp_secret?: string };
+    var secret = request.totp_secret;
+    if (secret === null) {
+      secret = generateOTPSecret();
+      await this.db.run(
+        `
+        UPDATE users
+        SET totp_secret = ?
+        WHERE id = ?
+        `,
+        [secret, userId]
+      )
+    }
+    return secret!;
   }
 
   async updateOnlineStatus(userId: number, isOnline: boolean): Promise<void> {

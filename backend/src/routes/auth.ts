@@ -4,6 +4,7 @@ import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
 import { validateInput, authenticateToken } from '../middleware';
 import { LoginCredentials, RegisterCredentials } from '../types/database';
+import { getOTP, TOTP_DIGITS } from '../auth/totp';
 
 export async function authRoutes(server: FastifyInstance) {
   const db = DatabaseManager.getInstance().getDb();
@@ -126,6 +127,7 @@ export async function authRoutes(server: FastifyInstance) {
           body: {
             email: { required: true, type: 'email' },
             password: { required: true, type: 'string' },
+            totp_password: { type: 'string' }
           },
         }),
       ],
@@ -165,6 +167,32 @@ export async function authRoutes(server: FastifyInstance) {
             success: false,
             error: 'Wrong email or password',
           });
+        }
+
+        if (user.has_2fa_enabled) {
+          const currentOTP = getOTP(user.totp_secret!);
+          const userOTP = body.totp_password;
+          if (!userOTP || userOTP.length != TOTP_DIGITS) {
+            return reply.status(401).send({
+              success: false,
+              error: 'Ce compte est protégé par authentification à deux facteurs.',
+            });
+          }
+
+          if (currentOTP != userOTP) {
+            await userRepo.logSecurityAction({
+              action: 'LOGIN_FAILED',
+              ip_address: request.ip,
+              user_agent: request.headers['user-agent'],
+              success: false,
+              details: JSON.stringify({ reason: 'totp_invalid' }),
+            });
+
+            return reply.status(401).send({
+              success: false,
+              error: 'Clé 2FA incorrecte.',
+            });
+          }
         }
 
         await userRepo.updateOnlineStatus(user.id, true);
@@ -291,6 +319,8 @@ export async function authRoutes(server: FastifyInstance) {
             total_losses: stats.total_losses || 0,
             total_games: stats.total_games || 0,
             created_at: user.created_at,
+            has_2fa_enabled: user.has_2fa_enabled,
+            stats,
           },
         });
       } catch (error: any) {

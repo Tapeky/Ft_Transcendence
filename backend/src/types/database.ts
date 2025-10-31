@@ -17,6 +17,9 @@ export interface User {
   google_id?: string;
   github_id?: string;
 
+  totp_secret?: string;
+  has_2fa_enabled: boolean;
+
   data_consent: boolean;
   data_consent_date?: string;
 }
@@ -58,6 +61,7 @@ export interface SecurityLog {
 export interface LoginCredentials {
   email: string;
   password: string;
+  totp_password?: string;
 }
 
 export interface RegisterCredentials {
