@@ -76,10 +76,17 @@ tmp/
 temp/
 *.sqlite
 *.db
+!db/*.db
 .dockerignore
+*.sh
+!vault/scripts/*.sh
+.env.backup*
+backend.log
 test-results/
 playwright-report/
 coverage/
+
+# Lock files
 # package-lock.json
 # */package-lock.json
 yarn.lock

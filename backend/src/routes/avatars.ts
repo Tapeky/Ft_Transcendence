@@ -146,7 +146,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
             await fs.unlink(oldFilePath);
           }
         } catch (error) {
-          request.log.warn("Impossible de supprimer l'ancien avatar:", error);
+          request.log.warn("Impossible de supprimer l'ancien avatar:" + (error instanceof Error ? error.message : String(error)));
         }
 
         await userRepo.updateProfile(currentUser.id, { avatar_url: avatarUrl });

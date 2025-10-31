@@ -83,7 +83,7 @@ export class MatchService {
       ]
     );
 
-    const matchId = result.lastID;
+    const matchId = result.lastID!;
 
     if (tournament_id && winner_id) {
       await this.advanceTournamentBracket(tournament_id, matchId, winner_id);
@@ -163,7 +163,7 @@ export class MatchService {
     baseQuery += ` ORDER BY m.created_at DESC LIMIT ? OFFSET ?`;
     queryParams.push(limit, offset);
 
-    return await this.db.query(baseQuery, queryParams);
+    return await this.db.query<MatchRecord>(baseQuery, queryParams);
   }
 
   async createDirectMatch(
@@ -180,10 +180,8 @@ export class MatchService {
       throw new Error('Cannot create match against yourself');
     }
 
-    const opponent = await this.db.query(
-      `
-      SELECT id, username FROM users WHERE id = ?
-    `,
+    const opponent = await this.db.query<{ id: number; username: string }>(
+      `SELECT id, username FROM users WHERE id = ?`,
       [player2_id]
     );
 
@@ -210,7 +208,7 @@ export class MatchService {
   }
 
   async getLiveMatches(): Promise<MatchRecord[]> {
-    return await this.db.query(`
+    return await this.db.query<MatchRecord>(`
       SELECT m.*, t.name as tournament_name,
              u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
              u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
@@ -224,7 +222,7 @@ export class MatchService {
   }
 
   async getMatchById(matchId: number): Promise<MatchRecord | null> {
-    const matches = await this.db.query(
+    const matches = await this.db.query<MatchRecord>(
       `
       SELECT m.*, t.name as tournament_name,
              u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
@@ -248,10 +246,8 @@ export class MatchService {
   ): Promise<MatchRecord> {
     const { player1_score, player2_score, winner_id } = result;
 
-    const match = await this.db.query(
-      `
-      SELECT * FROM matches WHERE id = ?
-    `,
+    const match = await this.db.query<MatchRecord>(
+      `SELECT * FROM matches WHERE id = ?`,
       [matchId]
     );
 
@@ -301,10 +297,8 @@ export class MatchService {
   }
 
   async startMatch(matchId: number, userId: number): Promise<void> {
-    const match = await this.db.query(
-      `
-      SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)
-    `,
+    const match = await this.db.query<MatchRecord>(
+      `SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)`,
       [matchId, userId, userId]
     );
 
@@ -378,11 +372,9 @@ export class MatchService {
     matchId: number,
     winnerId: number
   ): Promise<void> {
-    const remainingMatches = await this.db.query(
-      `
-      SELECT COUNT(*) as count FROM matches 
-      WHERE tournament_id = ? AND status != 'completed'
-    `,
+    const remainingMatches = await this.db.query<{ count: number }>(
+      `SELECT COUNT(*) as count FROM matches 
+       WHERE tournament_id = ? AND status != 'completed'`,
       [tournamentId]
     );
 

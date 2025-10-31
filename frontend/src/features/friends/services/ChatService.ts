@@ -1,8 +1,9 @@
 import { Friend, apiService } from '../../../shared/services/api';
-import { PongInviteNotification, PongInviteData } from '../components/PongInviteNotification';
+import { PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
 import { config } from '../../../config/environment';
+import { authManager } from '../../../core/auth/AuthManager';
 
 export interface Conversation {
   id: number;
@@ -96,16 +97,20 @@ export class ChatService {
 
   private listeners: Map<string, ChatEventListener[]> = new Map();
   private reconnectAttempts = 0;
+  private dismissedInvitations: Set<string> = new Set();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private syncInterval: number | null = null;
+  private intentionalDisconnect = false;
 
   private getApiUrl(endpoint: string): string {
     const API_BASE_URL = config.API_BASE_URL;
     return `${API_BASE_URL}${endpoint}`;
   }
 
-  private constructor() {}
+  private constructor() {
+    this.loadDismissedInvitations();
+  }
 
   static getInstance(): ChatService {
     if (!ChatService.instance) {
@@ -124,6 +129,8 @@ export class ChatService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
     }
+
+    this.intentionalDisconnect = false;
 
     try {
       this.ws = apiService.connectWebSocket();
@@ -178,6 +185,10 @@ export class ChatService {
   }
 
   private attemptReconnect(): void {
+    if (this.intentionalDisconnect) {
+      return;
+    }
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnect attempts reached');
       return;
@@ -194,6 +205,8 @@ export class ChatService {
   }
 
   disconnect(): void {
+    this.intentionalDisconnect = true;
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -305,6 +318,18 @@ export class ChatService {
         this.handleConnected(data);
         break;
 
+      case 'tournament_match_ready':
+        this.emit('tournament_match_ready', data.data);
+        break;
+
+      case 'tournament_completed':
+        this.emit('tournament_completed', data.data);
+        break;
+
+      case 'friend_pong_expired':
+        this.emit('friend_pong_expired', data);
+        break;
+
       default:
         console.warn('Unhandled message type:', data.type);
     }
@@ -330,16 +355,79 @@ export class ChatService {
     }
   }
 
-  private handlePongInvite(data: PongInviteData): void {
-    const inviteModal = new PongInviteNotification(data, () => {});
+  private async addInviteMessageToChat(data: PongInviteData): Promise<void> {
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) {
+      return;
+    }
 
-    inviteModal.show();
+    let conversation: Conversation | undefined;
+    for (const conv of this.state.conversations.values()) {
+      if (
+        (conv.user1_id === currentUserId && conv.user2_id === data.fromUserId) ||
+        (conv.user2_id === currentUserId && conv.user1_id === data.fromUserId)
+      ) {
+        conversation = conv;
+        break;
+      }
+    }
+
+    if (!conversation) {
+      try {
+        conversation = await this.createOrGetConversation(data.fromUserId);
+      } catch (error) {
+        return;
+      }
+    }
+
+    const inviteMessage: Message = {
+      id: Date.now(),
+      conversation_id: conversation.id,
+      sender_id: data.fromUserId,
+      content: 'Invited you to play Pong!',
+      type: 'game_invite',
+      metadata: JSON.stringify({
+        inviteId: data.inviteId,
+        expiresAt: data.expiresAt,
+      }),
+      created_at: new Date().toISOString(),
+      username: data.fromUsername || 'Friend',
+      avatar_url: undefined,
+      display_name: data.fromUsername,
+    };
+
+    const messages = this.state.messages.get(conversation.id) || [];
+    const newMessages = [...messages, inviteMessage].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    this.state.messages.set(conversation.id, newMessages);
+
+    conversation.last_message = inviteMessage.content;
+    conversation.last_message_at = inviteMessage.created_at;
+    this.state.conversations.set(conversation.id, conversation);
+
+    this.saveToLocalStorage();
+    this.emit('message_received', { message: inviteMessage, conversation });
+    this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+  }
+
+  private getCurrentUserId(): number | null {
+    const currentUser = authManager.getCurrentUser();
+    return currentUser?.id || null;
+  }
+
+  private async handlePongInvite(data: PongInviteData): Promise<void> {
+    try {
+      await this.addInviteMessageToChat(data);
+    } catch (error) {
+      return;
+    }
 
     this.emit('friend_pong_invite', data);
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Invitation Pong de ${data.fromUsername || 'un ami'}`, {
-        body: "Cliquez pour voir l'invitation",
+      new Notification(`Pong invitation from ${data.fromUsername || 'a friend'}`, {
+        body: "Click here to see your invitation",
         icon: '/favicon.png',
       });
     }
@@ -514,20 +602,43 @@ export class ChatService {
           },
         }
       );
+
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 500) {
+          console.warn(`Conversation ${conversationId} not found or inaccessible, cleaning localStorage`);
+
+          this.state.messages.delete(conversationId);
+          this.state.conversations.delete(conversationId);
+
+          if (this.state.currentConversationId === conversationId) {
+            this.state.currentConversationId = null;
+            localStorage.removeItem('chat_current_conversation');
+          }
+
+          this.saveToLocalStorage();
+
+          return [];
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       const serverMessages = data.messages || [];
 
       const existingMessages = this.state.messages.get(conversationId) || [];
       const mergedMessages = this.mergeMessages(existingMessages, serverMessages);
 
-      this.state.messages.set(conversationId, mergedMessages);
+      // Filter out dismissed invitations
+      const filteredMessages = this.filterDismissedInvitations(mergedMessages);
+
+      this.state.messages.set(conversationId, filteredMessages);
       this.state.currentConversationId = conversationId;
 
       this.saveToLocalStorage();
 
-      this.emit('messages_loaded', { conversationId, messages: mergedMessages });
+      this.emit('messages_loaded', { conversationId, messages: filteredMessages });
 
-      return mergedMessages;
+      return filteredMessages;
     } catch (error) {
       console.error('Error loading messages:', error);
       throw error;
@@ -565,7 +676,64 @@ export class ChatService {
   }
 
   getConversationMessages(conversationId: number): Message[] {
-    return this.state.messages.get(conversationId) || [];
+    const messages = this.state.messages.get(conversationId) || [];
+    return this.filterDismissedInvitations(messages);
+  }
+
+  removeMessageByInviteId(conversationId: number, inviteId: string): void {
+    this.dismissedInvitations.add(inviteId);
+    this.saveDismissedInvitations();
+
+    const messages = this.state.messages.get(conversationId);
+    if (!messages) return;
+
+    const filteredMessages = messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return metadata.inviteId !== inviteId;
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
+
+    this.state.messages.set(conversationId, filteredMessages);
+    this.saveToLocalStorage();
+  }
+
+  private loadDismissedInvitations(): void {
+    try {
+      const stored = localStorage.getItem('chat_dismissed_invitations');
+      if (stored) {
+        this.dismissedInvitations = new Set(JSON.parse(stored));
+      }
+    } catch (error) {
+      return;
+    }
+  }
+
+  private saveDismissedInvitations(): void {
+    try {
+      localStorage.setItem('chat_dismissed_invitations', JSON.stringify(Array.from(this.dismissedInvitations)));
+    } catch (error) {
+      return;
+    }
+  }
+
+  private filterDismissedInvitations(messages: Message[]): Message[] {
+    return messages.filter(message => {
+      if (message.type === 'game_invite' && message.metadata) {
+        try {
+          const metadata = JSON.parse(message.metadata);
+          return !this.dismissedInvitations.has(metadata.inviteId);
+        } catch (e) {
+          return true;
+        }
+      }
+      return true;
+    });
   }
 
   getCurrentConversationId(): number | null {
@@ -695,6 +863,7 @@ export class ChatService {
 
       localStorage.setItem('chat_conversations', JSON.stringify(conversationsArray));
       localStorage.setItem('chat_messages', JSON.stringify(messagesArray));
+      localStorage.setItem('chat_last_sync', Date.now().toString());
       localStorage.setItem(
         'chat_current_conversation',
         this.state.currentConversationId?.toString() || ''
@@ -733,6 +902,14 @@ export class ChatService {
 
   private loadFromLocalStorage(): void {
     try {
+      const lastSync = localStorage.getItem('chat_last_sync');
+      const cacheAge = lastSync ? Date.now() - parseInt(lastSync) : Infinity;
+      
+      // Invalider le cache si plus vieux que 5 minutes
+      if (cacheAge > 5 * 60 * 1000) {
+        return;
+      }
+
       const conversationsData = localStorage.getItem('chat_conversations');
       const messagesData = localStorage.getItem('chat_messages');
       const currentConversationData = localStorage.getItem('chat_current_conversation');
@@ -762,7 +939,13 @@ export class ChatService {
       await this.loadConversations();
 
       if (this.state.currentConversationId) {
-        await this.loadConversationMessages(this.state.currentConversationId);
+        try {
+          await this.loadConversationMessages(this.state.currentConversationId);
+        } catch (error) {
+          console.warn('Failed to load current conversation, clearing it:', error);
+          this.state.currentConversationId = null;
+          localStorage.removeItem('chat_current_conversation');
+        }
       }
 
       this.restoreState();
@@ -776,15 +959,56 @@ export class ChatService {
     try {
       await this.loadConversations();
 
-      if (conversationId) {
-        await this.loadConversationMessages(conversationId);
-      } else if (this.state.currentConversationId) {
-        await this.loadConversationMessages(this.state.currentConversationId);
+      const targetConversationId = conversationId || this.state.currentConversationId;
+
+      if (targetConversationId) {
+        await this.loadConversationMessages(targetConversationId);
+
+        // Emit conversation_updated to trigger avatar refresh in UI
+        const conversation = this.state.conversations.get(targetConversationId);
+        if (conversation) {
+          this.emit('conversation_updated', { conversation });
+        }
       }
     } catch (error) {
       console.error('Error refreshing messages:', error);
       throw error;
     }
+  }
+
+  async forceRefresh(): Promise<void> {
+    try {
+      // Invalider le cache
+      localStorage.removeItem('chat_conversations');
+      localStorage.removeItem('chat_messages');
+      localStorage.removeItem('chat_last_sync');
+      
+      // Recharger depuis le serveur
+      await this.loadConversations();
+      
+      if (this.state.currentConversationId) {
+        await this.loadConversationMessages(this.state.currentConversationId);
+        
+        // Force refresh des avatars dans la conversation actuelle
+        const conversation = this.state.conversations.get(this.state.currentConversationId);
+        if (conversation) {
+          this.emit('conversation_updated', { conversation });
+        }
+      }
+      
+      this.emit('data_refreshed', null);
+    } catch (error) {
+      console.error('Error forcing refresh:', error);
+      throw error;
+    }
+  }
+
+  getAvatarUrl(avatarPath: string | undefined, addTimestamp: boolean = true): string {
+    if (!avatarPath) {
+      return '/default-avatar.png';
+    }
+    // Ajouter un timestamp pour éviter le cache du navigateur
+    return addTimestamp ? `${avatarPath}?t=${Date.now()}` : avatarPath;
   }
 
   startPeriodicSync(): void {

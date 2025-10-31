@@ -69,13 +69,13 @@ export class RequestsTabHandler {
         
         <!-- Action Buttons -->
         <div class="flex gap-2 items-end ml-12">
-          <button class="block-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+          <button class="block-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end hover:scale-110 duration-100">
             <img src="/src/img/block.svg" alt="block" />
           </button>
-          <button class="reject-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+          <button class="reject-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end hover:scale-110 duration-100">
             <img src="/src/img/reject.svg" alt="reject" />
           </button>
-          <button class="accept-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end">
+          <button class="accept-btn border-2 min-h-[40px] w-[40px] bg-white border-black mb-4 self-end hover:scale-110 duration-100">
             <img src="/src/img/accept.svg" alt="accept" />
           </button>
         </div>

@@ -154,13 +154,16 @@ class ApiService {
       }
       return data;
     } catch (error) {
-      if (
-        error instanceof Error &&
-        !['taken', 'used', 'exists', 'invalid', 'incorrect'].some(word =>
-          error.message.includes(word)
-        )
-      ) {
-        console.error('API error:', error.message);
+      if (error instanceof Error) {
+        const isUserError = [
+          'taken', 'used', 'exists', 'invalid', 'incorrect',
+          'Wrong', 'password', 'email', 'already', 'required',
+          'must', 'cannot', 'not found', 'forbidden'
+        ].some(word => error.message.toLowerCase().includes(word.toLowerCase()));
+
+        if (!isUserError) {
+          console.error('API error:', error.message);
+        }
       }
       throw error;
     }

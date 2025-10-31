@@ -14,11 +14,6 @@ class App {
 
     try {
       await application.initialize();
-
-      if (process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') {
-        const { initUserSwitcher } = await import('./dev/components/UserSwitcher');
-        initUserSwitcher();
-      }
     } catch (error) {
       console.error('App init failed:', error);
 

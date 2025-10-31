@@ -1532,4 +1532,9 @@
   .animate-fadeOut {
     animation: fadeOut 0.3s ease;
   }
+
+  /* Chat message fade-in animation */
+  .animate-fadeIn {
+    animation: fade-in 0.4s ease-out;
+  }
 }

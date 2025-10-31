@@ -29,6 +29,23 @@ interface RecordMatchBody {
   match_data?: string; // JSON pour données supplémentaires
 }
 
+interface MatchRecord {
+  id: number;
+  player1_id?: number | null;
+  player2_id?: number | null;
+  player1_guest_name?: string | null;
+  player2_guest_name?: string | null;
+  player1_score: number;
+  player2_score: number;
+  winner_id?: number | null;
+  status: string;
+  tournament_id?: number | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_seconds?: number | null;
+  [key: string]: any;
+}
+
 interface CreateMatchBody {
   player2_id: number;
   game_type?: string;
@@ -150,76 +167,75 @@ export async function matchRoutes(server: FastifyInstance) {
           ]
         );
 
-        const matchId = result.lastID;
-
-        if (finalP1Id) {
-          const p1IsWinner = winner_id === finalP1Id;
-          await db.execute(
-            `
-          UPDATE users
-          SET total_games = total_games + 1,
-              total_wins = total_wins + ?,
-              total_losses = total_losses + ?
-          WHERE id = ?
-        `,
-            [p1IsWinner ? 1 : 0, p1IsWinner ? 0 : 1, finalP1Id]
-          );
-        }
-
-        if (finalP2Id) {
-          const p2IsWinner = winner_id === finalP2Id;
-          await db.execute(
-            `
-          UPDATE users
-          SET total_games = total_games + 1,
-              total_wins = total_wins + ?,
-              total_losses = total_losses + ?
-          WHERE id = ?
-        `,
-            [p2IsWinner ? 1 : 0, p2IsWinner ? 0 : 1, finalP2Id]
-          );
-        }
-
-        if (tournament_id && winner_id) {
-          await advanceTournamentBracket(tournament_id, matchId, winner_id, db);
-        }
-
-        server.log.info(
-          `Match recorded: ID=${matchId}, Players=${finalP1Id || finalP1GuestName} vs ${finalP2Id || finalP2GuestName}, Score=${player1_score}-${player2_score}`
-        );
-
-        const createdMatch = await getMatchById(matchId, db);
-
-        reply.status(201).send({
-          success: true,
-          message: 'Match enregistré avec succès',
-          data: createdMatch,
-        });
-      } catch (error) {
-        request.log.error('Erreur enregistrement match:', error);
-
-        if (error instanceof Error) {
-          if (error.message.includes('FOREIGN KEY constraint failed')) {
-            return reply.status(400).send({
-              success: false,
-              error: 'ID joueur invalide',
-            });
-          }
-          if (error.message.includes('UNIQUE constraint failed')) {
-            return reply.status(409).send({
-              success: false,
-              error: 'Match déjà enregistré',
-            });
-          }
-        }
-
-        reply.status(500).send({
-          success: false,
-          error: "Erreur lors de l'enregistrement du match",
-        });
-      }
+      const matchId = result.lastID as number;
+      
+    if (finalP1Id) {
+      const p1IsWinner = winner_id === finalP1Id;
+      await db.execute(
+        `
+      UPDATE users
+      SET total_games = total_games + 1,
+          total_wins = total_wins + ?,
+          total_losses = total_losses + ?
+      WHERE id = ?
+    `,
+        [p1IsWinner ? 1 : 0, p1IsWinner ? 0 : 1, finalP1Id]
+      );
     }
-  );
+
+    if (finalP2Id) {
+      const p2IsWinner = winner_id === finalP2Id;
+      await db.execute(
+        `
+      UPDATE users
+      SET total_games = total_games + 1,
+          total_wins = total_wins + ?,
+          total_losses = total_losses + ?
+      WHERE id = ?
+    `,
+        [p2IsWinner ? 1 : 0, p2IsWinner ? 0 : 1, finalP2Id]
+      );
+    }
+
+    if (tournament_id && winner_id) {
+      await advanceTournamentBracket(tournament_id, matchId, winner_id, db);
+    }
+
+    server.log.info(
+      `Match recorded: ID=${matchId}, Players=${finalP1Id || finalP1GuestName} vs ${finalP2Id || finalP2GuestName}, Score=${player1_score}-${player2_score}`
+    );
+
+    const createdMatch = await getMatchById(matchId, db);
+
+    reply.status(201).send({
+      success: true,
+      message: 'Match enregistré avec succès',
+      data: createdMatch,
+    });
+    } catch (error) {
+      request.log.error('Erreur enregistrement match:' + (error instanceof Error ? error.message : String(error)));
+
+      if (error instanceof Error) {
+        if (error.message.includes('FOREIGN KEY constraint failed')) {
+          return reply.status(400).send({
+            success: false,
+            error: 'ID joueur invalide',
+          });
+        }
+        if (error.message.includes('UNIQUE constraint failed')) {
+          return reply.status(409).send({
+            success: false,
+            error: 'Match déjà enregistré',
+          });
+        }
+      }
+
+      reply.status(500).send({
+        success: false,
+        error: "Erreur lors de l'enregistrement du match",
+      });
+    }
+  });
 
   server.get(
     '/',
@@ -287,7 +303,7 @@ export async function matchRoutes(server: FastifyInstance) {
           pagination: { limit, offset, total: matches.length },
         });
       } catch (error) {
-        request.log.error('Erreur récupération matches:', error);
+        request.log.error('Erreur récupération matches:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
           error: 'Erreur lors de la récupération des matches',
@@ -359,20 +375,19 @@ export async function matchRoutes(server: FastifyInstance) {
           [matchId]
         );
 
-        reply.status(201).send({
-          success: true,
-          data: match[0],
-          message: 'Match créé avec succès',
-        });
-      } catch (error) {
-        request.log.error('Erreur création match:', error);
-        reply.status(500).send({
-          success: false,
-          error: 'Erreur lors de la création du match',
-        });
-      }
+      reply.status(201).send({
+        success: true,
+        data: match[0],
+        message: 'Match créé avec succès'
+      });
+    } catch (error) {
+      request.log.error('Erreur création match:' + (error instanceof Error ? error.message : String(error)));
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de la création du match'
+      });
     }
-  );
+  });
 
   server.get('/live', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -393,8 +408,9 @@ export async function matchRoutes(server: FastifyInstance) {
         data: liveMatches,
         count: liveMatches.length,
       });
+
     } catch (error) {
-      request.log.error('Erreur matches live:', error);
+      request.log.error('Erreur matches live:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération des matches en cours',
@@ -421,7 +437,7 @@ export async function matchRoutes(server: FastifyInstance) {
           data: match,
         });
       } catch (error) {
-        request.log.error('Erreur détails match:', error);
+        request.log.error('Erreur détails match:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
           error: 'Erreur lors de la récupération du match',
@@ -453,10 +469,8 @@ export async function matchRoutes(server: FastifyInstance) {
         const { player1_score, player2_score, winner_id } = request.body;
         const userId = (request as any).user.id;
 
-        const match = await db.query(
-          `
-        SELECT * FROM matches WHERE id = ?
-      `,
+        const match = await db.query<MatchRecord>(
+          `SELECT * FROM matches WHERE id = ?`,
           [matchId]
         );
 
@@ -550,20 +564,19 @@ export async function matchRoutes(server: FastifyInstance) {
           [matchId]
         );
 
-        reply.send({
-          success: true,
-          data: updatedMatch[0],
-          message: 'Résultat enregistré avec succès',
-        });
-      } catch (error) {
-        request.log.error('Erreur enregistrement résultat:', error);
-        reply.status(500).send({
-          success: false,
-          error: "Erreur lors de l'enregistrement du résultat",
-        });
-      }
+      reply.send({
+        success: true,
+        data: updatedMatch[0],
+        message: 'Résultat enregistré avec succès'
+      });
+    } catch (error) {
+      request.log.error('Erreur enregistrement résultat:' + (error instanceof Error ? error.message : String(error)));
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de l\'enregistrement du résultat'
+      });
     }
-  );
+  });
 
   server.post<{ Params: MatchParams }>(
     '/:id/start',
@@ -575,10 +588,8 @@ export async function matchRoutes(server: FastifyInstance) {
         const matchId = parseInt(request.params.id);
         const userId = (request as any).user.id;
 
-        const match = await db.query(
-          `
-        SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)
-      `,
+        const match = await db.query<MatchRecord>(
+          `SELECT * FROM matches WHERE id = ? AND (player1_id = ? OR player2_id = ?)`,
           [matchId, userId, userId]
         );
 
@@ -605,99 +616,100 @@ export async function matchRoutes(server: FastifyInstance) {
           [matchId]
         );
 
-        reply.send({
-          success: true,
-          message: 'Match démarré',
-        });
-      } catch (error) {
-        request.log.error('Erreur démarrage match:', error);
-        reply.status(500).send({
-          success: false,
-          error: 'Erreur lors du démarrage du match',
-        });
-      }
+      reply.send({
+        success: true,
+        message: 'Match démarré'
+      });
+
+    } catch (error) {
+      request.log.error('Erreur démarrage match:' + (error instanceof Error ? error.message : String(error)));
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors du démarrage du match'
+      });
     }
-  );
-}
+  });
 
-async function validateMatchData(data: any, db: any): Promise<string | null> {
-  const {
-    player1_id,
-    player2_id,
-    player1_guest_name,
-    player2_guest_name,
-    player1_score,
-    player2_score,
-    winner_id,
-    tournament_id,
-  } = data;
 
-  if ((!player1_id && !player1_guest_name) || (!player2_id && !player2_guest_name)) {
-    return "Chaque joueur doit avoir soit un ID soit un nom d'invité";
+  async function validateMatchData(data: any, db: any): Promise<string | null> {
+    const {
+      player1_id,
+      player2_id,
+      player1_guest_name,
+      player2_guest_name,
+      player1_score,
+      player2_score,
+      winner_id,
+      tournament_id,
+    } = data;
+
+    if ((!player1_id && !player1_guest_name) || (!player2_id && !player2_guest_name)) {
+      return "Chaque joueur doit avoir soit un ID soit un nom d'invité";
+    }
+
+    if (player1_id) {
+      const user1 = await db.query('SELECT id FROM users WHERE id = ?', [player1_id]);
+      if (!user1.length) return `Joueur 1 (ID: ${player1_id}) non trouvé`;
+    }
+
+    if (player2_id) {
+      const user2 = await db.query('SELECT id FROM users WHERE id = ?', [player2_id]);
+      if (!user2.length) return `Joueur 2 (ID: ${player2_id}) non trouvé`;
+    }
+
+    if (winner_id && winner_id !== player1_id && winner_id !== player2_id) {
+      return "Le gagnant doit être l'un des deux joueurs";
+    }
+
+    if (tournament_id) {
+      const tournament = await db.query('SELECT id FROM tournaments WHERE id = ?', [tournament_id]);
+      if (!tournament.length) return `Tournoi (ID: ${tournament_id}) non trouvé`;
+    }
+
+    return null;
   }
 
-  if (player1_id) {
-    const user1 = await db.query('SELECT id FROM users WHERE id = ?', [player1_id]);
-    if (!user1.length) return `Joueur 1 (ID: ${player1_id}) non trouvé`;
-  }
-
-  if (player2_id) {
-    const user2 = await db.query('SELECT id FROM users WHERE id = ?', [player2_id]);
-    if (!user2.length) return `Joueur 2 (ID: ${player2_id}) non trouvé`;
-  }
-
-  if (winner_id && winner_id !== player1_id && winner_id !== player2_id) {
-    return "Le gagnant doit être l'un des deux joueurs";
-  }
-
-  if (tournament_id) {
-    const tournament = await db.query('SELECT id FROM tournaments WHERE id = ?', [tournament_id]);
-    if (!tournament.length) return `Tournoi (ID: ${tournament_id}) non trouvé`;
-  }
-
-  return null;
-}
-
-async function getMatchById(matchId: number, db: any) {
-  const matches = await db.query(
-    `
-    SELECT m.*, t.name as tournament_name,
-           u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
-           u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
-    FROM matches m
-    LEFT JOIN users u1 ON m.player1_id = u1.id
-    LEFT JOIN users u2 ON m.player2_id = u2.id
-    LEFT JOIN tournaments t ON m.tournament_id = t.id
-    WHERE m.id = ?
-  `,
-    [matchId]
-  );
-
-  return matches.length ? matches[0] : null;
-}
-
-async function advanceTournamentBracket(
-  tournamentId: number,
-  matchId: number,
-  winnerId: number,
-  db: any
-) {
-  const remainingMatches = await db.query(
-    `
-    SELECT COUNT(*) as count FROM matches 
-    WHERE tournament_id = ? AND status != 'completed'
-  `,
-    [tournamentId]
-  );
-
-  if (remainingMatches[0].count === 0) {
-    await db.query(
+  async function getMatchById(matchId: number, db: any) {
+    const matches = await db.query(
       `
-      UPDATE tournaments 
-      SET status = 'completed', completed_at = CURRENT_TIMESTAMP, winner_id = ?
-      WHERE id = ?
+      SELECT m.*, t.name as tournament_name,
+            u1.username as player1_username, u1.display_name as player1_display_name, u1.avatar_url as player1_avatar_url,
+            u2.username as player2_username, u2.display_name as player2_display_name, u2.avatar_url as player2_avatar_url
+      FROM matches m
+      LEFT JOIN users u1 ON m.player1_id = u1.id
+      LEFT JOIN users u2 ON m.player2_id = u2.id
+      LEFT JOIN tournaments t ON m.tournament_id = t.id
+      WHERE m.id = ?
     `,
-      [winnerId, tournamentId]
+      [matchId]
     );
+
+    return matches.length ? matches[0] : null;
+  }
+
+  async function advanceTournamentBracket(
+    tournamentId: number,
+    matchId: number,
+    winnerId: number,
+    db: any
+  ) {
+    const remainingMatches = await db.query(
+      `
+      SELECT COUNT(*) as count FROM matches 
+      WHERE tournament_id = ? AND status != 'completed'
+    `,
+      [tournamentId]
+    );
+
+    if (remainingMatches[0].count === 0) {
+      await db.query(
+        `
+        UPDATE tournaments 
+        SET status = 'completed', completed_at = CURRENT_TIMESTAMP, winner_id = ?
+        WHERE id = ?
+      `,
+        [winnerId, tournamentId]
+      );
+    }
   }
 }

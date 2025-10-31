@@ -52,10 +52,11 @@ export function setupWebSocket(server: FastifyInstance) {
             const db = DatabaseManager.getInstance().getDb();
             const userRepo = new UserRepository(db);
             await userRepo.updateOnlineStatus(userId, false);
-          } catch (error) {}
+          } catch (error) {
+            console.error('Error update status:' + (error instanceof Error ? error.message : String(error)));
+          }
 
           simplePongManager.handlePlayerDisconnect(userId);
-
           wsManager.removeUser(userId);
           simpleGameInvites.removeUser(userId);
         }

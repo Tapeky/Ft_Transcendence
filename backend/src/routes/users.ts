@@ -30,7 +30,7 @@ export async function userRoutes(server: FastifyInstance) {
           data: users,
         });
       } catch (error) {
-        request.log.error('Erreur lors de la recherche:', error);
+        request.log.error('Erreur lors de la recherche:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
           error: 'Erreur lors de la recherche',
@@ -69,7 +69,7 @@ export async function userRoutes(server: FastifyInstance) {
           users: users,
         });
       } catch (error) {
-        request.log.error('Erreur lors de la récupération batch:', error);
+        request.log.error('Erreur lors de la récupération batch:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
           error: 'Erreur lors de la récupération des utilisateurs',
@@ -88,8 +88,9 @@ export async function userRoutes(server: FastifyInstance) {
         success: true,
         data: leaderboard,
       });
+
     } catch (error) {
-      request.log.error('Erreur lors de la récupération du classement:', error);
+      request.log.error('Erreur lors de la récupération du classement:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
         error: 'Erreur lors de la récupération du classement',
@@ -106,60 +107,58 @@ export async function userRoutes(server: FastifyInstance) {
       try {
         const onlineUsers = await userRepo.getOnlineUsers();
 
-        reply.send({
-          success: true,
-          data: onlineUsers,
-        });
-      } catch (error) {
-        request.log.error('Erreur lors de la récupération des utilisateurs en ligne:', error);
-        reply.status(500).send({
+      reply.send({
+        success: true,
+        data: onlineUsers
+      });
+
+    } catch (error) {
+      request.log.error('Erreur lors de la récupération des utilisateurs en ligne:' + (error instanceof Error ? error.message : String(error)));
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de la récupération des utilisateurs en ligne'
+      });
+    }
+  });
+
+  // GET /api/users/:id - Profil public d'un utilisateur
+  server.get('/:id', {
+    preHandler: [
+      authenticateToken,
+      validateInput({
+        params: {
+          id: { required: true, type: 'number' }
+        }
+      })
+    ]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: number };
+      
+      const user = await userRepo.getPublicProfile(Number(id));
+      if (!user) {
+        return reply.status(404).send({
           success: false,
           error: 'Erreur lors de la récupération des utilisateurs en ligne',
         });
       }
-    }
-  );
 
-  server.get(
-    '/:id',
-    {
-      preHandler: [
-        authenticateToken,
-        validateInput({
-          params: {
-            id: { required: true, type: 'number' },
-          },
-        }),
-      ],
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { id } = request.params as { id: number };
+      const stats = await userRepo.getUserStats(Number(id));
 
-        const user = await userRepo.getPublicProfile(Number(id));
-        if (!user) {
-          return reply.status(404).send({
-            success: false,
-            error: 'Utilisateur non trouvé',
-          });
+      reply.send({
+        success: true,
+        data: {
+          ...user,
+          stats
         }
+      });
 
-        const stats = await userRepo.getUserStats(Number(id));
-
-        reply.send({
-          success: true,
-          data: {
-            ...user,
-            stats,
-          },
-        });
-      } catch (error) {
-        request.log.error('Erreur lors de la récupération du profil:', error);
-        reply.status(500).send({
-          success: false,
-          error: 'Erreur lors de la récupération du profil',
-        });
-      }
+    } catch (error) {
+      request.log.error('Erreur lors de la récupération du profil:'+ (error instanceof Error ? error.message : String(error)));
+      reply.status(500).send({
+        success: false,
+        error: 'Erreur lors de la récupération du profil'
+      });
     }
-  );
+  });
 }

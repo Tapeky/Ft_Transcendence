@@ -15,9 +15,9 @@ export async function authRoutes(server: FastifyInstance) {
       await request.jwtVerify();
       return reply.status(400).send({
         success: false,
-        error: 'Vous êtes déjà connecté',
+        error: 'You are already logged in',
       });
-    } catch (error: unknown) {
+    } catch (error) {
       return;
     }
   };
@@ -46,7 +46,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (existingUser) {
           return reply.status(409).send({
             success: false,
-            error: 'Un utilisateur avec cet email existe déjà',
+            error: 'An account with this email already exists',
           });
         }
 
@@ -54,7 +54,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (existingUsername) {
           return reply.status(409).send({
             success: false,
-            error: "Ce nom d'utilisateur est déjà pris",
+            error: "Username already taken",
           });
         }
 
@@ -88,14 +88,19 @@ export async function authRoutes(server: FastifyInstance) {
               email: user.email,
               display_name: user.display_name,
               avatar_url: user.avatar_url,
+              is_online: false,
+              total_wins: 0,
+              total_losses: 0,
+              total_games: 0,
+              created_at: user.created_at,
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
           },
-          message: 'Compte créé avec succès',
+          message: 'Account created successfully',
         });
       } catch (error: any) {
-        request.log.error("Erreur lors de l'inscription:", error);
+        request.log.error("Error during account creation:", error);
 
         await userRepo.logSecurityAction({
           action: 'REGISTER_FAILED',
@@ -107,7 +112,7 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la création du compte',
+          error: 'Error while registering',
         });
       }
     }
@@ -143,7 +148,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(401).send({
             success: false,
-            error: 'Email ou mot de passe incorrect',
+            error: 'Wrong email or password',
           });
         }
 
@@ -160,7 +165,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(401).send({
             success: false,
-            error: 'Email ou mot de passe incorrect',
+            error: 'Wrong email or password',
           });
         }
 
@@ -207,6 +212,8 @@ export async function authRoutes(server: FastifyInstance) {
           details: JSON.stringify({ username: user.username }),
         });
 
+        const stats = await userRepo.getUserStats(user.id);
+
         reply.send({
           success: true,
           data: {
@@ -217,14 +224,18 @@ export async function authRoutes(server: FastifyInstance) {
               display_name: user.display_name,
               avatar_url: user.avatar_url,
               is_online: true,
+              total_wins: stats.total_wins || 0,
+              total_losses: stats.total_losses || 0,
+              total_games: stats.total_games || 0,
+              created_at: user.created_at,
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
           },
-          message: 'Connexion réussie',
+          message: 'Connection successful',
         });
       } catch (error: any) {
-        request.log.error('Erreur lors de la connexion:', error);
+        request.log.error('Error while connecting:', error);
 
         await userRepo.logSecurityAction({
           action: 'LOGIN_ERROR',
@@ -236,7 +247,7 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la connexion',
+          error: 'Error while connecting',
         });
       }
     }
@@ -264,13 +275,13 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Déconnexion réussie',
+          message: 'Logout successful',
         });
       } catch (error: any) {
         request.log.error('Erreur lors de la déconnexion:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la déconnexion',
+          error: 'Logout error',
         });
       }
     }
@@ -289,7 +300,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!user) {
           return reply.status(404).send({
             success: false,
-            error: 'Utilisateur non trouvé',
+            error: 'User not found',
           });
         }
 
@@ -304,16 +315,19 @@ export async function authRoutes(server: FastifyInstance) {
             display_name: user.display_name,
             avatar_url: user.avatar_url,
             is_online: user.is_online,
+            total_wins: stats.total_wins || 0,
+            total_losses: stats.total_losses || 0,
+            total_games: stats.total_games || 0,
             created_at: user.created_at,
             has_2fa_enabled: user.has_2fa_enabled,
             stats,
           },
         });
       } catch (error: any) {
-        request.log.error('Erreur lors de la récupération du profil:', error);
+        request.log.error('Profile retrieve error:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la récupération du profil',
+          error: 'Profile retrieve error',
         });
       }
     }
@@ -357,13 +371,13 @@ export async function authRoutes(server: FastifyInstance) {
             display_name: updatedUser.display_name,
             avatar_url: updatedUser.avatar_url,
           },
-          message: 'Profil mis à jour avec succès',
+          message: 'Profile updated successfully',
         });
       } catch (error: any) {
-        request.log.error('Erreur lors de la mise à jour du profil:', error);
+        request.log.error('Update profile error:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la mise à jour du profil',
+          error: 'Update profile error',
         });
       }
     }
@@ -394,7 +408,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!user) {
           return reply.status(404).send({
             success: false,
-            error: 'Utilisateur non trouvé',
+            error: 'User not found',
           });
         }
 
@@ -411,7 +425,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(400).send({
             success: false,
-            error: 'Mot de passe actuel incorrect',
+            error: 'Invalid current password',
           });
         }
 
@@ -428,13 +442,13 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Mot de passe changé avec succès',
+          message: 'Successfully updated password',
         });
       } catch (error: any) {
-        request.log.error('Erreur lors du changement de mot de passe:', error);
+        request.log.error('Error while changing password:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors du changement de mot de passe',
+          error: 'Error while changing password',
         });
       }
     }
@@ -457,10 +471,10 @@ export async function authRoutes(server: FastifyInstance) {
           message: 'Heartbeat reçu',
         });
       } catch (error: any) {
-        request.log.error('Erreur heartbeat:', error);
+        request.log.error('Error heartbeat:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors du heartbeat',
+          error: 'Error during heartbeat',
         });
       }
     }
@@ -490,7 +504,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!body.confirm_deletion) {
           return reply.status(400).send({
             success: false,
-            error: 'Vous devez confirmer la suppression de votre compte',
+            error: 'Please confirm account deletion',
           });
         }
 
@@ -498,7 +512,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!user) {
           return reply.status(404).send({
             success: false,
-            error: 'Utilisateur non trouvé',
+            error: 'User not found',
           });
         }
 
@@ -515,7 +529,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(400).send({
             success: false,
-            error: 'Mot de passe incorrect',
+            error: 'Wrong password',
           });
         }
 
@@ -532,13 +546,13 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.send({
           success: true,
-          message: 'Compte supprimé avec succès',
+          message: 'Account deleted successfully',
         });
       } catch (error: any) {
-        request.log.error('Erreur lors de la suppression du compte:', error);
+        request.log.error('Error during accoutn deletion:', error);
         reply.status(500).send({
           success: false,
-          error: 'Erreur lors de la suppression du compte',
+          error: 'Error during accoutn deletion',
         });
       }
     }
@@ -551,7 +565,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!githubClientId) {
         return reply.status(500).send({
           success: false,
-          error: 'GitHub OAuth non configuré',
+          error: 'GitHub OAuth not configured',
         });
       }
 
@@ -559,10 +573,10 @@ export async function authRoutes(server: FastifyInstance) {
 
       reply.redirect(githubAuthUrl);
     } catch (error: any) {
-      request.log.error('Erreur lors de la redirection GitHub:', error);
+      request.log.error('Error during Github redirection:', error);
       reply.status(500).send({
         success: false,
-        error: 'Erreur lors de la connexion GitHub',
+        error: 'Error during Github connection',
       });
     }
   });
@@ -574,7 +588,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!code) {
         return reply.status(400).send({
           success: false,
-          error: "Code d'autorisation manquant",
+          error: "Missing authorization code",
         });
       }
 
@@ -596,7 +610,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!tokenData.access_token) {
         return reply.status(400).send({
           success: false,
-          error: "Erreur lors de l'authentification GitHub",
+          error: "Error during Github auth",
         });
       }
 
@@ -622,7 +636,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!primaryEmail) {
         return reply.status(400).send({
           success: false,
-          error: "Impossible de récupérer l'email GitHub",
+          error: "Cannot get Github email",
         });
       }
 
@@ -664,14 +678,11 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?token=${token}`);
     } catch (error: any) {
-      request.log.error('Erreur lors du callback GitHub:', error);
+      request.log.error('Error Github callback:', error);
 
       await userRepo.logSecurityAction({
         action: 'GITHUB_LOGIN_ERROR',
@@ -682,10 +693,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?error=github_auth_failed`);
     }
@@ -698,7 +706,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!googleClientId) {
         return reply.status(500).send({
           success: false,
-          error: 'Google OAuth non configuré',
+          error: 'Google OAuth not configured',
         });
       }
 
@@ -715,10 +723,10 @@ export async function authRoutes(server: FastifyInstance) {
 
       reply.redirect(googleAuthUrl.toString());
     } catch (error: any) {
-      request.log.error('Erreur lors de la redirection Google:', error);
+      request.log.error('Error Google redirection:', error);
       reply.status(500).send({
         success: false,
-        error: 'Erreur lors de la connexion Google',
+        error: 'Error Google connection',
       });
     }
   });
@@ -730,7 +738,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!code) {
         return reply.status(400).send({
           success: false,
-          error: "Code d'autorisation manquant",
+          error: "Missing authorization code",
         });
       }
 
@@ -754,7 +762,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!tokenData.access_token) {
         return reply.status(400).send({
           success: false,
-          error: "Erreur lors de l'authentification Google",
+          error: "Error Google auth",
         });
       }
 
@@ -769,7 +777,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!googleUser.email) {
         return reply.status(400).send({
           success: false,
-          error: "Impossible de récupérer l'email Google",
+          error: "Cannot get Google email",
         });
       }
 
@@ -812,14 +820,11 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?token=${token}`);
     } catch (error: any) {
-      request.log.error('Erreur lors du callback Google:', error);
+      request.log.error('Error Google callback:', error);
 
       await userRepo.logSecurityAction({
         action: 'GOOGLE_LOGIN_ERROR',
@@ -830,10 +835,7 @@ export async function authRoutes(server: FastifyInstance) {
       });
 
       const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
-      const frontendUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.FRONTEND_URL
-          : `${protocol}://localhost:3000`;
+      const frontendUrl = process.env.FRONTEND_URL || `${protocol}://localhost:3000`;
 
       reply.redirect(`${frontendUrl}?error=google_auth_failed`);
     }

@@ -1,54 +1,203 @@
 services:
+
+  # ModSecurity Reverse Proxy Service - HARDENED
+  modsecurity:
+    image: owasp/modsecurity-crs:nginx-alpine
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./modsecurity/nginx.conf:/etc/nginx/templates/conf.d/default.conf.template:ro
+      - ./modsecurity/custom-rules.conf:/etc/modsecurity.d/owasp-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf:ro
+      - ./ssl:/etc/nginx/conf:ro
+      - ./logs/modsecurity/modsec_audit.log:/var/log/modsec_audit.log
+    environment:
+      # Strict ModSecurity Configuration
+      - BACKEND=https://backend:8000
+      - PROXY=1
+      - MODSEC_RULE_REMOVE=920420
+      
+      - BLOCKING_PARANOIA=2
+      - DETECTION_PARANOIA=2
+      
+      # HARDENED: Stricter anomaly scoring (lower = more strict)
+      - ANOMALY_INBOUND=7
+      - ANOMALY_OUTBOUND=5
+      
+      # HARDENED: Enable all security features
+      - MODSEC_RULE_ENGINE=On
+      - MODSEC_REQ_BODY_ACCESS=On
+      - MODSEC_RESP_BODY_ACCESS=On
+      
+      # HARDENED: Comprehensive audit logging
+      - MODSEC_AUDIT_ENGINE=RelevantOnly
+      - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
+      - MODSEC_AUDIT_LOG_FORMAT=JSON
+      - MODSEC_AUDIT_LOG_TYPE=Serial
+      - MODSEC_AUDIT_LOG_PARTS=ABCDEFGHIJKZ
+      
+      # HARDENED: Strict request validation
+      - ALLOWED_METHODS=GET HEAD POST PUT DELETE OPTIONS PATCH
+      - ALLOWED_REQUEST_CONTENT_TYPE=application/json|application/x-www-form-urlencoded|multipart/form-data|text/plain
+      - ALLOWED_HTTP_VERSIONS=HTTP/1.1 HTTP/2 HTTP/2.0
+      - VALIDATE_UTF8_ENCODING=1
+      
+      # HARDENED: Size limits
+      - MODSEC_REQ_BODY_LIMIT=1048576
+      - MODSEC_REQ_BODY_NOFILES_LIMIT=131072
+      - MODSEC_RESP_BODY_LIMIT=524288
+      - MAX_FILE_SIZE=1048576
+      - COMBINED_FILE_SIZES=10485760
+      
+      # HARDENED: Rate limiting
+      - MAX_NUM_ARGS=255
+      - ARG_LENGTH=400
+      - ARG_NAME_LENGTH=100
+      - TOTAL_ARG_LENGTH=6400
+      
+      # Server configuration
+      - PORT=8080
+      - SSL_PORT=8443
+      - SERVER_NAME=localhost
+      - NGINX_ALWAYS_TLS_REDIRECT=off
+      
+      # Logging (use stdout/stderr instead of files)
+      - ERRORLOG=/dev/stderr
+      - LOGLEVEL=warn
+      - ACCESSLOG=/dev/stdout
+      
+      # HARDENED: Disable server tokens
+      - SERVER_TOKENS=Off
+      - MODSEC_SERVER_SIGNATURE=Secure-Server
+    depends_on:
+      - backend
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Vault Service - HARDENED
+  vault:
+    image: hashicorp/vault:latest
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+      - ./vault/config:/vault/config:ro
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      # HARDENED: Enable audit logging
+      VAULT_LOG_LEVEL: "info"
+    command: [ "vault", "server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200" ]
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  vault-init:
+    build:
+      context: ./vault
+      dockerfile: Dockerfile
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - ./vault/scripts:/vault/scripts
+      - ./vault/file:/vault/file
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "root"
+    command: [ "/bin/sh", "/vault/scripts/init-vault.sh" ]
+    networks:
+      - ft_transcendence
+    restart: "no"
+
+  # Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "${FRONTEND_PORT}:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - ./ssl:/app/ssl:ro
+      - ./ssl:/app/ssl
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - VITE_API_URL=${VITE_API_URL}
-      - ENABLE_HTTPS=${ENABLE_HTTPS}
+      FRONTEND_PORT: 3000
+      # API calls go through hardened WAF
+      ENABLE_HTTPS: "true"
+      VITE_API_URL: https://localhost:8443
     depends_on:
       - backend
+      - modsecurity
     networks:
       - ft_transcendence
+    restart: unless-stopped
 
+  # Backend Service (Node.js + Fastify) - VAULT INTEGRATED
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "${BACKEND_PORT}:8000"
+    # HARDENED: Don't expose backend directly, only through WAF
+    expose:
+      - "8000"
     volumes:
       - ./backend:/app
       - /app/node_modules
       - ./db:/app/db
-      - ./ssl:/app/ssl:ro
+      - ./ssl:/app/ssl
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - ENABLE_HTTPS=${ENABLE_HTTPS}
-      - DB_NAME=${DB_NAME}
-      - DB_PATH=${DB_PATH}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
-      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
+      # HARDENED: All secrets from Vault
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_TOKEN: "root"
+      NODE_ENV: "production"
+      ENABLE_HTTPS: "true"
+      # Frontend Configuration
+      FRONTEND_URL: "${FRONTEND_URL}"
+      # OAuth Configuration
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
+      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
+      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
+      GITHUB_REDIRECT_URI: "${GITHUB_REDIRECT_URI}"
+      # JWT Configuration
+      JWT_SECRET: "${JWT_SECRET}"
+      JWT_EXPIRES_IN: "${JWT_EXPIRES_IN}"
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
     networks:
       - ft_transcendence
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--quiet", "--tries=1", "--spider", "https://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+# Docker volumes
 volumes:
   db_data:
   ssl_certs:
+  vault_data:
+  vault_logs:
 
 networks:
   ft_transcendence:

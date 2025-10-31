@@ -78,8 +78,9 @@ export class FriendsTabHandler {
         avatar: friend.avatar_url,
         is_online: friend.is_online,
         id: friend.id,
+        wins: friend.total_wins,
+        losses: friend.total_losses
       });
-
       this.friendItems.push(friendItem);
       container.appendChild(friendItem.getElement());
     });

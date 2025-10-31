@@ -44,6 +44,9 @@ export interface MatchRecord {
   game_type: string;
   max_score: number;
   tournament_id?: number;
+  status?: string;
+  started_at?: string;
+  completed_at?: string;
   created_at: string;
   duration_seconds?: number;
 }

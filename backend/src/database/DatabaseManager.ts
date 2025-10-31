@@ -20,20 +20,23 @@ export class DatabaseManager {
     if (this.db) {
       return this.db;
     }
-
+    
     try {
       const dbDir = path.dirname(dbPath);
       await fs.mkdir(dbDir, { recursive: true });
-
+      
       this.db = await open({
         filename: dbPath,
-        driver: sqlite3.Database,
+        driver: sqlite3.Database
       });
-
+      
+      // Activer les foreign keys
       await this.db.exec('PRAGMA foreign_keys = ON;');
-
+      
+      console.log(`✅ Base de données connectée : ${dbPath}`);
       return this.db;
     } catch (error) {
+      console.error('❌ Erreur de connexion à la base de données:' + (error instanceof Error ? error.message : String(error)));
       throw error;
     }
   }
@@ -42,15 +45,18 @@ export class DatabaseManager {
     if (!this.db) {
       throw new Error('Database not connected');
     }
-
+    
     try {
       const schemaPath = path.join(__dirname, 'schema.sql');
       const schema = await fs.readFile(schemaPath, 'utf8');
-
+      
       await this.db.exec(schema);
-
+      console.log('✅ Schéma de base de données initialisé');
+      
       await this.seedIfEmpty();
+      
     } catch (error) {
+      console.error('❌ Erreur d\'initialisation de la base de données:' + (error instanceof Error ? error.message : String(error)));
       throw error;
     }
   }
@@ -120,19 +126,23 @@ export class DatabaseManager {
     }
   }
 
-  async query(sql: string, params: any[] = []): Promise<any[]> {
+  async query<T = unknown>(sql: string, params: unknown[] = []): Promise<T[]> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.all(sql, params);
   }
 
-  async queryOne(sql: string, params: any[] = []): Promise<any> {
+  async queryOne<T = unknown>(sql: string, params: unknown[] = []): Promise<T | undefined> {
     if (!this.db) throw new Error('Database not connected');
     return await this.db.get(sql, params);
   }
 
-  async execute(sql: string, params: any[] = []): Promise<any> {
+  async execute(sql: string, params: unknown[] = []): Promise<{ lastID?: number; changes: number }> {
     if (!this.db) throw new Error('Database not connected');
-    return await this.db.run(sql, params);
+    const result = await this.db.run(sql, params);
+    return {
+      lastID: result.lastID,
+      changes: result.changes ?? 0,
+    };
   }
 
   async transaction<T>(callback: (db: Database) => Promise<T>): Promise<T> {
@@ -162,29 +172,35 @@ export class DatabaseManager {
   async cleanupExpiredTokens(): Promise<void> {
     if (!this.db) return;
 
-    const result = await this.db.run(`
-      DELETE FROM jwt_tokens 
+    await this.db.run(`
+      DELETE FROM jwt_tokens
       WHERE expires_at < datetime('now') OR revoked = true
     `);
   }
 
-  async getStats(): Promise<any> {
+  async getStats(): Promise<{
+    users: number;
+    tournaments: number;
+    matches: number;
+    activeTokens: number;
+    timestamp: string;
+  }> {
     if (!this.db) throw new Error('Database not connected');
 
     const stats = await Promise.all([
-      this.db.get('SELECT COUNT(*) as users FROM users'),
-      this.db.get('SELECT COUNT(*) as tournaments FROM tournaments'),
-      this.db.get('SELECT COUNT(*) as matches FROM matches'),
-      this.db.get(
+      this.db.get<{ users: number }>('SELECT COUNT(*) as users FROM users'),
+      this.db.get<{ tournaments: number }>('SELECT COUNT(*) as tournaments FROM tournaments'),
+      this.db.get<{ matches: number }>('SELECT COUNT(*) as matches FROM matches'),
+      this.db.get<{ active_tokens: number }>(
         'SELECT COUNT(*) as active_tokens FROM jwt_tokens WHERE expires_at > datetime("now") AND revoked = false'
       ),
     ]);
 
     return {
-      users: stats[0].users,
-      tournaments: stats[1].tournaments,
-      matches: stats[2].matches,
-      active_tokens: stats[3].active_tokens,
+      users: stats[0]?.users ?? 0,
+      tournaments: stats[1]?.tournaments ?? 0,
+      matches: stats[2]?.matches ?? 0,
+      activeTokens: stats[3]?.active_tokens ?? 0,
       timestamp: new Date().toISOString(),
     };
   }

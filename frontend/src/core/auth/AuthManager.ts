@@ -69,13 +69,23 @@ export class AuthManager {
       });
 
       this.notifyAuthStateChange(true);
-      this.navigateToMenu();
+      this.navigateToHome();
 
       this.connectChatService();
     } catch (error) {
       appState.setLoading(false);
       const errorMessage = this.getErrorMessage(error);
-      console.error('AuthManager login failed:', errorMessage);
+
+      const isUserError =
+        errorMessage.includes('Wrong') ||
+        errorMessage.includes('password') ||
+        errorMessage.includes('email') ||
+        errorMessage.includes('invalid') ||
+        errorMessage.includes('incorrect');
+
+      if (!isUserError) {
+        console.error('AuthManager unexpected login error:', errorMessage);
+      }
 
       throw new Error(errorMessage);
     }
@@ -94,7 +104,7 @@ export class AuthManager {
       });
 
       this.notifyAuthStateChange(true);
-      this.navigateToMenu();
+      this.navigateToHome();
 
       this.connectChatService();
     } catch (error) {
@@ -164,14 +174,11 @@ export class AuthManager {
     return await apiService.getGoogleAuthUrl();
   }
 
-  private navigateToMenu(): void {
-    router.navigate('/menu');
-  }
   private navigateToHome(): void {
     router.navigate('/');
   }
 
-  private getErrorMessage(error: unknown): string {
+  private getErrorMessage(error: any): string {
     if (error instanceof Error) {
       return error.message;
     }
@@ -187,6 +194,16 @@ export class AuthManager {
   public isLoading(): boolean {
     return appState.getState().loading;
   }
+
+  public clearUser(): void {
+   appState.setState({
+    user: null,
+    isAuthenticated: false,
+    loading: false,
+  });
+  chatService.disconnect();
+  apiService.clearToken();
+}
 
   public subscribeToAuth(
     callback: (state: { user: User | null; isAuthenticated: boolean; loading: boolean }) => void
@@ -230,5 +247,6 @@ export class AuthManager {
     }
   }
 }
+
 
 export const authManager = AuthManager.getInstance();

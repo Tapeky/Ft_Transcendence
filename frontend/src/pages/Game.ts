@@ -12,6 +12,8 @@ interface GameState {
   state: number;
   leftScore: number;
   rightScore: number;
+  start: number;
+  end: number;
 }
 
 interface TournamentGameContext {
@@ -37,11 +39,14 @@ export class GamePage {
   private tournamentContext?: TournamentGameContext;
   private authUnsubscribe?: () => void;
   private gameEnded: boolean = false;
+  private isDestroyed: boolean = false;
   private lastFrameTime: number = 0;
   private readonly TARGET_FPS = 60;
   private isCountingDown: boolean = false;
   private countdownValue: number = 5;
   private countdownStartTime: number = 0;
+  private isWaitingAfterScore: boolean = false;
+  private scoreDelayStartTime: number = 0;
   private readonly ARENA_WIDTH = 800;
   private readonly ARENA_HEIGHT = 500;
   private readonly PADDLE_WIDTH = 8;
@@ -94,7 +99,7 @@ export class GamePage {
     const backButton = this.element.querySelector('#back-to-menu');
     backButton?.addEventListener('click', () => {
       this.destroy();
-      router.navigate('/menu');
+      router.navigate('/');
     });
     setTimeout(() => this.initializeGame(), 100);
   }
@@ -189,6 +194,8 @@ export class GamePage {
       state: 1,
       leftScore: 0,
       rightScore: 0,
+      start: 0,
+      end: 0,
     };
     this.setupKeyboardListeners();
     this.startLocalGame();
@@ -196,6 +203,8 @@ export class GamePage {
 
   private startLocalGame(): void {
     this.render();
+    if (this.gameState)
+      this.gameState.start = Date.now();
     this.startCountdown();
   }
 
@@ -291,6 +300,18 @@ export class GamePage {
 
   private updateBall(): void {
     if (!this.gameState) return;
+
+    if (this.isWaitingAfterScore) {
+      const elapsedTime = performance.now() - this.scoreDelayStartTime;
+      if (elapsedTime >= 1000) {
+        this.gameState.ball.direction.x =
+          Math.random() > 0.5 ? this.INITIAL_BALL_SPEED : -this.INITIAL_BALL_SPEED;
+        this.gameState.ball.direction.y = (Math.random() - 0.5) * 6;
+        this.isWaitingAfterScore = false;
+      }
+      return;
+    }
+
     const ball = this.gameState.ball;
     ball.pos.x += ball.direction.x;
     ball.pos.y += ball.direction.y;
@@ -299,6 +320,8 @@ export class GamePage {
     }
     if (
       ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH &&
+      ball.pos.x >= 0 &&
+      ball.direction.x < 0 &&
       ball.pos.y >= this.gameState.leftPaddle.pos.y &&
       ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
@@ -308,6 +331,8 @@ export class GamePage {
     }
     if (
       ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
+      ball.pos.x <= this.ARENA_WIDTH &&
+      ball.direction.x > 0 &&
       ball.pos.y >= this.gameState.rightPaddle.pos.y &&
       ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
@@ -328,9 +353,12 @@ export class GamePage {
     if (!this.gameState) return;
     this.gameState.ball.pos.x = this.ARENA_WIDTH / 2;
     this.gameState.ball.pos.y = this.ARENA_HEIGHT / 2;
-    this.gameState.ball.direction.x =
-      Math.random() > 0.5 ? this.INITIAL_BALL_SPEED : -this.INITIAL_BALL_SPEED;
-    this.gameState.ball.direction.y = (Math.random() - 0.5) * 6;
+    this.gameState.ball.direction.x = 0;
+    this.gameState.ball.direction.y = 0;
+    this.gameState.leftPaddle.pos.y = this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2;
+    this.gameState.rightPaddle.pos.y = this.ARENA_HEIGHT / 2 - this.PADDLE_HEIGHT / 2;
+    this.isWaitingAfterScore = true;
+    this.scoreDelayStartTime = performance.now();
   }
 
   private increaseBallSpeed(): void {
@@ -391,7 +419,7 @@ export class GamePage {
     }
   };
 
-  private async recordMatch(leftScore: number, rightScore: number): Promise<void> {
+  private async recordMatch(leftScore: number, rightScore: number, duration: number): Promise<void> {
     try {
       const currentUser = appState.getState().user;
       if (!currentUser) {
@@ -409,25 +437,42 @@ export class GamePage {
         winner_id: winnerId,
         game_type: 'pong',
         max_score: 5,
-        duration_seconds: 60,
+        duration_seconds: duration,
         player1_touched_ball: this.gameState?.leftPaddle.hitCount || 0,
         player1_missed_ball: Math.max(0, rightScore),
         player2_touched_ball: this.gameState?.rightPaddle.hitCount || 0,
         player2_missed_ball: Math.max(0, leftScore),
       };
       await apiService.recordMatch(matchData);
+
+      // Refresh user stats to update wins/losses on homepage
+      const { authManager } = await import('../core/auth/AuthManager');
+      await authManager.refreshUser();
     } catch (error) {
       console.error('Failed to record match');
     }
   }
 
   private async showGameEnd(winner: string): Promise<void> {
-    if (this.gameEndOverlay) return;
+    if (this.gameEndOverlay || this.isDestroyed) return;
     const leftScore = this.gameState?.leftScore || 0;
     const rightScore = this.gameState?.rightScore || 0;
-    if (!this.tournamentContext) {
-      await this.recordMatch(leftScore, rightScore);
+    let duration = 0;
+
+    if (this.gameState)
+    {
+      this.gameState.end = Date.now();
+      duration = (this.gameState.end - this.gameState.start) / 1000;
     }
+
+    if (this.tournamentContext) {
+      this.saveTournamentResult(leftScore, rightScore);
+    } else {
+      await this.recordMatch(leftScore, rightScore, duration);
+    }
+
+    if (this.isDestroyed) return;
+
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
     if (this.tournamentContext) {
@@ -441,14 +486,9 @@ export class GamePage {
                         <div class="text-lg text-white font-iceland">${this.tournamentContext.player2Alias}: ${rightScore}</div>
                     </div>
                     <p class="text-sm text-gray-300 font-iceland mb-6">Round ${this.tournamentContext.round} • Match ${this.tournamentContext.matchNumber}</p>
-                    <div class="flex gap-4 justify-center">
-                        <button id="continue-tournament" class="text-white border-white border-2 px-6 py-3 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg font-bold">
-                            Continue Tournament
-                        </button>
-                        <button id="back-to-tournament" class="text-white border-gray-400 border-2 px-6 py-3 rounded hover:bg-gray-400 hover:text-black transition-colors font-iceland text-lg">
-                            Back to Tournament
-                        </button>
-                    </div>
+                    <button id="continue-tournament" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
+                        Continue Tournament →
+                    </button>
                 </div>
             `;
     } else {
@@ -472,25 +512,21 @@ export class GamePage {
       const target = e.target as HTMLElement;
       if (target.id === 'continue-tournament') {
         this.handleTournamentMatchComplete();
-      } else if (target.id === 'back-to-tournament') {
-        this.destroy();
-        router.navigate('/tournament');
       } else if (target.id === 'play-again') {
         this.destroy();
         router.navigate('/game');
       } else if (target.id === 'back-to-menu-end') {
         this.destroy();
-        router.navigate('/menu');
+        router.navigate('/');
       }
     });
     document.body.appendChild(overlay);
     this.gameEndOverlay = overlay;
   }
 
-  private handleTournamentMatchComplete(): void {
-    if (!this.tournamentContext || !this.gameState) return;
-    const leftScore = this.gameState.leftScore;
-    const rightScore = this.gameState.rightScore;
+  private saveTournamentResult(leftScore: number, rightScore: number): void {
+    if (!this.tournamentContext) return;
+
     const winnerAlias =
       leftScore > rightScore
         ? this.tournamentContext.player1Alias
@@ -503,6 +539,9 @@ export class GamePage {
       winnerAlias: winnerAlias,
     };
     sessionStorage.setItem('tournamentMatchResult', JSON.stringify(matchResult));
+  }
+
+  private handleTournamentMatchComplete(): void {
     this.destroy();
     router.navigate('/tournament');
   }
@@ -598,6 +637,7 @@ export class GamePage {
   }
 
   destroy(): void {
+    this.isDestroyed = true;
     document.removeEventListener('keydown', this.keydownHandler);
     document.removeEventListener('keyup', this.keyupHandler);
     if (this.animationId) {

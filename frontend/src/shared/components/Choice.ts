@@ -19,7 +19,7 @@ export class Choice {
           id="pong-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
                  text-[4rem] bg-[url('./img/jinx.gif')] bg-cover 
-                 flex justify-center items-center hover:scale-125 transition duration-500 cursor-pointer"
+                 flex justify-center items-center hover:scale-125 duration-500 cursor-pointer"
           data-route="/game"
         >
           PONG
@@ -34,8 +34,8 @@ export class Choice {
         <div 
           id="tournament-choice" 
           class="text-white border-white h-[400px] w-[400px] border-solid border-[5px] p-[50px] 
-                 text-[4rem] bg-[url('./img/city.png')] bg-cover bg-center 
-                 flex justify-center items-center hover:scale-125 transition duration-500 cursor-pointer"
+                 text-[4rem] bg-[url('./img/tourna.gif')] bg-cover bg-center 
+                 flex justify-center items-center hover:scale-125 duration-500 cursor-pointer"
           data-route="/tournament"
         >
           TOURNAMENT
@@ -71,10 +71,6 @@ export class Choice {
 
   private navigateToTournament(): void {
     router.navigate('/tournament');
-  }
-
-  private navigateToHistory(): void {
-    router.navigate('/tournament-history');
   }
 
   getElement(): HTMLElement {
