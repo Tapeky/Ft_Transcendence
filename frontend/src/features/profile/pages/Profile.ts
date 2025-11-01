@@ -390,7 +390,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem] font-iceland';
+      'flex flex-col bg-blue-800 w-[500px] h-[600px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland';
 
     this.passwordModalCloseBtn = new CloseBtn(() => this.closePasswordModal());
     modalContainer.appendChild(this.passwordModalCloseBtn.getElement());
@@ -430,7 +430,7 @@ export class ProfilePage {
 
       <div id="password-status" class="text-[1.5rem] min-h-[2rem]"></div>
 
-      <button id="save-password" class="border-2 p-2 px-6 bg-blue-800 hover:scale-110 text-white rounded-md transition-transform">
+      <button id="save-password" class="border-2 p-2 px-6 bg-blue-600 hover:scale-105 hover:bg-blue-700 text-white rounded-md transition-transform">
         OK
       </button>
     `;
@@ -669,7 +669,7 @@ export class ProfilePage {
 
     const modalContainer = document.createElement('div');
     modalContainer.className =
-      'flex flex-col bg-pink-800 w-[500px] h-[600px] border-[5px] border-white text-[2rem]';
+      'bg-blue-800 w-[600px] h-[300px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland text-white';
 
     var timerInterval: any = null
     const $2faModalCloseBtn = new CloseBtn(() => {
@@ -686,7 +686,7 @@ export class ProfilePage {
         <h1 class="justify-center" id="state-of-2fa-text"></h1>
       </div>
       <div class="flex flex-col justify-center items-center mt-6 gap-4 px-8">
-        <button id="toggle-2fa-btn" class="rounded-md ml-3 border-2 border-white" />
+        <button id="toggle-2fa-btn" class="bg-blue-600 hover:scale-105 hover:bg-blue-700 rounded-md border-2 border-white p-2" />
       </div>
       <div>
         <h2 id="has-2fa-been-enabled-text" class="text-[1.4rem]"></h2>
