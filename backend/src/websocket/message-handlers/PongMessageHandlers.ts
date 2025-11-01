@@ -95,19 +95,34 @@ export class JoinSimplePongMessageHandler extends BaseMessageHandler {
 
     const simplePongManager = SimplePongManager.getInstance();
     const playerSide = simplePongManager.getPlayerSide(userState.userId, message.gameId);
+    const gameInfo = simplePongManager.getGameInfo(message.gameId);
 
-    if (playerSide) {
-      console.log(
-        `✅ [JoinSimplePong] Player ${userState.userId} joined game ${message.gameId} as ${playerSide}`
+    if (playerSide && gameInfo) {
+      const messageType = message.gameId.startsWith('pong_') ? 'simple_pong_start' : 'friend_pong_start';
+      const opponentId = playerSide === 'left' ? gameInfo.rightPlayerId : gameInfo.leftPlayerId;
+      connection.socket.send(
+        JSON.stringify({
+          type: messageType,
+          gameId: message.gameId,
+          role: playerSide,
+          opponentId: opponentId,
+          leftPlayerId: gameInfo.leftPlayerId,
+          rightPlayerId: gameInfo.rightPlayerId,
+          players: {
+            left: gameInfo.leftPlayerName,
+            right: gameInfo.rightPlayerName,
+          },
+          leftPlayerReady: gameInfo.leftPlayerReady,
+          rightPlayerReady: gameInfo.rightPlayerReady,
+          gameStarted: gameInfo.gameStarted,
+        })
       );
+
       this.sendSuccess(connection, 'simple_pong_joined', {
         gameId: message.gameId,
         player: playerSide,
       });
     } else {
-      console.log(
-        `❌ [JoinSimplePong] Player ${userState.userId} failed to join game ${message.gameId}`
-      );
       connection.socket.send(
         JSON.stringify({
           type: 'simple_pong_join_failed',
@@ -147,5 +162,25 @@ export class SimplePongInputMessageHandler extends BaseMessageHandler {
 
     const simplePongManager = SimplePongManager.getInstance();
     simplePongManager.updateInput(userState.userId, message.input.up, message.input.down);
+  }
+}
+
+export class PongPlayerReadyMessageHandler extends BaseMessageHandler {
+  readonly messageType = 'pong_player_ready';
+
+  validate(message: any): boolean {
+    return typeof message.gameId === 'string' && message.gameId.length > 0;
+  }
+
+  async handle(context: MessageContext): Promise<void> {
+    const { connection, userState, message } = context;
+
+    if (!userState.userId) {
+      this.sendError(connection, 'User not authenticated');
+      return;
+    }
+
+    const simplePongManager = SimplePongManager.getInstance();
+    simplePongManager.setPlayerReady(message.gameId, userState.userId);
   }
 }

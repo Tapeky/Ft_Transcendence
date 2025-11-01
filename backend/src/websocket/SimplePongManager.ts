@@ -14,6 +14,9 @@ interface SimplePongGame {
   lastUpdate: number;
   leftPlayerName: string;
   rightPlayerName: string;
+  leftPlayerReady: boolean;
+  rightPlayerReady: boolean;
+  gameStarted: boolean;
 }
 
 export class SimplePongManager {
@@ -77,13 +80,13 @@ export class SimplePongManager {
         lastUpdate: Date.now(),
         leftPlayerName: leftName,
         rightPlayerName: rightName,
+        leftPlayerReady: false,
+        rightPlayerReady: false,
+        gameStarted: false,
       };
 
       const initialState = game.pong.getState();
       if (initialState.gameOver) {
-        console.error(
-          `🚨 [SimplePongManager] ERREUR: Jeu ${gameId} créé avec gameOver=true! leftScore=${initialState.leftScore}, rightScore=${initialState.rightScore}`
-        );
         return false;
       }
 
@@ -126,12 +129,9 @@ export class SimplePongManager {
 
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      console.error(`❌ [SimplePongManager] Échec création jeu ${gameId}:`, errorMessage);
       this.games.delete(gameId);
       this.playerToGame.delete(leftPlayerId);
       this.playerToGame.delete(rightPlayerId);
-
       return false;
     }
   }
@@ -162,7 +162,6 @@ export class SimplePongManager {
         rightName: this.getPreferredUserName(rightUser, rightPlayerId),
       };
     } catch (error) {
-      console.error('❌ [SimplePongManager] Erreur lors de la récupération des pseudos:', error);
       return {
         leftName: `Player ${leftPlayerId}`,
         rightName: `Player ${rightPlayerId}`,
@@ -192,6 +191,10 @@ export class SimplePongManager {
     if (!game) return null;
 
     return game.pong.getState();
+  }
+
+  getGameInfo(gameId: string): SimplePongGame | null {
+    return this.games.get(gameId) || null;
   }
 
   getPlayerSide(playerId: number, gameId: string): 'left' | 'right' | null {
@@ -236,6 +239,12 @@ export class SimplePongManager {
 
     for (const game of this.games.values()) {
       if (!this.wsManager) {
+        continue;
+      }
+
+      // Skip games that haven't started yet (waiting for both players to be ready)
+      if (!game.gameStarted) {
+        continue;
       }
 
       gamesProcessed++;
@@ -349,6 +358,51 @@ export class SimplePongManager {
     this.games.delete(gameId);
   }
 
+  setPlayerReady(gameId: string, playerId: number): void {
+    const game = this.games.get(gameId);
+    if (!game) {
+      return;
+    }
+
+    if (game.leftPlayerId === playerId) {
+      game.leftPlayerReady = true;
+    } else if (game.rightPlayerId === playerId) {
+      game.rightPlayerReady = true;
+    } else {
+      return;
+    }
+
+    // Notify the other player that this player is ready
+    const otherPlayerId = game.leftPlayerId === playerId ? game.rightPlayerId : game.leftPlayerId;
+    if (this.wsManager) {
+      this.wsManager.sendToUser(otherPlayerId, {
+        type: 'player_ready_update',
+        gameId: gameId,
+        playerId: playerId,
+        message: `${game.leftPlayerId === playerId ? game.leftPlayerName : game.rightPlayerName} is ready!`,
+      });
+    }
+
+    if (game.leftPlayerReady && game.rightPlayerReady && !game.gameStarted) {
+      game.gameStarted = true;
+      const messageType = gameId.startsWith('pong_') ? 'simple_pong_actually_started' : 'friend_pong_actually_started';
+
+      if (this.wsManager) {
+        this.wsManager.sendToUser(game.leftPlayerId, {
+          type: messageType,
+          gameId: gameId,
+          message: 'Both players ready! Game starting now!',
+        });
+
+        this.wsManager.sendToUser(game.rightPlayerId, {
+          type: messageType,
+          gameId: gameId,
+          message: 'Both players ready! Game starting now!',
+        });
+      }
+    }
+  }
+
   handlePlayerDisconnect(playerId: number): void {
     const gameId = this.playerToGame.get(playerId);
     if (gameId) {
@@ -360,39 +414,40 @@ export class SimplePongManager {
         clearTimeout(existingTimer);
         this.disconnectionTimers.delete(gameId);
       }
+
       const otherPlayerId = game.leftPlayerId === playerId ? game.rightPlayerId : game.leftPlayerId;
       const otherPlayerConnected = this.wsManager?.hasUser(otherPlayerId);
 
-      if (otherPlayerConnected) {
-        const timer = setTimeout(() => {
-          const currentGame = this.games.get(gameId);
-          if (currentGame && !this.wsManager?.hasUser(playerId)) {
-            this.disconnectionTimers.delete(gameId);
-            this.endGame(gameId);
-          } else if (currentGame) {
-            this.disconnectionTimers.delete(gameId);
-          }
-        }, 10000); // 10 secondes de délai de grâce
+      // Determine winner: the player who disconnected loses
+      const disconnectedIsLeft = game.leftPlayerId === playerId;
+      const winner = disconnectedIsLeft ? 'right' : 'left';
 
-        this.disconnectionTimers.set(gameId, timer);
+      // Set winner and game over in the pong state
+      const currentState = game.pong.getState();
+      currentState.gameOver = true;
+      currentState.winner = winner;
+
+      // Give winning score to the remaining player
+      if (winner === 'left') {
+        currentState.leftScore = 5;
       } else {
-        const timer = setTimeout(() => {
-          const currentGame = this.games.get(gameId);
-          if (currentGame) {
-            const leftConnected = this.wsManager?.hasUser(currentGame.leftPlayerId);
-            const rightConnected = this.wsManager?.hasUser(currentGame.rightPlayerId);
-
-            if (!leftConnected && !rightConnected) {
-              this.disconnectionTimers.delete(gameId);
-              this.endGame(gameId);
-            } else {
-              this.disconnectionTimers.delete(gameId);
-            }
-          }
-        }, 10000); // 10 secondes de délai de grâce
-
-        this.disconnectionTimers.set(gameId, timer);
+        currentState.rightScore = 5;
       }
+
+      // Notify the other player that opponent disconnected with final game state
+      if (otherPlayerConnected) {
+        this.wsManager?.sendToUser(otherPlayerId, {
+          type: 'opponent_disconnected',
+          gameId: gameId,
+          message: 'Your opponent has disconnected. You win!',
+          gameState: currentState,
+          leftPlayerId: game.leftPlayerId,
+          rightPlayerId: game.rightPlayerId,
+        });
+      }
+
+      // End game immediately when a player disconnects
+      this.endGame(gameId);
     }
   }
 }
