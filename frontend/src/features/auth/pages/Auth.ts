@@ -38,8 +38,7 @@ export class AuthPage {
       <div class="flex flex-grow items-center justify-center p-4 bg-gradient-to-t from-purple-900 to-blue-900">
  
         <div id='egg' class="flex-1 flex flex-col justify-center items-center text-white">
-          jsp quoi mettre ici
-          <img class='border-2 border-white h-[600px] w-[400px]' src='/src/img/night.jpg'>
+          <img class='border-4 border-white h-[600px] w-[400px] rounded-sm' alt='filler' src='/src/img/test.jpg'>
         </div>
         
         <div class="flex flex-grow flex-col items-center justify-center p-2 flex-1 backdrop-blur-md bg-white/10 rounded-md pb-6">
@@ -88,11 +87,10 @@ export class AuthPage {
                     onkeypress="return (event.charCode != 8 && event.charCode == 0 || (event.charCode >= 48 && event.charCode <= 57))"
                     minlength="6"
                     maxlength="6"
-                    placeholder="XXXXXX"
                     class="floating-input peer w-full px-3 pt-5 pb-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                     style="width: 25%; text-align:center;"
                   />
-                  <label for="totp-password" class="floating-label">
+                  <label for="totp-password" class="floating-label text-white block">
                     2FA Key
                   </label>
                 </div>
@@ -338,7 +336,7 @@ export class AuthPage {
     if (!imgEgg)
       return;
 
-    imgEgg.innerHTML = "<img class='border-2 border-white h-[400px] w-[400px]' src='/src/img/jinx.gif'>"
+    imgEgg.innerHTML = "<img class='border-4 border-white rounded-sm h-[400px] w-[400px]' src='/src/img/jinx.gif'>"
   }
 
   private switchMode(newMode: 'login' | 'register'): void {
