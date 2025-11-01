@@ -33,6 +33,7 @@ import {
   FriendPongInputMessageHandler,
   JoinSimplePongMessageHandler,
   SimplePongInputMessageHandler,
+  PongPlayerReadyMessageHandler,
 } from './message-handlers/PongMessageHandlers';
 
 interface WebSocketMessage {
@@ -97,6 +98,7 @@ export class MessageRouter {
       new FriendPongInputMessageHandler(),
       new JoinSimplePongMessageHandler(),
       new SimplePongInputMessageHandler(),
+      new PongPlayerReadyMessageHandler(),
     ]);
   }
 
