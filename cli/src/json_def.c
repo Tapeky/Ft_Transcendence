@@ -210,9 +210,12 @@ static void json_clean_obj_rec(const json_def *defs, void *in)
 void json_clean_obj(void *in, const json_def *defs)
 {
 	cJSON *json = *(cJSON **)in;
-	json_clean_obj_rec(defs, in);
 	if (json)
+	{
+		json_clean_obj_rec(defs, in);
 		cJSON_Delete(json);
+		*(cJSON **)in = NULL;
+	}
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)

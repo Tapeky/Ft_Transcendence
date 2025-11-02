@@ -52,8 +52,6 @@ void ctx_deinit(ctx *ctx)
 	ws_ctx_deinit(&ctx->ws_ctx);
 	api_ctx_deinit(&ctx->api_ctx);
 
-	if (ctx->user_login._json_)
-		json_clean_obj(&ctx->user_login._json_, login_def);
-	if (ctx->tournaments._json_)
+	json_clean_obj(&ctx->user_login, login_def);
 		json_clean_obj(&ctx->tournaments, tournaments_def);
 }

@@ -36,8 +36,7 @@ int on_key_event(ctx *ctx, KeySym key, int on_press)
 		if (cprevious_window(1) && cur_term_window_type == term_window_type_LOGIN)
 		{
 			api_ctx_remove_token(&ctx->api_ctx);
-			cJSON_Delete(ctx->user_login._json_);
-			ctx->user_login._json_ = NULL;
+			json_clean_obj(&ctx->user_login, login_def);
 		}
 	}
 	chandle_key_event(key, on_press);
@@ -62,8 +61,7 @@ void update_tournament_view(void *obj, void *param)
 void refresh_tournaments(ctx *ctx)
 {
 	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
-	if (ctx->tournaments._json_)
-		json_clean_obj(&ctx->tournaments, tournaments_def);
+	json_clean_obj(&ctx->tournaments, tournaments_def);
 	do_api_request_to_def(&ctx->api_ctx, "api/local-tournaments/history", GET, tournaments_def, &ctx->tournaments);
 	ctx->tournament_view.list_view.list_cursor = 0;
 	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
@@ -197,8 +195,7 @@ void refresh_friends(ctx *ctx)
 {
 	cswitch_window(term_window_type_FRIENDS_VIEW, 0);
 
-	if (ctx->friends._json_)
-		json_clean_obj(&ctx->friends, friends_def);
+	json_clean_obj(&ctx->friends, friends_def);
 	do_api_request_to_def(&ctx->api_ctx, "api/friends", GET, friends_def, &ctx->friends);
 	ctx->friends_view.list_view.list_cursor = 0;
 	list_view_update(&ctx->friends_view.list_view, ctx, 0);
