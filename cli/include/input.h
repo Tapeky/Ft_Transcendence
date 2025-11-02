@@ -43,6 +43,6 @@ typedef int (on_input_func)(ctx *ctx, KeySym key, int is_press);
 
 // loops on events until on_key_event returns != 0. while input_poll is for game sequence,
 // input_loop is for ui sequence
-void input_loop(ctx *ctx, on_input_func on_key_event); 
+void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(struct s_ctx *ctx)); 
 
 #endif

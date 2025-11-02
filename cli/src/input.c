@@ -1,6 +1,10 @@
 #include "input.h"
 #include "ctx.h"
 #include <X11/XKBlib.h>
+#include <poll.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 int input_init(ctx *ctx)
 {
@@ -74,11 +78,25 @@ void input_poll(ctx *ctx)
 
 #define KEY_BACKSPACE 0x16
 
-void input_loop(ctx *ctx, on_input_func on_key_event)
+void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(struct s_ctx *ctx))
 {
 	XEvent event;
+	struct pollfd fds[2] = {
+		{.fd = ConnectionNumber(ctx->dpy), .revents = 0, .events = POLLIN},
+		{.fd = ctx->ws_ctx.sock, .revents = 0, .events = POLLIN}
+	};
 	while (1)
 	{
+		int err = poll(fds, 2, -1);
+		if (err < 0)
+		{
+			fprintf(stderr, "poll() error: %s", strerror(errno));
+			break;
+		}
+		if (fds[1].revents & POLLIN)
+			on_ws_sock_event(ctx);
+		if (!(fds[0].revents & POLLIN) || !XPending(ctx->dpy))
+			continue;
 		XNextEvent(ctx->dpy, &event);
 		if (event.type == KeyPress || event.type == KeyRelease)
 		{
