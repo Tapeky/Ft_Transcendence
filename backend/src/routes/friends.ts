@@ -603,7 +603,7 @@ export async function friendRoutes(server: FastifyInstance) {
           return reply.status(400).send({
             success: false,
             error_id: "invalid_friend_id",
-            message: 'ID ami invalide',
+            error: 'ID ami invalide',
           });
         }
 
@@ -616,7 +616,7 @@ export async function friendRoutes(server: FastifyInstance) {
           return reply.status(400).send({
             success: false,
             error_id: "cannot_invite",
-            message:
+            error:
               "Impossible d'inviter cet utilisateur (pas ami ou déjà une invitation en cours)",
           });
         }
@@ -630,7 +630,7 @@ export async function friendRoutes(server: FastifyInstance) {
         reply.status(500).send({
           success: false,
           error_id: "internal_error",
-          message: "Erreur lors de l'envoi de l'invitation",
+          error: "Erreur lors de l'envoi de l'invitation",
         });
       }
     }
