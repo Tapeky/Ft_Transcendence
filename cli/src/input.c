@@ -97,29 +97,33 @@ void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(s
 		}
 		if (fds[1].revents & POLLIN)
 			on_ws_sock_event(ctx);
-		if (!(fds[0].revents & POLLIN) || !XPending(ctx->dpy))
+		if (!(fds[0].revents & POLLIN))
 			continue;
-		XNextEvent(ctx->dpy, &event);
-		if (event.type == KeyPress || event.type == KeyRelease)
+		while (XPending(ctx->dpy))
 		{
-			if (event.type == KeyRelease && event.xkey.keycode != KEY_BACKSPACE && XPending(ctx->dpy))
+			XNextEvent(ctx->dpy, &event);
+			if (event.type == KeyPress || event.type == KeyRelease)
 			{
-				// check for auto-repeating key and remove it
-				XEvent next_event;
-				XPeekEvent(ctx->dpy, &next_event);
-				if (next_event.type == KeyPress
-					&& next_event.xkey.time == event.xkey.time
-					&& next_event.xkey.keycode == event.xkey.keycode)
+				if (event.type == KeyRelease && event.xkey.keycode != KEY_BACKSPACE && XPending(ctx->dpy))
 				{
-					XNextEvent(ctx->dpy, &next_event); // consume event
-					continue;
+					// check for auto-repeating key and remove it
+					XEvent next_event;
+					XPeekEvent(ctx->dpy, &next_event);
+					if (next_event.type == KeyPress
+						&& next_event.xkey.time == event.xkey.time
+						&& next_event.xkey.keycode == event.xkey.keycode)
+					{
+						XNextEvent(ctx->dpy, &next_event); // consume event
+						continue;
+					}
 				}
+				KeySym keysym = XkbKeycodeToKeysym(ctx->dpy, event.xkey.keycode, 0, event.xkey.state & ShiftMask);
+				if (on_key_event(ctx, keysym, event.type == KeyPress))
+					goto end;
 			}
-			KeySym keysym = XkbKeycodeToKeysym(ctx->dpy, event.xkey.keycode, 0, event.xkey.state & ShiftMask);
-			if (on_key_event(ctx, keysym, event.type == KeyPress))
-				break;
 		}
 	}
+	end:
 	// burn remaining events
 	while (XPending(ctx->dpy))
 		XNextEvent(ctx->dpy, &event);
