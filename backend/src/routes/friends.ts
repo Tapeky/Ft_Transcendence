@@ -27,6 +27,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (currentUser.id === friend_id) {
           return reply.status(400).send({
             success: false,
+            error_id: "cant_add_yourself",
             error: "Can't add yourself",
           });
         }
@@ -35,6 +36,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!targetUser) {
           return reply.status(404).send({
             success: false,
+            error_id: "user_not_found",
             error: 'User not found',
           });
         }
@@ -52,16 +54,19 @@ export async function friendRoutes(server: FastifyInstance) {
           if (existingFriendship.status === 'pending') {
             return reply.status(409).send({
               success: false,
+              error_id: "already_sent",
               error: 'Request already sent',
             });
           } else if (existingFriendship.status === 'accepted') {
             return reply.status(409).send({
               success: false,
+              error_id: "already_friends",
               error: 'Already friends',
             });
           } else if (existingFriendship.status === 'blocked') {
             return reply.status(409).send({
               success: false,
+              error_id: "youre_blocked_creep",
               error: "Can't send a request",
             });
           }
@@ -100,6 +105,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Unexpected error while sending request:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Friend request error',
         });
       }
@@ -134,6 +140,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!friendship) {
           return reply.status(404).send({
             success: false,
+            error_id: "request_may_not_exist",
             error: 'Request not found or already done',
           });
         }
@@ -172,6 +179,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error("Error accepting request:", error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: "Error accepting request",
         });
       }
@@ -206,6 +214,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!friendship) {
           return reply.status(404).send({
             success: false,
+            error_id: "request_may_not_exist",
             error: 'Request not found or already done',
           });
         }
@@ -229,6 +238,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error("Error declining request:", error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: "Error declining request",
         });
       }
@@ -262,6 +272,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (result.changes === 0) {
           return reply.status(404).send({
             success: false,
+            error_id: "not_friends",
             error: 'Amitié non trouvée',
           });
         }
@@ -283,6 +294,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la suppression de l ami:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la suppression de l ami',
         });
       }
@@ -317,6 +329,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la recuperation de la liste d amis:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la recuperation de la liste d amis',
         });
       }
@@ -352,6 +365,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la recuperation des demandes d amis recues:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la recuperation des demandes d amis recues',
         });
       }
@@ -387,6 +401,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la recuperation des demandes d amis envoyees:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la recuperation des demandes d amis envoyees',
         });
       }
@@ -421,6 +436,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la récupération des utilisateurs bloqués:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération des utilisateurs bloqués',
         });
       }
@@ -447,6 +463,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (currentUser.id === id) {
           return reply.status(400).send({
             success: false,
+            error_id: "blocking_yourself",
             error: 'Vous ne pouvez pas vous bloquer vous-meme',
           });
         }
@@ -455,6 +472,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!targetUser) {
           return reply.status(404).send({
             success: false,
+            error_id: "user_not_found",
             error: 'Utilisateur non trouvé',
           });
         }
@@ -494,6 +512,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors du blocage de l utilisateur:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors du blocage de l utilisateur',
         });
       }
@@ -520,6 +539,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (currentUser.id === id) {
           return reply.status(400).send({
             success: false,
+            error_id: "unblocking_yourself",
             error: 'Vous ne pouvez pas vous debloquer vous-meme',
           });
         }
@@ -535,6 +555,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (result.changes === 0) {
           return reply.status(404).send({
             success: false,
+            error_id: "user_not_blocked",
             error: 'Utilisateur non bloque',
           });
         }
@@ -556,6 +577,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors du debloquage de l utilisateur:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors du debloquage de l utilisateur',
         });
       }
@@ -580,6 +602,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (isNaN(friendId)) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_friend_id",
             message: 'ID ami invalide',
           });
         }
@@ -592,6 +615,7 @@ export async function friendRoutes(server: FastifyInstance) {
         if (!inviteId) {
           return reply.status(400).send({
             success: false,
+            error_id: "cannot_invite",
             message:
               "Impossible d'inviter cet utilisateur (pas ami ou déjà une invitation en cours)",
           });
@@ -605,6 +629,7 @@ export async function friendRoutes(server: FastifyInstance) {
         request.log.error('Erreur invitation SimplePong:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           message: "Erreur lors de l'envoi de l'invitation",
         });
       }
