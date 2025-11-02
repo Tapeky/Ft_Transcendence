@@ -14,7 +14,7 @@
 
 ctx g_ctx = {0}; 
 
-int on_key_event(ctx *ctx, KeySym key, int on_press)
+static int on_key_event(ctx *ctx, KeySym key, int on_press)
 {
 	(void)ctx;
 	if (key == XK_Left && on_press)
@@ -44,7 +44,7 @@ int on_key_event(ctx *ctx, KeySym key, int on_press)
 	return (0);
 }
 
-void update_tournament_view(void *obj, void *param)
+static void update_tournament_view(void *obj, void *param)
 {
 	tournament *t = obj;
 	ctx *ctx = param;
@@ -59,7 +59,7 @@ void update_tournament_view(void *obj, void *param)
 	}
 }
 
-void refresh_tournaments(ctx *ctx)
+static void refresh_tournaments(ctx *ctx)
 {
 	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
 	json_clean_obj(&ctx->tournaments, tournaments_def);
@@ -68,7 +68,7 @@ void refresh_tournaments(ctx *ctx)
 	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
 }
 
-int json_success(cJSON *json, char **error_string)
+static int json_success(cJSON *json, char **error_string)
 {
 	cJSON *success_obj = cJSON_GetObjectItem(json, "success");
 	if (!success_obj || !(success_obj->type & (cJSON_True | cJSON_False)))
@@ -89,7 +89,7 @@ int json_success(cJSON *json, char **error_string)
 	return (0);
 }
 
-void attempt_login(ctx *ctx)
+static void attempt_login(ctx *ctx)
 {
 	REQ_API_LOGIN(
 		ctx->api_ctx.in_buf,
@@ -117,14 +117,14 @@ void attempt_login(ctx *ctx)
 	}
 }
 
-void handle_login_button(console_component *button, int press, void *param)
+static void handle_login_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	if (press)
 		attempt_login((ctx *)param);
 }
 
-void attempt_register(ctx *ctx)
+static void attempt_register(ctx *ctx)
 {
 	REQ_API_REGISTER(
 		ctx->api_ctx.in_buf,
@@ -148,18 +148,19 @@ void attempt_register(ctx *ctx)
 
 		if (!api_ctx_set_token(&ctx->api_ctx, ctx->user_login.data.token))
 			clean_and_fail("api_ctx_append_token() fail\n");
-		cswitch_window(term_window_type_DASHBOARD, 1);
+		REQ_WS_LOGIN(ctx->ws_ctx.send_buf, ctx->user_login.data.token);
+		ws_send(&ctx->ws_ctx);
 	}
 }
 
-void handle_register_button(console_component *button, int press, void *param)
+static void handle_register_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	if (press)
 		attempt_register((ctx *)param);
 }
 
-void handle_register_window_switch_button(console_component *button, int press, void *param)
+static void handle_register_window_switch_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	(void)param;
@@ -167,7 +168,7 @@ void handle_register_window_switch_button(console_component *button, int press, 
 		cswitch_window(term_window_type_REGISTER, 1);
 }
 
-void handle_tournament_enter_button(console_component *button, int press, void *param)
+static void handle_tournament_enter_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	ctx *ctx = param;
@@ -178,7 +179,7 @@ void handle_tournament_enter_button(console_component *button, int press, void *
 	}
 }
 
-void update_friends_view(void *obj, void *param)
+static void update_friends_view(void *obj, void *param)
 {
 	friend *f = obj;
 	ctx *ctx = param;
@@ -193,7 +194,7 @@ void update_friends_view(void *obj, void *param)
 	}
 }
 
-void refresh_friends(ctx *ctx)
+static void refresh_friends(ctx *ctx)
 {
 	cswitch_window(term_window_type_FRIENDS_VIEW, 0);
 
@@ -203,14 +204,14 @@ void refresh_friends(ctx *ctx)
 	list_view_update(&ctx->friends_view.list_view, ctx, 0);
 }
 
-void handle_tournament_window_switch_button(console_component *button, int press, void *param)
+static void handle_tournament_window_switch_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	if (press)
 		refresh_tournaments((ctx *)param);
 }
 
-void handle_friends_window_switch_button(console_component *button, int press, void *param)
+static void handle_friends_window_switch_button(console_component *button, int press, void *param)
 {
 	(void)button;
 	if (press)
