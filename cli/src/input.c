@@ -90,6 +90,8 @@ void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(s
 		int err = poll(fds, 2, -1);
 		if (err < 0)
 		{
+			if (errno == EINTR)
+				continue;
 			fprintf(stderr, "poll() error: %s", strerror(errno));
 			break;
 		}
