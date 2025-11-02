@@ -32,7 +32,7 @@ static void print_api_request_result(const char *endpoint, api_ctx *ctx, api_req
 static api_request_result api_request_common(api_ctx *ctx, const char *endpoint, request_type request_type)
 {
 	assert(request_type == POST || request_type == GET);
-	curl_easy_setopt(ctx->curl, CURLOPT_POST, request_type == POST);
+	curl_easy_setopt(ctx->curl, CURLOPT_POST, (long int)(request_type == POST));
 	// ctx->api_url_buf was defined by api_ctx_init as the base url. strcpying `endpoint`
 	// to its end will always concatenate both strings, overriding the precedent endpoint
 	strcpy(ctx->api_url_buf + ctx->api_url_base_len, endpoint);
