@@ -30,6 +30,7 @@ export async function delete_accountRoutes(server: FastifyInstance) {
           console.error('No userID in params');
           return reply.status(400).send({
             success: false,
+            error_id: "no_user_id",
             error: 'User ID is required',
           });
         }
@@ -41,6 +42,7 @@ export async function delete_accountRoutes(server: FastifyInstance) {
           console.error('No authenticated user found');
           return reply.status(401).send({
             success: false,
+            error_id: "not_authenticated",
             error: 'User not authenticated',
           });
         }
@@ -52,6 +54,7 @@ export async function delete_accountRoutes(server: FastifyInstance) {
           console.error('User ID mismatch');
           return reply.status(403).send({
             success: false,
+            error_id: "not_your_account",
             error: 'Unauthorized to delete this account',
           });
         }
@@ -70,6 +73,7 @@ export async function delete_accountRoutes(server: FastifyInstance) {
         request.log.error('Erreur suppression de compte:', error);
         return reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la suppression du compte',
         });
       }
@@ -103,6 +107,7 @@ export async function profileRoutes(server: FastifyInstance) {
         request.log.error('Profile update error:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Profile update error',
         });
       }
@@ -121,6 +126,7 @@ export async function profileRoutes(server: FastifyInstance) {
         if (user.has_2fa_enabled) {
           reply.send({
             success: false,
+            error_id: "already_enabled",
             error: "2FA is already enabled on this account",
           });
           return ;
@@ -150,6 +156,7 @@ export async function profileRoutes(server: FastifyInstance) {
         request.log.error('Erreur setup 2FA:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Error while setting up 2FA',
         });
       }
@@ -175,6 +182,7 @@ export async function profileRoutes(server: FastifyInstance) {
         if (user.has_2fa_enabled) {
           reply.send({
             success: false,
+            error_id: "already_enabled",
             error: "2FA is already enabled on this account",
           });
           return ;
@@ -184,6 +192,7 @@ export async function profileRoutes(server: FastifyInstance) {
         if (entry === undefined) {
           reply.send({
             success: false,
+            error_id: "request_expired",
             error: "Request to enable 2FA has expired",
           });
           return ;
@@ -203,6 +212,7 @@ export async function profileRoutes(server: FastifyInstance) {
         else {
           reply.send({
             success: false,
+            error_id: "invalid_otp",
             message: 'Invalid One-Time Password !',
           });
         }
@@ -211,6 +221,7 @@ export async function profileRoutes(server: FastifyInstance) {
         request.log.error('Erreur setup 2FA:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Unexpected error enabling 2FA',
         });
       }
@@ -229,6 +240,7 @@ export async function profileRoutes(server: FastifyInstance) {
         if (!user.has_2fa_enabled) {
           reply.send({
             success: false,
+            error_id: "already_disabled",
             error: "2FA is already disabled on this account",
           });
           return ;
@@ -245,6 +257,7 @@ export async function profileRoutes(server: FastifyInstance) {
         request.log.error('Erreur retirer 2FA:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Unexpected error disabling 2FA',
         });
       }

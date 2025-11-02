@@ -18,6 +18,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
     if (!data) {
       return reply.status(400).send({
         success: false,
+        error_id: "file_not_provided",
         error: 'Aucun fichier fourni',
       });
     }
@@ -31,6 +32,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
       if (totalSize > MAX_FILE_SIZE) {
         return reply.status(400).send({
           success: false,
+          error_id: "content_too_big",
           error: `Fichier trop volumineux. Taille maximale: ${MAX_FILE_SIZE / 1024 / 1024}MB`,
         });
       }
@@ -43,6 +45,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
     if (!ALLOWED_MIME_TYPES.includes(data.mimetype)) {
       return reply.status(400).send({
         success: false,
+        error_id: "content_type_unknown",
         error: `Type de fichier non supporté. Types autorisés: ${ALLOWED_MIME_TYPES.join(', ')}`,
       });
     }
@@ -51,6 +54,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
       return reply.status(400).send({
         success: false,
+        error_id: "content_type_forbidden",
         error: `Extension non autorisée. Extensions autorisées: ${ALLOWED_EXTENSIONS.join(', ')}`,
       });
     }
@@ -71,6 +75,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
     if (!isValidImage) {
       return reply.status(400).send({
         success: false,
+        error_id: "content_invalid",
         error: 'Le fichier ne semble pas être une image valide',
       });
     }
@@ -85,6 +90,7 @@ export const validateImageUpload = async (request: FastifyRequest, reply: Fastif
     request.log.error('Erreur validation upload:', error);
     return reply.status(400).send({
       success: false,
+      error_id: "cannot_validate_content",
       error: 'Erreur lors de la validation du fichier',
     });
   }

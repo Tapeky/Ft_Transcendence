@@ -121,6 +121,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (validationError) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_input",
             error: validationError,
           });
         }
@@ -219,12 +220,14 @@ export async function matchRoutes(server: FastifyInstance) {
         if (error.message.includes('FOREIGN KEY constraint failed')) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_player_id",
             error: 'ID joueur invalide',
           });
         }
         if (error.message.includes('UNIQUE constraint failed')) {
           return reply.status(409).send({
             success: false,
+            error_id: "match_already_registered",
             error: 'Match déjà enregistré',
           });
         }
@@ -232,6 +235,7 @@ export async function matchRoutes(server: FastifyInstance) {
 
       reply.status(500).send({
         success: false,
+				error_id: "internal_error",
         error: "Erreur lors de l'enregistrement du match",
       });
     }
@@ -306,6 +310,7 @@ export async function matchRoutes(server: FastifyInstance) {
         request.log.error('Erreur récupération matches:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération des matches',
         });
       }
@@ -334,6 +339,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (player1_id === player2_id) {
           return reply.status(400).send({
             success: false,
+            error_id: "playing_against_myself",
             error: 'Vous ne pouvez pas jouer contre vous-même',
           });
         }
@@ -348,6 +354,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (!opponent.length) {
           return reply.status(404).send({
             success: false,
+            error_id: "opponent_not_found",
             error: 'Adversaire non trouvé',
           });
         }
@@ -384,6 +391,7 @@ export async function matchRoutes(server: FastifyInstance) {
       request.log.error('Erreur création match:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+				error_id: "internal_error",
         error: 'Erreur lors de la création du match'
       });
     }
@@ -413,6 +421,7 @@ export async function matchRoutes(server: FastifyInstance) {
       request.log.error('Erreur matches live:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+				error_id: "internal_error",
         error: 'Erreur lors de la récupération des matches en cours',
       });
     }
@@ -428,6 +437,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (!match) {
           return reply.status(404).send({
             success: false,
+            error_id: "match_not_found",
             error: 'Match non trouvé',
           });
         }
@@ -440,6 +450,7 @@ export async function matchRoutes(server: FastifyInstance) {
         request.log.error('Erreur détails match:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération du match',
         });
       }
@@ -477,6 +488,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (!match.length) {
           return reply.status(404).send({
             success: false,
+            error_id: "match_not_found",
             error: 'Match non trouvé',
           });
         }
@@ -486,6 +498,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (currentMatch.player1_id !== userId && currentMatch.player2_id !== userId) {
           return reply.status(403).send({
             success: false,
+            error_id: "cannot_post_result",
             error: "Vous n'êtes pas autorisé à enregistrer ce résultat",
           });
         }
@@ -493,6 +506,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (currentMatch.status === 'completed') {
           return reply.status(400).send({
             success: false,
+            error_id: "match_already_over",
             error: 'Ce match est déjà terminé',
           });
         }
@@ -500,6 +514,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (winner_id !== currentMatch.player1_id && winner_id !== currentMatch.player2_id) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_winner_id",
             error: "Le gagnant doit être l'un des deux joueurs",
           });
         }
@@ -573,6 +588,7 @@ export async function matchRoutes(server: FastifyInstance) {
       request.log.error('Erreur enregistrement résultat:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+				error_id: "internal_error",
         error: 'Erreur lors de l\'enregistrement du résultat'
       });
     }
@@ -596,6 +612,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (!match.length) {
           return reply.status(404).send({
             success: false,
+            error_id: "match_not_found",
             error: 'Match non trouvé ou accès non autorisé',
           });
         }
@@ -603,6 +620,7 @@ export async function matchRoutes(server: FastifyInstance) {
         if (match[0].status !== 'scheduled') {
           return reply.status(400).send({
             success: false,
+            error_id: "match_cannot_be_started",
             error: 'Le match ne peut pas être démarré',
           });
         }
@@ -625,6 +643,7 @@ export async function matchRoutes(server: FastifyInstance) {
       request.log.error('Erreur démarrage match:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+				error_id: "internal_error",
         error: 'Erreur lors du démarrage du match'
       });
     }

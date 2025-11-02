@@ -44,6 +44,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
       request.log.error('Error fetching avatars:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Internal Server Error',
       });
     }
@@ -71,6 +72,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
         if (!validAvatars.includes(avatar_id)) {
           return reply.status(400).send({
             success: false,
+            error_id: "unknown_avatar",
             error: 'Avatar invalide',
           });
         }
@@ -99,6 +101,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
         request.log.error('Error updating avatar:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Internal Server Error',
         });
       }
@@ -163,6 +166,7 @@ export async function avatarsRoutes(fastify: FastifyInstance) {
         request.log.error('Error uploading avatar:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: "Erreur lors de l'upload de l'avatar",
         });
       }
