@@ -60,7 +60,7 @@ $(LIBCURL): deps
 			./configure --with-openssl --without-libpsl --enable-websockets --disable-shared; \
 		fi ; \
 		printf '\e[32mBuilding libcurl...\e[39m\n' ; \
-		$(MAKE)
+		$(MAKE) -j$(exec nproc || echo 8)
 
 -include $(DEPS)
 
