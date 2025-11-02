@@ -118,18 +118,21 @@ export class MatchController {
         if (error.message.includes('FOREIGN KEY constraint failed')) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_player_id",
             error: 'ID joueur invalide',
           });
         }
         if (error.message.includes('UNIQUE constraint failed')) {
           return reply.status(409).send({
             success: false,
+            error_id: "match_already_registered",
             error: 'Match déjà enregistré',
           });
         }
         if (error.message.includes('Player') || error.message.includes('Tournament')) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_input",
             error: error.message,
           });
         }
@@ -137,6 +140,7 @@ export class MatchController {
 
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: "Erreur lors de l'enregistrement du match",
       });
     }
@@ -176,6 +180,7 @@ export class MatchController {
       request.log.error('Erreur récupération matches:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération des matches',
       });
     }
@@ -206,12 +211,14 @@ export class MatchController {
         if (error.message === 'Cannot create match against yourself') {
           return reply.status(400).send({
             success: false,
+            error_id: "match_against_yourself",
             error: 'Vous ne pouvez pas jouer contre vous-même',
           });
         }
         if (error.message === 'Opponent not found') {
           return reply.status(404).send({
             success: false,
+            error_id: "unknown_opponent",
             error: 'Adversaire non trouvé',
           });
         }
@@ -219,6 +226,7 @@ export class MatchController {
 
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la création du match',
       });
     }
@@ -237,6 +245,7 @@ export class MatchController {
       request.log.error('Erreur matches live:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération des matches en cours',
       });
     }
@@ -253,6 +262,7 @@ export class MatchController {
       if (!match) {
         return reply.status(404).send({
           success: false,
+          error_id: "match_not_found",
           error: 'Match non trouvé',
         });
       }
@@ -265,6 +275,7 @@ export class MatchController {
       request.log.error('Erreur détails match:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération du match',
       });
     }
@@ -297,24 +308,28 @@ export class MatchController {
         if (error.message === 'Match not found') {
           return reply.status(404).send({
             success: false,
+            error_id: "match_not_found",
             error: 'Match non trouvé',
           });
         }
         if (error.message === 'Not authorized to update this match result') {
           return reply.status(403).send({
             success: false,
+            error_id: "insufficient_permission",
             error: "Vous n'êtes pas autorisé à enregistrer ce résultat",
           });
         }
         if (error.message === 'Match is already completed') {
           return reply.status(400).send({
             success: false,
+            error_id: "match_already_over",
             error: 'Ce match est déjà terminé',
           });
         }
         if (error.message === 'Winner must be one of the two players') {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_winner_id",
             error: "Le gagnant doit être l'un des deux joueurs",
           });
         }
@@ -322,6 +337,8 @@ export class MatchController {
 
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
+        error_id: "internal_error",
         error: "Erreur lors de l'enregistrement du résultat",
       });
     }
@@ -345,12 +362,14 @@ export class MatchController {
         if (error.message === 'Match not found or access not authorized') {
           return reply.status(404).send({
             success: false,
+            error_id: "match_not_found",
             error: 'Match non trouvé ou accès non autorisé',
           });
         }
         if (error.message === 'Match cannot be started') {
           return reply.status(400).send({
             success: false,
+            error_id: "match_cannot_be_started",
             error: 'Le match ne peut pas être démarré',
           });
         }
@@ -358,6 +377,7 @@ export class MatchController {
 
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors du démarrage du match',
       });
     }

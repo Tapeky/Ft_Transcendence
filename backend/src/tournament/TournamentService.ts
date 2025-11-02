@@ -75,25 +75,45 @@ export class TournamentService {
   private validateJoinTournament(
     tournament: any,
     alias: string
-  ): { success: boolean; message?: string } {
+  ): { success: boolean; error_id?: string, message?: string } {
     if (!tournament) {
-      return { success: false, message: 'Tournament not found' };
+      return {
+		    success: false,
+        error_id: "tournament_not_found",
+        message: 'Tournament not found'
+      };
     }
 
     if (tournament.status !== 'open') {
-      return { success: false, message: 'Tournament is not open for registration' };
+      return {
+		    success: false,
+        error_id: "not_open_for_registration",
+        message: 'Tournament is not open for registration'
+      };
     }
 
     if (tournament.current_players >= tournament.max_players) {
-      return { success: false, message: 'Tournament is full' };
+      return {
+		    success: false,
+        error_id: "tournament_full",
+        message: 'Tournament is full'
+      };
     }
 
     if (!alias || alias.trim().length === 0) {
-      return { success: false, message: 'Alias cannot be empty' };
+      return {
+		    success: false,
+        error_id: "invalid_input",
+        message: 'Alias cannot be empty'
+      };
     }
 
     if (alias.length > 50) {
-      return { success: false, message: 'Alias too long (max 50 characters)' };
+      return {
+		    success: false,
+        error_id: "invalid_input",
+        message: 'Alias too long (max 50 characters)'
+      };
     }
 
     return { success: true };
@@ -102,7 +122,7 @@ export class TournamentService {
   async joinTournament(
     tournamentId: string,
     alias: string
-  ): Promise<{ success: boolean; message?: string }> {
+  ): Promise<{ success: boolean; error_id?: string, message?: string }> {
     try {
       return await this.db.run('BEGIN TRANSACTION').then(async () => {
         try {
@@ -134,7 +154,11 @@ export class TournamentService {
 
           if (existingParticipant) {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Alias already taken in this tournament' };
+            return {
+              success: false,
+              error_id: "alias_already_taken",
+              message: 'Alias already taken in this tournament'
+            };
           }
 
           // Insert participant
@@ -156,7 +180,11 @@ export class TournamentService {
           // Verify update was successful (affected row count)
           if (updateResult.changes === 0) {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Tournament is full or no longer exists' };
+            return {
+              success: false,
+              error_id: "tournament_full_or_unknwon",
+              message: 'Tournament is full or no longer exists'
+            };
           }
 
           await this.db.run('COMMIT');
@@ -170,6 +198,7 @@ export class TournamentService {
       console.error('Error joining tournament:', error);
       return { 
         success: false, 
+        error_id: "internal_error",
         message: 'An error occurred while joining the tournament' 
       };
     }
@@ -177,7 +206,7 @@ export class TournamentService {
 
   async startTournament(
     tournamentId: string
-  ): Promise<{ success: boolean; bracket?: any; message?: string }> {
+  ): Promise<{ success: boolean; error_id?: string, bracket?: any; message?: string }> {
     try {
       return await this.db.run('BEGIN TRANSACTION').then(async () => {
         try {
@@ -192,18 +221,25 @@ export class TournamentService {
 
           if (!tournament) {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Tournament not found' };
+            return {
+              success: false,
+              error_id: "tournament_not_found",
+              message: 'Tournament not found' };
           }
 
           if (tournament.status !== 'open') {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Tournament is not in open state' };
+            return {
+              success: false,
+              error_id: "tournament_not_open",
+              message: 'Tournament is not in open state' };
           }
 
           if (tournament.current_players !== tournament.max_players) {
             await this.db.run('ROLLBACK');
             return { 
               success: false, 
+              error_id: "tournament_not_full",
               message: `Tournament is not full yet (${tournament.current_players}/${tournament.max_players})` 
             };
           }
@@ -215,6 +251,7 @@ export class TournamentService {
             await this.db.run('ROLLBACK');
             return { 
               success: false, 
+              error_id: "participant_count_mismatch",
               message: 'Participant count mismatch with tournament configuration' 
             };
           }
@@ -236,7 +273,10 @@ export class TournamentService {
 
           if (updateResult.changes === 0) {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Tournament state changed, cannot start' };
+            return {
+              success: false,
+              error_id: "cannot_start",
+              message: 'Tournament state changed, cannot start' };
           }
 
           await this.db.run('COMMIT');
@@ -250,12 +290,13 @@ export class TournamentService {
       console.error('Error starting tournament:', error);
       return { 
         success: false, 
+        error_id: "internal_error",
         message: 'An error occurred while starting the tournament' 
       };
     }
   }
 
-  async deleteTournament(tournamentId: string): Promise<{ success: boolean; message?: string }> {
+  async deleteTournament(tournamentId: string): Promise<{ success: boolean; error_id?: string, message?: string }> {
     try {
       return await this.db.run('BEGIN TRANSACTION').then(async () => {
         try {
@@ -265,7 +306,10 @@ export class TournamentService {
 
           if (!tournament) {
             await this.db.run('ROLLBACK');
-            return { success: false, message: 'Tournament not found' };
+            return {
+              success: false,
+              error_id: "tournament_not_found",
+              message: 'Tournament not found' };
           }
 
           // Delete participants first (foreign key constraint)
@@ -287,6 +331,7 @@ export class TournamentService {
       console.error('Error deleting tournament:', error);
       return { 
         success: false, 
+        error_id: "internal_error",
         message: 'An error occurred while deleting the tournament' 
       };
     }

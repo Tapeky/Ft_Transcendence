@@ -62,7 +62,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to create tournament:', error);
-        reply.status(500).send({ success: false, error: 'Failed to create tournament' });
+        reply.status(500).send({
+			    success: false,
+          error_id: "internal_error",
+			    error: 'Failed to create tournament'
+		    });
       }
     }
   );
@@ -77,7 +81,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
-          return reply.status(404).send({ success: false, error: 'Tournament not found' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "tournament_not_found",
+            error: 'Tournament not found'
+          });
         }
 
         const players = await db.all(
@@ -209,7 +217,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to get tournament:', error);
-        reply.status(500).send({ success: false, error: 'Failed to get tournament' });
+        reply.status(500).send({
+          success: false,
+          error_id: "internal_error",
+          error: 'Failed to get tournament'
+        });
       }
     }
   );
@@ -231,13 +243,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         if (!tournament) {
-          return reply
-            .status(404)
-            .send({ success: false, error: 'Tournament not found or not accepting players' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "tournament_not_found_or_not_accepting_players",
+            error: 'Tournament not found or not accepting players'
+          });
         }
 
         if (tournament.current_players >= tournament.max_players) {
-          return reply.status(400).send({ success: false, error: 'Tournament is full' });
+          return reply.status(400).send({
+            success: false,
+            error_id: "tournament_full",
+            error: 'Tournament is full'
+          });
         }
 
         const playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -273,7 +291,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to join tournament:', error);
-        reply.status(500).send({ success: false, error: 'Failed to join tournament' });
+        reply.status(500).send({
+          success: false,
+          error_id: "internal_error",
+          error: 'Failed to join tournament'
+        });
       }
     }
   );
@@ -294,11 +316,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         if (!tournament) {
           return reply
             .status(404)
-            .send({ success: false, error: 'Tournament not found or not available for starting' });
+            .send({
+              success: false,
+              error_id: "tournament_not_found_or_not_available_for_starting",
+              error: 'Tournament not found or not available for starting'
+            });
         }
 
         if (tournament.current_players < tournament.max_players) {
-          return reply.status(400).send({ success: false, error: 'Tournament needs more players' });
+          return reply.status(400).send({
+            success: false,
+            error_id: "needs_more_players",
+            error: 'Tournament needs more players'
+          });
         }
 
         await db.run(
@@ -385,7 +415,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to start tournament:', error);
-        reply.status(500).send({ success: false, error: 'Failed to start tournament' });
+        reply.status(500).send({
+          success: false,
+          error_id: "internal_error",
+          error: 'Failed to start tournament'
+        });
       }
     }
   );
@@ -400,11 +434,19 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
-          return reply.status(404).send({ success: false, error: 'Tournament not found' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "tournament_not_found",
+            error: 'Tournament not found'
+          });
         }
 
         if (tournament.status !== 'in_progress') {
-          return reply.status(400).send({ success: false, error: 'Tournament is not running' });
+          return reply.status(400).send({
+            success: false,
+            error_id: "tournament_not_running",
+            error: 'Tournament is not running'
+          });
         }
 
         const nextMatch = await db.get(
@@ -421,7 +463,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         if (!nextMatch) {
-          return reply.status(404).send({ success: false, error: 'No pending matches found' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "no_pending_matches",
+            error: 'No pending matches found'
+          });
         }
 
         // Broadcast next match notification
@@ -458,7 +504,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to get next match:', error);
-        reply.status(500).send({ success: false, error: 'Failed to get next match' });
+        reply.status(500).send({
+          success: false,
+          error_id: "internal_error",
+          error: 'Failed to get next match'
+        });
       }
     }
   );
@@ -483,11 +533,18 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         const tournament = await db.get(`SELECT * FROM tournaments WHERE id = ?`, [id]);
 
         if (!tournament) {
-          return reply.status(404).send({ success: false, error: 'Tournament not found' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "tournament_not_found",
+            error: 'Tournament not found' });
         }
 
         if (tournament.status !== 'in_progress') {
-          return reply.status(400).send({ success: false, error: 'Tournament is not running' });
+          return reply.status(400).send({
+            success: false,
+            error_id: "tournament_not_running",
+            error: 'Tournament is not running'
+          });
         }
 
         const match = await db.get(
@@ -496,11 +553,18 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         );
 
         if (!match) {
-          return reply.status(404).send({ success: false, error: 'Match not found' });
+          return reply.status(404).send({
+            success: false,
+            error_id: "match_not_found",
+            error: 'Match not found' });
         }
 
         if (match.status !== 'pending') {
-          return reply.status(400).send({ success: false, error: 'Match is not pending' });
+          return reply.status(400).send({
+            success: false,
+            error_id: "match_not_pending",
+            error: 'Match is not pending'
+          });
         }
 
         await db.run(
@@ -595,7 +659,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         });
       } catch (error) {
         console.error('Failed to submit match result:', error);
-        reply.status(500).send({ success: false, error: 'Failed to submit match result' });
+        reply.status(500).send({
+          success: false,
+          error_id: "internal_error",
+          error: 'Failed to submit match result'
+        });
       }
     }
   );
@@ -713,7 +781,11 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       });
     } catch (error) {
       console.error('Failed to get tournament history:', error);
-      reply.status(500).send({ success: false, error: 'Failed to get tournament history' });
+      reply.status(500).send({
+        success: false,
+        error_id: "internal_error",
+        error: 'Failed to get tournament history'
+      });
     }
   });
 
@@ -742,6 +814,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       console.error('❌ Failed to delete all tournaments:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Failed to delete all tournaments',
       });
     }
@@ -814,6 +887,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
       console.error('❌ Failed to clear tournament history:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Failed to clear tournament history',
       });
     }
