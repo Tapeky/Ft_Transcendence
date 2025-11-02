@@ -10,6 +10,8 @@ int ws_ctx_init(ws_ctx *ctx, const char *url)
 	}
 	curl_easy_setopt(easy, CURLOPT_CONNECT_ONLY, 2L);
 	curl_easy_setopt(easy, CURLOPT_URL, url);
+    curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
 	CURLcode err = curl_easy_perform(easy);
 	if (err)
 	{

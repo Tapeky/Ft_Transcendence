@@ -46,7 +46,9 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
     curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, api_ctx_writer);
     curl_easy_setopt(easy, CURLOPT_WRITEDATA, (void *)ctx);
 	curl_easy_setopt(easy, CURLOPT_POSTFIELDS, ctx->in_buf);
-	
+    curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+
 	struct curl_slist *list = NULL;
 	if (!(
     	(list = curl_slist_append(NULL, "Content-Type: application/json")) &&

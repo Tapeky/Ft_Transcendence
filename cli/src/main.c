@@ -312,7 +312,7 @@ static void init_windows(ctx *ctx)
 int main()
 {
 	ctx *ctx = &g_ctx;
-	if (!ctx_init(ctx, "http://localhost:8000/", "ws://localhost:8000/ws"))
+	if (!ctx_init(ctx, "https://localhost:8443/", "wss://localhost:8443/ws"))
 	{
 		dprintf(STDERR_FILENO, "ctx_init fail\n");
 		return (EXIT_FAILURE);
