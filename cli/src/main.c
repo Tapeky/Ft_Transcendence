@@ -111,7 +111,8 @@ void attempt_login(ctx *ctx)
 
 		if (!api_ctx_set_token(&ctx->api_ctx, ctx->user_login.data.token))
 			clean_and_fail("api_ctx_append_token() fail\n");
-		cswitch_window(term_window_type_DASHBOARD, 1);
+		REQ_WS_LOGIN(ctx->ws_ctx.send_buf, ctx->user_login.data.token);
+		ws_send(&ctx->ws_ctx);
 	}
 }
 
@@ -303,7 +304,27 @@ static void init_windows(ctx *ctx)
 		ctx->tournament_view.tournament_name = ccomponent_add(component);
 		button_init(&component, BOX_X + 4, BOX_Y + BOX_H - 2, "ENTER", handle_tournament_enter_button, ctx);
 		ccomponent_add(component);
+}
+
+static void on_sock_event(ctx *ctx)
+{
+	ws_recv_data data = ws_recv(&ctx->ws_ctx);
+
+	int delete_json = 1;
+	if (!strcmp(data.type, "auth_success"))
+	{
+		cswitch_window(term_window_type_DASHBOARD, 1);
 	}
+	else if (!strcmp(data.type, "auth_error"))
+	{
+		label_update_text(ctx->login_view.login_error_label, "Websocket Login Error", 0);
+		json_clean_obj(&ctx->user_login, login_def);
+		crefresh(0);
+	}
+	else
+		fprintf(stderr, "websocket event: %s\n", data.type);
+	if (delete_json)
+		cJSON_Delete(data.json);
 }
 
 int main()
@@ -320,7 +341,7 @@ int main()
 	creset_window_stack();
 	cswitch_window(term_window_type_LOGIN, 1);
 
-	input_loop(ctx, on_key_event);
+	input_loop(ctx, on_key_event, on_sock_event);
 	ctx_deinit(&g_ctx);
 	cdeinit();
 	return (EXIT_SUCCESS);
