@@ -275,9 +275,7 @@ console_component *add_pretty_textarea(u16 x, u16 y, u16 len, const char *hint, 
 	text_area_init(&text_area, x + 1, y + 1, len, hint, text_hidden);
 
 	box_init(&box,
-		x, y, len + 2, 3,
-		'-', '-', '|', '|',
-		'+', '+', '+', '+'
+		x, y, len + 2, 3, DEFAULT_BOX_STYLE
 	);
 
 	console_component *result = ccomponent_add(text_area);
@@ -293,9 +291,7 @@ console_component	*add_pretty_button(u16 x, u16 y, char *text, button_action_fun
 	button_init(&button, x + 1, y + 1, text, func, param);
 
 	box_init(&box,
-		x, y, strlen(text) + 2, 3,
-		'-', '-', '|', '|',
-		'+', '+', '+', '+'
+		x, y, strlen(text) + 2, 3, DEFAULT_BOX_STYLE
 	);
 
 	console_component *result = ccomponent_add(button);
