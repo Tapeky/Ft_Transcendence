@@ -160,8 +160,7 @@ void json_parse_from_def_force(cJSON *obj, const json_def *defs, void *out)
 	json_content_error err = json_parse_from_def(obj, defs, out);
 	if (err.kind)
 	{
-		cJSON_Delete(obj);
-		DO_CLEANUP(json_content_error_print(stderr, err));
+		DO_CLEANUP(json_content_error_print(stderr, err); cJSON_Delete(obj));
 	}
 }
 
