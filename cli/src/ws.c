@@ -72,12 +72,18 @@ static ws_xfer_result ws_recv_common(ws_ctx *ctx)
 	return (res);
 }
 
-cJSON *ws_recv(ws_ctx *ctx)
+ws_recv_data ws_recv(ws_ctx *ctx)
 {
 	ws_xfer_result res = ws_recv_common(ctx);
 	if (res.err)
 		DO_CLEANUP(ws_ctx_print_xfer_result(ctx, res, 1, stderr));
-	return (res.json_obj);
+	cJSON *type_node = cJSON_GetObjectItemCaseSensitive(res.json_obj, "type");
+	if (!type_node || !cJSON_IsString(type_node))
+		clean_and_fail("\"type\" field not found in websocket JSON");
+	ws_recv_data ret;
+	ret.type = type_node->valuestring;
+	ret.json = res.json_obj;
+	return (ret);
 }
 
 void ws_send(ws_ctx *ctx)
