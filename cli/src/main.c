@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <string.h>
+#define JSON_DEF_IMPLEMENTATION
 #include "json_def.h"
 #include "api.h"
 #include "ws.h"
