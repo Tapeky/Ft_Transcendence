@@ -90,6 +90,7 @@ export function validateInput(schema: any) {
     } catch (error: any) {
       return reply.status(400).send({
         success: false,
+        error_id: "invalid_input",
         error: 'Données invalides',
         details: error.message,
       });
@@ -111,6 +112,7 @@ export async function validateDisplayname(request: FastifyRequest, reply: Fastif
   if (displayname.length > 12) {
     return reply.status(400).send({
       success: false,
+      error_id: "invalid_input",
       error: 'Le pseudo ne peut pas dépasser 12 caractères',
     });
   }
@@ -118,6 +120,7 @@ export async function validateDisplayname(request: FastifyRequest, reply: Fastif
   if (!/^[a-zA-Z0-9_]+$/.test(displayname)) {
     return reply.status(400).send({
       success: false,
+      error_id: "invalid_input",
       error: 'Le pseudo ne peut contenir que des lettres, chiffres et underscores',
     });
   }
@@ -139,6 +142,7 @@ export async function validateAlias(request: FastifyRequest, reply: FastifyReply
   if (alias.length === 0) {
     return reply.status(400).send({
       success: false,
+      error_id: "invalid_input",
       error: "L'alias ne peut pas être vide",
     });
   }
@@ -146,6 +150,7 @@ export async function validateAlias(request: FastifyRequest, reply: FastifyReply
   if (alias.length > 50) {
     return reply.status(400).send({
       success: false,
+      error_id: "invalid_input",
       error: "L'alias ne peut pas dépasser 50 caractères",
     });
   }
@@ -153,6 +158,7 @@ export async function validateAlias(request: FastifyRequest, reply: FastifyReply
   if (!/^[a-zA-Z0-9_\-]+$/.test(alias)) {
     return reply.status(400).send({
       success: false,
+      error_id: "invalid_input",
       error: "L'alias ne peut contenir que des lettres, chiffres, underscores et tirets",
     });
   }

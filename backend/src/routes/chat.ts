@@ -32,6 +32,7 @@ export async function chatRoutes(server: FastifyInstance) {
         request.log.error('Erreur récupération conversations:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération des conversations',
         });
       }
@@ -58,6 +59,7 @@ export async function chatRoutes(server: FastifyInstance) {
         if (body.withUserId === currentUser.id) {
           return reply.status(400).send({
             success: false,
+            error_id: "talking_to_myself",
             error: 'Vous ne pouvez pas créer une conversation avec vous-même',
           });
         }
@@ -76,6 +78,7 @@ export async function chatRoutes(server: FastifyInstance) {
         request.log.error('Erreur création conversation:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la création de la conversation',
         });
       }
@@ -104,6 +107,7 @@ export async function chatRoutes(server: FastifyInstance) {
         if (!conversation) {
           return reply.status(404).send({
             success: false,
+            error_id: "conversation_not_found",
             error: 'Conversation non trouvée',
           });
         }
@@ -116,6 +120,7 @@ export async function chatRoutes(server: FastifyInstance) {
         request.log.error('Erreur récupération conversation:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération de la conversation',
         });
       }
@@ -182,12 +187,14 @@ export async function chatRoutes(server: FastifyInstance) {
         if (error.message.includes('non trouvée') || error.message.includes('non autorisé')) {
           return reply.status(404).send({
             success: false,
+            error_id: "message_fetch",
             error: error.message,
           });
         }
 
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération des messages',
         });
       }
@@ -236,6 +243,7 @@ export async function chatRoutes(server: FastifyInstance) {
         if (error.message.includes('non trouvée') || error.message.includes('non autorisé')) {
           return reply.status(404).send({
             success: false,
+            error_id: "conversation_fetch",
             error: error.message,
           });
         }
@@ -243,12 +251,14 @@ export async function chatRoutes(server: FastifyInstance) {
         if (error.message.includes('bloqué')) {
           return reply.status(403).send({
             success: false,
+            error_id: "youre_blocked_creep",
             error: error.message,
           });
         }
 
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: "Erreur lors de l'envoi du message",
         });
       }
@@ -284,12 +294,14 @@ export async function chatRoutes(server: FastifyInstance) {
         if (error.message.includes('non trouvée') || error.message.includes('non autorisé')) {
           return reply.status(404).send({
             success: false,
+            error_id: "conversation_fetch",
             error: error.message,
           });
         }
 
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la suppression de la conversation',
         });
       }

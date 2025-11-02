@@ -15,6 +15,7 @@ export async function authenticateToken(request: FastifyRequest, reply: FastifyR
     if (!user) {
       return reply.status(401).send({
         success: false,
+        error_id: "user_not_found",
         error: 'Utilisateur non trouvé',
       });
     }
@@ -28,6 +29,7 @@ export async function authenticateToken(request: FastifyRequest, reply: FastifyR
   } catch (error) {
     return reply.status(401).send({
       success: false,
+      error_id: "invalid_auth_token",
       error: "Token d'authentification invalide",
     });
   }
@@ -39,6 +41,7 @@ export function setupMiddleware(server: FastifyInstance) {
     if (contentLength && parseInt(contentLength) > 2 * 1024 * 1024) {
       return reply.status(413).send({
         success: false,
+        error_id: "content_too_big",
         error: 'Payload trop volumineux (maximum 2MB)',
       });
     }
@@ -53,6 +56,7 @@ export function setupMiddleware(server: FastifyInstance) {
       } catch (error) {
         return reply.status(400).send({
           success: false,
+          error_id: "cannot_validate_input",
           error: 'Validation des données échouée',
           details: error instanceof Error ? error.message : 'Données invalides',
         });
