@@ -53,5 +53,6 @@ void ctx_deinit(ctx *ctx)
 	api_ctx_deinit(&ctx->api_ctx);
 
 	json_clean_obj(&ctx->user_login, login_def);
-		json_clean_obj(&ctx->tournaments, tournaments_def);
+	json_clean_obj(&ctx->tournaments, tournaments_def);
+	json_clean_obj(&ctx->pong_invite, friend_pong_invite_def);
 }
