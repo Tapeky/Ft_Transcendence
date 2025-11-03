@@ -129,6 +129,7 @@ async function start() {
       if (errorWithCode.code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
           success: false,
+          error_id: "auth_token_missing",
           error: "Token d'authentification requis",
         });
       }
@@ -136,6 +137,7 @@ async function start() {
       if (errorWithCode.code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
         return reply.status(401).send({
           success: false,
+          error_id: "auth_token_invalid",
           error: "Token d'authentification invalide",
         });
       }
@@ -143,6 +145,7 @@ async function start() {
       if (errorWithCode.validation) {
         return reply.status(400).send({
           success: false,
+          error_id: "invalid_input",
           error: 'Données invalides',
           details: errorWithCode.validation,
         });
@@ -151,12 +154,14 @@ async function start() {
       if (errorWithCode.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return reply.status(409).send({
           success: false,
+          error_id: "duplicate_resource",
           error: 'Cette ressource existe déjà',
         });
       }
 
       return reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur',
       });
     });

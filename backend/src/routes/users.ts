@@ -33,6 +33,7 @@ export async function userRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la recherche:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la recherche',
         });
       }
@@ -51,6 +52,7 @@ export async function userRoutes(server: FastifyInstance) {
         if (!Array.isArray(userIds) || userIds.length === 0) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_input",
             error: 'userIds doit être un tableau non vide',
           });
         }
@@ -58,6 +60,7 @@ export async function userRoutes(server: FastifyInstance) {
         if (userIds.length > 20) {
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_input",
             error: 'Maximum 20 utilisateurs à la fois',
           });
         }
@@ -72,6 +75,7 @@ export async function userRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la récupération batch:' + (error instanceof Error ? error.message : String(error)));
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Erreur lors de la récupération des utilisateurs',
         });
       }
@@ -93,6 +97,7 @@ export async function userRoutes(server: FastifyInstance) {
       request.log.error('Erreur lors de la récupération du classement:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération du classement',
       });
     }
@@ -116,6 +121,7 @@ export async function userRoutes(server: FastifyInstance) {
       request.log.error('Erreur lors de la récupération des utilisateurs en ligne:' + (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération des utilisateurs en ligne'
       });
     }
@@ -139,6 +145,7 @@ export async function userRoutes(server: FastifyInstance) {
       if (!user) {
         return reply.status(404).send({
           success: false,
+          error_id: "unknown_id",
           error: 'Erreur lors de la récupération des utilisateurs en ligne',
         });
       }
@@ -157,6 +164,7 @@ export async function userRoutes(server: FastifyInstance) {
       request.log.error('Erreur lors de la récupération du profil:'+ (error instanceof Error ? error.message : String(error)));
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Erreur lors de la récupération du profil'
       });
     }

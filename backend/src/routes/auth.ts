@@ -15,6 +15,7 @@ export async function authRoutes(server: FastifyInstance) {
       await request.jwtVerify();
       return reply.status(400).send({
         success: false,
+        error_id: "already_logged_in",
         error: 'You are already logged in',
       });
     } catch (error) {
@@ -46,6 +47,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (existingUser) {
           return reply.status(409).send({
             success: false,
+            error_id: "duplicate_email",
             error: 'An account with this email already exists',
           });
         }
@@ -54,6 +56,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (existingUsername) {
           return reply.status(409).send({
             success: false,
+            error_id: "duplicate_username",
             error: "Username already taken",
           });
         }
@@ -112,6 +115,7 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Error while registering',
         });
       }
@@ -148,6 +152,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(401).send({
             success: false,
+            error_id: "invalid_email_or_password",
             error: 'Wrong email or password',
           });
         }
@@ -165,6 +170,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(401).send({
             success: false,
+            error_id: "invalid_email_or_password",
             error: 'Wrong email or password',
           });
         }
@@ -175,6 +181,7 @@ export async function authRoutes(server: FastifyInstance) {
           if (!userOTP || userOTP.length != TOTP_DIGITS) {
             return reply.status(401).send({
               success: false,
+              error_id: "login_requires_totp",
               error: 'Ce compte est protégé par authentification à deux facteurs.',
             });
           }
@@ -190,6 +197,7 @@ export async function authRoutes(server: FastifyInstance) {
 
             return reply.status(401).send({
               success: false,
+              error_id: "totp_invalid",
               error: 'Clé 2FA incorrecte.',
             });
           }
@@ -247,6 +255,7 @@ export async function authRoutes(server: FastifyInstance) {
 
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Error while connecting',
         });
       }
@@ -281,6 +290,7 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Erreur lors de la déconnexion:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Logout error',
         });
       }
@@ -327,6 +337,7 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Profile retrieve error:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Profile retrieve error',
         });
       }
@@ -377,6 +388,7 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Update profile error:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Update profile error',
         });
       }
@@ -408,6 +420,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!user) {
           return reply.status(404).send({
             success: false,
+            error_id: "user_not_found",
             error: 'User not found',
           });
         }
@@ -425,6 +438,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_current_password",
             error: 'Invalid current password',
           });
         }
@@ -448,6 +462,7 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Error while changing password:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Error while changing password',
         });
       }
@@ -474,6 +489,7 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Error heartbeat:', error);
         reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Error during heartbeat',
         });
       }
@@ -504,6 +520,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!body.confirm_deletion) {
           return reply.status(400).send({
             success: false,
+            error_id: "deletion_not_confirmed",
             error: 'Please confirm account deletion',
           });
         }
@@ -512,6 +529,7 @@ export async function authRoutes(server: FastifyInstance) {
         if (!user) {
           return reply.status(404).send({
             success: false,
+            error_id: "user_not_found",
             error: 'User not found',
           });
         }
@@ -529,6 +547,7 @@ export async function authRoutes(server: FastifyInstance) {
 
           return reply.status(400).send({
             success: false,
+            error_id: "invalid_password",
             error: 'Wrong password',
           });
         }
@@ -552,7 +571,8 @@ export async function authRoutes(server: FastifyInstance) {
         request.log.error('Error during accoutn deletion:', error);
         reply.status(500).send({
           success: false,
-          error: 'Error during accoutn deletion',
+          error_id: "internal_error",
+          error: 'Error during account deletion',
         });
       }
     }
@@ -565,6 +585,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!githubClientId) {
         return reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'GitHub OAuth not configured',
         });
       }
@@ -576,6 +597,7 @@ export async function authRoutes(server: FastifyInstance) {
       request.log.error('Error during Github redirection:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Error during Github connection',
       });
     }
@@ -588,6 +610,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!code) {
         return reply.status(400).send({
           success: false,
+          error_id: "auth_code_missing",
           error: "Missing authorization code",
         });
       }
@@ -610,6 +633,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!tokenData.access_token) {
         return reply.status(400).send({
           success: false,
+          error_id: "github_auth_error",
           error: "Error during Github auth",
         });
       }
@@ -636,6 +660,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!primaryEmail) {
         return reply.status(400).send({
           success: false,
+          error_id: "github_email_unavailable",
           error: "Cannot get Github email",
         });
       }
@@ -706,6 +731,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!googleClientId) {
         return reply.status(500).send({
           success: false,
+          error_id: "internal_error",
           error: 'Google OAuth not configured',
         });
       }
@@ -726,6 +752,7 @@ export async function authRoutes(server: FastifyInstance) {
       request.log.error('Error Google redirection:', error);
       reply.status(500).send({
         success: false,
+        error_id: "internal_error",
         error: 'Error Google connection',
       });
     }
@@ -738,6 +765,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!code) {
         return reply.status(400).send({
           success: false,
+          error_id: "auth_code_missing",
           error: "Missing authorization code",
         });
       }
@@ -762,6 +790,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!tokenData.access_token) {
         return reply.status(400).send({
           success: false,
+          error_id: "google_auth_error",
           error: "Error Google auth",
         });
       }
@@ -777,6 +806,7 @@ export async function authRoutes(server: FastifyInstance) {
       if (!googleUser.email) {
         return reply.status(400).send({
           success: false,
+          error_id: "google_email_unavailable",
           error: "Cannot get Google email",
         });
       }
