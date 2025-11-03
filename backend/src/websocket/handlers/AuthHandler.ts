@@ -3,7 +3,6 @@ import { FastifyInstance } from 'fastify';
 import { DatabaseManager } from '../../database/DatabaseManager';
 import { UserRepository } from '../../repositories/UserRepository';
 import { WebSocketManager } from '../WebSocketManager';
-import { simpleGameInvites } from '../SimpleGameInvites';
 
 export class AuthHandler {
   constructor(
@@ -28,8 +27,6 @@ export class AuthHandler {
         await userRepo.updateOnlineStatus(userId, true);
 
         this.wsManager.addUser(userId, username, connection);
-
-        simpleGameInvites.addUser(userId, username, connection);
 
         connection.socket.send(
           JSON.stringify({

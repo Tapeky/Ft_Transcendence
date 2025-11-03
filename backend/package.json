@@ -27,17 +27,19 @@
     "bcrypt": "^5.1.1",
     "fastify": "^4.26.2",
     "formdata-node": "^6.0.3",
+    "jssha": "3.3.1",
     "node-vault": "^0.10.5",
     "sharp": "^0.34.2",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-	"jssha": "3.3.1"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/jssha": "^2.0.0",
     "@types/node": "^20.11.30",
     "@types/node-vault": "^0.9.4",
     "@types/sharp": "^0.31.1",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",

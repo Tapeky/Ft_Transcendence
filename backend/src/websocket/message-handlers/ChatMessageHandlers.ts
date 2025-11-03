@@ -28,13 +28,9 @@ export class DirectMessageHandler extends BaseMessageHandler {
     }
 
     await this.chatHandler.handleDirectMessage(
-      connection,
       userState.userId,
-      userState.username,
-      {
-        toUserId: message.toUserId,
-        message: message.message,
-      }
+      message.toUserId,
+      message.message
     );
   }
 }
@@ -64,9 +60,6 @@ export class ChatMessageHandler extends BaseMessageHandler {
       return;
     }
 
-    this.chatHandler.handleLegacyChatMessage(userState.userId, userState.username, {
-      toUserId: message.toUserId,
-      message: message.message,
-    });
+    this.chatHandler.handleDirectMessage(userState.userId, message.toUserId, message.message);
   }
 }

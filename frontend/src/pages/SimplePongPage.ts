@@ -55,6 +55,9 @@ export class SimplePongPage {
   private authUnsubscribe?: () => void;
   private instructionsElement?: HTMLElement;
   private gameEndOverlay: HTMLElement | null = null;
+  private isPlayerReady: boolean = false;
+  private isOpponentReady: boolean = false;
+  private readyButton: HTMLButtonElement | null = null;
 
   constructor() {
     this.element = this.createElement();
@@ -83,7 +86,11 @@ export class SimplePongPage {
                         <div class="text-lg opacity-75">First to 5 points wins!</div>
                     </div>
                 </div>
-                <div class="mt-8">
+                <div class="mt-8 flex gap-4 justify-center">
+                    <button id="ready-button"
+                        class="hidden text-white bg-green-600 border-white border-2 px-8 py-4 rounded hover:bg-green-700 transition-colors font-iceland text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                        READY
+                    </button>
                     <button id="back-to-menu"
                         class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
                         ← Back to Menu
@@ -110,6 +117,7 @@ export class SimplePongPage {
       this.startRenderLoop();
       this.setupKeyboardHandlers();
       this.setupBackButton();
+      this.setupReadyButton();
       this.initializeConnection();
     }, 100);
   }
@@ -188,6 +196,60 @@ export class SimplePongPage {
         router.navigate('/');
       });
     });
+  }
+
+  private setupReadyButton(): void {
+    this.readyButton = this.element.querySelector('#ready-button') as HTMLButtonElement;
+    this.readyButton?.addEventListener('click', () => {
+      if (this.isPlayerReady || !this.gameId) return;
+
+      this.isPlayerReady = true;
+      this.sendReadyMessage();
+      this.updateReadyButton();
+    });
+  }
+
+  private sendReadyMessage(): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.gameId) {
+      this.ws.send(
+        JSON.stringify({
+          type: 'pong_player_ready',
+          gameId: this.gameId,
+        })
+      );
+    }
+  }
+
+  private updateReadyButton(): void {
+    if (!this.readyButton) return;
+
+    if (this.isPlayerReady) {
+      this.readyButton.disabled = true;
+      this.readyButton.textContent = '✓ READY';
+      this.readyButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+      this.readyButton.classList.add('bg-gray-600');
+
+      if (this.isOpponentReady) {
+        this.setStatusMessage('Both players ready!', 'Game starting...');
+      } else {
+        this.setStatusMessage('Waiting for opponent...', 'You are ready. Waiting for opponent to ready up.');
+      }
+    }
+  }
+
+  private showReadyButton(): void {
+    if (this.readyButton) {
+      this.readyButton.classList.remove('hidden');
+      this.setStatusMessage('Match found!', 'Click READY when you\'re prepared to start.');
+    }
+  }
+
+  private hideReadyButton(): void {
+    if (this.readyButton) {
+      this.readyButton.classList.add('hidden');
+      this.isPlayerReady = false;
+      this.isOpponentReady = false;
+    }
   }
 
   private setupKeyboardHandlers(): void {
@@ -374,6 +436,18 @@ export class SimplePongPage {
         })
       );
       this.setStatusMessage('Connected to the arena', 'Waiting for the match to begin.');
+
+      // If we have a gameId from URL (invited game), join the game
+      if (this.gameId) {
+        setTimeout(() => {
+          this.ws?.send(
+            JSON.stringify({
+              type: 'join_simple_pong',
+              gameId: this.gameId,
+            })
+          );
+        }, 500);
+      }
     };
 
     this.ws.onmessage = event => {
@@ -415,6 +489,43 @@ export class SimplePongPage {
           this.gameStartTime = Date.now();
           this.preparePlayerNames(msg);
 
+          // Check if game already started (both players were ready before we joined)
+          if (msg.gameStarted) {
+            this.setStatusMessage(
+              `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
+              `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys.`
+            );
+            if (!this.isCountingDown) {
+              this.startCountdown();
+            }
+          } else {
+            // Check if opponent is already ready
+            const isOpponentReady = this.myRole === 'left' ? msg.rightPlayerReady : msg.leftPlayerReady;
+            if (isOpponentReady) {
+              this.isOpponentReady = true;
+            }
+
+            // Show ready button
+            this.showReadyButton();
+
+            // Update button state if opponent is ready
+            if (this.isOpponentReady) {
+              this.setStatusMessage('Opponent is ready!', 'Click READY to start the game.');
+            }
+          }
+          break;
+
+        case 'player_ready_update':
+          // Opponent is ready
+          this.isOpponentReady = true;
+          this.setStatusMessage('Opponent is ready!', msg.message || 'Your opponent is ready to play.');
+          this.updateReadyButton();
+          break;
+
+        case 'simple_pong_actually_started':
+        case 'friend_pong_actually_started':
+          // Both players are ready, start the game
+          this.hideReadyButton();
           this.setStatusMessage(
             `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
             `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys.`
@@ -435,6 +546,18 @@ export class SimplePongPage {
           this.handleGameStateMessage(msg);
           this.isCountingDown = false;
           this.hidePlayerNames();
+          this.hideReadyButton();
+          break;
+
+        case 'opponent_disconnected':
+          if (msg.gameState) {
+            this.handleGameStateMessage(msg);
+          }
+          this.setStatusMessage('Opponent Disconnected', msg.message || 'Your opponent has left the game.');
+          this.isCountingDown = false;
+          this.hidePlayerNames();
+          this.hideReadyButton();
+          this.stopRenderLoop();
           break;
       }
     };
@@ -495,6 +618,10 @@ export class SimplePongPage {
   }
 
   private handleGameStateMessage(msg: any): void {
+    if (this.isCountingDown) {
+      return;
+    }
+
     if (!this.myRole && msg.leftPlayerId && msg.rightPlayerId) {
       const currentUser = this.getCurrentUserInfo();
       if (currentUser) {

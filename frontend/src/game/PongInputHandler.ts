@@ -32,9 +32,11 @@ export class PongInputHandler {
     const prevState = { ...this.keys };
 
     if (event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W') {
+      event.preventDefault();
       this.keys.up = true;
     }
     if (event.key === 'ArrowDown' || event.key === 's' || event.key === 'S') {
+      event.preventDefault();
       this.keys.down = true;
     }
 
@@ -47,9 +49,11 @@ export class PongInputHandler {
     const prevState = { ...this.keys };
 
     if (event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W') {
+      event.preventDefault();
       this.keys.up = false;
     }
     if (event.key === 'ArrowDown' || event.key === 's' || event.key === 'S') {
+      event.preventDefault();
       this.keys.down = false;
     }
 
