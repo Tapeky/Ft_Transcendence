@@ -338,7 +338,6 @@ export class MatchController {
       reply.status(500).send({
         success: false,
         error_id: "internal_error",
-        error_id: "internal_error",
         error: "Erreur lors de l'enregistrement du résultat",
       });
     }
