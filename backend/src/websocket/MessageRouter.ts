@@ -1,9 +1,6 @@
 import { SocketStream } from '@fastify/websocket';
 import { FastifyInstance } from 'fastify';
 import { WebSocketManager } from './WebSocketManager';
-import { GameManager } from './game_manager';
-import { AuthHandler, ChatHandler, GameHandler } from './handlers';
-import { simpleGameInvites } from './SimpleGameInvites';
 import { FriendPongInvites } from './FriendPongInvites';
 import { MessageHandlerRegistry } from './handlers/MessageHandlerRegistry';
 import { MessageContext, UserSessionState } from './handlers/MessageHandler';
@@ -16,17 +13,6 @@ import {
   DirectMessageHandler,
   ChatMessageHandler,
 } from './message-handlers/ChatMessageHandlers';
-import {
-  StartGameMessageHandler,
-  StartLocalGameMessageHandler,
-  JoinExistingGameMessageHandler,
-  PlayerReadyMessageHandler,
-  UpdateInputMessageHandler,
-  UpdateLocalInputMessageHandler,
-  LeaveGameMessageHandler,
-  GameInviteReceivedMessageHandler,
-  GameInviteResponseMessageHandler,
-} from './message-handlers/GameMessageHandlers';
 import {
   FriendPongAcceptMessageHandler,
   FriendPongDeclineMessageHandler,
@@ -47,19 +33,12 @@ interface FastifyWithPongServices extends FastifyInstance {
 }
 
 export class MessageRouter {
-  private authHandler: AuthHandler;
-  private chatHandler: ChatHandler;
-  private gameHandler: GameHandler;
   private handlerRegistry: MessageHandlerRegistry;
 
   constructor(
     private server: FastifyWithPongServices,
-    private wsManager: WebSocketManager,
-    private gameManager: GameManager
+    private wsManager: WebSocketManager
   ) {
-    this.authHandler = new AuthHandler(server, wsManager);
-    this.chatHandler = new ChatHandler(wsManager);
-    this.gameHandler = new GameHandler(wsManager, gameManager);
     this.handlerRegistry = new MessageHandlerRegistry();
     this.registerHandlers();
   }
@@ -78,20 +57,7 @@ export class MessageRouter {
       new ChatMessageHandler(this.wsManager),
     ]);
 
-    // Game handlers
-    this.handlerRegistry.registerMultiple([
-      new StartGameMessageHandler(this.wsManager, this.gameManager),
-      new StartLocalGameMessageHandler(this.wsManager, this.gameManager),
-      new JoinExistingGameMessageHandler(this.wsManager, this.gameManager),
-      new PlayerReadyMessageHandler(this.wsManager, this.gameManager),
-      new UpdateInputMessageHandler(this.wsManager, this.gameManager),
-      new UpdateLocalInputMessageHandler(this.wsManager, this.gameManager),
-      new LeaveGameMessageHandler(this.wsManager, this.gameManager),
-      new GameInviteReceivedMessageHandler(this.wsManager, this.gameManager),
-      new GameInviteResponseMessageHandler(this.wsManager, this.gameManager),
-    ]);
-
-    // Pong handlers
+    // Pong handlers (SimplePong system)
     this.handlerRegistry.registerMultiple([
       new FriendPongAcceptMessageHandler(this.server.friendPongInvites),
       new FriendPongDeclineMessageHandler(this.server.friendPongInvites),
@@ -118,11 +84,6 @@ export class MessageRouter {
 
       // Try to handle with registered handlers
       const handled = await this.handlerRegistry.handle(context);
-
-      // Fallback to legacy simpleGameInvites if not handled
-      if (!handled && userState.userId && simpleGameInvites.handleMessage(userState.userId, message)) {
-        return;
-      }
 
       // Send error if no handler found
       if (!handled) {

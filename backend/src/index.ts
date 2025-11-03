@@ -12,7 +12,6 @@ import { ensureSchema } from './database/init';
 import { setupRoutes } from './routes';
 import { setupMiddleware } from './middleware';
 import { setupWebSocket } from './websocket';
-import { GameManager } from './websocket/game_manager';
 import { VaultService } from './vault/vault';
 
 
@@ -208,7 +207,7 @@ async function start() {
       }
     }, 5 * 60 * 1000);
 
-    GameManager.instance.registerLoop();
+    // SimplePongManager now handles all games automatically
   } catch (err) {
     server.log.error('❌ Erreur de démarrage du serveur:'+ (err instanceof Error ? err.message : String(err)));
     process.exit(1);

@@ -45,6 +45,10 @@ export class PingMessageHandler extends BaseMessageHandler {
     return false;
   }
 
+  validate(message: any): boolean {
+    return true; // Ping messages don't need validation
+  }
+
   async handle(context: MessageContext): Promise<void> {
     this.authHandler.handlePing(context.connection);
   }

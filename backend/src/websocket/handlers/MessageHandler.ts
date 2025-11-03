@@ -1,38 +1,43 @@
 import { SocketStream } from '@fastify/websocket';
 
-export interface UserSessionState {
-  userId: number | null;
-  username: string | null;
-  userInput: any;
-}
-
 export interface MessageContext {
   connection: SocketStream;
   userState: UserSessionState;
   message: any;
 }
 
-export interface IMessageHandler {
-  readonly messageType: string;
-  validate(message: any): boolean;
-  requiresAuth(): boolean;
-  handle(context: MessageContext): Promise<void>;
+export interface UserSessionState {
+  userId: number | null;
+  username: string | null;
+  userInput: any;
 }
 
-export abstract class BaseMessageHandler implements IMessageHandler {
+export abstract class BaseMessageHandler {
   abstract readonly messageType: string;
 
-  validate(message: any): boolean {
-    return true;
-  }
+  constructor() {}
 
+  /**
+   * Whether this message requires authentication
+   */
   requiresAuth(): boolean {
     return true;
   }
 
+  /**
+   * Validate the incoming message
+   */
+  abstract validate(message: any): boolean;
+
+  /**
+   * Handle the message
+   */
   abstract handle(context: MessageContext): Promise<void>;
 
-  protected sendError(connection: SocketStream, message: string): void {
+  /**
+   * Send an error response
+   */
+  sendError(connection: SocketStream, message: string): void {
     connection.socket.send(
       JSON.stringify({
         type: 'error',
@@ -41,10 +46,14 @@ export abstract class BaseMessageHandler implements IMessageHandler {
     );
   }
 
-  protected sendSuccess(connection: SocketStream, type: string, data: any): void {
+  /**
+   * Send a success response
+   */
+  sendSuccess(connection: SocketStream, type: string, data?: any): void {
     connection.socket.send(
       JSON.stringify({
         type,
+        success: true,
         ...data,
       })
     );

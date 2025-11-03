@@ -6,7 +6,6 @@ import { profileRoutes } from './profile';
 import { friendRoutes } from './friends';
 import { avatarsRoutes } from './avatars';
 import { chatRoutes } from './chat';
-import gameInviteRoutes from './game-invites';
 import { localTournamentRoutes } from './local-tournament';
 import { delete_accountRoutes } from './profile';
 
@@ -29,8 +28,6 @@ export async function setupRoutes(server: FastifyInstance) {
       await server.register(avatarsRoutes, { prefix: '/avatars' });
 
       await server.register(chatRoutes, { prefix: '/chat' });
-
-      await server.register(gameInviteRoutes, { prefix: '/game-invites' });
 
       await server.register(localTournamentRoutes, { prefix: '/local-tournaments' });
     },

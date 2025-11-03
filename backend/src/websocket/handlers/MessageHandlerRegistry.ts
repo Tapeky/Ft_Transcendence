@@ -1,41 +1,54 @@
-import { IMessageHandler, MessageContext } from './MessageHandler';
+import { BaseMessageHandler, MessageContext } from './MessageHandler';
+import { SocketStream } from '@fastify/websocket';
 
 export class MessageHandlerRegistry {
-  private handlers = new Map<string, IMessageHandler>();
+  private handlers = new Map<string, BaseMessageHandler>();
 
-  register(handler: IMessageHandler): void {
-    if (this.handlers.has(handler.messageType)) {
-      console.warn(`Handler for message type '${handler.messageType}' already registered. Overwriting.`);
-    }
+  /**
+   * Register a single handler
+   */
+  register(handler: BaseMessageHandler): void {
     this.handlers.set(handler.messageType, handler);
   }
 
-  registerMultiple(handlers: IMessageHandler[]): void {
+  /**
+   * Register multiple handlers
+   */
+  registerMultiple(handlers: BaseMessageHandler[]): void {
     handlers.forEach(handler => this.register(handler));
   }
 
+  /**
+   * Handle a message
+   */
   async handle(context: MessageContext): Promise<boolean> {
-    const { message, userState, connection } = context;
-    const handler = this.handlers.get(message.type);
+    const { message, userState } = context;
+    const messageType = message.type;
 
+    if (!messageType) {
+      return false;
+    }
+
+    const handler = this.handlers.get(messageType);
+    
     if (!handler) {
       return false;
     }
 
     // Check authentication requirement
     if (handler.requiresAuth() && !userState.userId) {
-      connection.socket.send(
+      context.connection.socket.send(
         JSON.stringify({
           type: 'error',
           message: 'Authentication required',
         })
       );
-      return true;
+      return true; // Message was handled (even if with an error)
     }
 
     // Validate message
     if (!handler.validate(message)) {
-      connection.socket.send(
+      context.connection.socket.send(
         JSON.stringify({
           type: 'error',
           message: 'Invalid message format',
@@ -44,13 +57,12 @@ export class MessageHandlerRegistry {
       return true;
     }
 
-    // Handle message
     try {
       await handler.handle(context);
       return true;
     } catch (error) {
-      console.error(`Error handling message type '${message.type}':`, error);
-      connection.socket.send(
+      console.error(`Error handling message type ${messageType}:`, error);
+      context.connection.socket.send(
         JSON.stringify({
           type: 'error',
           message: 'Error processing message',
@@ -60,11 +72,17 @@ export class MessageHandlerRegistry {
     }
   }
 
-  hasHandler(messageType: string): boolean {
-    return this.handlers.has(messageType);
-  }
-
+  /**
+   * Get all registered message types
+   */
   getRegisteredTypes(): string[] {
     return Array.from(this.handlers.keys());
+  }
+
+  /**
+   * Check if a handler is registered for a message type
+   */
+  hasHandler(messageType: string): boolean {
+    return this.handlers.has(messageType);
   }
 }

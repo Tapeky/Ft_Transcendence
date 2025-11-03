@@ -4,9 +4,7 @@ import { DatabaseManager } from '../database/DatabaseManager';
 import { UserRepository } from '../repositories/UserRepository';
 import { WebSocketManager } from './WebSocketManager';
 import { MessageRouter } from './MessageRouter';
-import { GameManager } from './game_manager';
 import { Input } from '../game/Input';
-import { simpleGameInvites } from './SimpleGameInvites';
 import { FriendPongInvites } from './FriendPongInvites';
 import { SimplePongManager } from './SimplePongManager';
 
@@ -17,7 +15,6 @@ interface FastifyWithPongServices extends FastifyInstance {
 
 export function setupWebSocket(server: FastifyInstance) {
   const wsManager = WebSocketManager.getInstance();
-  const gameManager = GameManager.instance;
   const friendPongInvites = new FriendPongInvites(wsManager);
   const simplePongManager = SimplePongManager.getInstance();
 
@@ -27,11 +24,7 @@ export function setupWebSocket(server: FastifyInstance) {
   server.decorate('websocketManager', wsManager);
 
   const extendedServer = server as FastifyWithPongServices;
-  const messageRouter = new MessageRouter(extendedServer, wsManager, gameManager);
-
-  simpleGameInvites.setWebSocketManager(wsManager);
-
-  gameManager.registerLoop();
+  const messageRouter = new MessageRouter(extendedServer, wsManager);
 
   server.register(async function (server) {
     server.get('/ws', { websocket: true }, async (connection: SocketStream, req) => {
@@ -58,7 +51,6 @@ export function setupWebSocket(server: FastifyInstance) {
 
           simplePongManager.handlePlayerDisconnect(userId);
           wsManager.removeUser(userId);
-          simpleGameInvites.removeUser(userId);
         }
       });
 
@@ -66,9 +58,7 @@ export function setupWebSocket(server: FastifyInstance) {
         const { userId } = userState;
         if (userId) {
           simplePongManager.handlePlayerDisconnect(userId);
-
           wsManager.removeUser(userId);
-          simpleGameInvites.removeUser(userId);
         }
       });
 

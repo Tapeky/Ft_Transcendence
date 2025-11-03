@@ -39,6 +39,7 @@
     "@types/node": "^20.11.30",
     "@types/node-vault": "^0.9.4",
     "@types/sharp": "^0.31.1",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
