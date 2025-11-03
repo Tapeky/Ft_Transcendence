@@ -10,9 +10,9 @@ int input_init(ctx *ctx)
 {
 	return (!XGrabKeyboard(ctx->dpy, 
 		ctx->root_win,
-		False, 
-		GrabModeAsync, 
-		GrabModeAsync, 
+		True,
+		GrabModeAsync,
+		GrabModeAsync,
 		CurrentTime
 	));
 }
@@ -76,6 +76,13 @@ void input_poll(ctx *ctx)
 	ctx->input.pressed.n &= ~ctx->input.just_released.n; // clear all bits whose inputs were just released
 }
 
+void input_burn_events(ctx *ctx)
+{
+	XEvent event;
+	while (XPending(ctx->dpy))
+		XNextEvent(ctx->dpy, &event);
+}
+
 #define KEY_BACKSPACE 0x16
 
 void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(struct s_ctx *ctx))
@@ -125,6 +132,5 @@ void input_loop(ctx *ctx, on_input_func on_key_event, void (*on_ws_sock_event)(s
 	}
 	end:
 	// burn remaining events
-	while (XPending(ctx->dpy))
-		XNextEvent(ctx->dpy, &event);
+	input_burn_events(ctx);
 }

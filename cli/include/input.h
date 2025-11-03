@@ -38,6 +38,7 @@ typedef struct
 int input_init(ctx *ctx);
 void input_deinit(ctx *ctx);
 void input_poll(ctx *ctx);
+void input_burn_events(ctx *ctx);
 
 typedef int (on_input_func)(ctx *ctx, KeySym key, int is_press);
 
