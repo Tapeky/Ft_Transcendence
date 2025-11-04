@@ -159,6 +159,8 @@ export class ProfilePage {
       >
         EDIT
       </button>
+
+      <div id="upload-status" class="hidden"></div>
     `;
 
     mainContent.appendChild(rightColumn);
@@ -530,7 +532,6 @@ export class ProfilePage {
           Import file
         </button>
         
-        <div id="upload-status" class="text-[1.2rem] min-h-[1.5rem] text-center"></div>
       </div>
     `;
 
@@ -599,9 +600,11 @@ export class ProfilePage {
       }
 
       this.updateUploadStatus('Avatar updated successfully!', 'success');
+      this.closeAvatarModal();
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       this.updateUploadStatus('Error uploading avatar', 'error');
+      this.closeAvatarModal();
     }
   }
 
@@ -655,9 +658,10 @@ export class ProfilePage {
     const statusElement = document.querySelector('#upload-status');
     if (statusElement) {
       statusElement.textContent = message;
-      statusElement.className = `text-[1.2rem] min-h-[1.5rem] text-center ${
-        type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
+      statusElement.className = `fixed top-4 right-4 z-50 p-4 rounded-lg text-white text-[1.2rem] ${
+        type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'text-blue-600'
       }`;
+      setTimeout(() => {statusElement.className = 'hidden';}, 2000);
     }
   }
 
@@ -706,11 +710,10 @@ export class ProfilePage {
               onkeypress="return (event.charCode != 8 && event.charCode == 0 || (event.charCode >= 48 && event.charCode <= 57))"
               minlength="6"
               maxlength="6"
-              required
-              placeholder="XXXXXX">
+              required>
             <hr style="height:10px"/>
             <button class="rounded-md ml-3 border-2 border-white">
-              SUBMIT
+              Submit
             </button>
           </div>
         </form>
