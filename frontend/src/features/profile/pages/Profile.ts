@@ -672,6 +672,7 @@ export class ProfilePage {
       'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
     const modalContainer = document.createElement('div');
+    modalContainer.id = '2fa-container';
     modalContainer.className =
       'bg-blue-800 w-[600px] h-[300px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland text-white';
 
@@ -699,7 +700,7 @@ export class ProfilePage {
         <canvas id="qr-2fa-canvas"></canvas>
         <hr style="height:5px" />
         <form id="submit-2fa-form">
-          <div class="flex flex-col justify-center items-center">
+          <div class="flex flex-col justify-center items-center text-black mt-4">
             <input
               type="text"
               name="totp_input"
@@ -712,7 +713,7 @@ export class ProfilePage {
               maxlength="6"
               required>
             <hr style="height:10px"/>
-            <button class="rounded-md ml-3 border-2 border-white">
+            <button class="rounded-md bg-blue-600 hover:bg-blue-700 hover:scale-105 px-2 mt-2 border-2 border-white text-white">
               Submit
             </button>
           </div>
@@ -749,7 +750,8 @@ export class ProfilePage {
         clearInterval(timerInterval);
         timerInterval = null;
         submit2faDiv.style.display = 'none';
-        has2faBeenEnabledText.style.color = 'green';
+        modalContainer.classList.replace('h-[600px]', 'h-[300px]');
+        has2faBeenEnabledText.style.color = 'lightgreen';
       }
       else
         has2faBeenEnabledText.style.color = 'red';
@@ -773,6 +775,8 @@ export class ProfilePage {
         const $2faInfo = await apiService.start2faSetup();
         toCanvas(qr2faCanvas, $2faInfo.totp_uri);
         submit2faDiv.style.display = '';
+        modalContainer.classList.replace('h-[300px]', 'h-[600px]');
+        console.log('HEYYY');
         var remainingTime = $2faInfo.remaining_time;
         toggle2faBtn.style.display = 'none';
 
