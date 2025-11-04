@@ -107,7 +107,10 @@ export class FriendPongInvites {
       inviteId,
       fromUserId,
       fromUsername,
+      toUserId,
       expiresAt: invite.expiresAt,
+      sentAt: invite.createdAt,
+      status: invite.status,
     });
 
     return inviteId;
@@ -205,6 +208,11 @@ export class FriendPongInvites {
     this.wsManager.sendToUser(invite!.fromUserId, {
       type: 'friend_pong_declined',
       inviteId,
+      fromUserId: invite.fromUserId,
+      toUserId: invite.toUserId,
+      declinedBy: userId,
+      declinedAt: Date.now(),
+      status: 'declined',
     });
 
     this.invites.delete(inviteId);
@@ -219,6 +227,10 @@ export class FriendPongInvites {
           this.wsManager.sendToUser(invite.fromUserId, {
             type: 'friend_pong_expired',
             inviteId: id,
+            fromUserId: invite.fromUserId,
+            toUserId: invite.toUserId,
+            expiredAt: now,
+            status: 'expired',
           });
         }
         this.invites.delete(id);
@@ -268,6 +280,10 @@ export class FriendPongInvites {
         this.wsManager.sendToUser(invite.fromUserId, {
           type: 'friend_pong_expired',
           inviteId: id,
+          fromUserId: invite.fromUserId,
+          toUserId: invite.toUserId,
+          expiredAt: Date.now(),
+          status: 'expired',
         });
       }
       this.invites.delete(id);

@@ -1,4 +1,4 @@
-import { Friend, apiService } from '../../../shared/services/api';
+import { apiService } from '../../../shared/services/api';
 import { PongInviteData } from '../components/PongInviteNotification';
 import { GameState, Input } from '../../game/types/GameTypes';
 import { router } from '../../../core/app/Router';
@@ -31,6 +31,20 @@ export interface Message {
   username: string;
   avatar_url?: string;
   display_name?: string;
+}
+
+interface GameInviteMetadata {
+  inviteId: string;
+  expiresAt?: number;
+  fromUserId?: number;
+  toUserId?: number;
+  fromUsername?: string;
+  toUsername?: string;
+  sentAt?: number;
+  status?: 'pending' | 'accepted' | 'declined' | 'expired';
+  declinedAt?: number;
+  declinedBy?: number;
+  expiredAt?: number;
 }
 
 export interface ChatState {
@@ -98,6 +112,7 @@ export class ChatService {
   private listeners: Map<string, ChatEventListener[]> = new Map();
   private reconnectAttempts = 0;
   private dismissedInvitations: Set<string> = new Set();
+  private inviteIndex: Map<string, { conversationId: number; fromUserId?: number; toUserId?: number }> = new Map();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private syncInterval: number | null = null;
@@ -326,8 +341,12 @@ export class ChatService {
         this.emit('tournament_completed', data.data);
         break;
 
+      case 'friend_pong_declined':
+        this.handleFriendPongDeclined(data);
+        break;
+
       case 'friend_pong_expired':
-        this.emit('friend_pong_expired', data);
+        this.handleFriendPongExpired(data);
         break;
 
       default:
@@ -347,6 +366,8 @@ export class ChatService {
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       this.state.messages.set(conversation.id, newMessages);
+
+      this.indexInviteMessageIfNeeded(conversation.id, message);
 
       this.saveToLocalStorage();
 
@@ -389,6 +410,11 @@ export class ChatService {
       metadata: JSON.stringify({
         inviteId: data.inviteId,
         expiresAt: data.expiresAt,
+        fromUserId: data.fromUserId,
+        toUserId: currentUserId,
+        fromUsername: data.fromUsername,
+        sentAt: data.sentAt ?? Date.now(),
+        status: 'pending',
       }),
       created_at: new Date().toISOString(),
       username: data.fromUsername || 'Friend',
@@ -401,6 +427,8 @@ export class ChatService {
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
     this.state.messages.set(conversation.id, newMessages);
+
+    this.indexInviteMessageIfNeeded(conversation.id, inviteMessage);
 
     conversation.last_message = inviteMessage.content;
     conversation.last_message_at = inviteMessage.created_at;
@@ -445,6 +473,8 @@ export class ChatService {
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       this.state.messages.set(conversation.id, newMessages);
+
+      this.indexInviteMessageIfNeeded(conversation.id, message);
 
       this.saveToLocalStorage();
 
@@ -628,6 +658,8 @@ export class ChatService {
       const existingMessages = this.state.messages.get(conversationId) || [];
       const mergedMessages = this.mergeMessages(existingMessages, serverMessages);
 
+    mergedMessages.forEach(message => this.indexInviteMessageIfNeeded(conversationId, message));
+
       // Filter out dismissed invitations
       const filteredMessages = this.filterDismissedInvitations(mergedMessages);
 
@@ -680,18 +712,26 @@ export class ChatService {
     return this.filterDismissedInvitations(messages);
   }
 
-  removeMessageByInviteId(conversationId: number, inviteId: string): void {
+  removeMessageByInviteId(conversationId: number, inviteId: string): boolean {
     this.dismissedInvitations.add(inviteId);
     this.saveDismissedInvitations();
 
     const messages = this.state.messages.get(conversationId);
-    if (!messages) return;
+    if (!messages) {
+      this.inviteIndex.delete(inviteId);
+      return false;
+    }
 
+    let removed = false;
     const filteredMessages = messages.filter(message => {
       if (message.type === 'game_invite' && message.metadata) {
         try {
           const metadata = JSON.parse(message.metadata);
-          return metadata.inviteId !== inviteId;
+          if (metadata.inviteId === inviteId) {
+            removed = true;
+            return false;
+          }
+          return true;
         } catch (e) {
           return true;
         }
@@ -699,8 +739,13 @@ export class ChatService {
       return true;
     });
 
-    this.state.messages.set(conversationId, filteredMessages);
-    this.saveToLocalStorage();
+    if (removed) {
+      this.state.messages.set(conversationId, filteredMessages);
+      this.inviteIndex.delete(inviteId);
+      this.saveToLocalStorage();
+    }
+
+    return removed;
   }
 
   private loadDismissedInvitations(): void {
@@ -734,6 +779,265 @@ export class ChatService {
       }
       return true;
     });
+  }
+
+  private parseInviteMetadata(metadata?: string): GameInviteMetadata | null {
+    if (!metadata) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(metadata) as GameInviteMetadata;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private indexInviteMessageIfNeeded(conversationId: number, message: Message): void {
+    if (message.type !== 'game_invite' || !message.metadata) {
+      return;
+    }
+
+    const metadata = this.parseInviteMetadata(message.metadata);
+    if (!metadata?.inviteId) {
+      return;
+    }
+
+    this.inviteIndex.set(metadata.inviteId, {
+      conversationId,
+      fromUserId: metadata.fromUserId,
+      toUserId: metadata.toUserId,
+    });
+  }
+
+  private rebuildInviteIndex(): void {
+    this.inviteIndex.clear();
+    for (const [conversationId, messages] of this.state.messages.entries()) {
+      messages.forEach(message => this.indexInviteMessageIfNeeded(conversationId, message));
+    }
+  }
+
+  private findConversationIdForInvite(
+    inviteId: string,
+    fallback?: { fromUserId?: number; toUserId?: number }
+  ): number | null {
+    const indexed = this.inviteIndex.get(inviteId);
+    if (indexed) {
+      return indexed.conversationId;
+    }
+
+    for (const [conversationId, messages] of this.state.messages.entries()) {
+      const match = messages.some(message => {
+        if (message.type !== 'game_invite' || !message.metadata) {
+          return false;
+        }
+        const metadata = this.parseInviteMetadata(message.metadata);
+        return metadata?.inviteId === inviteId;
+      });
+
+      if (match) {
+        return conversationId;
+      }
+    }
+
+    if (fallback?.fromUserId && fallback?.toUserId) {
+      const conversation = this.findConversationBetweenUsers(
+        fallback.fromUserId,
+        fallback.toUserId
+      );
+      if (conversation) {
+        return conversation.id;
+      }
+    }
+
+    return null;
+  }
+
+  private findConversationBetweenUsers(
+    userA?: number,
+    userB?: number
+  ): Conversation | undefined {
+    if (!userA || !userB) {
+      return undefined;
+    }
+
+    for (const conversation of this.state.conversations.values()) {
+      const matches =
+        (conversation.user1_id === userA && conversation.user2_id === userB) ||
+        (conversation.user1_id === userB && conversation.user2_id === userA);
+
+      if (matches) {
+        return conversation;
+      }
+    }
+
+    return undefined;
+  }
+
+  private handleFriendPongDeclined(data: any): void {
+    const inviteId: string | undefined = data?.inviteId;
+    if (!inviteId) {
+      return;
+    }
+
+    const conversationId = this.findConversationIdForInvite(inviteId, {
+      fromUserId: data?.fromUserId,
+      toUserId: data?.toUserId,
+    });
+
+    if (!conversationId) {
+      this.inviteIndex.delete(inviteId);
+      this.dismissedInvitations.add(inviteId);
+      this.saveDismissedInvitations();
+      return;
+    }
+
+    const conversation =
+      this.state.conversations.get(conversationId) ||
+      this.findConversationBetweenUsers(data?.fromUserId, data?.toUserId);
+
+    if (!conversation) {
+      this.inviteIndex.delete(inviteId);
+      return;
+    }
+
+    this.removeMessageByInviteId(conversation.id, inviteId);
+    this.inviteIndex.delete(inviteId);
+
+    const currentUserId = this.getCurrentUserId();
+    const otherUser =
+      currentUserId !== null ? this.getOtherUserInConversation(conversation, currentUserId) : null;
+    const declinedById: number | undefined = data?.declinedBy;
+
+    let nameForMessage = data?.declinedByUsername || otherUser?.username || 'Friend';
+    if (declinedById !== undefined) {
+      if (currentUserId !== null && declinedById === currentUserId) {
+        nameForMessage = 'You';
+      } else if (otherUser && declinedById === otherUser.id) {
+        nameForMessage = otherUser.username;
+      }
+    }
+
+    const content =
+      nameForMessage === 'You'
+        ? 'You declined the Pong invitation.'
+        : `${nameForMessage} declined the Pong invitation.`;
+
+    const systemMessage = this.createSystemMessage(conversation.id, content, {
+      inviteId,
+      reason: 'declined',
+      declinedBy: declinedById,
+      declinedAt: data?.declinedAt ?? Date.now(),
+    });
+
+    this.addLocalMessage(conversation, systemMessage);
+    this.emit('friend_pong_declined', {
+      inviteId,
+      conversationId: conversation.id,
+      message: systemMessage,
+      raw: data,
+    });
+  }
+
+  private handleFriendPongExpired(data: any): void {
+    const inviteId: string | undefined = data?.inviteId;
+    if (!inviteId) {
+      return;
+    }
+
+    const conversationId = this.findConversationIdForInvite(inviteId, {
+      fromUserId: data?.fromUserId,
+      toUserId: data?.toUserId,
+    });
+
+    if (!conversationId) {
+      this.inviteIndex.delete(inviteId);
+      this.dismissedInvitations.add(inviteId);
+      this.saveDismissedInvitations();
+      return;
+    }
+
+    const conversation =
+      this.state.conversations.get(conversationId) ||
+      this.findConversationBetweenUsers(data?.fromUserId, data?.toUserId);
+
+    if (!conversation) {
+      this.inviteIndex.delete(inviteId);
+      return;
+    }
+
+    this.removeMessageByInviteId(conversation.id, inviteId);
+    this.inviteIndex.delete(inviteId);
+
+    const currentUserId = this.getCurrentUserId();
+    const otherUser =
+      currentUserId !== null ? this.getOtherUserInConversation(conversation, currentUserId) : null;
+
+    const content = otherUser?.username
+      ? `The Pong invitation with ${otherUser.username} expired.`
+      : 'The Pong invitation expired.';
+
+    const systemMessage = this.createSystemMessage(conversation.id, content, {
+      inviteId,
+      reason: 'expired',
+      expiredAt: data?.expiredAt ?? Date.now(),
+    });
+
+    this.addLocalMessage(conversation, systemMessage);
+    this.emit('friend_pong_expired', {
+      inviteId,
+      conversationId: conversation.id,
+      message: systemMessage,
+      raw: data,
+    });
+  }
+
+  private generateLocalMessageId(): number {
+    return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  }
+
+  private createSystemMessage(
+    conversationId: number,
+    content: string,
+    extraMetadata?: Record<string, unknown>
+  ): Message {
+    const metadata =
+      extraMetadata && Object.keys(extraMetadata).length > 0
+        ? JSON.stringify(extraMetadata)
+        : undefined;
+
+    const timestamp = new Date().toISOString();
+
+    return {
+      id: this.generateLocalMessageId(),
+      conversation_id: conversationId,
+      sender_id: 0,
+      content,
+      type: 'system',
+      metadata,
+      created_at: timestamp,
+      username: 'System',
+      display_name: 'System',
+    };
+  }
+
+  private addLocalMessage(conversation: Conversation, message: Message): void {
+    const messages = this.state.messages.get(conversation.id) || [];
+    if (!messages.find(existing => existing.id === message.id)) {
+      const updated = [...messages, message].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      this.state.messages.set(conversation.id, updated);
+    }
+
+    conversation.last_message = message.content;
+    conversation.last_message_at = message.created_at;
+    this.state.conversations.set(conversation.id, conversation);
+
+    this.saveToLocalStorage();
+
+    this.emit('message_received', { message, conversation });
+    this.emit('conversations_updated', Array.from(this.state.conversations.values()));
   }
 
   getCurrentConversationId(): number | null {
@@ -922,6 +1226,7 @@ export class ChatService {
       if (messagesData) {
         const messagesArray = JSON.parse(messagesData);
         this.state.messages = new Map(messagesArray);
+        this.rebuildInviteIndex();
       }
 
       if (currentConversationData && currentConversationData !== '') {
