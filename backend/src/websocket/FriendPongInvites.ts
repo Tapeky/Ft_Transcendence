@@ -134,6 +134,8 @@ export class FriendPongInvites {
       return false;
     }
 
+    this.invites.delete(inviteId);
+
     const gameId = `pong_${invite.fromUserId}_${invite.toUserId}_${Date.now()}`;
     const simplePongManager = SimplePongManager.getInstance();
     const gameStarted = await simplePongManager.startGame(
@@ -144,8 +146,6 @@ export class FriendPongInvites {
 
     if (!gameStarted) {
       console.error(`❌ [FriendPongInvites] Impossible de créer le jeu ${gameId}`);
-      invite!.status = 'pending';
-
       this.wsManager.sendToUser(invite.fromUserId, {
         type: 'friend_pong_error',
         inviteId,
@@ -158,10 +158,9 @@ export class FriendPongInvites {
         message: 'Impossible de créer la partie. Réessayez plus tard.',
       });
 
+      this.invites.set(inviteId, invite!);
       return false;
     }
-
-    invite!.status = 'accepted';
 
     const protocol = process.env.ENABLE_HTTPS === 'true' ? 'https' : 'http';
     const frontendUrl =
@@ -188,7 +187,6 @@ export class FriendPongInvites {
       opponentId: invite.fromUserId,
     });
 
-    this.invites.delete(inviteId);
     return true;
   }
 
