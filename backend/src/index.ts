@@ -22,6 +22,7 @@ const HOST = '0.0.0.0';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+const IP_ACCESS = process.env.IP_ACCESS;
 
 const httpsOptions = ENABLE_HTTPS
   ? {
@@ -63,8 +64,8 @@ async function start() {
     await server.register(cors, {
       origin:
         process.env.NODE_ENV === 'production'
-          ? ['https://your-domain.com']
-          : [`${corsProtocol}://localhost:3000`],
+          ? [`${corsProtocol}://${IP_ACCESS}:3000`]
+          : [`${corsProtocol}://${IP_ACCESS}:3000`],
       credentials: true,
     });
 
@@ -172,11 +173,11 @@ async function start() {
 
     console.log(`
 🚀 Serveur ft_transcendence démarré !
-📍 URL: ${protocol}://localhost:${PORT}
+📍 URL: ${protocol}://${IP_ACCESS}:${PORT}
 🌍 Environnement: ${NODE_ENV}
 🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
-📊 Health check: ${protocol}://localhost:${PORT}/health
-📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
+📊 Health check: ${protocol}://${IP_ACCESS}:${PORT}/health
+📡 WebSocket: ${wsProtocol}://${IP_ACCESS}:${PORT}/ws
     `);
 
     if (NODE_ENV === 'production') {
