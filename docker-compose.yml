@@ -58,7 +58,7 @@ services:
       # Server configuration
       - PORT=8080
       - SSL_PORT=8443
-      - SERVER_NAME=${IP_ACCESS}
+      - SERVER_NAME=localhost
       - NGINX_ALWAYS_TLS_REDIRECT=off
       
       # Logging (use stdout/stderr instead of files)
@@ -70,8 +70,7 @@ services:
       - SERVER_TOKENS=Off
       - MODSEC_SERVER_SIGNATURE=Secure-Server
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - ft_transcendence
     restart: unless-stopped
@@ -142,8 +141,7 @@ services:
       FRONTEND_PORT: 3000
       # API calls go through hardened WAF
       ENABLE_HTTPS: "true"
-      VITE_API_URL: "https://${IP_ACCESS}:8443"
-      IP_ACCESS: "${IP_ACCESS}"
+      VITE_API_URL: "https://localhost:8443"
     depends_on:
       - backend
       - modsecurity
@@ -170,9 +168,6 @@ services:
       VAULT_TOKEN: "root"
       NODE_ENV: "production"
       ENABLE_HTTPS: "true"
-      IP_ACCESS: "${IP_ACCESS}"
-      # Frontend Configuration
-      FRONTEND_URL: "${FRONTEND_URL}"
       # OAuth Configuration
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"

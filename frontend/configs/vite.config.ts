@@ -2,9 +2,6 @@ import { defineConfig } from 'vite';
 import fs from 'fs';
 
 // Vite Configuration for Vanilla TypeScript
-
-const IP_ACCESS = process.env.IP_ACCESS;
-
 export default defineConfig({
   plugins: [],
   build: {
@@ -18,12 +15,12 @@ export default defineConfig({
     // API proxy configuration - forward API requests to backend
     proxy: {
       '/api': {  
-        target: `https://${IP_ACCESS}:8443`,
+        target: `https://modsecurity:8443`,
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: `wss://${IP_ACCESS}:8443`,
+        target: `wss://modsecurity:8443`,
         ws: true,
         changeOrigin: true,
         secure: false,
