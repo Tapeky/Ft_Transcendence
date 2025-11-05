@@ -37,13 +37,16 @@ vault kv put secret/api \
   encryption_key="$(openssl rand -base64 32)"
 
 # ============================================================================
-# OAUTH CREDENTIALS (Example)
+# OAUTH CREDENTIALS
 # ============================================================================
 echo "Storing OAuth credentials..."
 vault kv put secret/oauth \
-  client_id="your_oauth_client_id" \
-  client_secret="your_oauth_client_secret" \
-  redirect_uri="http://localhost:3000/callback"
+  github_client_id="${GITHUB_CLIENT_ID:-Iv1.8b88ce2b5c4f58e3}" \
+  github_client_secret="${GITHUB_CLIENT_SECRET:-a4946c8be3386b7f9e6dfed90ea04c6e0d366e48}" \
+  github_redirect_uri="${GITHUB_REDIRECT_URI:-https://localhost:8443/auth/github/callback}" \
+  google_client_id="${GOOGLE_CLIENT_ID:-your-google-client-id}" \
+  google_client_secret="${GOOGLE_CLIENT_SECRET:-your-google-client-secret}" \
+  google_redirect_uri="${GOOGLE_REDIRECT_URI:-https://localhost:8443/auth/google/callback}"
 
 # ============================================================================
 # SSL/TLS CERTIFICATES (Example - store cert paths or actual certs)
