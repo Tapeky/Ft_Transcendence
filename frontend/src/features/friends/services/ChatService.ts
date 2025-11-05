@@ -354,9 +354,17 @@ export class ChatService {
     }
   }
 
+  private showNotification(message: string):void {
+    const noti = document.querySelector('#noti');
+    if (!noti)
+      return ;
+    noti.textContent = `${message}`;
+    noti?.classList.replace('hidden', 'fixed');
+    setTimeout(() => noti?.classList.replace('fixed', 'hidden'), 3000);
+  }
+
   private handleMessageReceived(data: { message: Message; conversation: Conversation }): void {
     const { message, conversation } = data;
-
     this.state.conversations.set(conversation.id, conversation);
 
     const messages = this.state.messages.get(conversation.id) || [];
@@ -373,6 +381,7 @@ export class ChatService {
 
       this.emit('message_received', { message, conversation });
       this.emit('conversations_updated', Array.from(this.state.conversations.values()));
+      this.showNotification('You have a message !');
     }
   }
 
@@ -453,12 +462,7 @@ export class ChatService {
 
     this.emit('friend_pong_invite', data);
 
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Pong invitation from ${data.fromUsername || 'a friend'}`, {
-        body: "Click here to see your invitation",
-        icon: '/favicon.png',
-      });
-    }
+    this.showNotification(`${data.fromUsername} sent you an invitation !`);
   }
 
   private handleMessageSent(data: { message: Message; conversation: Conversation }): void {

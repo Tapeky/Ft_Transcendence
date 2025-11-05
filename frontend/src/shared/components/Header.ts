@@ -58,6 +58,9 @@ export class Header {
           </div>
         </div>
         <div id="options-container"></div>
+
+        <div id='noti' class='hidden top-40 left-10 border-2 border-green-400 bg-green-600 rounded-md p-6 text-white text-[1.5rem]'>
+        </div>
       </div>
     `;
 

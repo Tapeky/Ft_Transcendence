@@ -529,7 +529,7 @@ export class AuthPage {
     const errorDisplay = this.element.querySelector('#error-display');
     const errorMessage = this.element.querySelector('#error-message');
     let errorString:string = String(message);
-
+  
     if (errorString.startsWith('Error: '))
       errorString = errorString.slice(7);
     if (errorDisplay && errorMessage) {

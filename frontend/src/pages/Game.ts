@@ -651,9 +651,6 @@ export class GamePage {
     if (this.header) {
       this.header.destroy();
     }
-    if (this.banner) {
-      this.banner.destroy();
-    }
     this.element.remove();
   }
 }
