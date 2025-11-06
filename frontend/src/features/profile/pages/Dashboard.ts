@@ -135,10 +135,9 @@ export class Dashboard {
     const matchesToUse = matches || this.matches || [];
     if (matchesToUse.length === 0) return 'N/A';
 
-    const currentUser = appState.getState().user;
     const recentMatches = matchesToUse.slice(0,5).reverse();
 
-    const results = recentMatches.map(match => (match.winner_id === currentUser?.id ? 'W' : 'L'));
+    const results = recentMatches.map(match => (match.winner_id === Number(this.playerId) ? 'W' : 'L'));
 
     return results.join('');
   }
@@ -447,16 +446,15 @@ export class Dashboard {
     }
 
     const lastMatches = matches.slice(0,5).reverse();
-    const currentUser = appState.getState().user;
 
     const scores = lastMatches.map(match => {
-      return match.player1_username === currentUser?.username
+      return match.player1_username === this.player?.username
         ? match.player1_score
         : match.player2_score;
     });
 
     const results = lastMatches.map(match => {
-      return match.winner_id === currentUser?.id ? 1 : 0;
+      return match.winner_id === Number(this.playerId) ? 1 : 0;
     });
 
     const left = this.container.querySelector('#graph-left');
