@@ -236,6 +236,7 @@ export async function authRoutes(server: FastifyInstance) {
               total_losses: stats.total_losses || 0,
               total_games: stats.total_games || 0,
               created_at: user.created_at,
+			  has_2fa_enabled: user.has_2fa_enabled
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
