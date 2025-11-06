@@ -4,4 +4,7 @@ export interface PongInviteData {
   fromUserId: number;
   expiresAt: number;
   fromUsername?: string;
+  toUserId?: number;
+  sentAt?: number;
+  status?: 'pending' | 'accepted' | 'declined' | 'expired';
 }

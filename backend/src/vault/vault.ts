@@ -45,9 +45,9 @@ export class VaultService {
 
             // Load all necessary secrets
             const [config, oauth, ssl] = await Promise.all([
-                this.client.read('secret/data/ft_transcendence/config').catch(() => null),
-                this.client.read('secret/data/ft_transcendence/oauth').catch(() => null),
-                this.client.read('secret/data/ft_transcendence/ssl').catch(() => null)
+                this.client.read('secret/data/config').catch(() => null),
+                this.client.read('secret/data/oauth').catch(() => null),
+                this.client.read('secret/data/ssl').catch(() => null)
             ]);
 
             if (config?.data?.data) {
@@ -183,9 +183,12 @@ export class VaultService {
         
         // Fallback sur les variables d'environnement
         return {
-            client_id: process.env.OAUTH_CLIENT_ID || 'dev-client-id',
-            client_secret: process.env.OAUTH_CLIENT_SECRET || 'dev-client-secret',
-            redirect_uri: process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000/auth/callback'
+            github_client_id: process.env.GITHUB_CLIENT_ID || 'Iv1.8b88ce2b5c4f58e3',
+            github_client_secret: process.env.GITHUB_CLIENT_SECRET || 'a4946c8be3386b7f9e6dfed90ea04c6e0d366e48',
+            github_redirect_uri: process.env.GITHUB_REDIRECT_URI || 'https://localhost:8443/auth/github/callback',
+            google_client_id: process.env.GOOGLE_CLIENT_ID || 'dev-google-client-id',
+            google_client_secret: process.env.GOOGLE_CLIENT_SECRET || 'dev-google-client-secret',
+            google_redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'https://localhost:8443/auth/google/callback'
         };
     }
 

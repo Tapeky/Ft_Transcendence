@@ -159,6 +159,8 @@ export class ProfilePage {
       >
         EDIT
       </button>
+
+      <div id="upload-status" class="hidden"></div>
     `;
 
     mainContent.appendChild(rightColumn);
@@ -530,7 +532,6 @@ export class ProfilePage {
           Import file
         </button>
         
-        <div id="upload-status" class="text-[1.2rem] min-h-[1.5rem] text-center"></div>
       </div>
     `;
 
@@ -599,9 +600,11 @@ export class ProfilePage {
       }
 
       this.updateUploadStatus('Avatar updated successfully!', 'success');
+      this.closeAvatarModal();
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       this.updateUploadStatus('Error uploading avatar', 'error');
+      this.closeAvatarModal();
     }
   }
 
@@ -655,9 +658,10 @@ export class ProfilePage {
     const statusElement = document.querySelector('#upload-status');
     if (statusElement) {
       statusElement.textContent = message;
-      statusElement.className = `text-[1.2rem] min-h-[1.5rem] text-center ${
-        type === 'success' ? 'text-green-400' : type === 'error' ? 'text-red-400' : 'text-blue-400'
+      statusElement.className = `fixed top-4 right-4 z-50 p-4 rounded-lg text-white text-[1.2rem] ${
+        type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'text-blue-600'
       }`;
+      setTimeout(() => {statusElement.className = 'hidden';}, 2000);
     }
   }
 
@@ -668,6 +672,7 @@ export class ProfilePage {
       'fixed top-0 left-0 bg-white z-50 bg-opacity-20 w-screen h-screen flex justify-center items-center';
 
     const modalContainer = document.createElement('div');
+    modalContainer.id = '2fa-container';
     modalContainer.className =
       'bg-blue-800 w-[600px] h-[300px] border-[5px] border-blue-900 rounded-md text-[2rem] font-iceland text-white';
 
@@ -695,7 +700,7 @@ export class ProfilePage {
         <canvas id="qr-2fa-canvas"></canvas>
         <hr style="height:5px" />
         <form id="submit-2fa-form">
-          <div class="flex flex-col justify-center items-center">
+          <div class="flex flex-col justify-center items-center text-black mt-4">
             <input
               type="text"
               name="totp_input"
@@ -706,11 +711,10 @@ export class ProfilePage {
               onkeypress="return (event.charCode != 8 && event.charCode == 0 || (event.charCode >= 48 && event.charCode <= 57))"
               minlength="6"
               maxlength="6"
-              required
-              placeholder="XXXXXX">
+              required>
             <hr style="height:10px"/>
-            <button class="rounded-md ml-3 border-2 border-white">
-              SUBMIT
+            <button class="rounded-md bg-blue-600 hover:bg-blue-700 hover:scale-105 px-2 mt-2 border-2 border-white text-white">
+              Submit
             </button>
           </div>
         </form>
@@ -746,7 +750,8 @@ export class ProfilePage {
         clearInterval(timerInterval);
         timerInterval = null;
         submit2faDiv.style.display = 'none';
-        has2faBeenEnabledText.style.color = 'green';
+        modalContainer.classList.replace('h-[600px]', 'h-[300px]');
+        has2faBeenEnabledText.style.color = 'lightgreen';
       }
       else
         has2faBeenEnabledText.style.color = 'red';
@@ -770,6 +775,8 @@ export class ProfilePage {
         const $2faInfo = await apiService.start2faSetup();
         toCanvas(qr2faCanvas, $2faInfo.totp_uri);
         submit2faDiv.style.display = '';
+        modalContainer.classList.replace('h-[300px]', 'h-[600px]');
+        console.log('HEYYY');
         var remainingTime = $2faInfo.remaining_time;
         toggle2faBtn.style.display = 'none';
 

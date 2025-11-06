@@ -257,8 +257,7 @@ export class Dashboard {
 
   private renderMatchRecap(match: Match): string {
     const state = appState.getState();
-    const currentUser = state.user;
-    const victory = match.winner_id === currentUser?.id;
+    const victory = match.winner_id === Number(this.playerId);
 
     return `
 			<div class="${victory ? 'bg-blue-800' : 'bg-pink-800'} h-[180px] w-[800px] border-2 

@@ -1,7 +1,6 @@
 import { authManager } from '../core/auth/AuthManager';
 import { router } from '../core/app/Router';
 import { Header } from '../shared/components/Header';
-import { Banner } from '../shared/components/Banner';
 import { apiService } from '../shared/services/api';
 import { appState } from '../core/state/AppState';
 
@@ -28,7 +27,6 @@ interface TournamentGameContext {
 export class GamePage {
   private element: HTMLElement;
   private header?: Header;
-  private banner?: Banner;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private gameState: GameState | null = null;
@@ -66,31 +64,32 @@ export class GamePage {
   private createElement(): HTMLElement {
     const container = document.createElement('div');
     container.className =
-      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
+      'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none text-white';
     this.header = new Header(true);
-    this.banner = new Banner();
     const gameContent = document.createElement('main');
     gameContent.className =
-      'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700 items-center justify-center p-8';
+      'flex w-full h-full flex-grow bg-gradient-to-r from-blue-800 to-red-700 items-center justify-center p-8';
     gameContent.innerHTML = `
-            <div class="text-center">
-                <h1 class="text-6xl font-bold text-white mb-8 font-iceland">PONG GAME</h1>
-                <div class="bg-black/30 backdrop-blur-sm border-white border-4 rounded-xl p-8 inline-block">
-                    <div id="game-canvas-container" class="mb-6"></div>
-                    <div class="text-white font-iceland">
-                        <div id="game-instructions" class="text-xl mb-4"></div>
-                        <div class="text-lg opacity-75">First to 5 points wins!</div>
-                    </div>
+              <div class='fixed bottom-7 left-16'>
+                  <button id="back-to-menu" class="border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors text-xl">
+                      ← Back to Menu
+                  </button>
+              </div>
+              <h2 class='text-[2rem] flex-1 flex justify-center min-w-[150px]'>Player 1 : W/S keys</h2>
+              <div class='flex-[2] flex-grow flex flex-col items-center justify-center'>
+                <h1 class="text-6xl font-bold text-white mb-6 font-iceland">PONG</h1>
+                <div class="bg-black/30 backdrop-blur-sm border-white border-4 rounded-xl px-6 pb-1 pt-0 inline-block">
+                  <div class='w-full flex flex-row text-[2rem] justify-between'>
+                    <h2>Host</h2>
+                    <h2>Guest</h2>
+                  </div>
+                  <div id="game-canvas-container" class="mb-3"></div>
+                  <h2 class='w-full text-center text-[1.5rem]'>First player to score 5 points wins !</h2>
                 </div>
-                <div class="mt-8">
-                    <button id="back-to-menu" class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
-                        ← Back to Menu
-                    </button>
-                </div>
-            </div>
+              </div>
+              <h2 class='text-[2rem] flex-1 flex justify-center'>Player 2 : ↑/↓ keys</h2>
         `;
     container.appendChild(this.header.getElement());
-    container.appendChild(this.banner.getElement());
     container.appendChild(gameContent);
     return container;
   }
@@ -478,7 +477,7 @@ export class GamePage {
     if (this.tournamentContext) {
       overlay.innerHTML = `
                 <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-xl p-12 text-center max-w-lg">
-                    <h2 class="text-4xl font-bold text-white font-iceland mb-6">🏆 Match Complete!</h2>
+                    <h2 class="text-4xl font-bold text-white font-iceland mb-6">Match Complete!</h2>
                     <p class="text-3xl text-yellow-300 font-bold font-iceland mb-4">Winner: ${winner}</p>
                     <p class="text-xl text-white font-iceland mb-6">Final Score: ${leftScore} - ${rightScore}</p>
                     <div class="bg-black/50 border border-white rounded-lg p-4 mb-6">
@@ -494,7 +493,7 @@ export class GamePage {
     } else {
       overlay.innerHTML = `
                 <div class="bg-black/30 backdrop-blur-sm border-white border-2 rounded-xl p-12 text-center max-w-lg">
-                    <h2 class="text-4xl font-bold text-white font-iceland mb-6">🏆 Game Over!</h2>
+                    <h2 class="text-4xl font-bold text-white font-iceland mb-6">Game Over!</h2>
                     <p class="text-3xl text-yellow-300 font-bold font-iceland mb-4">Winner: ${winner}</p>
                     <p class="text-xl text-white font-iceland mb-8">Final Score: ${leftScore} - ${rightScore}</p>
                     <div class="flex gap-4 justify-center">
@@ -651,9 +650,6 @@ export class GamePage {
     }
     if (this.header) {
       this.header.destroy();
-    }
-    if (this.banner) {
-      this.banner.destroy();
     }
     this.element.remove();
   }

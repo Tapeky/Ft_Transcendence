@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import fs from 'fs';
 
 // Vite Configuration for Vanilla TypeScript
-
 export default defineConfig({
   plugins: [],
   build: {
@@ -16,12 +15,12 @@ export default defineConfig({
     // API proxy configuration - forward API requests to backend
     proxy: {
       '/api': {  
-        target: 'https://modsecurity:8443',
+        target: `https://modsecurity:8443`,
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'wss://modsecurity:8443',
+        target: `wss://modsecurity:8443`,
         ws: true,
         changeOrigin: true,
         secure: false,

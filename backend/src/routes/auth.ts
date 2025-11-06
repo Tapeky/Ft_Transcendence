@@ -182,7 +182,7 @@ export async function authRoutes(server: FastifyInstance) {
             return reply.status(401).send({
               success: false,
               error_id: "login_requires_totp",
-              error: 'Ce compte est protégé par authentification à deux facteurs.',
+              error: 'Please enter the 2FA key required for this account !',
             });
           }
 
@@ -198,7 +198,7 @@ export async function authRoutes(server: FastifyInstance) {
             return reply.status(401).send({
               success: false,
               error_id: "totp_invalid",
-              error: 'Clé 2FA incorrecte.',
+              error: 'Invalid 2FA key',
             });
           }
         }
