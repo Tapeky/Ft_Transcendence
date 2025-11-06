@@ -7,6 +7,8 @@ export interface SimplePongState {
   rightPaddleY: number;
   leftScore: number;
   rightScore: number;
+  leftHitCount: number;
+  rightHitCount: number;
   gameOver: boolean;
   winner?: 'left' | 'right';
 }
@@ -33,6 +35,8 @@ export class SimplePong {
       rightPaddleY: SimplePong.ARENA_HEIGHT / 2,
       leftScore: 0,
       rightScore: 0,
+      leftHitCount: 0,
+      rightHitCount: 0,
       gameOver: false,
     };
   }
@@ -42,8 +46,6 @@ export class SimplePong {
     this.state.ballY = SimplePong.ARENA_HEIGHT / 2;
     this.state.ballVX = (Math.random() > 0.5 ? 1 : -1) * SimplePong.BALL_SPEED;
     this.state.ballVY = (Math.random() - 0.5) * SimplePong.BALL_SPEED * 0.5;
-    this.state.leftPaddleY = SimplePong.ARENA_HEIGHT / 2;
-    this.state.rightPaddleY = SimplePong.ARENA_HEIGHT / 2;
   }
 
   public update(
@@ -109,11 +111,13 @@ export class SimplePong {
     if (this.isCollidingWithLeftPaddle(halfPaddle)) {
       this.state.ballVX = Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.leftPaddleY) * 5;
+      this.state.leftHitCount++;
     }
 
     if (this.isCollidingWithRightPaddle(halfPaddle)) {
       this.state.ballVX = -Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.rightPaddleY) * 5;
+      this.state.rightHitCount++;
     }
   }
 
@@ -169,6 +173,8 @@ export class SimplePong {
       rightPaddleY: SimplePong.ARENA_HEIGHT / 2,
       leftScore: 0,
       rightScore: 0,
+      leftHitCount: 0,
+      rightHitCount: 0,
       gameOver: false,
     };
   }
