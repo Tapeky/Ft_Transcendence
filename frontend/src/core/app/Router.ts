@@ -46,13 +46,6 @@ export class Router {
       return tournament.getElement();
     });
 
-    this.routes.set('/tournament-history', async () => {
-      const { TournamentHistory } = await import(
-        '../../features/tournament/pages/TournamentHistory'
-      );
-      return new TournamentHistory().getElement();
-    });
-
     this.routes.set('/dashboard', async (path?: string) => {
       const currentPath = path || window.location.pathname;
       const pathSegments = currentPath.split('/');
