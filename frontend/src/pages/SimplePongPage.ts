@@ -1,5 +1,4 @@
 import { Header } from '../shared/components/Header';
-import { Banner } from '../shared/components/Banner';
 import { router } from '../core/app/Router';
 import { authManager } from '../core/auth/AuthManager';
 import type { User as AppUser } from '../core/state/AppState';
@@ -25,7 +24,6 @@ type BufferedState = { state: PongState; timestamp: number };
 export class SimplePongPage {
   private element: HTMLElement;
   private header?: Header;
-  private banner?: Banner;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private renderer!: PongGameRenderer;
@@ -71,36 +69,37 @@ export class SimplePongPage {
       'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
     this.header = new Header(true);
-    this.banner = new Banner();
 
     const gameContent = document.createElement('main');
     gameContent.className =
-      'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700 items-center justify-center p-8';
+      'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700 items-center justify-center p-8 text-white';
     gameContent.innerHTML = `
-            <div class="text-center">
-                <h1 class="text-6xl font-bold text-white mb-8 font-iceland">PONG GAME</h1>
-                <div class="bg-black/30 backdrop-blur-sm border-white border-4 rounded-xl p-8 inline-block">
-                    <div id="game-canvas-container" class="mb-6"></div>
-                    <div class="text-white font-iceland">
-                        <div id="game-instructions" class="text-xl mb-4"></div>
-                        <div class="text-lg opacity-75">First to 5 points wins!</div>
-                    </div>
-                </div>
-                <div class="mt-8 flex gap-4 justify-center">
-                    <button id="ready-button"
-                        class="hidden text-white bg-green-600 border-white border-2 px-8 py-4 rounded hover:bg-green-700 transition-colors font-iceland text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                        READY
-                    </button>
-                    <button id="back-to-menu"
-                        class="text-white border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors font-iceland text-xl font-bold">
-                        ← Back to Menu
-                    </button>
-                </div>
+            <div class="fixed bottom-7 left-16">
+              <button id="back-to-menu"
+              class="border-white border-2 px-8 py-4 rounded hover:bg-white hover:text-black transition-colors text-xl">
+                  ← Back to Menu
+              </button>
+            </div>
+            <div id="game-instructions" class="text-[2rem] flex-1 flex flex-col items-center justify-center min-w-[150px]"></div>
+            <div class="flex-[2] flex-grow flex flex-col items-center justify-center">
+              <h1 class="text-6xl font-bold text-white mb-6 font-iceland">PONG</h1>
+              <div class="bg-black/30 backdrop-blur-sm border-white border-4 rounded-xl px-6 pb-1 pt-6 inline-block">
+                  <div id="game-canvas-container" class="mb-3"></div>
+                  <div class="text-white font-iceland">
+                      <div id="game-instructions" class="text-xl mb-4"></div>
+                      <h2 class='w-full text-center text-[1.5rem]'>First player to score 5 points wins !</h2>
+                  </div>
+              </div>
+            </div>
+            <div class="flex-1 mt-8 flex gap-4 justify-center">
+                <button id="ready-button"
+                    class=" text-white bg-green-600 border-white border-2 px-8 py-4 rounded hover:bg-green-700 transition-colors font-iceland text-[2rem] font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    READY
+                </button>
             </div>
         `;
 
     container.appendChild(this.header.getElement());
-    container.appendChild(this.banner.getElement());
     container.appendChild(gameContent);
 
     return container;
@@ -111,7 +110,7 @@ export class SimplePongPage {
       this.instructionsElement = this.element.querySelector('#game-instructions') as
         | HTMLElement
         | undefined;
-      this.setStatusMessage('Waiting for opponent...', 'Use ↑/↓ arrow keys or W/S to move your paddle.');
+      this.setStatusMessage('Waiting for opponent...', 'Use ↑/↓ or W/S keys to move your paddle.');
       this.checkGameContext();
       this.initializeCanvas();
       this.startRenderLoop();
@@ -493,7 +492,7 @@ export class SimplePongPage {
           if (msg.gameStarted) {
             this.setStatusMessage(
               `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
-              `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys.`
+              `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys to move your paddle.`
             );
             if (!this.isCountingDown) {
               this.startCountdown();
@@ -528,7 +527,7 @@ export class SimplePongPage {
           this.hideReadyButton();
           this.setStatusMessage(
             `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
-            `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys.`
+            `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys to move your paddle.`
           );
 
           if (!this.isCountingDown) {
@@ -576,8 +575,8 @@ export class SimplePongPage {
     const rightName = this.playerNames.right || 'Player 2';
     const matchup = `${leftName} vs ${rightName}`;
     const roleText = this.myRole
-      ? `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ arrow keys to move.`
-      : 'Use ↑/↓ arrow keys or W/S to move your paddle.';
+      ? `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys to move your paddle.`
+      : 'Use ↑/↓ or W/S keys to move your paddle.';
     this.setStatusMessage(matchup, roleText);
   }
 
@@ -599,7 +598,7 @@ export class SimplePongPage {
     }
 
     const secondaryLine = secondary
-      ? `<div class="text-base opacity-80 mt-2">${secondary}</div>`
+      ? `<div class="text-[1.2rem] opacity-80 mt-2">${secondary}</div>`
       : '';
 
     this.instructionsElement.innerHTML = `<div>${primary}</div>${secondaryLine}`;
@@ -1029,9 +1028,6 @@ export class SimplePongPage {
 
     if (this.header) {
       this.header.destroy();
-    }
-    if (this.banner) {
-      this.banner.destroy();
     }
 
     this.element.remove();

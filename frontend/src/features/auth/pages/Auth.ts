@@ -325,7 +325,6 @@ export class AuthPage {
   private changeImg(): void {
     const imgEgg = this.element.querySelector('#egg');
 
-    console.log('click');
     if (!imgEgg)
       return;
 
