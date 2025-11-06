@@ -15,6 +15,8 @@ interface PongState {
   rightPaddleY: number;
   leftScore: number;
   rightScore: number;
+  leftHitCount: number;
+  rightHitCount: number;
   gameOver: boolean;
   winner?: 'left' | 'right';
 }
@@ -674,6 +676,8 @@ export class SimplePongPage {
       'rightPaddleY',
       'leftScore',
       'rightScore',
+      'leftHitCount',
+      'rightHitCount',
       'gameOver',
     ];
 
@@ -697,6 +701,8 @@ export class SimplePongPage {
       rightPaddleY: Number(rawState.rightPaddleY),
       leftScore: Number(rawState.leftScore),
       rightScore: Number(rawState.rightScore),
+      leftHitCount: Number(rawState.leftHitCount) || 0,
+      rightHitCount: Number(rawState.rightHitCount) || 0,
       gameOver: Boolean(rawState.gameOver),
       winner,
     };
@@ -915,6 +921,9 @@ export class SimplePongPage {
       const opponentScore = myRole === 'left' ? finalState.rightScore : finalState.leftScore;
       const winnerId = finalState.winner === myRole ? myUserId : opponentUserId;
 
+      const myHitCount = myRole === 'left' ? finalState.leftHitCount || 0 : finalState.rightHitCount || 0;
+      const opponentHitCount = myRole === 'left' ? finalState.rightHitCount || 0 : finalState.leftHitCount || 0;
+
       const matchData = {
         player1_id: myUserId,
         player2_id: opponentUserId,
@@ -926,9 +935,9 @@ export class SimplePongPage {
         game_type: 'pong',
         max_score: 5,
         duration_seconds: duration,
-        player1_touched_ball: 0,
+        player1_touched_ball: myRole === 'left' ? myHitCount : opponentHitCount,
         player1_missed_ball: Math.max(0, opponentScore),
-        player2_touched_ball: 0,
+        player2_touched_ball: myRole === 'left' ? opponentHitCount : myHitCount,
         player2_missed_ball: Math.max(0, myScore),
       };
 
