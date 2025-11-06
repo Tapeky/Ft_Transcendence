@@ -385,6 +385,7 @@ export class SimplePongManager {
 
     if (game.leftPlayerReady && game.rightPlayerReady && !game.gameStarted) {
       game.gameStarted = true;
+      game.pong.reset();
       const messageType = gameId.startsWith('pong_') ? 'simple_pong_actually_started' : 'friend_pong_actually_started';
 
       if (this.wsManager) {

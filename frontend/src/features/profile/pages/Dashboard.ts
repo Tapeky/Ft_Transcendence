@@ -265,7 +265,7 @@ export class Dashboard {
 				
 				<div class="flex-1">
 					<h1 class="text-[3rem]">${victory ? 'Victory' : 'Defeat'}</h1>
-					<h2>${match.created_at}</h2>
+					<h2>${this.formatDate(match.created_at)}</h2>
 				</div>
 
 				<div class="flex-[2] flex items-center justify-center">
@@ -300,6 +300,27 @@ export class Dashboard {
     }
 
     return avatarUrl;
+  }
+
+  private formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Date invalide';
+    }
+
+    date.setHours(date.getHours() + 1);
+
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Paris',
+    };
+
+    return date.toLocaleDateString('fr-FR', options);
   }
 
   private initializeComponents() {
