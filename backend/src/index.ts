@@ -59,15 +59,6 @@ async function start() {
     await ensureSchema();
     await dbManager.cleanupExpiredTokens();
 
-    const corsProtocol = ENABLE_HTTPS ? 'https' : 'http';
-    await server.register(cors, {
-      origin: process.env.NODE_ENV === 'production'
-        ? ['https://your-domain.com']
-        : ['http://localhost:3000', 'https://localhost:3000'],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  });
-
     await server.register(jwt, {
       secret: JWT_SECRET,
       sign: {
