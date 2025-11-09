@@ -595,10 +595,6 @@ export async function friendRoutes(server: FastifyInstance) {
         const { id: friendIdStr } = request.params as { id: string };
         const friendId = parseInt(friendIdStr, 10);
 
-        console.log(
-          `🎮 Invitation Pong: ${currentUser.username} (${currentUser.id}) -> ami ${friendId}`
-        );
-
         if (isNaN(friendId)) {
           return reply.status(400).send({
             success: false,

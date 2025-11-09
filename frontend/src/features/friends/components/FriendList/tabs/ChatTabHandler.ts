@@ -3,7 +3,6 @@ import { ChatConversation } from '../../ChatConversation';
 import { ChatFriendsList } from '../../ChatFriendsList';
 import { ChatManager } from '../chat/ChatManager';
 import { TabHandlerConfig } from '../types';
-import { apiService, Friend } from '../../../../../shared/services/api';
 
 export class ChatTabHandler {
   private container: Element;
@@ -18,6 +17,10 @@ export class ChatTabHandler {
   constructor(config: TabHandlerConfig, chatManager: ChatManager) {
     this.container = config.container;
     this.chatManager = chatManager;
+
+    window.addEventListener('friendsListRefresh', () => {
+      this.refreshFriendsList();
+    });
     this.onRefresh = config.onRefresh;
   }
 
@@ -54,7 +57,13 @@ export class ChatTabHandler {
     }
   }
 
-  private async renderChatFriendsList(): Promise<void> {
+  private async refreshFriendsList(): Promise<void> {
+    if (this.chatFriendsList) {
+      await this.renderChatFriendsList();
+    }
+  }
+
+  async renderChatFriendsList(): Promise<void> {
     this.container.innerHTML = '';
 
     if (this.chatFriendsList) {
@@ -72,7 +81,7 @@ export class ChatTabHandler {
 
       this.container.appendChild(this.chatFriendsList.getElement());
     } catch (error) {
-      console.error('❌ Failed to load friends for chat:', error);
+      console.error('Failed to load friends for chat:', error);
       this.renderErrorMessage('Failed to load friends for chat');
     }
   }

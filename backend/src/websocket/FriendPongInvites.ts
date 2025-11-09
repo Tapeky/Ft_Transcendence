@@ -45,9 +45,6 @@ export class FriendPongInvites {
     ).length;
 
     if (userInviteCount >= this.MAX_INVITES_PER_USER) {
-      console.log(
-        `🚫 [FriendPongInvites] Trop d'invitations en cours pour utilisateur ${fromUserId}`
-      );
       return null;
     }
 

@@ -44,13 +44,21 @@ export function setupWebSocket(server: FastifyInstance) {
           try {
             const db = DatabaseManager.getInstance().getDb();
             const userRepo = new UserRepository(db);
-            await userRepo.updateOnlineStatus(userId, false);
-          } catch (error) {
-            console.error('Error update status:' + (error instanceof Error ? error.message : String(error)));
-          }
 
-          simplePongManager.handlePlayerDisconnect(userId);
-          wsManager.removeUser(userId);
+            
+            const hasOtherConnections = wsManager.getConnectedUsers().filter(u => u.id === userId).length > 1;
+
+            simplePongManager.handlePlayerDisconnect(userId);
+            wsManager.removeUser(userId);
+
+            const finalHasConnections = wsManager.hasUser(userId);
+
+            if (!finalHasConnections) {
+              await userRepo.updateOnlineStatus(userId, false);
+            }
+          } catch (error) {
+            console.error('Error updating user online status:', error);
+          }
         }
       });
 

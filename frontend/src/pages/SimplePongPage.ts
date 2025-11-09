@@ -192,6 +192,7 @@ export class SimplePongPage {
   private setupBackButton(): void {
     const backButton = this.element.querySelector('#back-to-menu');
     backButton?.addEventListener('click', () => {
+      localStorage.setItem('needs_ws_reconnect', 'true');
       import('../core/app/Router').then(({ router }) => {
         this.destroy();
         router.navigate('/');
@@ -564,7 +565,7 @@ export class SimplePongPage {
     };
 
     this.ws.onerror = error => {
-      console.error('🔥 WebSocket error:', error);
+      console.error('WebSocket error:', error);
       this.setStatusMessage(
         'WebSocket connection error',
         'Please refresh the page or try again later.'
@@ -661,6 +662,13 @@ export class SimplePongPage {
     this.enqueueState(sanitized, now);
 
     if (sanitized.gameOver) {
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+
+      localStorage.setItem('needs_ws_reconnect', 'true');
+
       const won = sanitized.winner === savedMyRole;
       this.showGameEnd(won ? 'You won!' : 'You lost!', savedMyRole, savedPlayerIds);
     }
