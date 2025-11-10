@@ -64,6 +64,28 @@ export class VaultService {
 
             if (oauth?.data?.data) {
                 await this.encryptAndStore('oauth_secrets', JSON.stringify(oauth.data.data));
+
+                // Also set OAuth environment variables for direct access
+                process.env.GITHUB_CLIENT_ID = oauth.data.data.github_client_id;
+                process.env.GITHUB_CLIENT_SECRET = oauth.data.data.github_client_secret;
+                process.env.GITHUB_REDIRECT_URI = oauth.data.data.github_redirect_uri;
+                process.env.GOOGLE_CLIENT_ID = oauth.data.data.google_client_id;
+                process.env.GOOGLE_CLIENT_SECRET = oauth.data.data.google_client_secret;
+                process.env.GOOGLE_REDIRECT_URI = oauth.data.data.google_redirect_uri;
+            }
+
+            // Override with environment variables if they exist (higher priority)
+            if (process.env.GITHUB_CLIENT_ID) {
+                process.env.GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+            }
+            if (process.env.GITHUB_CLIENT_SECRET) {
+                process.env.GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+            }
+            if (process.env.GOOGLE_CLIENT_ID) {
+                process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+            }
+            if (process.env.GOOGLE_CLIENT_SECRET) {
+                process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
             }
 
             // Handle SSL certificates if HTTPS is enabled
@@ -185,10 +207,10 @@ export class VaultService {
         return {
             github_client_id: process.env.GITHUB_CLIENT_ID || 'Iv1.8b88ce2b5c4f58e3',
             github_client_secret: process.env.GITHUB_CLIENT_SECRET || 'a4946c8be3386b7f9e6dfed90ea04c6e0d366e48',
-            github_redirect_uri: process.env.GITHUB_REDIRECT_URI || 'https://localhost:8443/auth/github/callback',
+            github_redirect_uri: process.env.GITHUB_REDIRECT_URI || 'https://localhost:8443/api/auth/github/callback',
             google_client_id: process.env.GOOGLE_CLIENT_ID || 'dev-google-client-id',
             google_client_secret: process.env.GOOGLE_CLIENT_SECRET || 'dev-google-client-secret',
-            google_redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'https://localhost:8443/auth/google/callback'
+            google_redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'https://localhost:8443/api/auth/google/callback'
         };
     }
 

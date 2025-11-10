@@ -112,6 +112,11 @@ export class Router {
         window.history.pushState(null, '', path);
 
       await this.renderPath(path);
+
+      if (path === '/' && localStorage.getItem('needs_ws_reconnect') === 'true') {
+        localStorage.removeItem('needs_ws_reconnect');
+        this.reconnectWebSocket();
+      }
     } catch (error) {
       this.renderError(`Erreur de navigation: ${error}`);
     }
@@ -192,6 +197,32 @@ export class Router {
 
   public getAvailableRoutes(): string[] {
     return Array.from(this.routes.keys());
+  }
+
+  private async reconnectWebSocket(): Promise<void> {
+    try {
+      const { chatService } = await import('../../features/friends/services/ChatService');
+
+      chatService.disconnect();
+      (chatService as any).intentionalDisconnect = false;
+      await chatService.connect();
+
+      const authListener = async () => {
+        try {
+          chatService.off('authenticated', authListener);
+          const { authManager } = await import('../auth/AuthManager');
+          await authManager.syncUserInfo();
+
+          const event = new CustomEvent('friendsListRefresh', { detail: { force: true } });
+          window.dispatchEvent(event);
+        } catch (error) {
+          console.error('Failed to sync user state after auth:', error);
+        }
+      };
+      chatService.on('authenticated', authListener);
+    } catch (error) {
+      console.error('Failed to reconnect ChatService WebSocket:', error);
+    }
   }
 }
 

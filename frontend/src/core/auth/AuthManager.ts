@@ -246,6 +246,26 @@ export class AuthManager {
       console.error('[AuthManager] Erreur lors de la connexion du ChatService:', error);
     }
   }
+
+  public async syncUserInfo(): Promise<any> {
+    try {
+      if (this.isAuthenticated()) {
+        const currentUser = await apiService.getCurrentUser();
+
+        appState.setState({
+          user: currentUser,
+          isAuthenticated: true,
+          loading: false,
+        });
+
+        console.log('[AuthManager] User info synchronized with latest backend state');
+        return currentUser;
+      }
+    } catch (error) {
+      console.error('[AuthManager] Error syncing user info:', error);
+      return null;
+    }
+  }
 }
 
 
