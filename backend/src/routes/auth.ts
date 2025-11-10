@@ -777,11 +777,11 @@ export async function authRoutes(server: FastifyInstance) {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: process.env.GOOGLE_CLIENT_ID,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          client_id: process.env.GOOGLE_CLIENT_ID ?? "",
+          client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
           code,
-          grant_type: 'authorization_code',
-          redirect_uri: 'https://localhost:8443/api/auth/google/callback',
+          grant_type: "authorization_code",
+          redirect_uri: "https://localhost:8443/api/auth/google/callback",
         }),
       });
 
