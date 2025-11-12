@@ -552,6 +552,7 @@ static void game_loop(ctx *ctx)
 		cJSON_Delete(data.json);
 	}
 	input_burn_events(ctx);
+	label_update_text(ctx->friends_view.friend_challenge_text, NULL, 0);
 	cprevious_window(0);
 	if (ctx->i_was_invited)
 		cprevious_window(0);
