@@ -555,6 +555,7 @@ static void game_loop(ctx *ctx)
 	cprevious_window(0);
 	if (ctx->i_was_invited)
 		cprevious_window(0);
+	ctx->i_was_invited = 0;
 	cprevious_window(1);
 }
 
@@ -591,7 +592,6 @@ static void on_sock_event(ctx *ctx)
 		if (cur_term_window_type != term_window_type_PONG_GET_READY)
 		{
 			json_parse_from_def_force(data.json, friend_pong_accepted_def, &ctx->pong_accepted);
-			ctx->i_was_invited = 0;
 			label_update_text(ctx->get_ready_view.opponent_ready_message, NULL, 0);
 			cswitch_window(term_window_type_PONG_GET_READY, 1);
 			delete_json = 0;
