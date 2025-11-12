@@ -62,6 +62,15 @@ int	api_ctx_init(api_ctx *ctx, const char *api_base_url)
 	curl_easy_setopt(easy, CURLOPT_HTTPHEADER, list);
 	ctx->header_list = list;
 	ctx->curl = easy;
+
+	curl_easy_setopt(ctx->curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(ctx->curl, CURLOPT_URL, ctx->api_base_url);
+	CURLcode curl_err = curl_easy_perform(ctx->curl);
+	if (curl_err)
+	{
+		fprintf(stderr, "curl error connecting to `%s`: %s\n", api_base_url, curl_easy_strerror(curl_err));
+		return (0);
+	}
 	
 	return (1);
 }
