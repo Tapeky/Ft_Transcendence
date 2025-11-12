@@ -38,11 +38,6 @@ export class TournamentEventManager {
       this.handleBackNavigation();
       return;
     }
-    if (target.id === 'history-button' || target.closest('#history-button')) {
-      event.preventDefault();
-      this.handleHistoryNavigation();
-      return;
-    }
     if (target.id === 'clear-error' || target.closest('#clear-error')) {
       event.preventDefault();
       this.handleClearError();
@@ -61,11 +56,6 @@ export class TournamentEventManager {
   private handleBackNavigation(): void {
     console.log('Going back to home');
     router.navigate('/');
-  }
-
-  private handleHistoryNavigation(): void {
-    console.log('Viewing tournament history');
-    router.navigate('/tournament-history');
   }
 
   private handleClearError(): void {

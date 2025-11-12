@@ -261,7 +261,7 @@ class ApiService {
   }
 
   private getWebSocketUrl(): string {
-    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8000';
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://localhost:8443';
     const wsUrl = apiUrl.replace(
       /^https?:/,
       window.location.protocol === 'https:' ? 'wss:' : 'ws:'

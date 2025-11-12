@@ -79,7 +79,7 @@ export class GamePage {
               <div class='flex-[2] flex-grow flex flex-col items-center justify-center'>
                 <h1 class="text-6xl font-bold text-white mb-6 font-iceland">PONG</h1>
                 <div class="bg-black/30 backdrop-blur-sm border-white border-4 rounded-xl px-6 pb-1 pt-0 inline-block">
-                  <div class='w-full flex flex-row text-[2rem] justify-between'>
+                  <div id='local-users' class='w-full flex flex-row text-[2rem] justify-between'>
                     <h2>Host</h2>
                     <h2>Guest</h2>
                   </div>
@@ -201,6 +201,13 @@ export class GamePage {
   }
 
   private startLocalGame(): void {
+    const localUsers = this.element.querySelector('#local-users');
+    const canvas = this.element.querySelector('#game-canvas-container');
+    if (this.tournamentContext)
+    {
+      localUsers?.classList.replace('flex', 'hidden');
+      canvas?.classList.add('mt-6');
+    }
     this.render();
     if (this.gameState)
       this.gameState.start = Date.now();

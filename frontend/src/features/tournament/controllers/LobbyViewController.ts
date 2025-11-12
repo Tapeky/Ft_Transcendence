@@ -30,8 +30,8 @@ export class LobbyViewController extends TournamentViewController {
                     id="max-players"
                     class="w-full px-4 py-3 bg-black/20 border border-white rounded text-white font-iceland text-lg focus:ring-2 focus:ring-white"
                   >
-                    <option value="4">4 Players</option>
-                    <option value="8" selected>8 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="8">8 Players</option>
                     <option value="16">16 Players</option>
                   </select>
                 </div>
@@ -54,7 +54,7 @@ export class LobbyViewController extends TournamentViewController {
         </div>
     `;
 
-    this.generatePlayerInputs(8);
+    this.generatePlayerInputs(4);
     this.bindEvents();
   }
 

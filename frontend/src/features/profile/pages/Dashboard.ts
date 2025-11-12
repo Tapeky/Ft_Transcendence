@@ -135,10 +135,9 @@ export class Dashboard {
     const matchesToUse = matches || this.matches || [];
     if (matchesToUse.length === 0) return 'N/A';
 
-    const currentUser = appState.getState().user;
     const recentMatches = matchesToUse.slice(0,5).reverse();
 
-    const results = recentMatches.map(match => (match.winner_id === currentUser?.id ? 'W' : 'L'));
+    const results = recentMatches.map(match => (match.winner_id === Number(this.playerId) ? 'W' : 'L'));
 
     return results.join('');
   }
@@ -266,7 +265,7 @@ export class Dashboard {
 				
 				<div class="flex-1">
 					<h1 class="text-[3rem]">${victory ? 'Victory' : 'Defeat'}</h1>
-					<h2>${match.created_at}</h2>
+					<h2>${this.formatDate(match.created_at)}</h2>
 				</div>
 
 				<div class="flex-[2] flex items-center justify-center">
@@ -301,6 +300,27 @@ export class Dashboard {
     }
 
     return avatarUrl;
+  }
+
+  private formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Date invalide';
+    }
+
+    date.setHours(date.getHours() + 1);
+
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Paris',
+    };
+
+    return date.toLocaleDateString('fr-FR', options);
   }
 
   private initializeComponents() {
@@ -447,16 +467,15 @@ export class Dashboard {
     }
 
     const lastMatches = matches.slice(0,5).reverse();
-    const currentUser = appState.getState().user;
 
     const scores = lastMatches.map(match => {
-      return match.player1_username === currentUser?.username
+      return match.player1_username === this.player?.username
         ? match.player1_score
         : match.player2_score;
     });
 
     const results = lastMatches.map(match => {
-      return match.winner_id === currentUser?.id ? 1 : 0;
+      return match.winner_id === Number(this.playerId) ? 1 : 0;
     });
 
     const left = this.container.querySelector('#graph-left');

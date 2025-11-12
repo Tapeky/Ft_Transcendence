@@ -236,6 +236,7 @@ export async function authRoutes(server: FastifyInstance) {
               total_losses: stats.total_losses || 0,
               total_games: stats.total_games || 0,
               created_at: user.created_at,
+			  has_2fa_enabled: user.has_2fa_enabled
             },
             token,
             expires_in: process.env.JWT_EXPIRES_IN || '24h',
@@ -580,8 +581,8 @@ export async function authRoutes(server: FastifyInstance) {
 
   server.get('/github', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      
       const githubClientId = process.env.GITHUB_CLIENT_ID;
-
       if (!githubClientId) {
         return reply.status(500).send({
           success: false,
@@ -590,7 +591,7 @@ export async function authRoutes(server: FastifyInstance) {
         });
       }
 
-      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(process.env.GITHUB_REDIRECT_URI || 'http://localhost:8000/api/auth/github/callback')}`;
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(process.env.GITHUB_REDIRECT_URI || 'https://localhost:8443/api/auth/github/callback')}`;
 
       reply.redirect(githubAuthUrl);
     } catch (error: any) {
@@ -740,7 +741,7 @@ export async function authRoutes(server: FastifyInstance) {
       googleAuthUrl.searchParams.append('client_id', googleClientId);
       googleAuthUrl.searchParams.append(
         'redirect_uri',
-        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8000/api/auth/google/callback'
+        'https://localhost:8443/api/auth/google/callback'
       );
       googleAuthUrl.searchParams.append('response_type', 'code');
       googleAuthUrl.searchParams.append('scope', 'openid profile email');
@@ -776,12 +777,11 @@ export async function authRoutes(server: FastifyInstance) {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: process.env.GOOGLE_CLIENT_ID!,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          client_id: process.env.GOOGLE_CLIENT_ID ?? "",
+          client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
           code,
-          grant_type: 'authorization_code',
-          redirect_uri:
-            process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8000/api/auth/google/callback',
+          grant_type: "authorization_code",
+          redirect_uri: "https://localhost:8443/api/auth/google/callback",
         }),
       });
 

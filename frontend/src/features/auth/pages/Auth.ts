@@ -325,11 +325,10 @@ export class AuthPage {
   private changeImg(): void {
     const imgEgg = this.element.querySelector('#egg');
 
-    console.log('click');
     if (!imgEgg)
       return;
 
-    imgEgg.innerHTML = "<img class='border-4 border-white rounded-sm h-[400px] w-[400px]' src='/src/img/jinx.gif'>"
+    imgEgg.innerHTML = "<img class='border-4 border-white rounded-sm h-[400px] w-[500px]' src='/src/img/jinx.gif'>"
   }
 
   private switchMode(newMode: 'login' | 'register'): void {

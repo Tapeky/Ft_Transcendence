@@ -2,7 +2,6 @@ import { TournamentStateManager, TournamentSystemState } from '../managers/Tourn
 import { Tournament, TournamentSize } from '../types/tournament';
 import { router } from '../../../core/app/Router';
 import { Header } from '../../../shared/components/Header';
-import { Banner } from '../../../shared/components/Banner';
 import { authManager } from '../../../core/auth/AuthManager';
 import { TournamentViewManager } from '../managers/TournamentViewManager';
 import { TournamentEventManager } from '../managers/TournamentEventManager';
@@ -16,7 +15,6 @@ export class LocalTournament {
   private unsubscribe?: () => void;
   private currentState: TournamentSystemState | null = null;
   private header?: Header;
-  private banner?: Banner;
   private authUnsubscribe?: () => void;
   private viewManager?: TournamentViewManager;
   private eventManager?: TournamentEventManager;
@@ -199,7 +197,6 @@ export class LocalTournament {
       'min-h-screen min-w-[1000px] box-border flex flex-col m-0 font-iceland select-none';
 
     this.header = new Header(true);
-    this.banner = new Banner();
     const mainContent = document.createElement('main');
     mainContent.className = 'flex w-full flex-grow bg-gradient-to-r from-blue-800 to-red-700';
     mainContent.id = 'tournament-content-wrapper';
@@ -213,14 +210,6 @@ export class LocalTournament {
                 ← Back to Menu
               </button>
               <h1 class="text-2xl font-bold text-white font-iceland">Local Tournament</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-              <button
-                id="history-button"
-                class="text-white border-white border-2 px-4 py-2 rounded hover:bg-white hover:text-black transition-colors font-iceland text-lg"
-              >
-                History
-              </button>
             </div>
           </div>
         </div>
@@ -252,7 +241,6 @@ export class LocalTournament {
     `;
 
     container.appendChild(this.header.getElement());
-    container.appendChild(this.banner.getElement());
     container.appendChild(mainContent);
 
     return container;
