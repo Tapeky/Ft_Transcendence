@@ -621,8 +621,6 @@ static void on_sock_event(ctx *ctx)
 			}
 		}
 	}
-	else
-		fprintf(stderr, "websocket event: %s\n", data.type);
 	if (delete_json)
 		cJSON_Delete(data.json);
 }
