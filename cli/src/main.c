@@ -435,6 +435,19 @@ static void init_windows(ctx *ctx)
 		ccomponent_add(component);
 		add_pretty_button(BOX_X + 4, BOX_Y + BOX_H - 3, "GO", handle_get_ready_button, ctx);
 	}
+	cswitch_window(term_window_type_PONG_GAME_OVER, 0);
+	{
+		label_init(&component, 4, 4, "GAME OVER", 0);
+		ccomponent_add(component);
+		label_init(&component, 5, 6, "Your score: ", 0);
+		ccomponent_add(component);
+		label_init(&component, 5, 8, "Opponent's score: ", 0);
+		ccomponent_add(component);
+		label_init(&component, 5 + 13, 6, NULL, 0);
+		ctx->game_over_view.your_score = ccomponent_add(component);
+		label_init(&component, 5 + 19, 8, NULL, 0);
+		ctx->game_over_view.opponent_score = ccomponent_add(component);
+	}
 }
 
 static const char * get_ws_message(cJSON *json)
@@ -516,6 +529,8 @@ static void render_pong_scene(const game_state *state)
 		render_paddle(1, state->gameState.leftPaddleY * height_ratio, paddle_height);
 		render_paddle(c_x - 1, state->gameState.rightPaddleY  * height_ratio, paddle_height);
 		render_ball(state->gameState.ballX * width_ratio, state->gameState.ballY * height_ratio, width_ratio, height_ratio);
+		cursor_goto(c_x / 2 - 1, c_y - 1);
+		printf("%d/%d", state->gameState.leftScore, state->gameState.rightScore);
 	}
 	fflush(stdout);
 }
@@ -524,6 +539,7 @@ static void game_loop(ctx *ctx)
 {
 	int last_up = -1;
 	int last_down = -1;
+	int my_score, opponent_score;
 	while (1)
 	{
 		input_poll(ctx);
@@ -539,6 +555,16 @@ static void game_loop(ctx *ctx)
 		{
 			game_state state;
 			json_parse_from_def_force(data.json, game_state_def, &state);
+			if (ctx->i_was_invited)
+			{
+				my_score = state.gameState.leftScore;
+				opponent_score = state.gameState.rightScore;
+			}
+			else
+			{
+				opponent_score = state.gameState.leftScore;
+				my_score = state.gameState.rightScore;
+			}
 			if (!state.gameState.gameOver)
 			{
 				render_pong_scene(&state);
@@ -554,10 +580,16 @@ static void game_loop(ctx *ctx)
 	input_burn_events(ctx);
 	label_update_text(ctx->friends_view.friend_challenge_text, NULL, 0);
 	cprevious_window(0);
+	cprevious_window(0);
 	if (ctx->i_was_invited)
 		cprevious_window(0);
 	ctx->i_was_invited = 0;
-	cprevious_window(1);
+	char integer_buf[20];
+	sprintf(integer_buf, "%d", my_score);
+	label_update_text(ctx->game_over_view.your_score, xstrdup(integer_buf), 1);
+	sprintf(integer_buf, "%d", opponent_score);
+	label_update_text(ctx->game_over_view.opponent_score, xstrdup(integer_buf), 1);
+	cswitch_window(term_window_type_PONG_GAME_OVER, 1);
 }
 
 static void on_sock_event(ctx *ctx)

@@ -23,6 +23,7 @@ typedef enum
 	term_window_type_PONG_INVITE_OVERLAY,
 	term_window_type_PONG_GET_READY,
 	term_window_type_PONG_GAME,
+	term_window_type_PONG_GAME_OVER,
 	term_window_type__MAX
 }	term_window_type;
 

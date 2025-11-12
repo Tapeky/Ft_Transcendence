@@ -62,6 +62,11 @@ typedef struct s_ctx
 	{
 		C(opponent_ready_message);
 	}	get_ready_view;
+	struct
+	{
+		C(your_score);
+		C(opponent_score);
+	}	game_over_view;
 }   ctx;
 
 # undef C
