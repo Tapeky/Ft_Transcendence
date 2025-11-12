@@ -626,10 +626,60 @@ static void on_sock_event(ctx *ctx)
 		cJSON_Delete(data.json);
 }
 
-int main()
+static int fetch_param(int *ac, char ***av, char *arg, char **param)
+{
+	if (--(*ac) >= 0)
+	{
+		*param = *((*av)++);
+		return (1);
+	}
+	fprintf(stderr, "Error: `%s` requires a parameter\n", arg);
+	return (0);
+}
+
+static int parse_args(int ac, char **av, char **backend_url, char **ws_url)
+{
+	*backend_url = "https://localhost:8443/";
+	*ws_url = "wss://localhost:8443/ws";
+
+	ac--;
+	av++;
+	while (--ac >= 0)
+	{
+		char *arg = *av++;
+		if (*arg != '-' || strlen(arg) != 2)
+		{
+			fprintf(stderr, "Unexpected parameter `%s`\n", arg);
+			return (0);
+		}
+		char *param;
+		switch (*(arg + 1))
+		{
+			case 'b':
+				if (!fetch_param(&ac, &av, arg, &param))
+					return (0);
+				*backend_url = param;
+				break;
+			case 'w':
+				if (!fetch_param(&ac, &av, arg, &param))
+					return (0);
+				*ws_url = param;
+				break;
+			default:
+				fprintf(stderr, "Unknown argument `%s`\n", arg);
+				return (0);
+		}
+	}
+	return (1);
+}
+
+int main(int ac, char **av)
 {
 	ctx *ctx = &g_ctx;
-	if (!ctx_init(ctx, "https://localhost:8443/", "wss://localhost:8443/ws"))
+	char *backend_url, *ws_url;
+	if (!parse_args(ac, av, &backend_url, &ws_url))
+		return (EXIT_FAILURE);
+	if (!ctx_init(ctx, backend_url, ws_url))
 	{
 		dprintf(STDERR_FILENO, "ctx_init fail\n");
 		return (EXIT_FAILURE);
