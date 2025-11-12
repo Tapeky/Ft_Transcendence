@@ -5,9 +5,9 @@ OBJ_DIR := ./obj/
 INCLUDE_DIRS := ./include/ ./deps/cJSON ./deps/curl/include
 CFLAGS := -Wall -Wextra -Werror -Wno-missing-field-initializers -MMD -Wno-unused-label
 CC := clang
-EXT_LIBS := $(addprefix -l,								\
-	X11 m												\
-	ssl crypto z zstd brotlidec ldap lber idn2 nghttp2	\
+EXT_LIBS := $(addprefix -l,	\
+	X11 m					\
+	ssl crypto z brotlidec 	\
 )
 LIBCURL := deps/curl/lib/.libs/libcurl.a
 CJSON := deps/cJSON/libcjson.a
