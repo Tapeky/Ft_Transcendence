@@ -122,17 +122,12 @@ fi
 # ============================================================================
 # OAUTH CREDENTIALS
 # ============================================================================
-if ! vault kv get secret/oauth > /dev/null 2>&1; then
-    echo "INFO: Storing OAuth credentials..."
-    vault kv put secret/oauth \
-      github_client_id="${GITHUB_CLIENT_ID:-Iv1.8b88ce2b5c4f58e3}" \
-      github_client_secret="${GITHUB_CLIENT_SECRET:-a4946c8be33842c3170a7d52f6f140a349c2d76a}" \
-      google_client_id="${GOOGLE_CLIENT_ID:-123456789012-abcde.apps.googleusercontent.com}" \
-      google_client_secret="${GOOGLE_CLIENT_SECRET:-GOCSPX-abcde}" \
-      redirect_uri="https://localhost:8443/api/auth/oauth/callback"
-else
-    echo "INFO: OAuth credentials already exist"
-fi
+echo "INFO: Updating OAuth credentials..."
+vault kv put secret/oauth \
+  GITHUB_CLIENT_ID="Ov23liSveor1lTH4vgRN" \
+  GITHUB_CLIENT_SECRET="26d73bcb7a5d48df2f335281ddc5d7b2e5275d00" \
+  GOOGLE_CLIENT_ID="123456789012-abcde.apps.googleusercontent.com" \
+  GOOGLE_CLIENT_SECRET="GOCSPX-abcde"
 
 # ============================================================================
 # SSL/TLS CONFIG
