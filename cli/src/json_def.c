@@ -160,8 +160,7 @@ void json_parse_from_def_force(cJSON *obj, const json_def *defs, void *out)
 	json_content_error err = json_parse_from_def(obj, defs, out);
 	if (err.kind)
 	{
-		cJSON_Delete(obj);
-		DO_CLEANUP(json_content_error_print(stderr, err));
+		DO_CLEANUP(json_content_error_print(stderr, err); cJSON_Delete(obj));
 	}
 }
 
@@ -210,9 +209,12 @@ static void json_clean_obj_rec(const json_def *defs, void *in)
 void json_clean_obj(void *in, const json_def *defs)
 {
 	cJSON *json = *(cJSON **)in;
-	json_clean_obj_rec(defs, in);
 	if (json)
+	{
+		json_clean_obj_rec(defs, in);
 		cJSON_Delete(json);
+		*(cJSON **)in = NULL;
+	}
 }
 
 void json_def_prettyprint(const json_def *defs, const void *in, FILE *stream, int level)

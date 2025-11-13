@@ -120,6 +120,10 @@ void	box_init(console_component *c,
 	char top, char bottom, char left, char right,
 	char top_left, char top_right, char bottom_left, char bottom_right);
 
+# define DEFAULT_BOX_STYLE	\
+		'-', '-', '|', '|',	\
+		'+', '+', '+', '+'
+
 void	box_draw(console_component *c);
 
 void	button_init(console_component *c, u16 x, u16 y, char *text, button_action_func *func, void *param);

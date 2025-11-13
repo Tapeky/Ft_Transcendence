@@ -101,15 +101,24 @@ typedef struct json_def
 		GLUE(_REC_, field_type)(__VA_ARGS__)						\
 	},
 
-# define DEFINE_JSON(name, ...)							\
-	typedef struct {									\
-		cJSON *_json_;									\
-		FOR_EACH(STRUCT_CONSTRUCTOR, name, __VA_ARGS__)	\
-	}	name;											\
-	static json_def GLUE(name, _def)[] = {						\
-		FOR_EACH(DEF_CONSTRUCTOR, name, __VA_ARGS__)	\
-		DEF_END											\
-	}
+# ifdef JSON_DEF_IMPLEMENTATION
+#  define _IF_IMPL(expr) expr
+#  define _IF_NOT_IMPL(...)
+# else
+#  define _IF_IMPL(...)
+#  define _IF_NOT_IMPL(expr) expr
+# endif
+
+# define DEFINE_JSON(name, ...)												\
+	typedef struct {														\
+		cJSON *_json_;														\
+		FOR_EACH(STRUCT_CONSTRUCTOR, name, __VA_ARGS__)						\
+	}	name;																\
+	_IF_NOT_IMPL(extern) json_def GLUE(name, _def)[]						\
+	_IF_IMPL( = {															\
+		FOR_EACH(DEF_CONSTRUCTOR, name, __VA_ARGS__)						\
+		DEF_END																\
+	});																		\
 
 typedef enum
 {

@@ -1,5 +1,6 @@
 import { chatService, Conversation, Message } from '../services/ChatService';
 import { authManager } from '../../../core/auth/AuthManager';
+import { router } from '../../../core/app/Router';
 import { apiService } from '../../../shared/services/api';
 import { getAvatarUrl } from '../../../shared/utils/avatar';
 
@@ -55,7 +56,8 @@ export class ChatConversation {
             <div class="flex items-center gap-3">
               <img src="${getAvatarUrl(otherUser.avatar)}"
                    alt="${otherUser.username}"
-                   class="w-12 h-12 rounded-full border-2 border-white object-cover"
+                   id='user-avatar'
+                   class="w-12 h-12 rounded-full border-2 border-white object-cover hover:scale-105"
                    onerror="this.src='/default-avatar.png'" />
               <h3 id="chat-username" class="text-white text-[1.6rem] font-bold">${otherUser.username || 'Unknown'}</h3>
             </div>
@@ -99,9 +101,12 @@ export class ChatConversation {
 
     const inviteBtn = this.element.querySelector('#invite-to-pong-btn');
     inviteBtn?.addEventListener('click', () => this.inviteToPong());
-
+    
     const messageInput = this.element.querySelector('#message-input') as HTMLInputElement;
     const sendBtn = this.element.querySelector('#send-btn');
+    
+    const userAvatar = this.element.querySelector('#user-avatar');
+    userAvatar?.addEventListener('click', () => this.seeDashboard());
 
     const sendMessage = () => {
       const content = messageInput?.value.trim();
@@ -128,6 +133,11 @@ export class ChatConversation {
     } catch (error) {
       return;
     }
+  }
+
+  private seeDashboard(): void {
+    const otherUser = this.getOtherUser();
+    router.navigate(`/dashboard/${otherUser.id}`);
   }
 
   private renderMessages(): void {

@@ -12,14 +12,19 @@
 
 typedef struct s_ctx
 {
-	Display		*dpy;
-	Window		root_win;
-	input_state	input;
-	ws_ctx		ws_ctx;
-	api_ctx		api_ctx;
-	login		user_login;
-	tournaments	tournaments;
-	friends		friends;
+	Display					*dpy;
+	Window					root_win;
+	input_state				input;
+	ws_ctx					ws_ctx;
+	api_ctx					api_ctx;
+	login					user_login;
+	tournaments				tournaments;
+	friends					friends;
+	friend_pong_invite		pong_invite;
+	friend_pong_accepted	pong_accepted;
+	int						i_was_invited;
+	int						i_am_ready;
+	int						opponent_ready;
 
 	struct
 	{
@@ -44,8 +49,24 @@ typedef struct s_ctx
 	struct
 	{
 		list_view list_view;
+		friend *selected_friend;
 		C(friend_name);
+		C(friend_challenge_text);
 	}	friends_view;
+	struct
+	{
+		C(from_username);
+		C(invite_error);
+	}	invite_overlay_view;
+	struct
+	{
+		C(opponent_ready_message);
+	}	get_ready_view;
+	struct
+	{
+		C(your_score);
+		C(opponent_score);
+	}	game_over_view;
 }   ctx;
 
 # undef C

@@ -63,6 +63,31 @@ DEFINE_JSON(tournaments,
 );
 
 /* WEBSOCKETS */
+DEFINE_JSON(friend_pong_invite,
+	(STRING, inviteId),
+	(INT, fromUserId),
+	(STRING, fromUsername),
+	(INT, expiresAt)
+);
+
+DEFINE_JSON(friend_pong_accepted,
+	(STRING, gameId),
+	(STRING, role),
+);
+
+DEFINE_JSON(game_state_state,
+	(DOUBLE, ballX),
+	(DOUBLE, ballY),
+	(DOUBLE, leftPaddleY),
+	(DOUBLE, rightPaddleY),
+	(INT, leftScore),
+	(INT, rightScore),
+	(BOOL, gameOver)
+);
+
+DEFINE_JSON(game_state,
+	(OBJECT, gameState, game_state_state)
+);
 
 /* REQUESTS */
 # define FILL_REQUEST__OFFSET_OF(struct, field) \
@@ -89,6 +114,37 @@ DEFINE_JSON(tournaments,
 		REQ_ENTRY("password")								\
 		REQ_ENTRY_LAST("totp_password")						\
 	), email, password, totp_password)
+
+# define REQ_WS_LOGIN(buf, auth_token)	\
+	FILL_REQUEST(buf, REQ_WRAP(			\
+		REQ_ENTRY("type", "\"auth\"")	\
+		REQ_ENTRY_LAST("token")			\
+	), auth_token)
+
+# define REQ_WS_INVITE_DECLINE(buf, invite_id)			\
+	FILL_REQUEST(buf, REQ_WRAP(							\
+		REQ_ENTRY("type", "\"friend_pong_decline\"")	\
+		REQ_ENTRY_LAST("inviteId")						\
+	), invite_id)
+
+# define REQ_WS_INVITE_ACCEPT(buf, invite_id)			\
+	FILL_REQUEST(buf, REQ_WRAP(							\
+		REQ_ENTRY("type", "\"friend_pong_accept\"")		\
+		REQ_ENTRY_LAST("inviteId")						\
+	), invite_id)
+
+# define REQ_WS_PLAYER_READY(buf, game_id)				\
+	FILL_REQUEST(buf, REQ_WRAP(							\
+		REQ_ENTRY("type", "\"pong_player_ready\"")		\
+		REQ_ENTRY_LAST("gameId")						\
+	), game_id)
+
+# define REQ_WS_INPUT_UPDATE(buf, up, down)					\
+	FILL_REQUEST(buf, REQ_WRAP(								\
+		REQ_ENTRY("type", "\"simple_pong_input\"")			\
+		REQ_ENTRY("gameId", "\"aaa\"")						\
+		"\"input\": {\"up\": %s, \"down\": %s}"				\
+	), (up) ? "true" : "false", (down) ? "true" : "false")
 
 # define REQ_API_REGISTER(buf, username, email, password, display_name)	\
 	FILL_REQUEST(buf, REQ_WRAP(											\
