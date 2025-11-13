@@ -1,24 +1,20 @@
 import vault from 'node-vault';
+import * as fs from 'fs/promises';
+
+// Chemins des fichiers générés par Vault Agent
+const VAULT_TOKEN_PATH = '/app/ssl/vault_token'; 
+const VAULT_CA_PATH = '/app/ssl/ca.pem';
 
 export class VaultService {
     private static instance: VaultService;
     private client: vault.client;
     private initialized: boolean = false;
-    private secrets: Map<string, any> = new Map();
-    private vaultEnabled: boolean;
 
     private constructor() {
-        // Configuration flexible avec fallback
-        const vaultEndpoint = process.env.VAULT_URL || process.env.VAULT_ENDPOINT || 'http://vault:8200';
-        const vaultToken = process.env.VAULT_TOKEN || 'root';
-        this.vaultEnabled = process.env.VAULT_ENABLED !== 'false';
-
-        console.log(`🔧 Configuration Vault: endpoint=${vaultEndpoint}, enabled=${this.vaultEnabled}`);
-
         this.client = vault({
             apiVersion: 'v1',
-            endpoint: vaultEndpoint,
-            token: vaultToken,
+            endpoint: process.env.VAULT_ADDR || 'https://vault:8200',
+            token: 'temporary_token',
         });
     }
 
@@ -32,193 +28,80 @@ export class VaultService {
     public async initialize(): Promise<void> {
         if (this.initialized) return;
 
-        if (!this.vaultEnabled) {
-            console.log('⚠️  Vault désactivé - utilisation des variables d\'environnement');
-            this.initializeFromEnv();
-            return;
-        }
-
         try {
-            // Test de connexion avant de charger les secrets
-            await this.client.health();
-            console.log('✅ Connexion Vault établie');
+            console.log('⏳ Initialisation Vault...');
 
-            // Load all necessary secrets
-            const [config, oauth, ssl] = await Promise.all([
-                this.client.read('secret/data/config').catch(() => null),
-                this.client.read('secret/data/oauth').catch(() => null),
-                this.client.read('secret/data/ssl').catch(() => null)
-            ]);
+            // Attendre que les fichiers soient disponibles
+            await this.waitForFiles();
 
-            if (config?.data?.data) {
-                // Encrypt sensitive values in memory
-                await this.encryptAndStore('jwt_secret', config.data.data.JWT_SECRET);
-                
-                // Set environment variables
-                Object.entries(config.data.data).forEach(([key, value]) => {
-                    if (key !== 'JWT_SECRET') {
-                        process.env[key] = String(value);
-                    }
-                });
-            }
+            // Lire le token et le CA
+            const token = (await fs.readFile(VAULT_TOKEN_PATH, 'utf8')).trim();
+            const ca = await fs.readFile(VAULT_CA_PATH, 'utf8');
+            console.log(token);
+            // Créer le client Vault authentifié
+            this.client = vault({
+                apiVersion: 'v1',
+                endpoint: process.env.VAULT_ADDR || 'https://vault:8200',
+                token: token,
+                requestOptions: { ca, rejectUnauthorized: true }
+            });
 
-            if (oauth?.data?.data) {
-                await this.encryptAndStore('oauth_secrets', JSON.stringify(oauth.data.data));
-
-                // Also set OAuth environment variables for direct access
-                process.env.GITHUB_CLIENT_ID = oauth.data.data.github_client_id;
-                process.env.GITHUB_CLIENT_SECRET = oauth.data.data.github_client_secret;
-                process.env.GITHUB_REDIRECT_URI = oauth.data.data.github_redirect_uri;
-                process.env.GOOGLE_CLIENT_ID = oauth.data.data.google_client_id;
-                process.env.GOOGLE_CLIENT_SECRET = oauth.data.data.google_client_secret;
-                process.env.GOOGLE_REDIRECT_URI = oauth.data.data.google_redirect_uri;
-            }
-
-            // Override with environment variables if they exist (higher priority)
-            if (process.env.GITHUB_CLIENT_ID) {
-                process.env.GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-            }
-            if (process.env.GITHUB_CLIENT_SECRET) {
-                process.env.GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-            }
-            if (process.env.GOOGLE_CLIENT_ID) {
-                process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-            }
-            if (process.env.GOOGLE_CLIENT_SECRET) {
-                process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-            }
-
-            // Handle SSL certificates if HTTPS is enabled
-            if (config?.data?.data?.ENABLE_HTTPS === 'true' && ssl?.data?.data) {
-                await this.setupSSLCertificates(ssl.data.data);
-            }
+            // Charger tous les secrets dans process.env
+            await this.loadSecretsToEnv();
 
             this.initialized = true;
-            console.log('✅ Secrets chargés depuis Vault');
-        } catch (error) {
-            console.error('❌ Impossible de charger les secrets depuis Vault:', error);
-            console.log('🔄 Fallback vers les variables d\'environnement');
-            this.initializeFromEnv();
+            console.log('✅ Vault initialisé - secrets chargés dans process.env');
+
+        } catch (err) {
+            console.error('❌ Échec initialisation Vault:', err instanceof Error ? err.message : String(err));
+            console.log('⚠️  Utilisation des variables d\'environnement par défaut');
+            this.initialized = true;
         }
     }
 
-    private initializeFromEnv(): void {
-        // Fallback sur les variables d'environnement
-        const requiredEnvVars = [
-            'JWT_SECRET',
-            'OAUTH_CLIENT_ID',
-            'OAUTH_CLIENT_SECRET',
-            'DATABASE_URL'
+    private async waitForFiles(): Promise<void> {
+        const maxAttempts = 30;
+        for (let i = 1; i <= maxAttempts; i++) {
+            try {
+                await fs.access(VAULT_TOKEN_PATH);
+                await fs.access(VAULT_CA_PATH);
+                return;
+            } catch {
+                if (i === maxAttempts) throw new Error('Fichiers Vault non disponibles');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    private async loadSecretsToEnv(): Promise<void> {
+        const paths = [
+            'secret/data/api',
+            'secret/data/oauth',
+            'secret/data/database',
+            'secret/data/app',
+            'secret/data/smtp',
         ];
 
-        const missing = requiredEnvVars.filter(key => !process.env[key]);
-        
-        if (missing.length > 0) {
-            console.warn(`⚠️  Variables d'environnement manquantes: ${missing.join(', ')}`);
-            // Utiliser des valeurs par défaut pour le développement
-            this.setDefaultValues();
-        }
-
-        this.initialized = true;
-        console.log('✅ Configuration chargée depuis les variables d\'environnement');
-    }
-
-    private setDefaultValues(): void {
-        const defaults = {
-            JWT_SECRET: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production',
-            OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID || 'dev-client-id',
-            OAUTH_CLIENT_SECRET: process.env.OAUTH_CLIENT_SECRET || 'dev-client-secret',
-            DATABASE_URL: process.env.DATABASE_URL || 'sqlite://db/ft_transcendence.db'
-        };
-
-        Object.entries(defaults).forEach(([key, value]) => {
-            if (!process.env[key]) {
-                process.env[key] = value;
-                console.log(`🔧 Utilisation de la valeur par défaut pour ${key}`);
-            }
-        });
-    }
-
-    private async setupSSLCertificates(sslData: any): Promise<void> {
-        try {
-            const fs = require('fs').promises;
-            const path = require('path');
-            
-            const sslDir = '/app/ssl';
-            await fs.mkdir(sslDir, { recursive: true });
-            
-            await fs.writeFile(path.join(sslDir, 'cert.pem'), sslData.cert);
-            await fs.writeFile(path.join(sslDir, 'key.pem'), sslData.key);
-            await fs.chmod(path.join(sslDir, 'key.pem'), 0o600);
-            
-            console.log('✅ Certificats SSL configurés');
-        } catch (error) {
-            console.error('❌ Erreur lors de la configuration SSL:', error);
-        }
-    }
-
-    private async encryptAndStore(key: string, value: string): Promise<void> {
-        try {
-            const encrypted = await this.client.write('transit/encrypt/ft_transcendence', {
-                plaintext: Buffer.from(value).toString('base64')
-            });
-            this.secrets.set(key, encrypted.data.ciphertext);
-        } catch (error) {
-            console.warn(`⚠️  Impossible de chiffrer ${key}, stockage en clair`);
-            this.secrets.set(key, value);
-        }
-    }
-
-    private async decrypt(ciphertext: string): Promise<string> {
-        try {
-            const decrypted = await this.client.write('transit/decrypt/ft_transcendence', {
-                ciphertext
-            });
-            return Buffer.from(decrypted.data.plaintext, 'base64').toString();
-        } catch (error) {
-            // Si le déchiffrement échoue, retourner la valeur en clair (fallback)
-            return ciphertext;
-        }
-    }
-
-    public async getJwtSecret(): Promise<string> {
-        const stored = this.secrets.get('jwt_secret');
-        if (stored) {
-            return this.decrypt(stored);
-        }
-        
-        // Fallback sur la variable d'environnement
-        return process.env.JWT_SECRET || 'your-super-secret-jwt-key';
-    }
-
-    public async getOAuthSecrets(): Promise<any> {
-        const stored = this.secrets.get('oauth_secrets');
-        if (stored) {
-            const decrypted = await this.decrypt(stored);
+        for (const path of paths) {
             try {
-                return JSON.parse(decrypted);
-            } catch {
-                // Si ce n'est pas du JSON, traiter comme une chaîne
-                return decrypted;
+                const response = await this.client.read(path);
+                const secrets = response.data.data;
+
+                for (const [key, value] of Object.entries(secrets)) {
+                    const envKey = key.toUpperCase();
+                    if (!process.env[envKey]) {
+                        process.env[envKey] = String(value);
+                    }
+                }
+            } catch (err) {
+                console.warn(`⚠️  Impossible de lire ${path}`);
             }
         }
-        
-        // Fallback sur les variables d'environnement
-        return {
-            github_client_id: process.env.GITHUB_CLIENT_ID || 'Iv1.8b88ce2b5c4f58e3',
-            github_client_secret: process.env.GITHUB_CLIENT_SECRET || 'a4946c8be3386b7f9e6dfed90ea04c6e0d366e48',
-            github_redirect_uri: process.env.GITHUB_REDIRECT_URI || 'https://localhost:8443/api/auth/github/callback',
-            google_client_id: process.env.GOOGLE_CLIENT_ID || 'dev-google-client-id',
-            google_client_secret: process.env.GOOGLE_CLIENT_SECRET || 'dev-google-client-secret',
-            google_redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'https://localhost:8443/api/auth/google/callback'
-        };
     }
 
-    public isInitialized(): boolean {
-        return this.initialized;
-    }
-
-    public isVaultEnabled(): boolean {
-        return this.vaultEnabled;
+    public getClient(): vault.client {
+        return this.client;
     }
 }
+
+export default VaultService.getInstance();

@@ -1,6 +1,167 @@
 services:
 
-  # ModSecurity Reverse Proxy Service - HARDENED
+  # ====================================================================
+  # 1. VAULT SERVICE (Server Only - Always Running)
+  # ====================================================================
+  vault:
+    container_name: vault
+    build:
+      context: ./vault
+      dockerfile: Dockerfile
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+      - ./vault/scripts:/vault/scripts:ro
+      # CA partagé
+      - vault_credentials:/vault_credentials
+    environment:
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_LOG_LEVEL: "info"
+    entrypoint: [ "bash", "/vault/scripts/vault-entrypoint.sh" ]
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+    # Healthcheck corrigé : accepte sealed (503) et unsealed (200) comme "healthy"
+    healthcheck:
+      test: |
+        vault status -tls-skip-verify -address=https://vault:8200 > /dev/null 2>&1 || 
+        [ $? -eq 2 ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ====================================================================
+  # 2. VAULT INITIALIZATION SERVICE
+  # ====================================================================
+  vault-init:
+    container_name: vault-init
+    build:
+      context: ./vault
+      dockerfile: Dockerfile
+    command: [ "/bin/bash", "/vault/scripts/init-config.sh" ]
+    volumes:
+      - vault_credentials:/vault_credentials
+      - ./vault/scripts:/vault/scripts:ro
+    environment:
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_SKIP_VERIFY: "true"
+    depends_on:
+      vault:
+        condition: service_healthy
+    networks:
+      - ft_transcendence
+    restart: "no"
+
+  # ====================================================================
+  # 3. VAULT AGENT BACKEND
+  # ====================================================================
+  vault-agent-backend:
+    container_name: vault-agent-backend
+    image: hashicorp/vault:latest
+    volumes:
+      - ./vault/config/agent-backend.hcl:/vault/config/agent-backend.hcl:ro
+      - vault_credentials:/secrets:ro
+      - backend_certs:/app/ssl
+    environment:
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_SKIP_VERIFY: "true"
+    entrypoint: [ "vault", "agent", "-config=/vault/config/agent-backend.hcl" ]
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+
+  # ====================================================================
+  # 4. VAULT AGENT NGINX
+  # ====================================================================
+  vault-agent-nginx:
+    container_name: vault-agent-nginx
+    image: hashicorp/vault:latest
+    volumes:
+      - ./vault/config/agent-nginx.hcl:/vault/config/agent-nginx.hcl:ro
+      - vault_credentials:/secrets:ro
+      - nginx_certs:/etc/nginx/ssl
+    environment:
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_SKIP_VERIFY: "true"
+    entrypoint: [ "vault", "agent", "-config=/vault/config/agent-nginx.hcl" ]
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+
+  # ====================================================================
+  # 4. VAULT AGENT FRONTEND
+  # ====================================================================
+  vault-agent-frontend:
+    container_name: vault-agent-frontend
+    image: hashicorp/vault:latest
+    volumes:
+      - ./vault/config/agent-frontend.hcl:/vault/config/agent-frontend.hcl:ro
+      - vault_credentials:/secrets:ro
+      - frontend_certs:/app/ssl
+    environment:
+      VAULT_ADDR: "https://vault:8200"
+      VAULT_SKIP_VERIFY: "true"
+    entrypoint: [ "vault", "agent", "-config=/vault/config/agent-frontend.hcl" ]
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+
+  # ====================================================================
+  # 5. BACKEND SERVICE
+  # ====================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    expose:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./db:/app/db
+      - backend_certs:/app/ssl:ro
+    environment:
+      NODE_ENV: "production"
+      ENABLE_HTTPS: "true"
+      # OAuth Configuration
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
+      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
+      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
+      GITHUB_REDIRECT_URI: "${GITHUB_REDIRECT_URI}"
+      # JWT Configuration
+      JWT_SECRET: "${JWT_SECRET}"
+      JWT_EXPIRES_IN: "${JWT_EXPIRES_IN}"
+      FRONTEND_URL: https://localhost:3000
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    networks:
+      - ft_transcendence
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--quiet", "--tries=1", "--spider", "https://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  # ====================================================================
+  # 6. MODSECURITY REVERSE PROXY
+  # ====================================================================
   modsecurity:
     image: owasp/modsecurity-crs:nginx-alpine
     ports:
@@ -9,14 +170,12 @@ services:
     volumes:
       - ./modsecurity/nginx.conf:/etc/nginx/templates/conf.d/default.conf.template:ro
       - ./modsecurity/custom-rules.conf:/etc/modsecurity.d/owasp-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf:ro
-      - ./ssl:/etc/nginx/conf:ro
+      - nginx_certs:/etc/nginx/ssl:ro
       - ./logs/modsecurity/modsec_audit.log:/var/log/modsec_audit.log
     environment:
-      # Strict ModSecurity Configuration
       - BACKEND=https://backend:8000
       - PROXY=1
       - MODSEC_RULE_REMOVE=920420
-      
       - BLOCKING_PARANOIA=2
       - DETECTION_PARANOIA=2
       
@@ -70,7 +229,10 @@ services:
       - SERVER_TOKENS=Off
       - MODSEC_SERVER_SIGNATURE=Secure-Server
     depends_on:
-      - backend
+      vault-agent-nginx:
+        condition: service_started
+      backend:
+        condition: service_healthy
     networks:
       - ft_transcendence
     restart: unless-stopped
@@ -80,53 +242,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Vault Service - HARDENED
-  vault:
-    image: hashicorp/vault:latest
-    cap_add:
-      - IPC_LOCK
-    ports:
-      - "8200:8200"
-    volumes:
-      - vault_data:/vault/data
-      - vault_logs:/vault/logs
-      - ./vault/config:/vault/config:ro
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: "root"
-      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-      VAULT_ADDR: "http://0.0.0.0:8200"
-      # HARDENED: Enable audit logging
-      VAULT_LOG_LEVEL: "info"
-    command: [ "vault", "server", "-dev", "-dev-root-token-id=root", "-dev-listen-address=0.0.0.0:8200" ]
-    networks:
-      - ft_transcendence
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "vault", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  vault-init:
-    build:
-      context: ./vault
-      dockerfile: Dockerfile
-    depends_on:
-      vault:
-        condition: service_healthy
-    volumes:
-      - ./vault/scripts:/vault/scripts
-      - ./vault/file:/vault/file
-    environment:
-      VAULT_ADDR: "http://vault:8200"
-      VAULT_TOKEN: "root"
-    command: [ "/bin/sh", "/vault/scripts/init-vault.sh" ]
-    networks:
-      - ft_transcendence
-    restart: "no"
-
-  # Frontend Service (React + Vite)
+  
+  # ====================================================================
+  # 7. FRONTEND SERVICE
+  # ====================================================================
   frontend:
     build:
       context: ./frontend
@@ -136,66 +255,29 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - ./ssl:/app/ssl
+      - frontend_certs:/app/ssl:ro
     environment:
       FRONTEND_PORT: 3000
-      # API calls go through hardened WAF
       ENABLE_HTTPS: "true"
       VITE_API_URL: "https://localhost:8443"
     depends_on:
-      - backend
-      - modsecurity
+      vault-agent-frontend:
+        condition: service_started
+      modsecurity:
+        condition: service_healthy
     networks:
       - ft_transcendence
     restart: unless-stopped
 
-  # Backend Service (Node.js + Fastify) - VAULT INTEGRATED
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    # HARDENED: Don't expose backend directly, only through WAF
-    expose:
-      - "8000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./db:/app/db
-      - ./ssl:/app/ssl
-    environment:
-      # HARDENED: All secrets from Vault
-      VAULT_ADDR: "http://vault:8200"
-      VAULT_TOKEN: "root"
-      NODE_ENV: "production"
-      ENABLE_HTTPS: "true"
-      # OAuth Configuration
-      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
-      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
-      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI}"
-      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
-      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
-      GITHUB_REDIRECT_URI: "${GITHUB_REDIRECT_URI}"
-      # JWT Configuration
-      JWT_SECRET: "${JWT_SECRET}"
-      JWT_EXPIRES_IN: "${JWT_EXPIRES_IN}"
-    depends_on:
-      vault-init:
-        condition: service_completed_successfully
-    networks:
-      - ft_transcendence
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-check-certificate", "--quiet", "--tries=1", "--spider", "https://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-# Docker volumes
 volumes:
   db_data:
-  ssl_certs:
   vault_data:
   vault_logs:
+  vault_credentials:
+  nginx_certs:
+  backend_certs:
+  frontend_certs:
 
 networks:
   ft_transcendence:
