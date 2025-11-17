@@ -37,7 +37,6 @@ export class VaultService {
             // Lire le token et le CA
             const token = (await fs.readFile(VAULT_TOKEN_PATH, 'utf8')).trim();
             const ca = await fs.readFile(VAULT_CA_PATH, 'utf8');
-            console.log(token);
             // Créer le client Vault authentifié
             this.client = vault({
                 apiVersion: 'v1',

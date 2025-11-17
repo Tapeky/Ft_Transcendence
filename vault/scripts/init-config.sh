@@ -97,11 +97,8 @@ fi
 if ! vault kv get secret/database > /dev/null 2>&1; then
     echo "INFO: Storing database credentials..."
     vault kv put secret/database \
-      username="db_user" \
-      password="secure_db_password_$(date +%s)" \
-      host="database" \
-      port="5432" \
-      database="ft_transcendence"
+      DB_PATH="${DB_PATH}" \
+      DB_NAME="${DB_NAME}"
 else
     echo "INFO: Database credentials already exist"
 fi
@@ -112,9 +109,9 @@ fi
 if ! vault kv get secret/api > /dev/null 2>&1; then
     echo "INFO: Storing API keys..."
     vault kv put secret/api \
-      jwt_secret="$(openssl rand -base64 32)" \
-      refresh_token_secret="$(openssl rand -base64 32)" \
-      encryption_key="$(openssl rand -base64 32)"
+      JWT_SECRET="$(openssl rand -base64 32)" \
+      JWT_EXPIRES_IN="${JWT_EXPIRES_IN}" \
+      BCRYPT_ROUNDS="${BCRYPT_ROUNDS}"
 else
     echo "INFO: API keys already exist"
 fi
@@ -124,48 +121,17 @@ fi
 # ============================================================================
 echo "INFO: Updating OAuth credentials..."
 vault kv put secret/oauth \
-  GITHUB_CLIENT_ID="Ov23liSveor1lTH4vgRN" \
-  GITHUB_CLIENT_SECRET="26d73bcb7a5d48df2f335281ddc5d7b2e5275d00" \
-  GOOGLE_CLIENT_ID="123456789012-abcde.apps.googleusercontent.com" \
-  GOOGLE_CLIENT_SECRET="GOCSPX-abcde"
-
-# ============================================================================
-# SSL/TLS CONFIG
-# ============================================================================
-if ! vault kv get secret/ssl > /dev/null 2>&1; then
-    echo "INFO: Storing SSL/TLS config..."
-    vault kv put secret/ssl \
-      backend_internal_ca_path="/app/ssl/ca.pem" \
-      nginx_public_ca_path="/etc/nginx/conf/ca.pem"
-else
-    echo "INFO: SSL/TLS config already exists"
-fi
-
+  GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID}" \
+  GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET}" \
 # ============================================================================
 # APP SECRETS
 # ============================================================================
 if ! vault kv get secret/app > /dev/null 2>&1; then
     echo "INFO: Storing application secrets..."
     vault kv put secret/app \
-      session_secret="$(openssl rand -base64 32)" \
-      api_rate_limit="100/minute"
+      FRONTEND_URL=${FRONTEND_URL};
 else
     echo "INFO: Application secrets already exist"
-fi
-
-# ============================================================================
-# SMTP/EMAIL CONFIG
-# ============================================================================
-if ! vault kv get secret/smtp > /dev/null 2>&1; then
-    echo "INFO: Storing SMTP/Email config..."
-    vault kv put secret/smtp \
-      smtp_host="mail.example.com" \
-      smtp_port="587" \
-      smtp_user="user@example.com" \
-      smtp_password="$(openssl rand -base64 32)" \
-      email_from="no-reply@ft-transcendence.com"
-else
-    echo "INFO: SMTP/Email config already exists"
 fi
 
 # ============================================================================
@@ -206,7 +172,10 @@ fi
 if ! vault read pki/roles/backend-internal-role > /dev/null 2>&1; then
     echo "INFO: Configuration du rôle PKI 'backend-internal-role'..."
     vault write pki/roles/backend-internal-role \
-        allowed_domains="backend,localhost" \
+        allowed_domains="backend,localhost
+        
+        
+        " \
         allow_bare_domains=true \
         allow_subdomains=true \
         max_ttl="720h" \
