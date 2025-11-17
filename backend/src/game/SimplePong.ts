@@ -98,8 +98,8 @@ export class SimplePong {
 
   private handleWallCollisions(): void {
     if (
-      this.state.ballY <= SimplePong.BALL_SIZE ||
-      this.state.ballY >= SimplePong.ARENA_HEIGHT - SimplePong.BALL_SIZE
+      this.state.ballY <= SimplePong.BALL_SIZE / 2 ||
+      this.state.ballY >= SimplePong.ARENA_HEIGHT - SimplePong.BALL_SIZE / 2
     ) {
       this.state.ballVY = -this.state.ballVY;
     }
@@ -107,43 +107,46 @@ export class SimplePong {
 
   private handlePaddleCollisions(): void {
     const halfPaddle = SimplePong.PADDLE_HEIGHT / 2;
+    const ballRadius = SimplePong.BALL_SIZE / 2;
 
-    if (this.isCollidingWithLeftPaddle(halfPaddle)) {
+    if (this.isCollidingWithLeftPaddle(halfPaddle, ballRadius)) {
+      this.state.ballX = SimplePong.PADDLE_WIDTH + ballRadius;
       this.state.ballVX = Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.leftPaddleY) * 5;
       this.state.leftHitCount++;
     }
 
-    if (this.isCollidingWithRightPaddle(halfPaddle)) {
+    if (this.isCollidingWithRightPaddle(halfPaddle, ballRadius)) {
+      this.state.ballX = SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - ballRadius;
       this.state.ballVX = -Math.abs(this.state.ballVX);
       this.state.ballVY = (this.state.ballY - this.state.rightPaddleY) * 5;
       this.state.rightHitCount++;
     }
   }
 
-  private isCollidingWithLeftPaddle(halfPaddle: number): boolean {
+  private isCollidingWithLeftPaddle(halfPaddle: number, ballRadius: number): boolean {
     return (
-      this.state.ballX <= SimplePong.PADDLE_WIDTH + SimplePong.BALL_SIZE &&
-      this.state.ballX >= 0 &&
+      this.state.ballX <= SimplePong.PADDLE_WIDTH + ballRadius &&
+      this.state.ballX >= SimplePong.PADDLE_WIDTH - ballRadius &&
       this.state.ballVX < 0 &&
-      Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+      Math.abs(this.state.ballY - this.state.leftPaddleY) < halfPaddle + ballRadius
     );
   }
 
-  private isCollidingWithRightPaddle(halfPaddle: number): boolean {
+  private isCollidingWithRightPaddle(halfPaddle: number, ballRadius: number): boolean {
     return (
-      this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - SimplePong.BALL_SIZE &&
-      this.state.ballX <= SimplePong.ARENA_WIDTH &&
+      this.state.ballX >= SimplePong.ARENA_WIDTH - SimplePong.PADDLE_WIDTH - ballRadius &&
+      this.state.ballX <= SimplePong.ARENA_WIDTH - ballRadius &&
       this.state.ballVX > 0 &&
-      Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + SimplePong.BALL_SIZE
+      Math.abs(this.state.ballY - this.state.rightPaddleY) < halfPaddle + ballRadius
     );
   }
 
   private handleScoring(): void {
-    if (this.state.ballX < 0) {
+    if (this.state.ballX < -SimplePong.BALL_SIZE / 2) {
       this.state.rightScore++;
       this.resetBallPosition();
-    } else if (this.state.ballX > SimplePong.ARENA_WIDTH) {
+    } else if (this.state.ballX > SimplePong.ARENA_WIDTH + SimplePong.BALL_SIZE / 2) {
       this.state.leftScore++;
       this.resetBallPosition();
     }

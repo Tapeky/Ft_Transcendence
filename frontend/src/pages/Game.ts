@@ -325,23 +325,25 @@ export class GamePage {
       ball.direction.y = -ball.direction.y;
     }
     if (
-      ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH &&
-      ball.pos.x >= 0 &&
+      ball.pos.x <= this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH + this.BALL_RADIUS &&
+      ball.pos.x >= this.gameState.leftPaddle.pos.x - this.BALL_RADIUS &&
       ball.direction.x < 0 &&
       ball.pos.y >= this.gameState.leftPaddle.pos.y &&
       ball.pos.y <= this.gameState.leftPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
+      ball.pos.x = this.gameState.leftPaddle.pos.x + this.PADDLE_WIDTH + this.BALL_RADIUS;
       ball.direction.x = Math.abs(ball.direction.x);
       this.increaseBallSpeed();
       this.gameState.leftPaddle.hitCount++;
     }
     if (
       ball.pos.x >= this.gameState.rightPaddle.pos.x - this.BALL_RADIUS &&
-      ball.pos.x <= this.ARENA_WIDTH &&
+      ball.pos.x <= this.gameState.rightPaddle.pos.x + this.PADDLE_WIDTH + this.BALL_RADIUS &&
       ball.direction.x > 0 &&
       ball.pos.y >= this.gameState.rightPaddle.pos.y &&
       ball.pos.y <= this.gameState.rightPaddle.pos.y + this.PADDLE_HEIGHT
     ) {
+      ball.pos.x = this.gameState.rightPaddle.pos.x - this.BALL_RADIUS;
       ball.direction.x = -Math.abs(ball.direction.x);
       this.increaseBallSpeed();
       this.gameState.rightPaddle.hitCount++;
