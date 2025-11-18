@@ -1,4 +1,3 @@
-# Configuration du Sidecar Vault Agent pour le frontend
 exit_after_auth = false
 pid_file = "/var/run/agent-frontend.pid"
 
@@ -28,16 +27,16 @@ auto_auth {
 # --- 2. Génère cert.pem (certificat seul) ---
 template {
     contents = <<EOT
-{{ with secret "pki_frontend/issue/frontend-public-role" "common_name=frontend" "ttl=720h" }}{{ .Data.certificate }}{{ end }}
+{{ with secret "pki_frontend/issue/frontend-public-role" (printf "common_name=frontend") (printf "ip_sans=%s" (env "HOST_IP")) (printf "ttl=720h") }}{{ .Data.certificate }}{{ end }}
 EOT
     destination = "/app/ssl/cert.pem"
     perms = "0644"
 }
 
-# --- 3. Génère key.pem (même appel, extraction de la clé) ---
+# --- 3. Génère key.pem (clé privée) ---
 template {
     contents = <<EOT
-{{ with secret "pki_frontend/issue/frontend-public-role" "common_name=frontend" "ttl=720h" }}{{ .Data.private_key }}{{ end }}
+{{ with secret "pki_frontend/issue/frontend-public-role" (printf "common_name=frontend") (printf "ip_sans=%s" (env "HOST_IP")) (printf "ttl=720h") }}{{ .Data.private_key }}{{ end }}
 EOT
     destination = "/app/ssl/key.pem"
     perms = "0600"
@@ -46,8 +45,10 @@ EOT
 # --- 4. Génère fullchain.pem (certificat + CA) ---
 template {
     contents = <<EOT
-{{ with secret "pki_frontend/issue/frontend-public-role" "common_name=frontend" "ttl=720h" }}{{ .Data.certificate }}
-{{ .Data.issuing_ca }}{{ end }}
+{{ with secret "pki_frontend/issue/frontend-public-role" (printf "common_name=frontend") (printf "ip_sans=%s" (env "HOST_IP")) (printf "ttl=720h") }}
+{{ .Data.certificate }}
+{{ .Data.issuing_ca }}
+{{ end }}
 EOT
     destination = "/app/ssl/fullchain.pem"
     perms = "0644"

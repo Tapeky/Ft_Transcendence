@@ -78,7 +78,6 @@ export class VaultService {
             'secret/data/oauth',
             'secret/data/database',
             'secret/data/app',
-            'secret/data/smtp',
         ];
 
         for (const path of paths) {

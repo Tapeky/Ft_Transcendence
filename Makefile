@@ -9,7 +9,6 @@ help:
 
 setup:
 	@echo "Initial setup..."
-	@if [ ! -f $(ENV_FILE) ]; then cp .env.example .env; echo ".env created"; fi
 	@mkdir -p db ssl logs
 	@echo "Directories created"
 

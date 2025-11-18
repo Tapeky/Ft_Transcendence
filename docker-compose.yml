@@ -50,6 +50,7 @@ services:
     environment:
       VAULT_ADDR: "${VAULT_ADDR}"
       VAULT_SKIP_VERIFY: "true"
+      HOST_IP: "${HOST_IP}"
     depends_on:
       vault:
         condition: service_healthy
@@ -91,6 +92,7 @@ services:
     environment:
       VAULT_ADDR: "${VAULT_ADDR}"
       VAULT_SKIP_VERIFY: "true"
+      HOST_IP: ${HOST_IP}
     entrypoint: [ "vault", "agent", "-config=/vault/config/agent-nginx.hcl" ]
     depends_on:
       vault-init:
@@ -112,6 +114,7 @@ services:
     environment:
       VAULT_ADDR: "${VAULT_ADDR}"
       VAULT_SKIP_VERIFY: "true"
+      HOST_IP: ${HOST_IP}
     entrypoint: [ "vault", "agent", "-config=/vault/config/agent-frontend.hcl" ]
     depends_on:
       vault-init:
@@ -137,7 +140,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       ENABLE_HTTPS: "${ENABLE_HTTPS}"
-      FRONTEND_URL: ${FRONTEND_URL}
+      HOST_IP: "${HOST_IP}"
+      FRONTEND_URL: "https://${HOST_IP:-localhost}:3000"
     depends_on:
       vault-init:
         condition: service_completed_successfully
@@ -207,7 +211,8 @@ services:
       # Server configuration
       - PORT=8080
       - SSL_PORT=8443
-      - SERVER_NAME=localhost
+      - HOST_IP=${HOST_IP}
+      - SERVER_NAME=localhost ${HOST_IP}
       - NGINX_ALWAYS_TLS_REDIRECT=off
       
       # Logging
@@ -249,7 +254,7 @@ services:
     environment:
       FRONTEND_PORT: "${FRONTEND_PORT}"
       ENABLE_HTTPS: "${ENABLE_HTTPS}"
-      VITE_API_URL: "${VITE_API_URL}"
+      VITE_API_URL: "https://${HOST_IP:-localhost}:8443"
     depends_on:
       vault-agent-frontend:
         condition: service_started

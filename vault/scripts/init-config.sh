@@ -224,6 +224,7 @@ if ! vault read pki_nginx/roles/modsecurity-public-role > /dev/null 2>&1; then
     echo "INFO: Configuration du rôle PKI 'modsecurity-public-role'..."
     vault write pki_nginx/roles/modsecurity-public-role \
         allowed_domains="localhost,nginx,backend,frontend" \
+        allowed_ip_sans="${HOST_IP}" \
         allow_bare_domains=true \
         allow_subdomains=false \
         max_ttl="720h" \
@@ -272,6 +273,7 @@ if ! vault read pki_frontend/roles/frontend-public-role > /dev/null 2>&1; then
     echo "INFO: Configuration du rôle PKI 'frontend-public-role'..."
     vault write pki_frontend/roles/frontend-public-role \
         allowed_domains="localhost,frontend" \
+        allowed_ip_sans="${HOST_IP}" \
         allow_bare_domains=true \
         allow_subdomains=false \
         max_ttl="720h" \

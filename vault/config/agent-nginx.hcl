@@ -28,10 +28,10 @@ auto_auth {
 # --- 2. Templating PKI (Certificat Public pour ModSecurity) ---
 template {
     contents = <<EOT
-{{ with secret "pki_nginx/issue/modsecurity-public-role" "common_name=localhost" "alt_names=nginx,backend,frontend" "ttl=720h" }}
+{{ with secret "pki_nginx/issue/modsecurity-public-role" (printf "common_name=localhost") (printf "alt_names=nginx,backend,frontend") (printf "ip_sans=%s" (env "HOST_IP")) (printf "ttl=720h") }}
 {{ .Data.certificate }}
-{{ .Data.issuing_ca }}
 {{ .Data.private_key }}
+{{ .Data.issuing_ca }}
 {{ end }}
 EOT
     destination = "/etc/nginx/ssl/server.pem"
