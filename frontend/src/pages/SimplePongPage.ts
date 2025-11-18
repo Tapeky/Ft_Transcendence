@@ -457,22 +457,12 @@ export class SimplePongPage {
 
       switch (msg.type) {
         case 'friend_pong_invite':
-          if (confirm('Game invitation received! Accept?')) {
-            this.ws?.send(
-              JSON.stringify({
-                type: 'friend_pong_accept',
-                inviteId: msg.inviteId,
-                fromUserId: msg.fromUserId,
-              })
-            );
-          } else {
-            this.ws?.send(
-              JSON.stringify({
-                type: 'friend_pong_decline',
-                inviteId: msg.inviteId,
-              })
-            );
-          }
+          this.ws?.send(
+            JSON.stringify({
+              type: 'friend_pong_decline',
+              inviteId: msg.inviteId,
+            })
+          );
           break;
 
         case 'friend_pong_countdown':
