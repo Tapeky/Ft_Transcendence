@@ -883,10 +883,23 @@ export class SimplePongPage {
     );
   }
 
+  private _matchRecorded = false;
   private async recordMatch(
     myRole: 'left' | 'right' | null,
     playerIds: { left: number; right: number } | null
   ): Promise<void> {
+    
+    if (myRole !== 'left') {
+      console.log('🎮 Right player - skipping match recording (left player will record)');
+      return;
+    }
+    
+    
+    if (this._matchRecorded) {
+      console.warn('⚠️ Match already recorded, skipping duplicate recording');
+      return;
+    }
+
     try {
       // Import appState and apiService at the top if not already imported
       const { appState } = await import('../core/state/AppState');
@@ -950,6 +963,7 @@ export class SimplePongPage {
       };
 
       await apiService.recordMatch(matchData);
+      this._matchRecorded = true;
 
       const { authManager } = await import('../core/auth/AuthManager');
       await authManager.refreshUser();
