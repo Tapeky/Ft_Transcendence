@@ -27,6 +27,7 @@ clean:
 	@echo "Cleaning up..."
 	docker compose down -v --rmi all
 	docker system prune -f
+	@rm -f db/ft_transcendence.db
 
 logs:
 	docker compose logs -f
