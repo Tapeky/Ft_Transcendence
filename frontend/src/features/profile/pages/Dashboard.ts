@@ -110,7 +110,7 @@ export class Dashboard {
     const matchesToUse = matches || this.matches || [];
     if (matchesToUse.length === 0) return '0';
 
-    const currentUsername = appState.getState().user?.username;
+    const currentUsername = this.player?.username;
     const scores = matchesToUse.map(match =>
       match.player1_username === currentUsername ? match.player1_score : match.player2_score
     );
@@ -123,7 +123,7 @@ export class Dashboard {
     const matchesToUse = matches || this.matches || [];
     if (matchesToUse.length === 0) return 0;
 
-    const currentUsername = appState.getState().user?.username;
+    const currentUsername = this.player?.username;
     const scores = matchesToUse.map(match =>
       match.player1_username === currentUsername ? match.player1_score : match.player2_score
     );
