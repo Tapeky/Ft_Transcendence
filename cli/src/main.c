@@ -346,7 +346,7 @@ static void init_windows(ctx *ctx)
 		const int BOX_X = 4;
 		const int BOX_Y = 4;
 		const int BOX_W = 22;
-		const int BOX_H = 9;
+		const int BOX_H = 15;
 
 		box_init(
 			&component, BOX_X, BOX_Y, BOX_W, BOX_H, DEFAULT_BOX_STYLE
@@ -578,6 +578,7 @@ static void on_sock_event(ctx *ctx)
 			else
 			{
 				label_update_text(ctx->get_ready_view.opponent_ready_message, xstrdup(get_ws_message(data.json)), 1);
+				crefresh(1);
 			}
 		}
 	}
