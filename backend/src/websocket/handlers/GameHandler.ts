@@ -116,7 +116,7 @@ export class GameHandler {
   ): void {
     if (!message.gameId || !message.opponentId) return;
 
-    const game = this.gameManager.getGame(message.gameId);
+    const game = this.gameManager.getGame(String(message.gameId));
     if (!game) {
       connection.socket.send(
         JSON.stringify({
@@ -167,7 +167,7 @@ export class GameHandler {
 
   handlePlayerReady(message: { gameId: number; ready: boolean }, userId: number): void {
     if (typeof message.gameId === 'number' && typeof message.ready === 'boolean') {
-      this.gameManager.setPlayerReady(message.gameId, userId, message.ready);
+      this.gameManager.setPlayerReady(String(message.gameId), userId, message.ready);
     }
   }
 

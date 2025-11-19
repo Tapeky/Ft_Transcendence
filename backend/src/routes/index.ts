@@ -11,14 +11,14 @@ import { delete_accountRoutes } from './profile';
 
 export async function setupRoutes(server: FastifyInstance) {
   await server.register(
-    async function (server) {
+    async function (server: any) {
       await server.register(authRoutes, { prefix: '/auth' });
 
       await server.register(userRoutes, { prefix: '/users' });
 
       await server.register(matchRoutes, { prefix: '/matches' });
 
-     await server.register(async (server) => {
+     await server.register(async (server: any) => {
         await profileRoutes(server);
         await delete_accountRoutes(server);
       }, { prefix: '/profile' });

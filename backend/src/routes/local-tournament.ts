@@ -101,7 +101,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
         let bracket = null;
         if (matches.length > 0) {
           const roundsMap = new Map();
-          matches.forEach(match => {
+          matches.forEach((match: any) => {
             if (!roundsMap.has(match.round)) {
               roundsMap.set(match.round, []);
             }
@@ -134,13 +134,13 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           // Calculate current round dynamically
           let currentRound = 1;
           const nextPendingMatch = matches.find(
-            m => m.status === 'pending' && m.player1_alias !== 'TBD' && m.player2_alias !== 'TBD'
+            (m: any) => m.status === 'pending' && m.player1_alias !== 'TBD' && m.player2_alias !== 'TBD'
           );
           if (nextPendingMatch) {
             currentRound = nextPendingMatch.round;
           } else {
             // If no pending matches, check for in_progress matches
-            const inProgressMatch = matches.find(m => m.status === 'in_progress');
+            const inProgressMatch = matches.find((m: any) => m.status === 'in_progress');
             if (inProgressMatch) {
               currentRound = inProgressMatch.round;
             } else {
@@ -152,7 +152,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
           bracket = {
             rounds: rounds,
             currentRound: currentRound,
-            currentMatch: nextPendingMatch?.id || matches.find(m => m.status === 'pending')?.id,
+            currentMatch: nextPendingMatch?.id || matches.find((m: any) => m.status === 'pending')?.id,
           };
         }
 
@@ -203,7 +203,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               currentPlayers: tournament.current_players,
               status: frontendStatus,
               winnerAlias: winnerAlias,
-              players: players.map(p => ({
+              players: players.map((p: any) => ({
                 id: p.id.toString(),
                 alias: p.alias,
                 joinedAt: p.joined_at,
@@ -402,7 +402,7 @@ export async function localTournamentRoutes(server: FastifyInstance) {
               maxPlayers: updatedTournament.max_players,
               currentPlayers: updatedTournament.current_players,
               status: frontendStatus,
-              players: players.map(p => ({
+              players: players.map((p: any) => ({
                 id: p.id.toString(),
                 alias: p.alias,
                 joinedAt: p.joined_at,
