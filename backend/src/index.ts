@@ -156,17 +156,6 @@ async function start() {
     });
 
     await server.listen({ port: PORT, host: HOST });
-    const protocol = ENABLE_HTTPS ? 'https' : 'http';
-    const wsProtocol = ENABLE_HTTPS ? 'wss' : 'ws';
-
-    console.log(`
-🚀 Serveur ft_transcendence démarré !
-📍 URL: ${protocol}://localhost:${PORT}
-🌍 Environnement: ${NODE_ENV}
-🔒 HTTPS: ${ENABLE_HTTPS ? 'Activé' : 'Désactivé'}
-📊 Health check: ${protocol}://localhost:${PORT}/health
-📡 WebSocket: ${wsProtocol}://localhost:${PORT}/ws
-    `);
 
     if (NODE_ENV === 'production') {
       setInterval(async () => {
