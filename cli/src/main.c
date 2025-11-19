@@ -432,7 +432,7 @@ static void render_ball(float x, float y, float width_ratio, float height_ratio)
 		while (ball_start_x < ball_end_x)
 		{
 			float dist = ((x - ball_start_x) * (x - ball_start_x) / (true_ball_width * true_ball_width)) + ((y - ball_start_y) * (y - ball_start_y) / (true_ball_height * true_ball_height));
-			if (dist <= 1)
+			if (dist <= 1.001)
 			{
 				cursor_goto(ball_start_x, ball_start_y);
 				PUTS(FULL_BLOCK);
