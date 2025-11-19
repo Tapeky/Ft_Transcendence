@@ -43,12 +43,6 @@ export class SimplePongPage {
   private gameId: string | undefined;
   private isInvitedGame: boolean = false;
 
-  private isCountingDown: boolean = false;
-  private countdownValue: number = 5;
-  private countdownStartTime: number = 0;
-  private lastFrameTime: number = 0;
-  private countdownAnimationId: number | null = null;
-
   private playerNames: { left: string; right: string } = { left: '', right: '' };
   private lastPlayerIds: { left: number; right: number } | null = null;
   private gameStartTime: number | null = null;
@@ -470,8 +464,7 @@ export class SimplePongPage {
           this.gameId = msg.gameId;
           this.preparePlayerNames(msg);
 
-          this.setStatusMessage('Match starting...', 'Get ready for the countdown!');
-          this.startCountdown();
+          this.setStatusMessage('Match starting...', 'Get ready!');
           break;
 
         case 'friend_pong_start':
@@ -487,9 +480,6 @@ export class SimplePongPage {
               `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
               `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys to move your paddle.`
             );
-            if (!this.isCountingDown) {
-              this.startCountdown();
-            }
           } else {
             // Check if opponent is already ready
             const isOpponentReady = this.myRole === 'left' ? msg.rightPlayerReady : msg.leftPlayerReady;
@@ -522,10 +512,6 @@ export class SimplePongPage {
             `${this.playerNames.left || 'Player 1'} vs ${this.playerNames.right || 'Player 2'}`,
             `You control the ${this.myRole === 'left' ? 'left' : 'right'} paddle. Use ↑/↓ or W/S keys to move your paddle.`
           );
-
-          if (!this.isCountingDown) {
-            this.startCountdown();
-          }
           break;
 
         case 'friend_pong_state':
@@ -536,7 +522,6 @@ export class SimplePongPage {
         case 'friend_pong_end':
         case 'simple_pong_end':
           this.handleGameStateMessage(msg);
-          this.isCountingDown = false;
           this.hidePlayerNames();
           this.hideReadyButton();
           break;
@@ -546,7 +531,6 @@ export class SimplePongPage {
             this.handleGameStateMessage(msg);
           }
           this.setStatusMessage('Opponent Disconnected', msg.message || 'Your opponent has left the game.');
-          this.isCountingDown = false;
           this.hidePlayerNames();
           this.hideReadyButton();
           this.stopRenderLoop();
@@ -610,10 +594,6 @@ export class SimplePongPage {
   }
 
   private handleGameStateMessage(msg: any): void {
-    if (this.isCountingDown) {
-      return;
-    }
-
     if (!this.myRole && msg.leftPlayerId && msg.rightPlayerId) {
       const currentUser = this.getCurrentUserInfo();
       if (currentUser) {
@@ -800,10 +780,10 @@ export class SimplePongPage {
     previous: BufferedState | null,
     deltaSeconds: number
   ): PongState {
-    const canvasWidth = this.arenaWidth;
-    const canvasHeight = this.serverArenaHeight;
-    const paddleHalfHeight = this.paddleHeight / 2;
-    const ballRadius = this.ballRadius;
+    const canvasWidth = 800;
+    const canvasHeight = 500;
+    const paddleHalfHeight = 30;
+    const ballRadius = 5;
 
     const timeBetween = previous ? (last.timestamp - previous.timestamp) / 1000 : 0;
     const prevState = previous?.state;
@@ -866,10 +846,7 @@ export class SimplePongPage {
   private render(): void {
     this.renderer.render(
       this.displayState ?? this.gameState,
-      this.playerNames,
-      this.isCountingDown,
-      this.countdownValue,
-      this.countdownStartTime
+      this.playerNames
     );
   }
 
@@ -878,13 +855,13 @@ export class SimplePongPage {
     myRole: 'left' | 'right' | null,
     playerIds: { left: number; right: number } | null
   ): Promise<void> {
-    
+
     if (myRole !== 'left') {
       console.log('🎮 Right player - skipping match recording (left player will record)');
       return;
     }
-    
-    
+
+
     if (this._matchRecorded) {
       console.warn('⚠️ Match already recorded, skipping duplicate recording');
       return;
@@ -1027,12 +1004,6 @@ export class SimplePongPage {
 
     this.stopRenderLoop();
 
-    this.isCountingDown = false;
-    if (this.countdownAnimationId !== null) {
-      cancelAnimationFrame(this.countdownAnimationId);
-      this.countdownAnimationId = null;
-    }
-
     this.stateBuffer = [];
     this.displayState = null;
     this.playerNames = { left: '', right: '' };
@@ -1052,43 +1023,5 @@ export class SimplePongPage {
     }
 
     this.element.remove();
-  }
-
-  private startCountdown(): void {
-    this.isCountingDown = true;
-    this.countdownValue = 5;
-    this.countdownStartTime = performance.now();
-    this.lastFrameTime = performance.now();
-    this.countdownLoop();
-  }
-
-  private countdownLoop(): void {
-    if (!this.isCountingDown) return;
-
-    const currentTime = performance.now();
-    const deltaTime = currentTime - this.lastFrameTime;
-
-    if (deltaTime >= 1000 / 60) {
-      const elapsedTime = currentTime - this.countdownStartTime;
-      const newCountdownValue = Math.ceil(5 - elapsedTime / 1000);
-
-      if (newCountdownValue !== this.countdownValue) {
-        this.countdownValue = newCountdownValue;
-      }
-
-      if (elapsedTime >= 5000) {
-        this.isCountingDown = false;
-        this.countdownValue = 0;
-
-        setTimeout(() => {
-          this.render();
-        }, 1000);
-        return;
-      }
-
-      this.lastFrameTime = currentTime;
-    }
-
-    this.countdownAnimationId = requestAnimationFrame(() => this.countdownLoop());
   }
 }
