@@ -54,7 +54,7 @@ export class ChatFriendsList {
         <h2 class="mt-2 text-[2rem]">${friend.display_name || friend.username}</h2>
         <h2 class="text-[1.5rem]">${friend.username}</h2>
       </div>
-      <div class="min-w-[110px] flex flex-col pl-2">
+      <div class="min-w-[170px] flex flex-col pl-2">
         <div class="flex-1 flex justify-start items-center ml-1">
           <h2 class="text-[1.5rem]">${friend.is_online ? 'Online' : 'Offline'}</h2>
         </div>
