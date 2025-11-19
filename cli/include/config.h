@@ -17,9 +17,7 @@ typedef enum
 {
 	term_window_type_LOGIN,
 	term_window_type_REGISTER,
-	term_window_type_DASHBOARD,
 	term_window_type_FRIENDS_VIEW,
-	term_window_type_TOURNAMENT_VIEW,
 	term_window_type_PONG_INVITE_OVERLAY,
 	term_window_type_PONG_GET_READY,
 	term_window_type_PONG_GAME,

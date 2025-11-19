@@ -18,7 +18,6 @@ typedef struct s_ctx
 	ws_ctx					ws_ctx;
 	api_ctx					api_ctx;
 	login					user_login;
-	tournaments				tournaments;
 	friends					friends;
 	friend_pong_invite		pong_invite;
 	friend_pong_accepted	pong_accepted;
@@ -41,11 +40,6 @@ typedef struct s_ctx
 		C(display_name_field);
 		C(register_error_label);
 	}	register_view;
-	struct
-	{
-		list_view list_view;
-		C(tournament_name);
-	}	tournament_view;
 	struct
 	{
 		list_view list_view;

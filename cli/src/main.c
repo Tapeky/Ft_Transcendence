@@ -19,14 +19,12 @@ static int on_key_event(ctx *ctx, KeySym key, int on_press)
 	(void)ctx;
 	if (key == XK_Left && on_press)
 	{
-		if (list_view_update(&ctx->tournament_view.list_view, ctx, -1)
-			|| list_view_update(&ctx->friends_view.list_view, ctx, -1))
+		if (list_view_update(&ctx->friends_view.list_view, ctx, -1))
 			return (0);
 	}
 	else if (key == XK_Right && on_press)
 	{
-		if (list_view_update(&ctx->tournament_view.list_view, ctx, 1)
-			|| list_view_update(&ctx->friends_view.list_view, ctx, 1))
+		if (list_view_update(&ctx->friends_view.list_view, ctx, 1))
 			return (0);
 	}
 	else if (on_press && key == XK_Escape)
@@ -51,30 +49,6 @@ static int on_key_event(ctx *ctx, KeySym key, int on_press)
 	}
 	chandle_key_event(key, on_press);
 	return (0);
-}
-
-static void update_tournament_view(void *obj, void *param)
-{
-	tournament *t = obj;
-	ctx *ctx = param;
-
-	if (t)
-	{
-		label_update_text(ctx->tournament_view.tournament_name, t->name, 0);
-	}
-	else
-	{
-		label_update_text(ctx->tournament_view.tournament_name, "NO TOURNAMENT", 0);
-	}
-}
-
-static void refresh_tournaments(ctx *ctx)
-{
-	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
-	json_clean_obj(&ctx->tournaments, tournaments_def);
-	do_api_request_to_def(&ctx->api_ctx, "api/local-tournaments/history", GET, tournaments_def, &ctx->tournaments);
-	ctx->tournament_view.list_view.list_cursor = 0;
-	list_view_update(&ctx->tournament_view.list_view, ctx, 0);
 }
 
 static int json_success(cJSON *json, char **error_string)
@@ -177,17 +151,6 @@ static void handle_register_window_switch_button(console_component *button, int 
 		cswitch_window(term_window_type_REGISTER, 1);
 }
 
-static void handle_tournament_enter_button(console_component *button, int press, void *param)
-{
-	(void)button;
-	ctx *ctx = param;
-	if (press)
-	{
-		(void)ctx;
-		// TODO: enter tournament
-	}
-}
-
 static void handle_friend_challenge_button(console_component *button, int press, void *param)
 {
 	(void)button;
@@ -236,20 +199,6 @@ static void refresh_friends(ctx *ctx)
 	do_api_request_to_def(&ctx->api_ctx, "api/friends", GET, friends_def, &ctx->friends);
 	ctx->friends_view.list_view.list_cursor = 0;
 	list_view_update(&ctx->friends_view.list_view, ctx, 0);
-}
-
-static void handle_tournament_window_switch_button(console_component *button, int press, void *param)
-{
-	(void)button;
-	if (press)
-		refresh_tournaments((ctx *)param);
-}
-
-static void handle_friends_window_switch_button(console_component *button, int press, void *param)
-{
-	(void)button;
-	if (press)
-		refresh_friends((ctx *)param);
 }
 
 static void handle_invite_decline_button(console_component *button, int press, void *param)
@@ -349,14 +298,6 @@ static void init_windows(ctx *ctx)
 		ctx->register_view.register_error_label = ccomponent_add(component);
 	}
 
-	cswitch_window(term_window_type_DASHBOARD, 0);
-	{
-		label_init(&component, 2, 2, "DASHBOARD", 0);
-		add_pretty_button(15, 6, " TOURNAMENTS ", handle_tournament_window_switch_button, ctx);
-
-		add_pretty_button(15, 11, " FRIENDS ", handle_friends_window_switch_button, ctx);
-	}
-
 	cswitch_window(term_window_type_FRIENDS_VIEW, 0);
 	{
 		const int BOX_X = 4;
@@ -376,21 +317,6 @@ static void init_windows(ctx *ctx)
 		ctx->friends_view.friend_challenge_text = ccomponent_add(component);
 	}
 	
-	cswitch_window(term_window_type_TOURNAMENT_VIEW, 0);
-	{
-		const int BOX_X = 4;
-		const int BOX_Y = 4;
-		const int BOX_W = 50;
-		const int BOX_H = 14;
-
-		list_view_init(&ctx->tournament_view.list_view, BOX_X, BOX_Y, BOX_W, BOX_H, update_tournament_view, &ctx->tournaments.data.tournaments.size, (void **)&ctx->tournaments.data.tournaments.arr, sizeof(tournament));
-		label_init(&component, BOX_X, BOX_Y - 1, "TOURNAMENTS", 0);
-		ccomponent_add(component);
-		label_init(&component, BOX_X + 2, BOX_Y + 1, NULL, 0);
-		ctx->tournament_view.tournament_name = ccomponent_add(component);
-		button_init(&component, BOX_X + 4, BOX_Y + BOX_H - 2, "ENTER", handle_tournament_enter_button, ctx);
-		ccomponent_add(component);
-	}
 	cswitch_window(term_window_type_PONG_INVITE_OVERLAY, 0);
 	{
 		const int BOX_X = 4;
@@ -557,13 +483,13 @@ static void game_loop(ctx *ctx)
 			json_parse_from_def_force(data.json, game_state_def, &state);
 			if (ctx->i_was_invited)
 			{
-				my_score = state.gameState.leftScore;
-				opponent_score = state.gameState.rightScore;
+				opponent_score = state.gameState.leftScore;
+				my_score = state.gameState.rightScore;
 			}
 			else
 			{
-				opponent_score = state.gameState.leftScore;
-				my_score = state.gameState.rightScore;
+				my_score = state.gameState.leftScore;
+				opponent_score = state.gameState.rightScore;
 			}
 			if (!state.gameState.gameOver)
 			{
@@ -599,7 +525,8 @@ static void on_sock_event(ctx *ctx)
 	int delete_json = 1;
 	if (!strcmp(data.type, "auth_success"))
 	{
-		cswitch_window(term_window_type_DASHBOARD, 1);
+		cswitch_window(term_window_type_FRIENDS_VIEW, 1);
+		refresh_friends(ctx);
 	}
 	else if (!strcmp(data.type, "auth_error"))
 	{

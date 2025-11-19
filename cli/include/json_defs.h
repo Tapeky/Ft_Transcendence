@@ -42,26 +42,6 @@ DEFINE_JSON(bracket_data,
 	(STRING, winner)
 );
 
-DEFINE_JSON(tournament,
-	(INT, id),
-	(STRING, name),
-	(INT, maxPlayers),
-	(INT, currentPlayers),
-	(STRING, status),
-	(OBJECT_N, bracketData, bracket_data),
-	(STRING_N, winnerAlias),
-	(INT_N, winnerId),
-	(STRING, createdAt),
-);
-
-DEFINE_JSON(tournaments_data,
-	(ARRAY, tournaments, tournament)
-);
-
-DEFINE_JSON(tournaments,
-	(OBJECT, data, tournaments_data)
-);
-
 /* WEBSOCKETS */
 DEFINE_JSON(friend_pong_invite,
 	(STRING, inviteId),
