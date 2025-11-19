@@ -28,7 +28,7 @@ export class TournamentService {
     `);
 
     const tournamentDetails = await Promise.all(
-      tournaments.map(async tournament => {
+      tournaments.map(async (tournament: any) => {
         const participants = await this.getTournamentParticipants(tournament.id);
 
         return {

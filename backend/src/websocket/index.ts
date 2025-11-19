@@ -26,8 +26,8 @@ export function setupWebSocket(server: FastifyInstance) {
   const extendedServer = server as FastifyWithPongServices;
   const messageRouter = new MessageRouter(extendedServer, wsManager);
 
-  server.register(async function (server) {
-    server.get('/ws', { websocket: true }, async (connection: SocketStream, req) => {
+  server.register(async function (server: any) {
+    server.get('/ws', { websocket: true }, async (connection: SocketStream, req: any) => {
       const userState = {
         userId: null as number | null,
         username: null as string | null,

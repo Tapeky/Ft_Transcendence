@@ -110,7 +110,7 @@ async function start() {
       };
     });
 
-    server.setErrorHandler(async (error, _request, reply) => {
+    server.setErrorHandler(async (error: any, _request: any, reply: any) => {
       server.log.error(error);
 
       const errorWithCode = error as Error & { code?: string; validation?: unknown };
@@ -209,12 +209,12 @@ async function gracefulShutdown(signal: string) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason: any, promise: any) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 
-process.on('uncaughtException', error => {
+process.on('uncaughtException', (error: any) => {
   console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
