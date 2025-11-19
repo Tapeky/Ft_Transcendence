@@ -1,11 +1,10 @@
-.PHONY: help dev prod build clean logs shell-backend shell-frontend setup
+.PHONY: help dev build clean logs shell-backend shell-frontend setup
 
 COMPOSE_FILE_DEV = docker-compose.yml
-COMPOSE_FILE_PROD = docker-compose.prod.yml
 ENV_FILE = .env
 
 help:
-	@echo "Available targets: help dev prod build stop clean logs logs-backend logs-frontend shell-backend shell-frontend db-reset"
+	@echo "Available targets: help dev build stop clean logs logs-backend logs-frontend shell-backend shell-frontend db-reset"
 
 setup:
 	@echo "Initial setup..."
@@ -15,10 +14,6 @@ setup:
 dev: setup
 	@echo "Starting development..."
 	docker compose -f $(COMPOSE_FILE_DEV) up --build
-
-prod: setup
-	@echo "Starting production..."
-	docker compose -f $(COMPOSE_FILE_PROD) up -d --build
 
 build:
 	@echo "Rebuilding images..."
